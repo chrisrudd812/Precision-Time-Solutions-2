@@ -1,0 +1,185 @@
+/* === css/reports.css === */
+
+/* --- General Page Styles --- */
+.reports-page body {
+    font-family: Arial, sans-serif;
+    background-color: #f8f9fa;
+    color: #333;
+}
+
+.reports-page .parent-container {
+    padding: 20px 30px;
+    max-width: 1100px;
+    margin: 20px auto;
+}
+
+.reports-page h1 {
+    text-align: center;
+    color: #343a40;
+    margin-bottom: 30px;
+    font-weight: 300;
+}
+
+/* --- REMOVED Report Controls Styles --- */
+/* .report-controls { ... } */
+/* .report-trigger-button { ... } */
+/* .report-trigger-button:hover { ... } */
+/* .report-trigger-button:active { ... } */
+/* .report-trigger-button:disabled { ... } */
+
+
+/* --- Report Display Area --- */
+.report-display-area {
+    background-color: #ffffff;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 20px 25px;
+    margin-bottom: 30px; /* Keep bottom margin */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    min-height: 200px;
+    position: relative;
+}
+
+.report-title {
+    font-size: 1.4em;
+    color: #495057;
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.report-description {
+    font-size: 0.9em;
+    color: #6c757d;
+    margin-bottom: 20px;
+    font-style: italic;
+    min-height: 1.2em; /* Reserve space even if empty */
+}
+
+/* --- Loading Indicator --- */
+.loading-indicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: flex; /* Keep using flex for centering */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+    border-radius: 6px;
+    color: #495057;
+    font-weight: bold;
+    /* display: none; /* Controlled by JS/JSP */
+}
+
+.loading-indicator .spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #007bff;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
+    margin-bottom: 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* --- Report Output Area & Table --- */
+.report-output {
+    margin-top: 15px;
+}
+
+.report-output .report-placeholder { /* Style for initial message */
+    color: #6c757d;
+    text-align: center;
+    padding: 30px;
+    font-style: italic;
+    border: 1px dashed #ccc;
+    border-radius: 4px;
+    background-color: #f8f9fa;
+}
+
+.report-table-container {
+    width: 100%;
+    max-height: 600px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-top: 10px; /* Add space if table follows message */
+}
+
+table.report-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9em;
+}
+
+.report-table th,
+.report-table td {
+    padding: 8px 10px;
+    border: 1px solid #ddd;
+    text-align: left;
+    vertical-align: middle;
+    word-break: break-word;
+}
+
+.report-table thead th {
+    background-color: #e9ecef;
+    color: #495057;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.report-table tbody tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+.report-table tbody tr:hover {
+    background-color: #e2e6ea;
+    cursor: default;
+}
+
+/* Styles for messages/errors within the table body/output div */
+.report-message-row td,
+p.report-message-row {
+    text-align: center !important;
+    font-style: italic;
+    padding: 15px !important;
+    color: #17a2b8;
+    background-color: #e2f4f7 !important;
+    border: 1px solid #bee5eb;
+    border-radius: 4px;
+}
+
+.report-error-row td,
+p.report-error-row {
+    text-align: center !important;
+    font-style: normal;
+    padding: 15px !important;
+    color: #dc3545 !important;
+    background-color: #f8d7da !important;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+
+/* Specific styles from ShowReports output */
+.report-table td.empty-cell {
+    font-style: italic;
+    color: #999;
+    background-color: #fdfdfd;
+}
+
+.missing-punch-placeholder {
+    color: #dc3545;
+    font-weight: bold;
+    font-size: 0.9em;
+}

@@ -1,0 +1,17 @@
+/* css/print-payroll.css */
+body { font-family: Arial, sans-serif; font-size: 9pt; margin: 2cm; }
+h2 { text-align: center; margin-bottom: 10px; font-size: 1.1em; }
+table { width: 100%; border-collapse: collapse; margin: 0; }
+th, td { border: 1px solid #666; padding: 3px 5px; text-align: left; vertical-align: top; word-wrap: break-word; }
+th { background-color: #eee; font-weight: bold; text-align: center; }
+td:nth-child(1), th:nth-child(1) { text-align: center; } /* EID Center */
+td:nth-child(4), th:nth-child(4) { text-align: center; } /* Type Center */
+td:nth-child(5), th:nth-child(5), /* Number columns right */
+td:nth-child(6), th:nth-child(6),
+td:nth-child(7), th:nth-child(7),
+td:nth-child(8), th:nth-child(8),
+td:nth-child(9), th:nth-child(9) { text-align: right; }
+tfoot { font-weight: bold; background-color: #eee; }
+tfoot td { border-top: 2px solid #333; text-align: right !important; }
+tfoot td:first-child { text-align: right !important; }
+tr { page-break-inside: avoid; }

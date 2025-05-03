@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<title>Running Clock</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+#clock {
+	font-family: sans-serif;
+	font-size: 24px;
+	text-align: center;
+}
+</style>
+
+</head>
+<body>
+	<div id="clock"></div>
+
+	<script>
+            function updateClock() {
+                const now = new Date(); // Get current date and time
+
+                const dateOptions = {
+                    weekday: 'long', // Long day name (e.g., Monday)
+                    year: 'numeric', // 4-digit year
+                    month: 'long', // Long month name (e.g., January)
+                    day: 'numeric'    // Day of the month
+                };
+                const formattedDate = now.toLocaleDateString(undefined, dateOptions);
+
+                const timeOptions = {
+                    hour: 'numeric', // Hour (12 or 24 hour format, depends on locale)
+                    minute: 'numeric', // Minutes
+                    second: 'numeric', // Seconds
+                    hour12: true       // Set to true for 12-hour format, false for 24-hour.
+                };
+                const formattedTime = now.toLocaleTimeString(undefined, timeOptions);
+
+                const clockDiv = document.getElementById("clock");
+                clockDiv.textContent = `${formattedDate} ${formattedTime}`; // Update the clock div
+            }
+
+            // Initial update
+            updateClock();
+
+            // Update the clock every second
+            setInterval(updateClock, 1000); // 1000 milliseconds = 1 second
+
+        </script>
+
+</body>
+</html>

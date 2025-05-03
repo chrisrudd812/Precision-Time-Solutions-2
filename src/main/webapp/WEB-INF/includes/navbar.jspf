@@ -1,0 +1,55 @@
+<%-- /WEB-INF/includes/navbar.jspf --%>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+
+<nav class="main-navbar">
+    <ul>
+        <li><a href="timeclock.jsp">Time Clock</a></li>
+
+        <%-- Punch Management Dropdown --%>
+        <li class="dropdown">
+            <a href="javascript:void(0)" class="dropbtn">Punch Management</a>
+            <div class="dropdown-content">
+                <a href="add_global_data.jsp">Add Global Hours</a>
+                <a href="punches.jsp">Edit Employee Punches</a>
+            </div>
+        </li>
+
+        <li><a href="employees.jsp">Employees</a></li>
+
+        <%-- Added Links --%>
+        <li><a href="departments.jsp">Departments</a></li>
+        <li><a href="scheduling.jsp">Scheduling</a></li>
+        <li><a href="accruals.jsp">Accruals</a></li>
+
+        <%-- Payroll Dropdown --%>
+        <li class="dropdown">
+            <a href="javascript:void(0)" class="dropbtn">Payroll</a>
+            <div class="dropdown-content">
+                <a href="payroll.jsp">Process Payroll</a>
+                <a href="#">Payroll History (Future)</a>
+                <a href="#">Run Accruals (Future)</a>
+            </div>
+        </li>
+
+        <%-- Reports Dropdown (Updated Link Text & Archive Link) --%>
+        <li class="dropdown">
+            <a href="javascript:void(0)" class="dropbtn">Reports</a>
+            <div class="dropdown-content">
+                <%-- Link to reports.jsp (JS handles parameter) --%>
+                <a href="reports.jsp?report=exception">Exception Report</a>
+                <a href="reports.jsp?report=tardy">Tardy Report</a>
+                <a href="reports.jsp?report=whosin">Who's In Report</a>
+                <a href="timeclock.jsp">Time Card Report</a>
+                <a href="#">Audit Log (Future)</a>
+                <%-- **** LINK TO NEW DEDICATED PAGE **** --%>
+                <a href="archived_punches.jsp">Archived Punches</a>
+            </div>
+        </li>
+
+        <%-- Settings Link --%>
+        <li><a href="settings.jsp">Settings</a></li>
+
+         <%-- Log Out/In Link --%>
+         <li><a href="login.jsp">Log Out/In</a></li>
+    </ul>
+</nav>

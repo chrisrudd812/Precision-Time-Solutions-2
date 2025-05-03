@@ -50,10 +50,13 @@ public class AddAndDeleteAccrualPoliciesServlet extends HttpServlet {
 	        return; // Stop processing
 	    }
 		// Check if trying to add a policy named "None" (case-insensitive)
-        if ("none".equalsIgnoreCase(accrualName)) {
-            response.sendRedirect("accruals.jsp?addSuccess=false&error=Cannot add a policy named 'None'.");
-            return;
-        }
+		
+		/*
+		 * if ("none".equalsIgnoreCase(accrualName)) { response.
+		 * sendRedirect("accruals.jsp?addSuccess=false&error=Cannot add a policy named 'None'."
+		 * ); return; }
+		 */
+		 
 		// Convert to correct data types, with error handling
 		int vacationDays;
 		int sickDays;
@@ -76,8 +79,8 @@ public class AddAndDeleteAccrualPoliciesServlet extends HttpServlet {
 
         try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(
-                "INSERT INTO CHRIS.ACCRUALS (NAME, VACATION, SICK, PERSONAL) VALUES (?, ?, ?, ?)");
-             PreparedStatement checkStmt = con.prepareStatement("SELECT 1 FROM CHRIS.ACCRUALS WHERE NAME = ?")) { // Check for duplicate names
+                "INSERT INTO ACCRUALS (NAME, VACATION, SICK, PERSONAL) VALUES (?, ?, ?, ?)");
+             PreparedStatement checkStmt = con.prepareStatement("SELECT 1 FROM ACCRUALS WHERE NAME = ?")) { // Check for duplicate names
             // --- Check for Duplicate Name (IMPORTANT) ---
             checkStmt.setString(1, accrualName);
             try (ResultSet rs = checkStmt.executeQuery()) {
@@ -154,8 +157,8 @@ public class AddAndDeleteAccrualPoliciesServlet extends HttpServlet {
 
         try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(
-                "UPDATE CHRIS.ACCRUALS SET NAME = ?, VACATION = ?, SICK = ?, PERSONAL = ? WHERE NAME = ?");
-             PreparedStatement checkStmt = con.prepareStatement("SELECT 1 FROM CHRIS.ACCRUALS WHERE NAME = ? AND NAME <> ?")) {
+                "UPDATE ACCRUALS SET NAME = ?, VACATION = ?, SICK = ?, PERSONAL = ? WHERE NAME = ?");
+             PreparedStatement checkStmt = con.prepareStatement("SELECT 1 FROM ACCRUALS WHERE NAME = ? AND NAME <> ?")) {
 
              // Check for duplicate name (excluding the current record being edited)
             checkStmt.setString(1, accrualName);
@@ -203,7 +206,7 @@ public class AddAndDeleteAccrualPoliciesServlet extends HttpServlet {
         }
 
         try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("DELETE FROM CHRIS.ACCRUALS WHERE NAME = ?")) {
+             PreparedStatement ps = con.prepareStatement("DELETE FROM ACCRUALS WHERE NAME = ?")) {
 
             ps.setString(1, accrualName);
             int rowsAffected = ps.executeUpdate();

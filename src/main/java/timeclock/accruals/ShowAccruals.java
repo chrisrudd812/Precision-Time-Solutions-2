@@ -17,7 +17,7 @@ public class ShowAccruals {
 
         try (Connection con = DatabaseConnection.getConnection();
              Statement stmt = con.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT * FROM CHRIS.ACCRUALS")) {
+             ResultSet rs = stmt.executeQuery("SELECT * FROM ACCRUALS")) {
 
             while (rs.next()) {
                 String name = rs.getString("NAME");

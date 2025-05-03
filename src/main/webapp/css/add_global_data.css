@@ -1,0 +1,130 @@
+/* === css/add_global_data.css === */
+
+/* --- General Page Styles --- */
+/* Apply styles directly to body or a main wrapper if preferred */
+/* It's often better to define base body styles (font, background) globally */
+
+.add-global-page .parent-container { /* Scoping styles to this page */
+    padding: 20px 30px;
+}
+
+/* --- Page Header --- */
+.add-global-page h1 {
+    text-align: center;
+    color: #2c3e50; /* Dark blue-grey */
+    margin-bottom: 10px;
+    font-weight: 300; /* Lighter font weight for modern look */
+}
+
+.add-global-page .intro-paragraph { /* Class added to intro P tag */
+    text-align: center;
+    margin-bottom: 30px;
+    color: #555;
+    font-size: 0.95em;
+    max-width: 600px; /* Keep intro text readable */
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* --- Form Container Styling --- */
+.add-global-page .form-container {
+    max-width: 550px;
+    margin: 20px auto;
+    padding: 30px 40px;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* --- Form Item Layout & Spacing --- */
+.add-global-page .form-item {
+    margin-bottom: 20px;
+}
+
+.add-global-page .form-item label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    font-size: 0.9em;
+    color: #444;
+}
+
+/* --- Input & Select Styling --- */
+.add-global-page .form-item input[type="date"],
+.add-global-page .form-item input[type="number"],
+.add-global-page .form-item select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    /* --- ADDED for consistency --- */
+    font-size: 1em; /* Explicitly set font size */
+    font-family: inherit; /* Inherit font family from parent */
+    /* --- End Added --- */
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.add-global-page .form-item input[type="date"]:focus,
+.add-global-page .form-item input[type="number"]:focus,
+.add-global-page .form-item select:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
+    outline: none;
+}
+
+.add-global-page .form-item input[type="number"]::placeholder {
+    color: #aaa;
+    font-style: italic;
+}
+
+/* --- Button Styling --- */
+.add-global-page .button-row {
+    margin-top: 30px;
+    text-align: center;
+}
+
+.add-global-page .button-row button.submit-btn {
+    padding: 12px 30px;
+    font-size: 1.05em;
+    font-weight: 600;
+    color: #fff;
+    background-color: #28a745; /* Green */
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    min-width: 200px;
+}
+
+.add-global-page .button-row button.submit-btn:hover {
+    background-color: #218838;
+}
+
+.add-global-page .button-row button.submit-btn:active {
+    background-color: #1e7e34;
+    transform: translateY(1px);
+}
+
+/* --- Notification Bar --- */
+.add-global-page #notification-bar {
+    max-width: 550px; /* Match form container width */
+    margin: 0 auto 20px auto;
+    padding: 15px;
+    border-radius: 5px;
+    text-align: center;
+}
+
+/* Reuse success/error classes or define specifically */
+.add-global-page #notification-bar.success-message {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.add-global-page #notification-bar.error-message {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}

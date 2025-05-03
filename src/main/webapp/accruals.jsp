@@ -8,10 +8,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <%-- Link to the updated CSS file --%>
 <link rel="stylesheet" href="css/accruals.css?v=3"> <%-- Cache-busting version incremented --%>
+<link rel="stylesheet" href="css/navbar.css"> <%-- Cache-busting version incremented --%>
 <title>Accrual Policies</title>
 </head>
 <body>
 	<div class="parent-container">
+	<%@ include file="/WEB-INF/includes/navbar.jspf" %>
 		<h1>Manage Accrual Policies</h1>
 		<h4>To Edit or Delete... First Select a Row</h4>
 

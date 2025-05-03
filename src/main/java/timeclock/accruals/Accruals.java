@@ -28,7 +28,7 @@ public class Accruals {
 
 			Connection con = DriverManager.getConnection(dbURL);
 
-			PreparedStatement psGetAccruals = con.prepareStatement("SELECT * FROM CHRIS.ACCRUALS");
+			PreparedStatement psGetAccruals = con.prepareStatement("SELECT * FROM ACCRUALS");
 			ResultSet rs = psGetAccruals.executeQuery();
 
 			while (rs.next()) {

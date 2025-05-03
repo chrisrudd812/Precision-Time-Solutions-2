@@ -1,104 +1,103 @@
-package timeclock.db;
+package timeclock.db; // Ensure this package matches yours
 
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+// Removed imports no longer needed: DatabaseMetaData, PreparedStatement
 
+// Ensure AddSampleData class exists and is imported if you use the sample data logic
+import timeclock.db.AddSampleData;
+
+/**
+ * Initializes database aspects on application startup.
+ * For MySQL setup, assumes tables are created externally (e.g., via SQL script).
+ * Focuses on conditionally adding sample data if the main table is empty.
+ */
 public class DBInitializer {
 
-    private static boolean initialized = false; // Flag to track initialization
+    private static final Logger logger = Logger.getLogger(DBInitializer.class.getName());
+    private static boolean initialized = false; // Flag to track initialization WITHIN a single application run
 
-    static {
-        try {
-             // System.setProperty("derby.system.home", "src/main/webapp/TimeclockDB;create=true");
-            Class.forName("org.apache.derby.jdbc.EmbeddedDriver");
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace(); // Log the exception
-            throw new RuntimeException("Failed to load Derby driver", e); // Critical: Re-throw
-        }
-    }
-
-
+    /**
+     * Checks if the EMPLOYEE_DATA table is empty and calls AddSampleData if it is.
+     * Assumes DatabaseConnection is configured for MySQL and tables exist.
+     * Should be called once on application startup (e.g., by AppLifecycleListener).
+     */
     public static synchronized void initialize() {
-		 // Check if initialization has already occurred
+        // Check if initialization has already occurred IN THIS RUN
         if (initialized) {
-            return; // Do nothing if already initialized
+            logger.info("DBInitializer: Already initialized within this application run. Skipping.");
+            return;
         }
+        logger.info("DBInitializer: Starting initialization check (for sample data)...");
 
-        try (Connection con = DriverManager.getConnection("jdbc:derby:src/main/webapp/TimeclockDB;create=true")) {
-            // Check if the CHRIS schema exists, create it if not
-            DatabaseMetaData dbmd = con.getMetaData();
-            try (Statement stmt = con.createStatement()) { // Use try-with-resources here too
-                ResultSet schemaRs = dbmd.getSchemas();
-            	boolean chrisSchemaExists = false;
-            	while (schemaRs.next()) {
-            	    String schemaName = schemaRs.getString("TABLE_SCHEM");
-            	    if ("CHRIS".equalsIgnoreCase(schemaName)) {
-            	        chrisSchemaExists = true;
-            	        break;
-            	    }
-            	}
-            	schemaRs.close();
+        try (Connection con = DatabaseConnection.getConnection()) { // Get connection from updated MySQL connection class
 
-                if (!chrisSchemaExists) {
-                    stmt.executeUpdate("CREATE SCHEMA CHRIS");
-                    System.out.println("Schema CHRIS created.");
+            logger.info("DBInitializer: Connection successful via DatabaseConnection.");
+
+            // --- Check if EMPLOYEE_DATA is empty ---
+            boolean employeeTableIsEmpty = false;
+            // Use try-with-resources for Statement and ResultSet
+            try (Statement stmt = con.createStatement();
+                 // Check the EMPLOYEE_DATA table directly (NO "" prefix)
+                 ResultSet rsCount = stmt.executeQuery("SELECT COUNT(*) FROM EMPLOYEE_DATA")) {
+
+                // Check if the query returned a result and if the count is 0
+                if (rsCount.next() && rsCount.getInt(1) == 0) {
+                    employeeTableIsEmpty = true;
+                    logger.info("DBInitializer: EMPLOYEE_DATA table found to be empty.");
+                } else {
+                    // Table has data or count failed
+                     logger.info("DBInitializer: EMPLOYEE_DATA table is not empty (or count check failed).");
                 }
-
-
-                // --- Check if ACCRUALS table exists, create if not ---
-                ResultSet rs = dbmd.getTables(null, "CHRIS", "ACCRUALS", null); //Use metadata
-                if (!rs.next()) {
-                    // Use try-with-resources for the PreparedStatement
-                    try (PreparedStatement psCreateTable = con.prepareStatement(
-                            "CREATE TABLE CHRIS.ACCRUALS (" +
-                            "NAME VARCHAR(30) NOT NULL PRIMARY KEY, " +  // Added primary key constraint
-                            "VACATION INT, " +  // Changed to INT
-                            "SICK INT, " +      // Changed to INT
-                            "PERSONAL INT)")) { // Changed to INT
-                        psCreateTable.executeUpdate();
-                    }
-					 System.out.println("Created table CHRIS.ACCRUALS");
-                    // Add some initial data (Optional)
-                    try (PreparedStatement psInsert = con.prepareStatement(
-                        "INSERT INTO CHRIS.ACCRUALS (NAME, VACATION, SICK, PERSONAL) VALUES (?, ?, ?, ?)"))
-                    {
-                    	psInsert.setString(1, "None");
-                    	psInsert.setInt(2, 0);
-                    	psInsert.setInt(3, 0);
-                    	psInsert.setInt(4, 0);
-                    	psInsert.executeUpdate();
-
-                        psInsert.setString(1, "Standard");
-                        psInsert.setInt(2, 5);
-                        psInsert.setInt(3, 5);
-                        psInsert.setInt(4, 5);
-                        psInsert.executeUpdate();
-
-                        psInsert.setString(1, "Executive");
-                        psInsert.setInt(2, 30);
-                        psInsert.setInt(3, 30);
-                        psInsert.setInt(4, 30);
-                        psInsert.executeUpdate();
-						System.out.println("Added default values.");
-                    }
-                }
-				rs.close();
+            } catch (SQLException countEx) {
+                 // Log if the COUNT(*) query fails
+                 logger.log(Level.WARNING, "DBInitializer: Could not execute 'SELECT COUNT(*)' on EMPLOYEE_DATA.", countEx);
+                 // Safely assume table is not empty if we can't check it
+                 employeeTableIsEmpty = false;
             }
 
+            // --- Conditionally Add Sample Data ---
+            // Make sure AddSampleData class itself has been updated to remove "" prefix from its INSERT statements!
+            if (employeeTableIsEmpty) {
+                 logger.info("DBInitializer: Attempting to add sample data via AddSampleData.addSampleData()...");
+                 try {
+                    AddSampleData.addSampleData(); // Call your updated sample data method
+                    logger.info("DBInitializer: Sample data addition process presumed complete.");
+                 } catch (Exception e) {
+                    // Catch potential errors during sample data insertion
+                    logger.log(Level.SEVERE, "DBInitializer: Error occurred during AddSampleData.addSampleData() execution.", e);
+                 }
+            } else {
+                 logger.info("DBInitializer: Skipping sample data addition.");
+            }
+            // --- End Sample Data Logic ---
+
         } catch (SQLException e) {
-            System.out.println("Could not create schema/table");
-            e.printStackTrace(); // Log the exception details.
-            throw new RuntimeException("Database initialization failed", e); // Critical: Re-throw
+            logger.log(Level.SEVERE, "DBInitializer: Database connection or operation failed.", e);
+            // Don't mark as initialized if we couldn't even connect or run basic checks
+            return;
+        } catch (Exception e) {
+             // Catch any other unexpected errors
+             logger.log(Level.SEVERE, "DBInitializer: Unexpected non-SQL error during execution.", e);
+             return;
         }
-         initialized = true;
+
+        // If we reached here without critical errors, mark as initialized for this run
+        initialized = true;
+        logger.info("DBInitializer: Initialization check complete.");
     }
-	//Main Method, for testing ONLY
-	public static void main(String[] args) {
-		initialize();
-	}
+
+    // Optional: Main method for basic standalone testing of this initializer's logic
+    public static void main(String[] args) {
+         System.out.println("--- Running DBInitializer main (tests empty check & sample data add) ---");
+         // For standalone testing, you might want to reset the flag if you run it multiple times
+         // initialized = false;
+         initialize();
+         System.out.println("\n--- Second call (should be skipped if first succeeded) ---");
+         initialize();
+    }
 }

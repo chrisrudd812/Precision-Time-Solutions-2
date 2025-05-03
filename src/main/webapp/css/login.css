@@ -1,0 +1,130 @@
+@charset "UTF-8";
+
+/* General Styles */
+/* These styles apply to the whole page */
+body {
+    font-family: Arial, sans-serif; /* Use a standard sans-serif font */
+    margin: 0; /* Remove default body margins */
+    padding: 0;
+    display: flex; /* Use flexbox for centering */
+    justify-content: center; /* Center horizontally */
+    align-items: flex-start; /* Align content to the top */
+    min-height: 100vh; /* Ensure at least full viewport height */
+    background-color: #f4f4f4; /* Light gray background */
+}
+
+.parent-container {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: 80%;     /* Responsive width */
+    max-width: 800px; /* Limit maximum width */
+    text-align: center;
+}
+
+
+h1, h3 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+}
+/* --- Modal Background Overlay (HIDDEN by default) --- */
+.modal {
+    display: none; /* Hidden */
+    position: fixed;
+    z-index: 1000;
+    left: 0; top: 0; width: 100%; height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+    /* Centering applied via .modal-visible */
+}
+
+/* --- Class to SHOW modal centered --- */
+.modal.modal-visible {
+    display: flex; /* Use flex to enable centering */
+    align-items: center; /* Vertical center */
+    justify-content: center; /* Horizontal center */
+}
+
+/* --- General Modal Content Box --- */
+.modal-content {
+	background-color: #fefefe;
+    border: 1px solid #888;
+    width: 450px;
+    max-width: 90%;
+    box-sizing: border-box;
+    border-radius: 5px;
+    box-shadow: 0 3px 7px rgba(0,0,0,0.3);
+    margin: 0; /* Let flexbox handle centering */
+    padding: 0;
+    max-height: 90vh; /* Limit height */
+    overflow-y: auto; /* Add scroll if needed */
+    position: relative;
+}
+
+/* --- Close Button ('x') --- */
+.close {
+	color: rgb(255, 0, 0);
+	position: absolute; top: 10px; right: 15px;
+    font-size: 28px; font-weight: bold; line-height: 1; cursor: pointer;
+}
+.close:hover, .close:focus { color: #333; text-decoration: none; }
+
+/* --- Modal Headers --- */
+.modal-content > h2 {
+     padding: 20px 20px 10px 20px; margin: 0;
+     text-align: center; font-size: 1.5em; border-bottom: 1px solid #eee;
+}
+#notificationModal .modal-content > h2 { border-bottom: none; padding-bottom: 0; }
+#notificationModal .modal-content > p { padding: 15px 20px 20px 20px; margin: 0; text-align: center; }
+
+/* --- Modal Form Styles (Add/Edit) --- */
+/* Style the form itself - make sure it doesn't interfere */
+.modal-content form {
+    padding: 20px; /* Padding INSIDE the form area */
+    margin: 0; /* No margin on form itself */
+    box-sizing: border-box;
+}
+.modal-content form .form-item {
+    margin-bottom: 15px; /* Consistent spacing between form items */
+}
+.modal-content form label {
+	display: block; margin-bottom: 5px; font-weight: bold; text-align: left;
+}
+.modal-content form input { /* Target only inputs inside forms */
+    width: 100%; padding: 8px; border: 1px solid #ccc;
+    border-radius: 4px; box-sizing: border-box; font-size: 16px;
+    display: block; text-align: left;
+    /* Removed margin-bottom here, use .form-item for spacing */
+}
+
+/* --- Modal Button Row --- */
+/* Style the container for the buttons */
+.modal-content .button-row {
+    display: flex; /* Use flexbox for buttons */
+    gap: 10px; /* Space between buttons */
+    padding: 0 20px 20px 20px; /* Space above/below/beside buttons */
+    box-sizing: border-box;
+    width: 100%;
+}
+
+/* --- Modal Button Styling --- */
+/* Style the buttons INSIDE the .button-row */
+.modal-content .button-row button {
+    flex: 1; /* Make buttons share width equally */
+    margin: 0; /* No margin on buttons themselves */
+    /* Height is set in general button styles */
+}
+
+/* Specific Modal Button Colors */
+.modal .submit-btn { background-color: #4CAF50; color: white; }
+.modal .cancel-btn { background-color: #f44336; color: white; }
+
+/* Notification Modal OK button */
+#notificationModal .button-row { justify-content: center; padding-top: 0; }
+#notificationModal .button-row button#okButton {
+     background-color: #4CAF50; color: white;
+     flex-grow: 0; /* Prevent single button from expanding */
+     min-width: 100px;
+}
