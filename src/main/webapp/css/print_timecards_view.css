@@ -1,0 +1,107 @@
+@charset "UTF-8";
+
+/* Styles specific to print_timecards_view.jsp - Screen View */
+body.print-preview-body {
+    margin: 0;
+    /* This padding-top MUST be the height of your main navbar + the height of .print-controls */
+    padding-top: 130px; /* EXAMPLE: Adjust this based on combined sticky height! (e.g., 60px navbar + 70px controls) */
+    background-color: #e9ebee;
+    font-family: Arial, Helvetica, sans-serif;
+    box-sizing: border-box;
+}
+
+.print-controls {
+    position: fixed;
+    top: 6%;       /* EXACTLY below your main navbar. Assumes main navbar is 60px high and fixed/sticky at top:0 */
+    left: 0;
+    width: 100%;
+    z-index: 999;
+    background-color: #f8f9fa;
+    padding: 10px 20px;
+    border-bottom: 1px solid #dee2e6;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    box-sizing: border-box;
+}
+
+.print-controls .report-context-message {
+    display: block; margin-bottom: 10px; font-size: 1.1em; font-weight: bold; color: #333;
+}
+.print-controls button {
+    padding: 10px 25px; font-size: 1em; font-weight: bold; cursor: pointer; margin: 0 8px;
+    border-radius: 5px; border: 1px solid transparent; color: white; transition: background-color 0.2s, filter 0.2s;
+}
+.print-controls button.print-action-btn { background-color: #007bff; border-color: #0069d9; }
+.print-controls button.print-action-btn:hover { background-color: #0056b3; }
+.print-controls button.close-btn { background-color: #6c757d; border-color: #5a6268; }
+.print-controls button.close-btn:hover { background-color: #545b62; }
+
+/* Main content area holding all the timecards */
+.print-view-main-content {
+    /* REMOVED: width: 900px; */ /* Let max-width handle it for flex centering */
+    max-width: 900px;   /* Max width of the content block */
+    margin-left: auto;  /* Center the block on the page */
+    margin-right: auto;
+    margin-top: 6%;   /* Space below the (now fixed) print-controls bar */
+    margin-bottom: 20px;
+    padding: 0 15px;    /* Padding for content if it gets too close to 900px edges */
+    box-sizing: border-box;
+    display: flex; /* ADDED: Make this a flex container */
+    flex-direction: column; /* Stack cards vertically */
+    align-items: center; /* ADDED: Center cards horizontally within this container */
+}
+
+/* Individual timecard page styling */
+.timecard-print-page.timecard {
+    page-break-after: always;
+    margin-bottom: 25px;
+    box-sizing: border-box;
+    width: 100%; /* Make the card take the full width of its parent (.print-view-main-content up to 900px) */
+    /* Visuals (background, border, shadow) are inherited from .timecard class (timeclock.css) */
+    /* Ensure padding and border-radius match .timecard if not perfectly inherited */
+    padding: 20px;
+    border-radius: 6px;
+}
+.timecard-print-page.timecard:last-child {
+    page-break-after: auto;
+    margin-bottom: 20px;
+}
+
+/* Styling for elements within each card (should match timeclock.css for .timecard children) */
+.timecard-print-page.timecard .timecard-header { text-align:center; margin-bottom: 15px; padding-bottom:10px; border-bottom: 2px double #8c866d;}
+.timecard-print-page.timecard .timecard-header h1 { font-family: 'Courier New', Courier, monospace; font-size: 1.8em; color: #5c584a; margin: 0 0 8px 0; text-transform:uppercase;}
+.timecard-print-page.timecard .timecard-pay-period { font-size: 0.95em; color: #444; font-weight:600; margin-top:5px;}
+.timecard-print-page.timecard .timecard-info { font-size: 0.9em; margin-bottom: 15px; line-height: 1.7; display:flex; justify-content:space-between; border-bottom: 1px solid #d3cbae; padding-bottom:15px;}
+.timecard-print-page.timecard .info-left { flex-basis: 48%; min-width: 200px; }
+.timecard-print-page.timecard .info-right { flex-basis: 48%; min-width: 250px; }
+.timecard-print-page.timecard .timecard-info strong { min-width:90px; margin-right: 5px; font-weight:600; color: #5c584a; display: inline-block;}
+.timecard-print-page.timecard .timecard-table-container { border: 1px solid #b0a991; max-height: none !important; overflow-y: visible !important; margin-bottom:15px; background-color: #fff; }
+.timecard-print-page.timecard table.timecard-table { font-size: 0.9em; width: 100%; border-collapse: collapse; font-family: 'Consolas', 'Courier New', Courier, monospace;}
+.timecard-print-page.timecard table.timecard-table th,
+.timecard-print-page.timecard table.timecard-table td { border: none; border-bottom: 1px solid #e0dacb; padding: 6px 8px; text-align: center; vertical-align: middle;}
+.timecard-print-page.timecard table.timecard-table th { background-color: #e8e1c6; color:#5c584a; font-weight:bold; border-bottom-width: 2px; border-color: #b0a991; position:sticky; top:0; z-index:1; }
+.timecard-print-page.timecard table.timecard-table td:nth-child(1), .timecard-print-page.timecard table.timecard-table th:nth-child(1) { width: 20%; text-align: left; padding-left: 10px;}
+.timecard-print-page.timecard table.timecard-table td:nth-child(4), .timecard-print-page.timecard table.timecard-table th:nth-child(4) { text-align: right;}
+.timecard-print-page.timecard table.timecard-table td:nth-child(5), .timecard-print-page.timecard table.timecard-table th:nth-child(5) { text-align: left; padding-right: 10px;}
+.timecard-print-page.timecard .lateOrEarlyOutTag { color: #c00000; font-weight: bold; background-color: #fff0f0; }
+.timecard-print-page.timecard table.timecard-table tfoot tr { background-color: #e8e1c6; font-weight: bold; color: #5c584a;}
+.timecard-print-page.timecard table.timecard-table tfoot td { border-top: 2px solid #b0a991 !important; border-bottom: none;}
+.timecard-print-page.timecard .accrual-balances { font-size: 0.95em; margin-top: 25px; text-align:center; border-top: 1px solid #d3cbae; padding-top: 15px;}
+.timecard-print-page.timecard .accrual-title { font-size: 1.1em; color: #5c584a; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom:15px; margin-top:0; }
+.timecard-print-page.timecard .balance-item { margin: 0 15px 10px 15px; display:inline-block; white-space:nowrap; }
+.timecard-print-page.timecard .balance-label { font-weight: 600; color: #444; margin-right: 5px;}
+.timecard-print-page.timecard .balance-value { font-weight: bold; color: #333; background-color: #ffffff; padding: 3px 8px; border-radius: 4px; border: 1px solid #ccc; display: inline-block; min-width: 50px; text-align: right; }
+
+@media print {
+    body.print-preview-body { padding-top: 0 !important; margin: 0.5in !important; background-color: #fff !important; }
+    .main-navbar, .print-controls { display: none !important; }
+    .print-view-main-content { max-width: none !important; margin: 0 !important; padding: 0 !important; width: 100% !important; display: block !important; /* Revert flex for print */ }
+    .timecard-print-page.timecard { border: 1px solid #ccc !important; padding: 15px !important; margin-bottom: 20px !important; box-shadow: none !important; background-color: #fff !important; width: 100% !important; max-width: none !important; }
+    .timecard-print-page .timecard-info,
+    .timecard-print-page table.timecard-table,
+    .timecard-print-page .accrual-balances { font-size: 9pt !important; }
+    .timecard-print-page .timecard-header h1 { font-size: 12pt !important; }
+    .timecard-print-page .timecard-table th,
+    .timecard-print-page table.timecard-table tfoot td { background-color: #f0f0f0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .timecard-print-page .lateOrEarlyOutTag { color: #000 !important; font-weight: bold; background-color: transparent !important; }
+}

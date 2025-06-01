@@ -1,0 +1,6 @@
+<%-- /WEB-INF/includes/common-scripts.jspf --%>
+
+<script src="${pageContext.request.contextPath}/js/commonUtils.js?v=1"></script>
+<script src="${pageContext.request.contextPath}/js/navbar.js?v=20250508_01"></script>
+
+<%-- You can add other global JavaScript files here in the future --%>

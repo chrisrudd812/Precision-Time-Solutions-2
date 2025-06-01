@@ -1,86 +1,574 @@
-package timeclock.payroll; // Or your appropriate package
+package timeclock.payroll;
 
-// --- Keep ALL existing imports ---
+import java.math.BigDecimal;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.sql.Timestamp;
-import java.sql.Time;
-import java.sql.Date;
-import java.sql.Types;
 import java.text.NumberFormat;
-import java.text.SimpleDateFormat;
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import timeclock.Configuration;
 import timeclock.db.DatabaseConnection;
 import timeclock.punches.ShowPunches;
 
-
 public class ShowPayroll {
 
     private static final Logger logger = Logger.getLogger(ShowPayroll.class.getName());
-    private static final String SCHEDULE_DEFAULT_ZONE_ID_STR = "America/Denver";
-    private static final double ROUNDING_FACTOR = 10000.0;
-    private static final double WEEKLY_OT_THRESHOLD = 40.0;
+    private static final String UTC_ZONE_ID = "UTC";
+    private static final String SCHEDULE_DEFAULT_ZONE_ID_STR = "America/Denver"; // Fallback
+
+    public static final double ROUNDING_FACTOR = 100.0;
+    public static final double WEEKLY_OT_THRESHOLD_FLSA = 40.0;
     private static final String NOT_APPLICABLE_DISPLAY = "N/A";
 
-    // --- ** ADDED MISSING HELPER METHOD ** ---
-    /** Helper method to check string validity */
-    public static boolean isValid(String s) { // Made public static
-        return s != null && !s.trim().isEmpty();
-    }
-    // --- ** END ADDED HELPER ** ---
-
-
-    /** Core Calculation Method (No DB Update) */
-    public static List<Map<String, Object>> calculatePayrollData(LocalDate startDate, LocalDate endDate) {
-        // ... (Method content remains unchanged from previous correct version) ...
-        List<Map<String, Object>> calculatedPayrollData = new ArrayList<>(); if (startDate == null || endDate == null) { logger.severe("calculatePayrollData called with null dates."); return calculatedPayrollData; } logger.info("Starting payroll calculation for period: " + startDate + " to " + endDate); boolean weeklyOtEnabled = false; boolean dailyOtEnabled = false; double dailyThreshold = 8.0; String firstDayOfWeekSetting = "SUNDAY"; double otMultiplier = 1.5; try { weeklyOtEnabled = "true".equalsIgnoreCase(Configuration.getProperty("Overtime", "false")); dailyOtEnabled = "true".equalsIgnoreCase(Configuration.getProperty("OvertimeDaily", "false")); dailyThreshold = Double.parseDouble(Configuration.getProperty("OvertimeDailyThreshold", "8.0")); firstDayOfWeekSetting = Configuration.getProperty("FirstDayOfWeek", "SUNDAY").toUpperCase(); otMultiplier = Double.parseDouble(Configuration.getProperty("OvertimeRate", "1.5")); if (otMultiplier < 1.0) otMultiplier = 1.5; } catch (Exception e) { logger.log(Level.SEVERE, "Error reading settings.", e); } ZoneId scheduleZone = ZoneId.of(SCHEDULE_DEFAULT_ZONE_ID_STR); Instant startInstant = startDate.atStartOfDay(scheduleZone).toInstant(); Instant endInstant = endDate.plusDays(1).atStartOfDay(scheduleZone).toInstant(); Timestamp startTs = Timestamp.from(startInstant); Timestamp endTs = Timestamp.from(endInstant); String sql = "SELECT e.EID, e.FIRST_NAME, e.LAST_NAME, e.WAGE_TYPE, e.WAGE, s.AUTO_LUNCH, s.HRS_REQUIRED, s.LUNCH_LENGTH, p.PUNCH_ID, p.DATE, p.IN_1, p.OUT_1, p.PUNCH_TYPE FROM EMPLOYEE_DATA e LEFT JOIN SCHEDULES s ON e.SCHEDULE = s.NAME INNER JOIN PUNCHES p ON e.EID = p.EID WHERE e.ACTIVE = TRUE AND p.IN_1 >= ? AND p.IN_1 < ? ORDER BY e.EID, p.DATE, p.IN_1"; Map<Integer, List<Map<String, Object>>> punchesByEmployee = new HashMap<>(); Map<Integer, Map<String, Object>> employeeMetaInfo = new HashMap<>(); try (Connection con = DatabaseConnection.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) { ps.setTimestamp(1, startTs); ps.setTimestamp(2, endTs); try (ResultSet rs = ps.executeQuery()) { while (rs.next()) { int eid = rs.getInt("EID"); employeeMetaInfo.computeIfAbsent(eid, k -> { Map<String, Object> d = new HashMap<>(); try { d.put("EID", eid); d.put("FirstName", rs.getString("FIRST_NAME")); d.put("LastName", rs.getString("LAST_NAME")); d.put("WageType", rs.getString("WAGE_TYPE")); d.put("Wage", rs.getDouble("WAGE")); d.put("AutoLunch", rs.getBoolean("AUTO_LUNCH")); int hr = rs.getInt("HRS_REQUIRED"); d.put("HoursRequired", rs.wasNull() ? null : hr); int ll = rs.getInt("LUNCH_LENGTH"); d.put("LunchLength", rs.wasNull() ? null : ll); } catch (SQLException sqle) { throw new RuntimeException(sqle); } return d; }); Map<String, Object> punch = new HashMap<>(); punch.put("PunchID", rs.getLong("PUNCH_ID")); Timestamp inTs = rs.getTimestamp("IN_1"); punch.put("In", (inTs != null) ? inTs.toInstant() : null); Timestamp outTs = rs.getTimestamp("OUT_1"); punch.put("Out", (outTs != null) ? outTs.toInstant() : null); punch.put("Date", rs.getDate("DATE").toLocalDate()); punch.put("PunchType", rs.getString("PUNCH_TYPE")); punchesByEmployee.computeIfAbsent(eid, k -> new ArrayList<>()).add(punch); } } } catch (SQLException e) { logger.log(Level.SEVERE, "Error fetching data for payroll calculation", e); return calculatedPayrollData; } catch (RuntimeException e) { logger.log(Level.SEVERE, "Error processing results during fetch", e); return calculatedPayrollData; } logger.info("Fetched data for " + employeeMetaInfo.size() + " employees."); for (Map.Entry<Integer, List<Map<String, Object>>> entry : punchesByEmployee.entrySet()) { int eid = entry.getKey(); List<Map<String, Object>> punches = entry.getValue(); Map<String, Object> empInfo = employeeMetaInfo.get(eid); Map<LocalDate, Double> dailyWorkedTotals = new HashMap<>(); Map<LocalDate, Double> weeklyWorkedTotals = new HashMap<>(); double periodTotalWorkedHours = 0.0; boolean autoLunch = (Boolean) empInfo.getOrDefault("AutoLunch", false); Integer hrsRequired = (Integer) empInfo.get("HoursRequired"); Integer lunchLength = (Integer) empInfo.get("LunchLength"); String wageType = (String) empInfo.getOrDefault("WageType", ""); double wage = (Double) empInfo.getOrDefault("Wage", 0.0); for (Map<String, Object> punch : punches) { Instant inInst = (Instant) punch.get("In"); Instant outInst = (Instant) punch.get("Out"); double adjustedTotalHours = 0.0; if (inInst != null && outInst != null && outInst.isAfter(inInst)) { Duration dur = Duration.between(inInst, outInst); double rawTotalHours = dur.toNanos() / (3_600.0 * 1_000_000_000.0); rawTotalHours = Math.round(rawTotalHours * ROUNDING_FACTOR) / ROUNDING_FACTOR; adjustedTotalHours = rawTotalHours; if (autoLunch && hrsRequired != null && lunchLength != null && hrsRequired > 0 && lunchLength > 0 && rawTotalHours > hrsRequired) { double lunchDeduction = (double) lunchLength / 60.0; adjustedTotalHours = Math.max(0, rawTotalHours - lunchDeduction); } } String punchType = (String) punch.get("PunchType"); if (adjustedTotalHours > 0 && !"Vacation Time".equalsIgnoreCase(punchType) && !"Sick Time".equalsIgnoreCase(punchType) && !"Personal Time".equalsIgnoreCase(punchType) && !"Holiday Time".equalsIgnoreCase(punchType) && !"Bereavement".equalsIgnoreCase(punchType)) { LocalDate punchDate = (LocalDate) punch.get("Date"); dailyWorkedTotals.put(punchDate, dailyWorkedTotals.getOrDefault(punchDate, 0.0) + adjustedTotalHours); LocalDate weekStartDate = ShowPunches.calculateWeekStart(punchDate, firstDayOfWeekSetting); weeklyWorkedTotals.put(weekStartDate, weeklyWorkedTotals.getOrDefault(weekStartDate, 0.0) + adjustedTotalHours); periodTotalWorkedHours += adjustedTotalHours; } } periodTotalWorkedHours = Math.round(periodTotalWorkedHours * ROUNDING_FACTOR) / ROUNDING_FACTOR; double calculatedPeriodOt = 0.0; double calculatedPeriodReg = periodTotalWorkedHours; if ("Hourly".equalsIgnoreCase(wageType) && weeklyOtEnabled && periodTotalWorkedHours > 0) { double totalWeeklyOt = 0.0; for (double weeklyTotal : weeklyWorkedTotals.values()){ totalWeeklyOt += Math.max(0.0, weeklyTotal - WEEKLY_OT_THRESHOLD); } totalWeeklyOt = Math.round(totalWeeklyOt * ROUNDING_FACTOR) / ROUNDING_FACTOR; double potentialTotalDailyOt = 0.0; if (dailyOtEnabled && dailyThreshold > 0) { for (double dailyWorkedTotal : dailyWorkedTotals.values()) { potentialTotalDailyOt += Math.max(0.0, dailyWorkedTotal - dailyThreshold); } potentialTotalDailyOt = Math.round(potentialTotalDailyOt * ROUNDING_FACTOR) / ROUNDING_FACTOR; } calculatedPeriodOt = Math.max(totalWeeklyOt, potentialTotalDailyOt); calculatedPeriodReg = periodTotalWorkedHours - calculatedPeriodOt; if (periodTotalWorkedHours > WEEKLY_OT_THRESHOLD) { calculatedPeriodReg = Math.min(calculatedPeriodReg, WEEKLY_OT_THRESHOLD); calculatedPeriodOt = periodTotalWorkedHours - calculatedPeriodReg; } } calculatedPeriodReg = Math.round(calculatedPeriodReg * 100.0) / 100.0; calculatedPeriodOt = Math.round(calculatedPeriodOt * 100.0) / 100.0; double totalPay = 0.0; if ("Hourly".equalsIgnoreCase(wageType)) { totalPay = (calculatedPeriodReg * wage) + (calculatedPeriodOt * wage * otMultiplier); } else if ("Salary".equalsIgnoreCase(wageType)) { long daysInPeriod = ChronoUnit.DAYS.between(startDate, endDate) + 1; double dailyRate = wage / 365.0; totalPay = dailyRate * daysInPeriod; } totalPay = Math.floor(totalPay * 100) / 100.0; Map<String, Object> employeeResult = new HashMap<>(empInfo); employeeResult.put("RegularHours", calculatedPeriodReg); employeeResult.put("OvertimeHours", calculatedPeriodOt); employeeResult.put("TotalHours", Math.round((calculatedPeriodReg + calculatedPeriodOt) * 100.0) / 100.0); employeeResult.put("TotalPay", totalPay); calculatedPayrollData.add(employeeResult); logger.fine("EID " + eid + " Calculated Payroll: Reg=" + calculatedPeriodReg + ", OT=" + calculatedPeriodOt + ", Pay=" + totalPay); } logger.info("Payroll calculation complete. Employees processed: " + calculatedPayrollData.size()); return calculatedPayrollData;
+    private static String escapeHtml(String input) {
+        if (input == null) return "";
+        return input.replace("&", "&amp;")
+                    .replace("<", "&lt;")
+                    .replace(">", "&gt;")
+                    .replace("\"", "&quot;")
+                    .replace("'", "&#39;");
     }
 
-    /** Formats pre-calculated payroll data into HTML table rows. */
+    public static boolean isPunchTypeConsideredWorkForOT(String punchType) {
+        if (punchType == null) return false;
+        String pTypeLower = punchType.trim().toLowerCase();
+        return pTypeLower.equals("user initiated") ||
+               pTypeLower.equals("supervisor override") ||
+               pTypeLower.equals("sample data") ||
+               pTypeLower.equals("regular");
+    }
+
+    public static boolean isHoursOnlyType(String punchType) {
+        if (punchType == null) return false;
+        String pTypeLower = punchType.trim().toLowerCase();
+        return pTypeLower.equals("vacation") ||
+               pTypeLower.equals("sick") ||
+               pTypeLower.equals("personal") ||
+               pTypeLower.equals("holiday") ||
+               pTypeLower.equals("bereavement") ||
+               pTypeLower.equals("other");
+    }
+
+    // Using ShowPunches version is better, but keep local as fallback/reference.
+    private static LocalDate calculateWeekStart(LocalDate currentDate, String firstDayOfWeekSetting) {
+       return ShowPunches.calculateWeekStart(currentDate, firstDayOfWeekSetting);
+    }
+
+
+    private static Map<Integer, List<Map<String, Object>>> getPunchesAndMetaData(
+        int tenantId, LocalDate periodStartDate, LocalDate periodEndDate,
+        Map<Integer, Map<String, Object>> employeeMetaInfoOutput) {
+
+        Map<Integer, List<Map<String, Object>>> punchesByGlobalEid = new HashMap<>();
+        // Removed p.DT AS STORED_DT - THIS IS THE FIX FOR THE SQL ERROR
+        // We will read OT, but won't rely on it for calculation, but can use it as a check if needed.
+        String sql = "SELECT e.EID, e.TenantEmployeeNumber, e.FIRST_NAME, e.LAST_NAME, e.WAGE_TYPE, e.WAGE, " +
+                     "s.AUTO_LUNCH, s.HRS_REQUIRED, s.LUNCH_LENGTH, " +
+                     "p.PUNCH_ID, p.DATE AS PUNCH_UTC_DATE, p.IN_1 AS IN_UTC, p.OUT_1 AS OUT_UTC, p.TOTAL AS STORED_TOTAL, p.OT AS STORED_OT, p.PUNCH_TYPE " + // Removed p.DT
+                     "FROM EMPLOYEE_DATA e " +
+                     "LEFT JOIN SCHEDULES s ON e.TenantID = s.TenantID AND e.SCHEDULE = s.NAME " +
+                     "JOIN PUNCHES p ON e.EID = p.EID AND e.TenantID = p.TenantID " +
+                     "WHERE e.TenantID = ? AND e.ACTIVE = TRUE AND p.DATE BETWEEN ? AND ? " +
+                     "ORDER BY e.EID, p.DATE, p.IN_1";
+
+        try (Connection con = DatabaseConnection.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, tenantId);
+            ps.setDate(2, Date.valueOf(periodStartDate));
+            ps.setDate(3, Date.valueOf(periodEndDate));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    int globalEID = rs.getInt("EID");
+                    employeeMetaInfoOutput.computeIfAbsent(globalEID, k -> {
+                        Map<String, Object> empData = new HashMap<>();
+                        try {
+                            empData.put("EID", globalEID);
+                            empData.put("TenantEmployeeNumber", rs.getObject("TenantEmployeeNumber") != null ? rs.getInt("TenantEmployeeNumber") : globalEID);
+                            empData.put("FirstName", rs.getString("FIRST_NAME"));
+                            empData.put("LastName", rs.getString("LAST_NAME"));
+                            empData.put("WageType", rs.getString("WAGE_TYPE"));
+                            empData.put("Wage", rs.getDouble("WAGE"));
+                            empData.put("AutoLunch", rs.getBoolean("AUTO_LUNCH"));
+                            Object hrObj = rs.getObject("HRS_REQUIRED"); empData.put("HoursRequired", hrObj != null ? ((Number)hrObj).doubleValue() : null);
+                            Object llObj = rs.getObject("LUNCH_LENGTH"); empData.put("LunchLength", llObj != null ? ((Number)llObj).intValue() : null);
+                        } catch (SQLException sqle) { throw new RuntimeException("Error reading employee meta info from DB: " + sqle.getMessage(), sqle); }
+                        return empData;
+                    });
+                    Map<String, Object> punch = new HashMap<>();
+                    punch.put("PunchID", rs.getLong("PUNCH_ID"));
+                    Timestamp inTs = rs.getTimestamp("IN_UTC"); punch.put("In", (inTs != null) ? inTs.toInstant() : null);
+                    Timestamp outTs = rs.getTimestamp("OUT_UTC"); punch.put("Out", (outTs != null) ? outTs.toInstant() : null);
+                    punch.put("PunchUTCDate", rs.getDate("PUNCH_UTC_DATE").toLocalDate());
+                    punch.put("PunchType", rs.getString("PUNCH_TYPE"));
+                    double storedTotal = rs.getDouble("STORED_TOTAL"); punch.put("StoredTotal", rs.wasNull() ? null : storedTotal);
+                    double storedOt = rs.getDouble("STORED_OT"); punch.put("StoredOt", rs.wasNull() ? null : storedOt);
+                    punch.put("StoredDt", 0.0); // DT not read from PUNCHES table
+                    punchesByGlobalEid.computeIfAbsent(globalEID, k -> new ArrayList<>()).add(punch);
+                }
+            }
+        } catch (SQLException e) { logger.log(Level.SEVERE, "Error fetching payroll punch data for TenantID: " + tenantId, e); }
+          catch (RuntimeException e) { logger.log(Level.SEVERE, "Error processing fetched payroll punch data during meta info for TenantID: " + tenantId, e); }
+        return punchesByGlobalEid;
+    }
+
+
+    public static List<Map<String, Object>> calculatePayrollData(int tenantId, LocalDate payPeriodStartDate, LocalDate payPeriodEndDate) {
+        List<Map<String, Object>> payrollResults = new ArrayList<>();
+        Map<Integer, Map<String, Object>> employeeMetaInfo = new HashMap<>();
+        Map<Integer, List<Map<String, Object>>> punchesByEid = getPunchesAndMetaData(tenantId, payPeriodStartDate, payPeriodEndDate, employeeMetaInfo);
+
+        // --- Fetch Configuration ---
+        String tenantProcessingTimeZoneIdStr = Configuration.getProperty(tenantId, "DefaultTimeZone", SCHEDULE_DEFAULT_ZONE_ID_STR);
+        ZoneId processingZone;
+        try {
+            if (!ShowPunches.isValid(tenantProcessingTimeZoneIdStr)) throw new Exception("Tenant DefaultTimeZone is invalid.");
+            processingZone = ZoneId.of(tenantProcessingTimeZoneIdStr);
+        } catch (Exception e) {
+            processingZone = ZoneId.of(SCHEDULE_DEFAULT_ZONE_ID_STR); // Hard fallback
+            logger.log(Level.WARNING, "Invalid Tenant DefaultTimeZone '" + tenantProcessingTimeZoneIdStr + "'. Using fallback: " + processingZone, e);
+        }
+        logger.info("[ShowPayroll.calculatePayrollData] Using processingZone: " + processingZone + " for T:" + tenantId);
+
+        boolean configWeeklyOtEnabled = "true".equalsIgnoreCase(Configuration.getProperty(tenantId, "Overtime", "true"));
+        double configStandardOtRateMultiplier = Double.parseDouble(Configuration.getProperty(tenantId, "OvertimeRate", "1.5"));
+        boolean configDailyOtEnabled = "true".equalsIgnoreCase(Configuration.getProperty(tenantId, "OvertimeDaily", "false"));
+        double configDailyOtThreshold = Double.parseDouble(Configuration.getProperty(tenantId, "OvertimeDailyThreshold", "8.0"));
+        boolean configDoubleTimeEnabled = "true".equalsIgnoreCase(Configuration.getProperty(tenantId, "OvertimeDoubleTimeEnabled", "false"));
+        double configDoubleTimeThreshold = Double.parseDouble(Configuration.getProperty(tenantId, "OvertimeDoubleTimeThreshold", "12.0"));
+        boolean configSeventhDayOtEnabled = "true".equalsIgnoreCase(Configuration.getProperty(tenantId, "OvertimeSeventhDayEnabled", "false"));
+        double configSeventhDayOTThreshold = Double.parseDouble(Configuration.getProperty(tenantId, "OvertimeSeventhDayOTThreshold", "0.0"));
+        double configSeventhDayDTThreshold = Double.parseDouble(Configuration.getProperty(tenantId, "OvertimeSeventhDayDTThreshold", "8.0"));
+        String configFirstDayOfWeekSetting = Configuration.getProperty(tenantId, "FirstDayOfWeek", "SUNDAY").toUpperCase(Locale.ENGLISH);
+
+        // --- Include Active Employees without Punches ---
+        List<Map<String,Object>> allActiveEmps = ShowPunches.getActiveEmployeesForDropdown(tenantId);
+        for(Map<String,Object> empStub : allActiveEmps) {
+            Integer eid = (Integer)empStub.get("eid");
+            if(eid != null && !employeeMetaInfo.containsKey(eid)) {
+                Map<String, Object> fullEmpInfo = ShowPunches.getEmployeeTimecardInfo(tenantId, eid);
+                if (fullEmpInfo != null) { employeeMetaInfo.put(eid, fullEmpInfo); }
+            }
+        }
+        if(employeeMetaInfo.isEmpty()){ return payrollResults; }
+
+        // --- Process Each Employee ---
+        for (Map.Entry<Integer, Map<String, Object>> empMetaEntry : employeeMetaInfo.entrySet()) {
+            int globalEID = empMetaEntry.getKey();
+            Map<String, Object> empInfo = empMetaEntry.getValue();
+            List<Map<String, Object>> employeePunches = punchesByEid.getOrDefault(globalEID, new ArrayList<>());
+
+            String wageType = (String) empInfo.getOrDefault("WageType", empInfo.get("wageType"));
+            if (wageType == null) wageType = "Hourly";
+            Object wageObj = empInfo.getOrDefault("Wage", empInfo.get("wage"));
+            double wage = 0.0;
+            if (wageObj instanceof Number) { wage = ((Number)wageObj).doubleValue(); }
+            else if (wageObj != null) { try { wage = Double.parseDouble(wageObj.toString()); } catch (NumberFormatException e) { wage = 0.0; } }
+
+            Map<LocalDate, Double> dailyAggregatedWorkHours = new LinkedHashMap<>();
+            double periodTotalPaidNonWorkHours = 0.0;
+            Map<LocalDate, List<Map<String, Object>>> punchesByLocalDate = new LinkedHashMap<>();
+
+            // --- Calculate Punch Total and Aggregate by Local Date ---
+            for (Map<String, Object> punch : employeePunches) {
+                Instant iI = (Instant) punch.get("In"); Instant oI = (Instant) punch.get("Out");
+                String punchType = (String) punch.get("PunchType");
+                double hoursForThisEntry = 0.0;
+                Double storedTotal = (Double) punch.get("StoredTotal");
+
+                if (storedTotal != null) {
+                    hoursForThisEntry = storedTotal;
+                } else if (iI != null && oI != null && oI.isAfter(iI)) { // Calculate if StoredTotal is missing
+                     Duration dr = Duration.between(iI, oI); double rawHours = dr.toMillis() / 3_600_000.0;
+                     hoursForThisEntry = rawHours;
+                     boolean empAutoLunch = (Boolean) empInfo.getOrDefault("AutoLunch", false);
+                     Double empHrsRequired = (Double) empInfo.get("HoursRequired");
+                     Integer empLunchLength = (Integer) empInfo.get("LunchLength");
+                     if (empAutoLunch && empHrsRequired != null && empLunchLength != null && empHrsRequired > 0 && empLunchLength > 0 && rawHours > empHrsRequired) {
+                         hoursForThisEntry = Math.max(0, rawHours - (empLunchLength / 60.0));
+                     }
+                     hoursForThisEntry = Math.round(hoursForThisEntry * ROUNDING_FACTOR) / ROUNDING_FACTOR;
+                }
+                punch.put("CalculatedTotal", hoursForThisEntry); // Store calculated total on punch map
+
+                if (isPunchTypeConsideredWorkForOT(punchType)) {
+                    if (iI != null && hoursForThisEntry > 0) {
+                        LocalDate punchDate = ZonedDateTime.ofInstant(iI, processingZone).toLocalDate();
+                        dailyAggregatedWorkHours.put(punchDate, dailyAggregatedWorkHours.getOrDefault(punchDate, 0.0) + hoursForThisEntry);
+                        punchesByLocalDate.computeIfAbsent(punchDate, k -> new ArrayList<>()).add(punch);
+                    }
+                } else if (isHoursOnlyType(punchType)) {
+                    periodTotalPaidNonWorkHours += hoursForThisEntry;
+                }
+            }
+
+            double calculatedPeriodRegular = 0.0;
+            double calculatedPeriodOt = 0.0;
+            double calculatedPeriodDt = 0.0;
+
+            if ("Hourly".equalsIgnoreCase(wageType)) {
+                Map<LocalDate, Double> dailyRegHours = new LinkedHashMap<>();
+                Map<LocalDate, Double> dailyOtHours = new LinkedHashMap<>();
+                Map<LocalDate, Double> dailyDtHours = new LinkedHashMap<>();
+
+                // --- Daily Rules Pass ---
+                for (LocalDate date = payPeriodStartDate; !date.isAfter(payPeriodEndDate); date = date.plusDays(1)) {
+                    double hoursWorkedToday = dailyAggregatedWorkHours.getOrDefault(date, 0.0);
+                    if (hoursWorkedToday <= 0) continue;
+
+                    double todaysReg = hoursWorkedToday;
+                    double todaysOt = 0;
+                    double todaysDt = 0;
+
+                    if (configDoubleTimeEnabled && todaysReg > configDoubleTimeThreshold) {
+                        todaysDt = todaysReg - configDoubleTimeThreshold;
+                        todaysReg = configDoubleTimeThreshold;
+                    }
+                    if (configDailyOtEnabled && todaysReg > configDailyOtThreshold) {
+                        todaysOt = todaysReg - configDailyOtThreshold;
+                        todaysReg = configDailyOtThreshold;
+                    }
+                    dailyRegHours.put(date, todaysReg);
+                    dailyOtHours.put(date, todaysOt);
+                    dailyDtHours.put(date, todaysDt);
+                }
+
+                // --- Weekly & 7th Day Pass ---
+                LocalDate currentScanDate = payPeriodStartDate;
+                while (!currentScanDate.isAfter(payPeriodEndDate)) {
+                    LocalDate weekStart = calculateWeekStart(currentScanDate, configFirstDayOfWeekSetting);
+                    LocalDate weekEnd = weekStart.plusDays(6);
+                    double weeklyRegHoursPool = 0;
+                    double weeklyOtHoursPool = 0;
+                    double weeklyDtHoursPool = 0;
+                    int daysWorkedThisFLSAWeek = 0;
+                    List<LocalDate> actualWorkDaysInFLSAWeek = new ArrayList<>();
+
+                    for (int i = 0; i < 7; i++) {
+                        LocalDate dayInFLSAWeek = weekStart.plusDays(i);
+                        if (dayInFLSAWeek.isBefore(payPeriodStartDate) || dayInFLSAWeek.isAfter(payPeriodEndDate)) continue;
+
+                        weeklyRegHoursPool += dailyRegHours.getOrDefault(dayInFLSAWeek, 0.0);
+                        weeklyOtHoursPool += dailyOtHours.getOrDefault(dayInFLSAWeek, 0.0);
+                        weeklyDtHoursPool += dailyDtHours.getOrDefault(dayInFLSAWeek, 0.0);
+
+                        if (dailyAggregatedWorkHours.getOrDefault(dayInFLSAWeek, 0.0) > 0.001) {
+                            daysWorkedThisFLSAWeek++;
+                            actualWorkDaysInFLSAWeek.add(dayInFLSAWeek);
+                        }
+                    }
+
+                    // 7th Day Logic (Apply 7th day rules if enabled and applicable)
+                    if (configSeventhDayOtEnabled && daysWorkedThisFLSAWeek >= 7) {
+                       LocalDate seventhDayDate = actualWorkDaysInFLSAWeek.get(6); // Assumes sorted list
+                       double seventhDayReg = dailyRegHours.getOrDefault(seventhDayDate, 0.0);
+                       double seventhDayOt = dailyOtHours.getOrDefault(seventhDayDate, 0.0);
+                       double seventhDayDt = dailyDtHours.getOrDefault(seventhDayDate, 0.0);
+                       double seventhDayTotal = seventhDayReg + seventhDayOt + seventhDayDt;
+
+                       if (seventhDayTotal > 0) {
+                           double hoursToReclassifyOt = 0;
+                           double hoursToReclassifyDt = 0;
+
+                           // Check if 7th day rules push hours into DT
+                           if (seventhDayTotal > configSeventhDayDTThreshold) {
+                               hoursToReclassifyDt = seventhDayTotal - configSeventhDayDTThreshold;
+                               // Take from REG first, then OT
+                               double dtFromReg = Math.min(seventhDayReg, hoursToReclassifyDt);
+                               weeklyRegHoursPool -= dtFromReg; dailyRegHours.put(seventhDayDate, seventhDayReg - dtFromReg);
+                               weeklyDtHoursPool += dtFromReg; dailyDtHours.put(seventhDayDate, seventhDayDt + dtFromReg);
+                               hoursToReclassifyDt -= dtFromReg;
+                               if(hoursToReclassifyDt > 0){
+                                 double dtFromOt = Math.min(seventhDayOt, hoursToReclassifyDt);
+                                 weeklyOtHoursPool -= dtFromOt; dailyOtHours.put(seventhDayDate, seventhDayOt - dtFromOt);
+                                 weeklyDtHoursPool += dtFromOt; dailyDtHours.put(seventhDayDate, dailyDtHours.get(seventhDayDate)+dtFromOt);
+                               }
+                           }
+                           // Update total and check OT rules
+                           seventhDayTotal = dailyRegHours.get(seventhDayDate) + dailyOtHours.get(seventhDayDate); // Don't include DT now
+                           if (seventhDayTotal > configSeventhDayOTThreshold) {
+                               hoursToReclassifyOt = seventhDayTotal - configSeventhDayOTThreshold;
+                               double otFromReg = Math.min(dailyRegHours.get(seventhDayDate), hoursToReclassifyOt);
+                               weeklyRegHoursPool -= otFromReg; dailyRegHours.put(seventhDayDate, dailyRegHours.get(seventhDayDate) - otFromReg);
+                               weeklyOtHoursPool += otFromReg; dailyOtHours.put(seventhDayDate, dailyOtHours.get(seventhDayDate) + otFromReg);
+                           }
+                       }
+                    }
+
+                    // Weekly FLSA OT (on remaining REG hours)
+                    if (configWeeklyOtEnabled && weeklyRegHoursPool > WEEKLY_OT_THRESHOLD_FLSA) {
+                        double weeklyOt = weeklyRegHoursPool - WEEKLY_OT_THRESHOLD_FLSA;
+                        weeklyOtHoursPool += weeklyOt;
+                        weeklyRegHoursPool = WEEKLY_OT_THRESHOLD_FLSA;
+                    }
+
+                    calculatedPeriodRegular += weeklyRegHoursPool;
+                    calculatedPeriodOt += weeklyOtHoursPool;
+                    calculatedPeriodDt += weeklyDtHoursPool;
+
+                    currentScanDate = weekEnd.plusDays(1);
+                }
+
+            } else { // Salary or other non-hourly
+                calculatedPeriodRegular = dailyAggregatedWorkHours.values().stream().mapToDouble(Double::doubleValue).sum();
+            }
+
+            calculatedPeriodRegular += periodTotalPaidNonWorkHours;
+
+            calculatedPeriodRegular = Math.round(Math.max(0, calculatedPeriodRegular) * 100.0) / 100.0;
+            calculatedPeriodOt = Math.round(Math.max(0, calculatedPeriodOt) * 100.0) / 100.0;
+            calculatedPeriodDt = Math.round(Math.max(0, calculatedPeriodDt) * 100.0) / 100.0;
+
+            // --- Pay Calculation ---
+            double totalPay = 0.0;
+            if ("Hourly".equalsIgnoreCase(wageType)) {
+                totalPay = (calculatedPeriodRegular * wage) +
+                           (calculatedPeriodOt * wage * configStandardOtRateMultiplier) +
+                           (calculatedPeriodDt * wage * 2.0);
+            } else {
+                 // ... (Salary calculation as before) ...
+                int payPeriodsPerYear = 52;
+                try {
+                    String payPeriodTypeSetting = Configuration.getProperty(tenantId, "PayPeriodType", "WEEKLY").toUpperCase(Locale.ENGLISH);
+                    switch(payPeriodTypeSetting) {
+                        case "DAILY": payPeriodsPerYear = 365; break;
+                        case "WEEKLY": payPeriodsPerYear = 52; break;
+                        case "BIWEEKLY": payPeriodsPerYear = 26; break;
+                        case "SEMIMONTHLY": payPeriodsPerYear = 24; break;
+                        case "MONTHLY": payPeriodsPerYear = 12; break;
+                        default: payPeriodsPerYear = 52; break;
+                    }
+                } catch (Exception e) { payPeriodsPerYear = 52;}
+                if (payPeriodsPerYear > 0) totalPay = wage / payPeriodsPerYear;
+                else { totalPay = 0; }
+            }
+            totalPay = Math.floor(totalPay * 100.0) / 100.0;
+
+            // --- Store Results ---
+            Map<String, Object> employeeResult = new HashMap<>(empInfo); // Start with meta info
+            employeeResult.put("RegularHours", calculatedPeriodRegular);
+            employeeResult.put("OvertimeHours", calculatedPeriodOt);
+            employeeResult.put("DoubleTimeHours", calculatedPeriodDt);
+            employeeResult.put("TotalPaidHours", Math.round((calculatedPeriodRegular + calculatedPeriodOt + calculatedPeriodDt) * 100.0)/100.0);
+            employeeResult.put("TotalPay", totalPay);
+            payrollResults.add(employeeResult);
+        }
+        logger.info("Payroll calculation complete for TenantID: " + tenantId + ". Employees processed: " + employeeMetaInfo.size());
+        return payrollResults;
+    }
+
+    // --- showPayroll method remains the same ---
     public static Map<String, Object> showPayroll(List<Map<String, Object>> calculatedData) {
-        Map<String, Object> result = new HashMap<>(); StringBuilder tableRows = new StringBuilder(); double grandTotal = 0.0;
-        result.put("payrollHtml", "<tr><td colspan='9' style='text-align:center;'>No data calculated.</td></tr>"); result.put("grandTotal", 0.0);
-        if (calculatedData == null || calculatedData.isEmpty()) { logger.warning("showPayroll called with empty data."); return result; }
-        NumberFormat currencyFormatter = NumberFormat.getCurrencyInstance(Locale.US); boolean foundData = false;
-        for (Map<String, Object> rowData : calculatedData) { foundData = true; int eid = (Integer) rowData.getOrDefault("EID", 0); String fN = (String) rowData.getOrDefault("FirstName", ""); String lN = (String) rowData.getOrDefault("LastName", ""); String wt = (String) rowData.getOrDefault("WageType", "N/A"); double w = (Double) rowData.getOrDefault("Wage", 0.0); double rh = (Double) rowData.getOrDefault("RegularHours", 0.0); double ot = (Double) rowData.getOrDefault("OvertimeHours", 0.0); double th = (Double) rowData.getOrDefault("TotalHours", 0.0); double tp = (Double) rowData.getOrDefault("TotalPay", 0.0); grandTotal += tp; String fw = ("Salary".equalsIgnoreCase(wt)) ? currencyFormatter.format(w) + "/yr" : currencyFormatter.format(w) + "/hr"; String ftp = currencyFormatter.format(tp); tableRows.append("<tr><td>").append(eid).append("</td><td>").append(fN).append("</td><td>").append(lN).append("</td><td>").append(wt).append("</td><td style='text-align: right;'>").append(String.format("%.2f", rh)).append("</td><td style='text-align: right;'>").append(String.format("%.2f", ot)).append("</td><td style='text-align: right;'>").append(String.format("%.2f", th)).append("</td><td style='text-align: right;'>").append(fw).append("</td><td style='text-align: right; font-weight: bold;'>").append(ftp).append("</td></tr>\n"); }
-        if (foundData) { result.put("payrollHtml", tableRows.toString()); } else { result.put("payrollHtml", "<tr><td colspan='9' style='text-align:center;'>No payroll data processed.</td></tr>"); grandTotal = 0.0; }
-        result.put("grandTotal", Math.round(grandTotal * 100.0) / 100.0);
-        logger.info("Payroll HTML formatting complete."); return result;
+        // ... (implementation as provided by user) ...
+        Map<String, Object> result = new HashMap<>();
+        StringBuilder tableRows = new StringBuilder();
+        double grandTotalPay = 0.0;
+        final int numberOfColumns = 10;
+
+        result.put("payrollHtml", "<tr><td colspan='" + numberOfColumns + "' style='text-align:center;'>No payroll data to display.</td></tr>");
+        result.put("grandTotal", 0.0);
+
+        if (calculatedData == null || calculatedData.isEmpty()) {
+            logger.warning("showPayroll called with empty or null data.");
+            return result;
+        }
+        NumberFormat currencyFormatter = NumberFormat.getCurrencyInstance(Locale.US);
+        NumberFormat hoursFormatter = NumberFormat.getNumberInstance(Locale.US);
+        hoursFormatter.setMinimumFractionDigits(2);
+        hoursFormatter.setMaximumFractionDigits(2);
+
+        boolean foundData = false;
+        for (Map<String, Object> rowData : calculatedData) {
+            foundData = true;
+            Object tenEmpNoObj = rowData.get("TenantEmployeeNumber");
+            Object globalEidObj = rowData.getOrDefault("EID", 0);
+            String displayEid;
+            if (tenEmpNoObj instanceof Number && ((Number)tenEmpNoObj).intValue() > 0) {
+                displayEid = String.valueOf(tenEmpNoObj);
+            } else {
+                displayEid = String.valueOf(globalEidObj);
+            }
+
+            String fN = (String)rowData.getOrDefault("FirstName", "");
+            String lN = (String)rowData.getOrDefault("LastName", "");
+            String wt = (String)rowData.getOrDefault("WageType", NOT_APPLICABLE_DISPLAY);
+            double w = (Double)rowData.getOrDefault("Wage", 0.0);
+            double rh = (Double)rowData.getOrDefault("RegularHours", 0.0);
+            double ot = (Double)rowData.getOrDefault("OvertimeHours", 0.0);
+            double dt = (Double)rowData.getOrDefault("DoubleTimeHours", 0.0);
+            double tph = (Double)rowData.getOrDefault("TotalPaidHours", rh + ot + dt);
+            double tp = (Double)rowData.getOrDefault("TotalPay", 0.0);
+
+            grandTotalPay += tp;
+
+            String fw = ("Salary".equalsIgnoreCase(wt))?(currencyFormatter.format(w)+"/yr"):(currencyFormatter.format(w)+"/hr");
+            String ftp = currencyFormatter.format(tp);
+
+            tableRows.append("<tr>");
+            tableRows.append("<td>").append(displayEid).append("</td>");
+            tableRows.append("<td>").append(escapeHtml(fN)).append("</td>");
+            tableRows.append("<td>").append(escapeHtml(lN)).append("</td>");
+            tableRows.append("<td>").append(escapeHtml(wt)).append("</td>");
+            tableRows.append("<td style='text-align:right;'>").append(hoursFormatter.format(rh)).append("</td>");
+            tableRows.append("<td style='text-align:right;'>").append(hoursFormatter.format(ot)).append("</td>");
+            tableRows.append("<td style='text-align:right;'>").append(hoursFormatter.format(dt)).append("</td>");
+            tableRows.append("<td style='text-align:right;'>").append(hoursFormatter.format(tph)).append("</td>");
+            tableRows.append("<td style='text-align:right;'>").append(fw).append("</td>");
+            tableRows.append("<td style='text-align:right;font-weight:bold;'>").append(ftp).append("</td>");
+            tableRows.append("</tr>\n");
+        }
+        if(foundData) result.put("payrollHtml", tableRows.toString());
+        result.put("grandTotal", Math.round(grandTotalPay*100.0)/100.0);
+        return result;
     }
 
-
-    /** Prepares raw data list (already calculated) for export. */
-    public static List<Map<String, Object>> getRawPayrollData(List<Map<String, Object>> calculatedData) {
-        logger.info("Returning pre-calculated raw payroll data for export.");
-        return calculatedData != null ? calculatedData : new ArrayList<>();
+    // --- getRawPayrollData method remains the same ---
+     public static List<Map<String, Object>> getRawPayrollData(List<Map<String, Object>> calculatedData) {
+        // ... (implementation as provided by user) ...
+        List<Map<String, Object>> exportData = new ArrayList<>();
+        if (calculatedData != null) {
+            for (Map<String, Object> row : calculatedData) {
+                Map<String, Object> exportRow = new HashMap<>();
+                Object tenEmpNoObj = row.get("TenantEmployeeNumber");
+                Object globalEidObj = row.get("EID");
+                String displayEid;
+                 if (tenEmpNoObj instanceof Number && ((Number)tenEmpNoObj).intValue() > 0) {
+                    displayEid = String.valueOf(tenEmpNoObj);
+                } else if (globalEidObj != null) {
+                    displayEid = String.valueOf(globalEidObj);
+                } else {
+                    displayEid = "N/A";
+                }
+                exportRow.put("EID", displayEid);
+                exportRow.put("FirstName", row.getOrDefault("FirstName", ""));
+                exportRow.put("LastName", row.getOrDefault("LastName", ""));
+                exportRow.put("WageType", row.getOrDefault("WageType", ""));
+                exportRow.put("RegularHours", row.getOrDefault("RegularHours", 0.0));
+                exportRow.put("OvertimeHours", row.getOrDefault("OvertimeHours", 0.0));
+                exportRow.put("DoubleTimeHours", row.getOrDefault("DoubleTimeHours", 0.0));
+                exportRow.put("TotalPaidHours", row.getOrDefault("TotalPaidHours",0.0));
+                exportRow.put("Wage", row.getOrDefault("Wage", 0.0));
+                exportRow.put("TotalPay", row.getOrDefault("TotalPay", 0.0));
+                exportData.add(exportRow);
+            }
+        }
+        return exportData;
     }
 
-    /** Exception Report */
-    public static String showExceptionReport() { logger.warning("showExceptionReport uses SimpleDateFormat"); SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy"); SimpleDateFormat timeFormat = new SimpleDateFormat("hh:mm:ss a"); StringBuilder html = new StringBuilder(); String sql = "SELECT p.PUNCH_ID, ed.EID, ed.FIRST_NAME, ed.LAST_NAME, p.DATE, p.IN_1, p.OUT_1 FROM EMPLOYEE_DATA ed JOIN PUNCHES p ON ed.EID = p.EID WHERE p.OUT_1 IS NULL AND ed.ACTIVE = TRUE ORDER BY ed.EID, p.DATE, p.IN_1"; try (Connection con = DatabaseConnection.getConnection(); PreparedStatement psGetExceptions = con.prepareStatement(sql);) { ResultSet rs = psGetExceptions.executeQuery(); boolean found = false; while (rs.next()) { found = true; long punchId = rs.getLong("PUNCH_ID"); int eid = rs.getInt("EID"); String firstName = rs.getString("FIRST_NAME"); String lastName = rs.getString("LAST_NAME"); Date date = rs.getDate("DATE"); Timestamp inTs = rs.getTimestamp("IN_1"); Timestamp outTs = rs.getTimestamp("OUT_1"); String formattedDate = (date != null) ? dateFormat.format(date) : "N/A"; String inCellClass = "", inCellContent = ""; if (inTs != null) { inCellContent = timeFormat.format(inTs); } else { inCellClass = " class='empty-cell'"; inCellContent = "<span class='missing-punch-placeholder'>Missing</span>"; } String outCellClass = "", outCellContent = ""; if (outTs != null) { outCellContent = timeFormat.format(outTs); } else { outCellClass = " class='empty-cell'"; outCellContent = "<span class='missing-punch-placeholder'>Missing</span>"; } html.append("<tr data-punch-id=\"").append(punchId).append("\">").append("<td>").append(eid).append("</td>").append("<td>").append(firstName != null ? firstName : "").append("</td>").append("<td>").append(lastName != null ? lastName : "").append("</td>").append("<td>").append(formattedDate).append("</td>").append("<td").append(inCellClass).append(">").append(inCellContent).append("</td>").append("<td").append(outCellClass).append(">").append(outCellContent).append("</td>").append("</tr>\n"); } rs.close(); if (!found) { return "NO_EXCEPTIONS"; } } catch (Exception e) { logger.log(Level.SEVERE, "Error executing exception report query", e); return "<tr><td colspan='6' class='report-error-row'>Error retrieving exceptions.</td></tr>"; } return html.toString(); }
-    // Other Report Stubs
-    public static String showTardyReport() { return "<tr><td colspan='5' style='text-align:center;'>Not Implemented</td></tr>"; }
-    public static String showWhosInReport() { return "<tr><td colspan='5' style='text-align:center;'>Not Implemented</td></tr>"; }
-    public static Map<String, String> showTimeCardReport(int id) { Map<String, String> resultMap = new HashMap<>(); resultMap.put("html", "<tr><td colspan='5'>Not Implemented</td></tr>"); resultMap.put("employeeName", "Employee " + id); resultMap.put("employeeId", String.valueOf(id)); return resultMap; }
+    // --- showExceptionReport method remains the same (with its previous TZ fix) ---
+    public static String showExceptionReport(int tenantId, LocalDate periodStartDate, LocalDate periodEndDate, String userTimeZoneIdStr) {
+        // ... (implementation as provided previously) ...
+         DateTimeFormatter dateFormatForReport = DateTimeFormatter.ofPattern("MM/dd/yyyy", Locale.ENGLISH);
+        DateTimeFormatter timeFormatForReport = DateTimeFormatter.ofPattern("hh:mm:ss a", Locale.ENGLISH);
 
-} // End Class
+        ZoneId displayZoneId;
+        try {
+            if (!ShowPunches.isValid(userTimeZoneIdStr)) {
+                throw new IllegalArgumentException("User TimeZoneId string is invalid or null for Exception Report.");
+            }
+            displayZoneId = ZoneId.of(userTimeZoneIdStr);
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "[ShowPayroll.showExceptionReport] Invalid userTimeZoneIdStr: '" + userTimeZoneIdStr + "'. Defaulting to UTC. Error: " + e.getMessage());
+            displayZoneId = ZoneId.of(UTC_ZONE_ID);
+        }
+        logger.info("[ShowPayroll.showExceptionReport] Using displayZoneId: " + displayZoneId + " for TenantID: " + tenantId);
+
+        StringBuilder html = new StringBuilder();
+        boolean foundExceptions = false;
+
+        if (tenantId <= 0) {
+            return "<tr><td colspan='6' class='report-error-row'>Invalid tenant context.</td></tr>";
+        }
+        if (periodStartDate == null || periodEndDate == null) {
+            logger.warning("showExceptionReport called with null dates for TenantID: " + tenantId);
+            return "<tr><td colspan='6' class='report-error-row'>Pay period dates not set. Cannot generate report.</td></tr>";
+        }
+         if (periodStartDate.isAfter(periodEndDate)) {
+             logger.warning("showExceptionReport called with start date after end date for TenantID: " + tenantId);
+            return "<tr><td colspan='6' class='report-error-row'>Start date cannot be after end date.</td></tr>";
+        }
+
+        String sql = "SELECT p.PUNCH_ID, ed.EID, ed.TenantEmployeeNumber, ed.FIRST_NAME, ed.LAST_NAME, p.DATE AS PUNCH_TABLE_UTC_DATE, p.IN_1 AS IN_UTC, p.OUT_1 AS OUT_UTC " +
+                     "FROM EMPLOYEE_DATA ed JOIN PUNCHES p ON ed.TenantID = p.TenantID AND ed.EID = p.EID " +
+                     "WHERE p.TenantID = ? " +
+                     "  AND p.OUT_1 IS NULL " +
+                     "  AND ed.ACTIVE = TRUE " +
+                     "  AND p.DATE BETWEEN ? AND ? " +
+                     "  AND p.PUNCH_TYPE IN ('User Initiated', 'Supervisor Override', 'Sample Data', 'Regular') " +
+                     "ORDER BY ed.LAST_NAME, ed.FIRST_NAME, p.DATE, p.IN_1";
+
+        try (Connection con = DatabaseConnection.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, tenantId);
+            ps.setDate(2, Date.valueOf(periodStartDate));
+            ps.setDate(3, Date.valueOf(LocalDate.now().minusDays(1)));
+
+            logger.info("Executing Exception Report query for TenantID: " + tenantId + " from " + periodStartDate + " to " + periodEndDate + " using TZ: " + displayZoneId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    foundExceptions = true;
+                    long pId = rs.getLong("PUNCH_ID");
+                    int gEID = rs.getInt("EID");
+                    Integer tENo = rs.getObject("TenantEmployeeNumber")!=null?rs.getInt("TenantEmployeeNumber"):null;
+                    String dEID = (tENo!=null&&tENo>0)?String.valueOf(tENo):String.valueOf(gEID);
+                    String fN=rs.getString("FIRST_NAME");
+                    String lN=rs.getString("LAST_NAME");
+                    Date punchTableUtcDate = rs.getDate("PUNCH_TABLE_UTC_DATE");
+                    Timestamp iTsUtc=rs.getTimestamp("IN_UTC");
+
+                    String formattedDisplayDate;
+                    String iC;
+
+                    if (iTsUtc != null) {
+                        ZonedDateTime zdtIn = ZonedDateTime.ofInstant(iTsUtc.toInstant(), displayZoneId);
+                        formattedDisplayDate = zdtIn.format(dateFormatForReport);
+                        iC = zdtIn.format(timeFormatForReport);
+                    } else if (punchTableUtcDate != null) {
+                        formattedDisplayDate = punchTableUtcDate.toLocalDate().format(dateFormatForReport);
+                        iC = "<span class='missing-punch-placeholder'>Missing IN</span>";
+                    } else {
+                        formattedDisplayDate = NOT_APPLICABLE_DISPLAY;
+                        iC = "<span class='missing-punch-placeholder'>Missing IN</span>";
+                    }
+                    String oC = "<span class='missing-punch-placeholder'>Missing OUT</span>";
+                    String iCls=(iTsUtc==null)?" class='empty-cell missing-punch-placeholder'":"";
+                    String oCls=" class='empty-cell missing-punch-placeholder'";
+
+                    html.append("<tr data-punch-id=\"").append(pId).append("\" data-eid=\"").append(gEID).append("\">")
+                        .append("<td>").append(dEID).append("</td>")
+                        .append("<td>").append(escapeHtml(fN)).append("</td>")
+                        .append("<td>").append(escapeHtml(lN)).append("</td>")
+                        .append("<td>").append(formattedDisplayDate).append("</td>")
+                        .append("<td").append(iCls).append(">").append(iC).append("</td>")
+                        .append("<td").append(oCls).append(">").append(oC).append("</td>")
+                        .append("</tr>\n");
+                }
+            }
+            if (!foundExceptions) {
+                logger.info("No exceptions found within pay period for TenantID: " + tenantId);
+                return "NO_EXCEPTIONS";
+            }
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Error generating ExceptionReport for T:"+tenantId, e);
+            return "<tr><td colspan='6' class='report-error-row'>Error generating exception report from database.</td></tr>";
+        }
+        return html.toString();
+    }
+}

@@ -1,195 +1,155 @@
-package timeclock.scheduling;
+package timeclock.scheduling; // Ensure this matches your package
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.sql.Time;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List; // Import List
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import timeclock.db.DatabaseConnection;
-// Import needed for escaping HTML attributes
-import org.apache.commons.text.StringEscapeUtils; // Add Apache Commons Text dependency if not present
+import org.apache.commons.text.StringEscapeUtils; // For HTML escaping data attributes
 
 public class ShowSchedules {
 
     private static final Logger logger = Logger.getLogger(ShowSchedules.class.getName());
-    // Formatter for time in data attributes (suitable for <input type="time">)
     private static final DateTimeFormatter DATA_ATTR_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
-    // Formatter for display time
     private static final DateTimeFormatter DISPLAY_TIME_FORMATTER_AMPM = DateTimeFormatter.ofPattern("hh:mm a");
     private static final String NOT_APPLICABLE_DISPLAY = "N/A";
 
-    // Helper method to format time for display, returning null if time is null
+    private static String escapeHtml(String input) { // Simple escape for display in TD
+        if (input == null) return "";
+        return input.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+    }
+
     private static String formatTimeForDisplay(Time time) {
         if (time == null) return null;
-        try {
-            return time.toLocalTime().format(DISPLAY_TIME_FORMATTER_AMPM);
-        } catch (Exception e) {
-            logger.log(Level.WARNING, "Failed to format display time: " + time, e);
-            return null;
-        }
+        try { return time.toLocalTime().format(DISPLAY_TIME_FORMATTER_AMPM); }
+        catch (Exception e) { logger.log(Level.WARNING, "Failed to format display time: " + time, e); return null; }
     }
 
-    // Helper method to format time for data attributes (HH:mm), returns empty string if null
-     private static String formatTimeForDataAttr(Time time) {
-         if (time == null) return ""; // Use empty string for null in data attributes
-         try {
-             return time.toLocalTime().format(DATA_ATTR_TIME_FORMAT);
-         } catch (Exception e) {
-             logger.log(Level.WARNING, "Failed to format data attribute time: " + time, e);
-             return ""; // Return empty on error
-         }
-     }
-
-    // Helper method to format lunch length display string (incl. N/A), never null
-    private static String formatLunchLengthDisplay(int length, boolean isApplicable) {
-        if (!isApplicable) return NOT_APPLICABLE_DISPLAY;
-        return String.valueOf(length) + " minutes";
+    private static String formatTimeForDataAttr(Time time) {
+        if (time == null) return "";
+        try { return time.toLocalTime().format(DATA_ATTR_TIME_FORMAT); }
+        catch (Exception e) { logger.log(Level.WARNING, "Failed to format data attr time: " + time, e); return ""; }
     }
 
-     // Helper method to format hours required display string (incl. N/A), never null
-    private static String formatHoursRequiredDisplay(int hours, boolean isApplicable) {
-        if (!isApplicable) return NOT_APPLICABLE_DISPLAY;
-        return String.valueOf(hours);
-    }
-
-    /**
-     * Generates HTML table rows with data attributes for editing.
-     * Handles special display logic for "Open".
-     * Dynamically merges consecutive blank/empty cells for other schedules.
-     * @return String containing HTML table rows (<tr>...</tr>).
-     */
-    public static String showSchedules() {
+    public static String showSchedules(int tenantId) {
         StringBuilder tableRows = new StringBuilder();
+        final int numberOfColumns = 9; // Adjusted from 10 (WORK_SCHEDULE removed)
+
+        logger.info("[ShowSchedules] Called showSchedules for TenantID: " + tenantId);
+
+        if (tenantId <= 0) {
+            logger.warning("[ShowSchedules] Invalid TenantID: " + tenantId);
+            return "<tr><td colspan='" + numberOfColumns + "' class='report-error-row'>Invalid session or tenant context.</td></tr>";
+        }
+
+        // REMOVED WORK_SCHEDULE from SELECT
         String sql = "SELECT NAME, SHIFT_START, LUNCH_START, LUNCH_END, SHIFT_END, " +
-                     "DAYS_WORKED, AUTO_LUNCH, HRS_REQUIRED, LUNCH_LENGTH, WORK_SCHEDULE " +
-                     "FROM SCHEDULES ORDER BY NAME";
+                     "DAYS_WORKED, AUTO_LUNCH, HRS_REQUIRED, LUNCH_LENGTH " +
+                     // ", WORK_SCHEDULE " + // WORK_SCHEDULE REMOVED
+                     "FROM SCHEDULES WHERE TenantID = ? ORDER BY NAME ASC";
+        logger.info("[ShowSchedules] SQL: " + sql + " with TenantID: " + tenantId);
 
         try (Connection con = DatabaseConnection.getConnection();
-             Statement stmt = con.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
+             PreparedStatement ps = con.prepareStatement(sql)) {
 
-            boolean foundSchedules = false;
-            while (rs.next()) {
-                foundSchedules = true;
-                // --- Retrieve All Raw Data ---
-                String scheduleName = rs.getString("NAME");
-                Time shiftStart = rs.getTime("SHIFT_START");
-                Time lunchStart = rs.getTime("LUNCH_START");
-                Time lunchEnd = rs.getTime("LUNCH_END");
-                Time shiftEnd = rs.getTime("SHIFT_END");
-                String daysWorked = rs.getString("DAYS_WORKED");
-                boolean autoLunch = rs.getBoolean("AUTO_LUNCH");
-                int hoursRequired = rs.getInt("HRS_REQUIRED");
-                if (rs.wasNull()) hoursRequired = 0;
-                int lunchLength = rs.getInt("LUNCH_LENGTH");
-                if (rs.wasNull()) lunchLength = 0;
-                String workSchedule = rs.getString("WORK_SCHEDULE");
+            ps.setInt(1, tenantId);
+            try (ResultSet rs = ps.executeQuery()) {
+                boolean foundSchedules = false;
+                int rowCount = 0;
+                while (rs.next()) {
+                    foundSchedules = true;
+                    rowCount++;
+                    String scheduleName = rs.getString("NAME");
+                    Time shiftStart = rs.getTime("SHIFT_START");
+                    Time lunchStart = rs.getTime("LUNCH_START");
+                    Time lunchEnd = rs.getTime("LUNCH_END");
+                    Time shiftEnd = rs.getTime("SHIFT_END");
+                    String daysWorked = rs.getString("DAYS_WORKED"); // This is the "SMTWTFS" string or similar
+                    boolean autoLunch = rs.getBoolean("AUTO_LUNCH");
+                    double hoursRequiredDouble = rs.getDouble("HRS_REQUIRED"); // Use getDouble for precision
+                    if (rs.wasNull() && !autoLunch) hoursRequiredDouble = 0.0;
+                    int lunchLength = rs.getInt("LUNCH_LENGTH");
+                    if (rs.wasNull() && !autoLunch) lunchLength = 0;
+                    // String workSchedule = rs.getString("WORK_SCHEDULE"); // REMOVED
 
-                // --- Format values needed for data attributes or display ---
-                String dataShiftStart = formatTimeForDataAttr(shiftStart);
-                String dataLunchStart = formatTimeForDataAttr(lunchStart);
-                String dataLunchEnd = formatTimeForDataAttr(lunchEnd);
-                String dataShiftEnd = formatTimeForDataAttr(shiftEnd);
-                // Escape potential quotes/special chars in string attributes
-                String dataName = StringEscapeUtils.escapeHtml4(scheduleName != null ? scheduleName : "");
-                String dataDaysWorked = StringEscapeUtils.escapeHtml4(daysWorked != null ? daysWorked : "");
-                String dataWorkSchedule = StringEscapeUtils.escapeHtml4(workSchedule != null ? workSchedule : "");
+                    logger.finer("[ShowSchedules] Processing DB row " + rowCount + ": Name='" + scheduleName + "'");
 
+                    String dataName = StringEscapeUtils.escapeHtml4(scheduleName != null ? scheduleName : "");
+                    String dataShiftStart = formatTimeForDataAttr(shiftStart);
+                    String dataLunchStart = formatTimeForDataAttr(lunchStart);
+                    String dataLunchEnd = formatTimeForDataAttr(lunchEnd);
+                    String dataShiftEnd = formatTimeForDataAttr(shiftEnd);
+                    String dataDaysWorked = StringEscapeUtils.escapeHtml4(daysWorked != null ? daysWorked : "-------"); // Default for data attr if null
+                    // String dataWorkSchedule = StringEscapeUtils.escapeHtml4(workSchedule != null ? workSchedule : ""); // REMOVED
 
-                // --- Build HTML Row ---
-                tableRows.append("<tr")
-                       // Add class based on actual autoLunch data value
-                       .append(autoLunch ? " class='auto-lunch-on'" : "")
-                       // *** Add data-* attributes for JavaScript Edit function ***
-                       .append(" data-name='").append(dataName).append("'")
-                       .append(" data-shift-start='").append(dataShiftStart).append("'")
-                       .append(" data-lunch-start='").append(dataLunchStart).append("'")
-                       .append(" data-lunch-end='").append(dataLunchEnd).append("'")
-                       .append(" data-shift-end='").append(dataShiftEnd).append("'")
-                       .append(" data-days-worked='").append(dataDaysWorked).append("'")
-                       .append(" data-auto-lunch='").append(autoLunch).append("'") // "true" or "false"
-                       .append(" data-hours-required='").append(hoursRequired).append("'") // Raw number
-                       .append(" data-lunch-length='").append(lunchLength).append("'") // Raw number
-                       .append(" data-work-schedule='").append(dataWorkSchedule).append("'")
-                       .append(">"); // End of opening <tr> tag
+                    tableRows.append("<tr data-name='").append(dataName).append("'")
+                            .append(" data-shift-start='").append(dataShiftStart).append("'")
+                            .append(" data-lunch-start='").append(dataLunchStart).append("'")
+                            .append(" data-lunch-end='").append(dataLunchEnd).append("'")
+                            .append(" data-shift-end='").append(dataShiftEnd).append("'")
+                            .append(" data-days-worked='").append(dataDaysWorked).append("'") // Keep raw "SMTWTFS" string
+                            .append(" data-auto-lunch='").append(autoLunch).append("'")
+                            .append(" data-hours-required='").append(hoursRequiredDouble).append("'") // Store as double
+                            .append(" data-lunch-length='").append(lunchLength).append("'")
+                            // .append(" data-work-schedule='").append(dataWorkSchedule).append("'") // REMOVED
+                            .append(">");
 
-                // 1. Append Schedule Name cell (always present)
-                tableRows.append("<td>").append(scheduleName).append("</td>"); // Display original unescaped name
+                    tableRows.append("<td>").append(escapeHtml(scheduleName)).append("</td>");
 
-                // 2. Handle "Open" schedule explicitly first
-                if ("Open".equalsIgnoreCase(scheduleName)) {
-                    // Append the single N/A cell spanning 9 columns
-                    tableRows.append("<td colspan='9' style='text-align: center; font-style: italic; color: #555;'>")
-                           .append(NOT_APPLICABLE_DISPLAY)
-                           .append("</td>");
-                } else {
-                    // --- Case 2: All other schedules (Use dynamic merging for display) ---
+                    // Special handling for "Open" or "Open w/ Auto Lunch" still applies for time fields
+                    boolean isOpenTypeSchedule = "Open".equalsIgnoreCase(scheduleName) || "Open with Auto Lunch".equalsIgnoreCase(scheduleName) || "Open w/ Auto Lunch".equalsIgnoreCase(scheduleName) ;
 
-                    // Prepare List of Cell Content (String or null if truly empty/blank) for DISPLAY
-                    List<String> cellData = new ArrayList<>();
-                    cellData.add(formatTimeForDisplay(shiftStart)); // Use display format helper
-                    cellData.add(formatTimeForDisplay(lunchStart));
-                    cellData.add(formatTimeForDisplay(lunchEnd));
-                    cellData.add(formatTimeForDisplay(shiftEnd));
-                    String safeDaysWorked = (daysWorked != null ? daysWorked.trim() : null);
-                    cellData.add(safeDaysWorked == null || safeDaysWorked.isEmpty() ? null : safeDaysWorked);
-                    cellData.add(autoLunch ? "On" : "Off");
-                    cellData.add(!autoLunch ? null : formatHoursRequiredDisplay(hoursRequired, true));
-                    cellData.add(!autoLunch ? null : formatLunchLengthDisplay(lunchLength, true));
-                    String safeWorkSchedule = (workSchedule != null ? workSchedule.trim() : null);
-                    cellData.add(safeWorkSchedule == null || safeWorkSchedule.isEmpty() ? null : safeWorkSchedule);
+                    tableRows.append("<td class='center-text'>").append(escapeHtml(formatTimeForDisplay(shiftStart) != null ? formatTimeForDisplay(shiftStart) : NOT_APPLICABLE_DISPLAY)).append("</td>");
+                    tableRows.append("<td class='center-text'>").append(escapeHtml(formatTimeForDisplay(lunchStart) != null ? formatTimeForDisplay(lunchStart) : NOT_APPLICABLE_DISPLAY)).append("</td>");
+                    tableRows.append("<td class='center-text'>").append(escapeHtml(formatTimeForDisplay(lunchEnd) != null ? formatTimeForDisplay(lunchEnd) : NOT_APPLICABLE_DISPLAY)).append("</td>");
+                    tableRows.append("<td class='center-text'>").append(escapeHtml(formatTimeForDisplay(shiftEnd) != null ? formatTimeForDisplay(shiftEnd) : NOT_APPLICABLE_DISPLAY)).append("</td>");
 
-                    // --- Dynamic Merging Loop for DISPLAY ---
-                    int consecutiveNullCount = 0;
-                    final String NA_MERGED_CELL_FORMAT = "<td colspan='%d' style='text-align: center; font-style: italic; color: #555;'>N/A</td>";
-                    for (int i = 0; i < cellData.size(); i++) {
-                        String value = cellData.get(i);
-                        if (value == null) {
-                            consecutiveNullCount++;
-                        } else {
-                            if (consecutiveNullCount > 0) {
-                                tableRows.append(String.format(NA_MERGED_CELL_FORMAT, consecutiveNullCount));
-                                consecutiveNullCount = 0;
+                    // Format daysWorked for display (e.g., "Mon, Tue, Wed")
+                    String displayDaysWorked = NOT_APPLICABLE_DISPLAY;
+                    if (daysWorked != null && !daysWorked.trim().isEmpty() && !daysWorked.equals("-------")) {
+                        StringBuilder formattedDays = new StringBuilder();
+                        String[] dayCodes = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+                        boolean firstDay = true;
+                        for (int i = 0; i < daysWorked.length() && i < dayCodes.length; i++) {
+                            if (daysWorked.charAt(i) != '-') { // Assuming '-' means not worked
+                                if (!firstDay) formattedDays.append(", ");
+                                formattedDays.append(dayCodes[i]);
+                                firstDay = false;
                             }
-                            // Add data-length attribute to the Lunch Length display cell (index 7) if autoLunch is ON
-                            if (i == 7 && autoLunch) {
-                                 tableRows.append("<td data-length='").append(lunchLength).append("'>");
-                            } else {
-                                 tableRows.append("<td>");
-                            }
-                            tableRows.append(value).append("</td>");
                         }
+                        if (formattedDays.length() > 0) displayDaysWorked = formattedDays.toString();
+                    } else if (daysWorked != null && daysWorked.equals("-------") && isOpenTypeSchedule) {
+                         displayDaysWorked = "All Days (Flexible)";
                     }
-                    if (consecutiveNullCount > 0) { // Trailing nulls
-                        tableRows.append(String.format(NA_MERGED_CELL_FORMAT, consecutiveNullCount));
-                    }
-                    // --- End Dynamic Merging Loop ---
-                } // End else (for non-"Open" schedules)
 
-                // Close the table row
-                tableRows.append("</tr>\n");
 
-            } // End while loop
+                    tableRows.append("<td>").append(escapeHtml(displayDaysWorked)).append("</td>");
+                    tableRows.append("<td class='center-text'>").append(autoLunch ? "On" : "Off").append("</td>");
+                    tableRows.append("<td class='center-text'>").append(autoLunch ? String.valueOf(hoursRequiredDouble) : NOT_APPLICABLE_DISPLAY).append("</td>");
+                    tableRows.append("<td class='center-text'>").append(autoLunch ? (lunchLength + " mins") : NOT_APPLICABLE_DISPLAY).append("</td>");
+                    // tableRows.append("<td class='center-text'>").append(escapeHtml(workSchedule != null ? workSchedule : NOT_APPLICABLE_DISPLAY)).append("</td>"); // REMOVED
 
-            if (!foundSchedules) {
-                tableRows.append("<tr><td colspan='10' style='text-align: center;'>No schedules found. Click button below to add a schedule.</td></tr>");
+                    tableRows.append("</tr>\n");
+                }
+                logger.info("[ShowSchedules] Processed " + rowCount + " schedules for TenantID: " + tenantId);
+                if (!foundSchedules) {
+                    logger.info("[ShowSchedules] No schedules found in DB for TenantID: " + tenantId);
+                    tableRows.append("<tr><td colspan='").append(numberOfColumns).append("' class='report-message-row'>No schedules found. Use 'Add Schedule' to create one.</td></tr>");
+                }
             }
-
         } catch (SQLException e) {
-            logger.log(Level.SEVERE, "Error retrieving schedules from database", e);
+            logger.log(Level.SEVERE, "[ShowSchedules] SQLException retrieving schedules for TenantID: " + tenantId, e);
             tableRows.setLength(0);
-            tableRows.append("<tr><td colspan='10' style='color: red; text-align: center;'>Error retrieving schedules: ").append(e.getMessage()).append("</td></tr>");
+            tableRows.append("<tr><td colspan='").append(numberOfColumns).append("' class='report-error-row'>Error retrieving schedules: ").append(escapeHtml(e.getMessage())).append("</td></tr>");
         } catch (Exception e) {
-             logger.log(Level.SEVERE, "Unexpected error generating schedule list", e);
-             tableRows.setLength(0);
-             tableRows.append("<tr><td colspan='10' style='color: red; text-align: center;'>An unexpected error occurred generating the schedule list.</td></tr>");
+            logger.log(Level.SEVERE, "[ShowSchedules] Unexpected error retrieving schedules for TenantID: " + tenantId, e);
+            tableRows.setLength(0);
+            tableRows.append("<tr><td colspan='").append(numberOfColumns).append("' class='report-error-row'>An unexpected error occurred.</td></tr>");
         }
-
         return tableRows.toString();
     }
 }

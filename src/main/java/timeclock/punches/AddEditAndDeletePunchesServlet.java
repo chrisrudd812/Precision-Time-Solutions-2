@@ -5,268 +5,613 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import timeclock.Configuration;
 import timeclock.db.DatabaseConnection;
-import timeclock.punches.ShowPunches; // For helpers
+// Assuming ShowPunches might be needed for calculateAndUpdatePunchTotal if it's static there
+import timeclock.punches.ShowPunches;
+
+
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.net.URLEncoder;
+import java.net.URLEncoder; // <<< IMPORT ADDED
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.sql.Types;
-import java.sql.Date;
-// Time and ResultSet no longer needed here after removing schedule fetch
-import java.time.Duration;
-import java.time.Instant;
+import java.sql.Statement;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Enumeration;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-@WebServlet(description = "Handles Adding, Editing, and Deleting Punches via AJAX (NO Flag Recalc), Returns JSON", urlPatterns = { "/AddEditAndDeletePunchesServlet" })
+@WebServlet("/AddEditAndDeletePunchesServlet")
 public class AddEditAndDeletePunchesServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final Logger logger = Logger.getLogger(AddEditAndDeletePunchesServlet.class.getName());
-    private static final double ROUNDING_FACTOR = 10000.0;
 
-    // Zone assumed for parsing user's date/time input
-    private static final ZoneId USER_INPUT_ZONE_ID = ZoneId.of("America/Denver");
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE; // yyyy-MM-dd
-    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ISO_LOCAL_TIME; // HH:mm:ss
+    private static final DateTimeFormatter DATE_FORMATTER_FROM_USER = DateTimeFormatter.ISO_LOCAL_DATE;
+    private static final DateTimeFormatter TIME_FORMATTER_FROM_USER = DateTimeFormatter.ISO_LOCAL_TIME;
+
+    private static boolean isValid(String s) {
+        return s != null && !s.trim().isEmpty();
+    }
+    private static void setOptionalDouble(PreparedStatement ps, int parameterIndex, Double value) throws SQLException {
+        if (value != null && !value.isNaN() && !value.isInfinite()) {
+            ps.setDouble(parameterIndex, value);
+        } else {
+            ps.setNull(parameterIndex, Types.DOUBLE);
+        }
+    }
+    private static void setOptionalTimestamp(PreparedStatement ps, int i, Timestamp ts) throws SQLException {
+        if (ts != null) {
+            ps.setTimestamp(i, ts);
+        } else {
+            ps.setNull(i, Types.TIMESTAMP);
+        }
+    }
+
+    private boolean isHoursOnlyType(String punchType) {
+        if (punchType == null) return false;
+        String pTypeLower = punchType.trim().toLowerCase();
+        return pTypeLower.equals("vacation") || pTypeLower.equals("vacation time") ||
+               pTypeLower.equals("sick") || pTypeLower.equals("sick time") ||
+               pTypeLower.equals("personal") || pTypeLower.equals("personal time") ||
+               pTypeLower.equals("holiday") || pTypeLower.equals("holiday time") ||
+               pTypeLower.equals("bereavement") ||
+               pTypeLower.equals("other");
+    }
+
+    private String getAccrualColumn(String punchType) {
+        if (punchType == null) return null;
+        String pTypeLower = punchType.toLowerCase().trim();
+        if (pTypeLower.equals("vacation") || pTypeLower.equals("vacation time")) return "VACATION_HOURS";
+        if (pTypeLower.equals("sick") || pTypeLower.equals("sick time")) return "SICK_HOURS";
+        if (pTypeLower.equals("personal") || pTypeLower.equals("personal time")) return "PERSONAL_HOURS";
+        return null;
+    }
+
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
-        // --- Basic Setup & Parameter Logging ---
         logger.info("--- AddEditAndDeletePunchesServlet doPost ---");
         request.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
-        logger.info("Request Content-Type: " + request.getContentType());
-        try {
-             Enumeration<String> paramNames = request.getParameterNames();
-             logger.info("Parameters:");
-             if (!paramNames.hasMoreElements()) {
-                 logger.info("  >> NO PARAMETERS FOUND <<");
-             } else {
-                 for (String paramName : Collections.list(paramNames)) {
-                     logger.info("  >> '" + paramName + "'=" + request.getParameter(paramName));
-                 }
-             }
-        } catch (Exception e) {
-            logger.log(Level.SEVERE, "Param log error", e);
-        }
-        String action = request.getParameter("action");
-        logger.info("Action Param: " + action);
+        logParameters(request);
 
-        // Determine EID carefully
+        HttpSession session = request.getSession(false);
+        Integer tenantId = null;
+        Integer loggedInUserEid = null;
+
+        if (session != null) {
+            Object tenantIdObj = session.getAttribute("TenantID");
+            if (tenantIdObj instanceof Integer) tenantId = (Integer) tenantIdObj;
+            Object userEidObj = session.getAttribute("EID");
+            if (userEidObj instanceof Integer) loggedInUserEid = (Integer) userEidObj;
+        }
+
+        if (tenantId == null || tenantId <= 0) {
+            logger.warning("[Servlet] Session error: Invalid TenantID. TenantID: " + tenantId);
+            sendJsonResponse(response, HttpServletResponse.SC_UNAUTHORIZED, false, "Session error: Invalid tenant context. Please log in again.", null);
+            return;
+        }
+        if (loggedInUserEid == null || loggedInUserEid <= 0) {
+            logger.warning("[Servlet] Session error: Invalid logged-in User EID. UserEID: " + loggedInUserEid);
+            sendJsonResponse(response, HttpServletResponse.SC_UNAUTHORIZED, false, "Session error: Invalid user context. Please log in again.", null);
+            return;
+        }
+
+        String action = request.getParameter("action");
+        if (!isValid(action)) {
+            sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Missing action parameter.", null);
+            return;
+        }
+        action = action.trim();
+
+        int targetEid = 0;
         String eidStr = null;
+
         if ("editPunch".equals(action)) {
             eidStr = request.getParameter("editEmployeeId");
-        } else if ("addHours".equals(action)) {
-             eidStr = request.getParameter("addHoursEmployeeId");
-        } else if ("deletePunch".equals(action)) {
-             // Delete might send EID differently, use 'eid' as fallback for context
-             eidStr = request.getParameter("eid"); // Check if 'deleteEmployeeId' etc. is sent by JS
+            if (!isValid(eidStr)) {
+                logger.info("[Servlet] 'editEmployeeId' not found for action 'editPunch', trying 'eid' parameter.");
+                eidStr = request.getParameter("eid");
+            }
+            logger.info("[Servlet] Action is 'editPunch', EID string from parameters ('editEmployeeId' or 'eid'): '" + eidStr + "'");
+        } else if ("addHours".equals(action)){
+             eidStr = request.getParameter("eid");
+             logger.info("[Servlet] Action is '" + action + "', EID string from 'eid' parameter: '" + eidStr + "'");
         }
-        // General fallback if not found yet
-        if (eidStr == null || eidStr.trim().isEmpty()) {
-            eidStr = request.getParameter("eid");
+
+
+        if (isValid(eidStr)) {
+            try {
+                targetEid = Integer.parseInt(eidStr.trim());
+            } catch (NumberFormatException e) {
+                String paramNameUsed = "eid";
+                if ("editPunch".equals(action)) {
+                    paramNameUsed = request.getParameter("editEmployeeId") != null ? "editEmployeeId" : "eid";
+                }
+                logger.warning("[Servlet] Invalid Target Employee ID format: '" + eidStr + "' (param name used: " + paramNameUsed + ") for action: " + action);
+                if (("editPunch".equals(action) || "addHours".equals(action))) {
+                    sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Invalid Employee ID format: " + escapeHtml(eidStr), null);
+                    return;
+                }
+            }
         }
-        logger.info("EID Param: " + eidStr);
 
-        // --- Initial Checks ---
-        if (action == null || action.trim().isEmpty()) { sendJsonResponse(response, false, "Missing action parameter."); return; }
-        int eid = -1; // Default EID if not applicable or not found/parsed
-        if (eidStr != null && !eidStr.trim().isEmpty()) { try { eid = Integer.parseInt(eidStr.trim()); } catch (NumberFormatException e) { sendJsonResponse(response, false, "Invalid EID format."); return; } }
-        // Check if EID is required for the action
-        if (eid <= 0 && ("editPunch".equals(action) || "addHours".equals(action))) { sendJsonResponse(response, false, "Missing or invalid EID for this action."); return; }
+        if (targetEid <= 0 && ("editPunch".equals(action) || "addHours".equals(action))) {
+            logger.warning("[Servlet] Missing or invalid Target Employee ID (" + targetEid + " from param '" + eidStr + "') for action: " + action);
+            sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Missing or invalid Employee ID for this action.", null);
+            return;
+        }
+        logger.info("[Servlet] Processing Action: " + action + ", TenantID: " + tenantId + ", TargetEID (parsed, if applicable): " + targetEid + ", LoggedInUserEID: " + loggedInUserEid);
 
-        // --- Route action ---
         switch (action) {
-            case "editPunch": handleUpdate(request, response, eid); break;
-            case "addHours": handleAdd(request, response, eid); break;
-            case "deletePunch": handleDelete(request, response, eid); break; // Pass eid for context
-            default: sendJsonResponse(response, false, "Invalid action specified."); break;
+            case "editPunch":
+                handleEditPunch(request, response, tenantId, targetEid); // Pass Integer tenantId
+                break;
+            case "addHours":
+                handleAddHoursOrTimedPunch(request, response, tenantId, targetEid); // Pass Integer tenantId
+                break;
+            case "addGlobalHoursSubmit":
+                handleAddGlobalHours(request, response, tenantId, loggedInUserEid); // Pass Integer tenantId
+                break;
+            case "deletePunch":
+                handleDeletePunch(request, response, tenantId); // Pass Integer tenantId
+                break;
+            default:
+                sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Invalid action specified: " + escapeHtml(action), null);
+                break;
         }
     }
 
-    // ========================================================================
-    // handleUpdate - Simplified: Does NOT recalculate/save LATE/EARLY flags
-    // Includes LocalTime fix.
-    // ========================================================================
-    private void handleUpdate(HttpServletRequest request, HttpServletResponse response, int eid) throws IOException {
-        String punchIdStr = request.getParameter("editPunchId"); String dateStr = request.getParameter("editDate");
-        String inTimeStr = request.getParameter("editInTime"); String outTimeStr = request.getParameter("editOutTime");
-        String punchType = request.getParameter("editPunchType"); String errorMessage = null;
-        logger.info("-> handleUpdate for EID: " + eid + ", PunchID: " + punchIdStr + " (Flags NOT updated)");
+    // *** MODIFIED: Signature to accept Integer tenantId ***
+    private void handleEditPunch(HttpServletRequest request, HttpServletResponse response, Integer tenantId, int contextEid) throws IOException {
+        if (tenantId == null || tenantId <= 0) { // Safety check for Integer tenantId
+            logger.warning("[Servlet] handleEditPunch: Called with invalid TenantID.");
+            sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Invalid Tenant context.", null);
+            return;
+        }
 
-        // Basic validation
-        if (punchIdStr==null || punchIdStr.trim().isEmpty() || dateStr==null || dateStr.trim().isEmpty()) { sendJsonResponse(response, false, "Missing Punch ID or Date."); return; }
-        long punchId; try { punchId = Long.parseLong(punchIdStr.trim()); } catch (NumberFormatException e) { sendJsonResponse(response, false, "Invalid Punch ID."); return; }
+        String punchIdStr = request.getParameter("editPunchId");
+        if (!isValid(punchIdStr)) punchIdStr = request.getParameter("punchId");
+        String dateStr = request.getParameter("editDate");
+        if (!isValid(dateStr)) dateStr = request.getParameter("punchDate");
+        String newPunchTypeStr = request.getParameter("editPunchType");
+        if (!isValid(newPunchTypeStr)) newPunchTypeStr = request.getParameter("punchType");
+        String inTimeStr = request.getParameter("editInTime");
+        if (!isValid(inTimeStr)) inTimeStr = request.getParameter("timeIn");
+        String outTimeStr = request.getParameter("editOutTime");
+        if (!isValid(outTimeStr)) outTimeStr = request.getParameter("timeOut");
+        String totalHoursManualStr = request.getParameter("totalHoursManual");
+        String userTimeZoneStr = request.getParameter("userTimeZone");
 
-        // Variable declarations
-        LocalDate localPunchDate = null; LocalTime localInTime = null; LocalTime localOutTime = null; // Declared here for scope
-        Timestamp utcInTimestamp = null; Timestamp utcOutTimestamp = null; Instant utcInInstant = null; Instant utcOutInstant = null;
-        Double rawTotalHours = null; Double adjustedTotalHours = null; LocalDate utcDbDate = null;
+        ZoneId userInputZoneId = ZoneId.systemDefault();
+        if (isValid(userTimeZoneStr)) {
+            try { userInputZoneId = ZoneId.of(userTimeZoneStr); }
+            catch (Exception e) { logger.warning("[Servlet] Invalid userTimeZone for editPunch: " + userTimeZoneStr + ". Falling back."); }
+        }
+
+        logger.info(String.format("-> handleEditPunch: TargetEID/ContextEID=%d, PunchID=%s, NewDate=%s, NewType=%s, InTime=%s, OutTime=%s, ManualHrs=%s, UserTZ=%s",
+                contextEid, punchIdStr, dateStr, newPunchTypeStr, inTimeStr, outTimeStr, totalHoursManualStr, userInputZoneId.toString()));
+
+        if (!isValid(punchIdStr) || !isValid(dateStr) || !isValid(newPunchTypeStr)) {
+            sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Punch ID, Date, and Type are required for edit.", null); return;
+        }
+        long punchId; try { punchId = Long.parseLong(punchIdStr.trim()); } catch (NumberFormatException e) { sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Invalid Punch ID format.", null); return; }
+
+        String newPunchType = newPunchTypeStr.trim();
+        LocalDate localPunchDate;
+        try { localPunchDate = LocalDate.parse(dateStr.trim(), DATE_FORMATTER_FROM_USER); }
+        catch (DateTimeParseException e) { sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Invalid Date format. Expected yyyy-MM-dd.", null); return; }
+
         Connection con = null;
-
         try {
             con = DatabaseConnection.getConnection();
-
-            // Step 1: Parse Input & Convert to UTC
-            logger.fine("Parsing input times...");
-            localPunchDate = LocalDate.parse(dateStr.trim(), DATE_FORMATTER);
-            if (inTimeStr != null && !inTimeStr.trim().isEmpty()) {
-                 localInTime = LocalTime.parse(inTimeStr.trim(), TIME_FORMATTER);
-                 LocalDateTime ldtIn = LocalDateTime.of(localPunchDate, localInTime);
-                 utcInInstant = ldtIn.atZone(USER_INPUT_ZONE_ID).toInstant();
-                 utcInTimestamp = Timestamp.from(utcInInstant);
-             } else {
-                 localInTime = null; // Ensure it's null if string is empty/null
-                 utcInInstant = null;
-                 utcInTimestamp = null;
-             }
-            if (outTimeStr != null && !outTimeStr.trim().isEmpty()) {
-                // *** CORRECTED: Added LocalTime declaration ***
-                localOutTime = LocalTime.parse(outTimeStr.trim(), TIME_FORMATTER);
-                LocalDateTime ldtOut = LocalDateTime.of(localPunchDate, localOutTime);
-                // Basic overnight check needs localInTime declared outside this block
-                if (utcInInstant != null && localInTime != null && localOutTime != null && localOutTime.isBefore(localInTime)) {
-                     ldtOut = ldtOut.plusDays(1);
-                     logger.fine("Adjusted OUT time to next day due to overnight.");
+            con.setAutoCommit(false);
+            String originalPunchTypeDb = null; Double originalTotalHoursDb = null; int punchOwnerEid = -1;
+            String fetchSql = "SELECT PUNCH_TYPE, TOTAL, EID FROM PUNCHES WHERE PUNCH_ID = ? AND TenantID = ?";
+            try (PreparedStatement psFetch = con.prepareStatement(fetchSql)) {
+                psFetch.setLong(1, punchId); psFetch.setInt(2, tenantId); // tenantId will auto-unbox
+                try (ResultSet rsFetch = psFetch.executeQuery()) {
+                    if (rsFetch.next()) {
+                        originalPunchTypeDb = rsFetch.getString("PUNCH_TYPE");
+                        originalTotalHoursDb = rsFetch.getDouble("TOTAL"); if (rsFetch.wasNull()) originalTotalHoursDb = null;
+                        punchOwnerEid = rsFetch.getInt("EID");
+                    } else { throw new SQLException("Punch (ID: " + punchId + ") not found for edit."); }
                 }
-                utcOutInstant = ldtOut.atZone(USER_INPUT_ZONE_ID).toInstant();
-                utcOutTimestamp = Timestamp.from(utcOutInstant);
-             } else {
-                 localOutTime = null; // Ensure it's null if string is empty/null
-                 utcOutInstant = null;
-                 utcOutTimestamp = null;
-             }
-            logger.info("Parsed Times: localIn=" + localInTime + ", localOut=" + localOutTime);
-            logger.info("Converted UTC Instants: utcIn=" + utcInInstant + ", utcOut=" + utcOutInstant);
-
-
-            // Step 2: Determine UTC Date for DB (Based on IN time preferentially)
-            if (utcInInstant != null) { utcDbDate = utcInInstant.atZone(ZoneOffset.UTC).toLocalDate(); }
-            else if (utcOutInstant != null) { utcDbDate = utcOutInstant.atZone(ZoneOffset.UTC).toLocalDate(); } // Use OUT if IN is missing
-            else if (localPunchDate != null) { utcDbDate = localPunchDate.atStartOfDay(USER_INPUT_ZONE_ID).toInstant().atZone(ZoneOffset.UTC).toLocalDate(); } // Fallback to input date
-            else { logger.warning("Cannot determine UTC date for punch " + punchId + " - Date/Times missing."); /* DB might get null date */ }
-            logger.info("Using UTC Date for DB: " + utcDbDate);
-
-
-            // Step 3: Calculate Hours & Apply Lunch
-             rawTotalHours = null;
-             if (utcInInstant != null && utcOutInstant != null && utcOutInstant.isAfter(utcInInstant)) {
-                 Duration duration = Duration.between(utcInInstant, utcOutInstant);
-                 rawTotalHours = duration.toMillis() / 3_600_000.0; // Use milliseconds
-                 rawTotalHours = Math.round(rawTotalHours * ROUNDING_FACTOR) / ROUNDING_FACTOR; // Round intermediate
-                 logger.fine("Calculated Raw Hours: " + rawTotalHours);
-             } else if (utcInInstant != null && utcOutInstant != null) {
-                 logger.warning("OUT time not after IN time for punch " + punchId + ". Setting Raw Hours to 0.");
-                 rawTotalHours = 0.0;
-             } else {
-                  logger.fine("Cannot calculate Raw Hours (IN or OUT missing).");
-             }
-
-             adjustedTotalHours = rawTotalHours; // Start with raw
-             if (adjustedTotalHours != null && adjustedTotalHours > 0) {
-                 try {
-                     // Ensure connection is passed correctly if needed by applyAutoLunch
-                     adjustedTotalHours = ShowPunches.applyAutoLunch(con, eid, rawTotalHours);
-                     adjustedTotalHours = Math.round(adjustedTotalHours * 100.0) / 100.0; // Round final value
-                     logger.fine("Applied auto-lunch (if applicable). Adjusted Total Hours: " + adjustedTotalHours);
-                 } catch (Exception e) {
-                     logger.log(Level.WARNING, "Auto-lunch calculation failed during edit for EID " + eid + ". Using raw hours.", e);
-                     adjustedTotalHours = (rawTotalHours != null) ? Math.round(rawTotalHours * 100.0) / 100.0 : 0.0; // Fallback to rounded raw
-                 }
-             } else {
-                 // Ensure adjustedTotalHours is 0.0 or null, appropriately rounded if needed
-                 if (rawTotalHours == null) {
-                     adjustedTotalHours = null; // Keep it null if raw was null
-                 } else {
-                     // Round even if zero before assignment
-                     adjustedTotalHours = Math.round(rawTotalHours * 100.0) / 100.0;
-                 }
-                 logger.fine("Skipped auto-lunch calculation (Raw hours null or zero). Final Adjusted Hours: " + adjustedTotalHours);
-             }
-
-
-            // Step 4: Database Update (REMOVED LATE/EARLY_OUTS)
-            logger.fine("Preparing database update (flags not updated)...");
-            String updateSql = "UPDATE PUNCHES SET DATE = ?, IN_1 = ?, OUT_1 = ?, TOTAL = ?, OT = ?, PUNCH_TYPE = ? WHERE PUNCH_ID = ?"; // Flags Removed
-            try (PreparedStatement ps = con.prepareStatement(updateSql)) {
-                ps.setDate(1, (utcDbDate != null) ? java.sql.Date.valueOf(utcDbDate) : null);
-                ShowPunches.setOptionalTimestamp(ps, 2, utcInTimestamp);
-                ShowPunches.setOptionalTimestamp(ps, 3, utcOutTimestamp);
-                ShowPunches.setOptionalDouble(ps, 4, adjustedTotalHours); // Use calculated adjusted total
-                ps.setDouble(5, 0.0); // OT always 0 on manual edit
-                ps.setString(6, (punchType != null && !punchType.trim().isEmpty()) ? punchType.trim() : null);
-                ps.setLong(7, punchId); // WHERE PUNCH_ID (Index is now 7)
-
-                int rowsAffected = ps.executeUpdate(); logger.info("executeUpdate result: " + rowsAffected);
-                if (rowsAffected > 0) { sendJsonResponse(response, true, "Punch updated successfully."); return; }
-                else { sendJsonResponse(response, false, "Update failed. Record not found or no changes."); return; }
-            } // PS closes
-
-        } catch (DateTimeParseException e) { errorMessage = "Invalid date or time format entered."; logger.log(Level.WARNING, errorMessage + " for PunchID " + punchIdStr, e); }
-        catch (SQLException e) { errorMessage = "Database error during update."; logger.log(Level.SEVERE, "SQL Error updating PunchID " + punchIdStr, e); }
-        catch (Exception e) { errorMessage = "Update Error: " + e.getMessage(); logger.log(Level.SEVERE, "Error in handleUpdate PunchID " + punchIdStr, e); e.printStackTrace(); } // Print stack trace for unexpected errors
-        finally { if (con != null) { try { con.close(); logger.fine("DB connection closed."); } catch (SQLException ex) {} } }
-        // Send error JSON response if an exception occurred
-        if (errorMessage != null) { sendJsonResponse(response, false, errorMessage); }
-        else { sendJsonResponse(response, false, "An unknown error occurred during update."); }
-    } // --- End handleUpdate ---
-
-    // --- handleAdd method ---
-    private void handleAdd(HttpServletRequest request, HttpServletResponse response, int eid) throws IOException {
-         logger.info("Processing handleAdd for EID: " + eid);
-         String dateStr = request.getParameter("addHoursDate"); String totalHoursStr = request.getParameter("addHoursTotal"); String punchType = request.getParameter("addHoursPunchTypeDropDown"); String errorMessage = null;
-         if (dateStr == null || dateStr.trim().isEmpty() || totalHoursStr == null || totalHoursStr.trim().isEmpty() || punchType == null || punchType.trim().isEmpty()) { sendJsonResponse(response, false, "Missing required fields (Date, Hours, Type) for adding hours."); return; }
-         LocalDate localPunchDate = null; Double totalHoursToAdd = null; LocalDate utcDbDate = null; Connection con = null;
-         try { con = DatabaseConnection.getConnection(); localPunchDate = LocalDate.parse(dateStr.trim(), DATE_FORMATTER); totalHoursToAdd = Double.parseDouble(totalHoursStr.trim()); if (totalHoursToAdd <= 0) { throw new IllegalArgumentException("Hours must be positive."); } utcDbDate = localPunchDate.atStartOfDay(USER_INPUT_ZONE_ID).toInstant().atZone(ZoneOffset.UTC).toLocalDate();
-             String insertSql = "INSERT INTO PUNCHES (EID, DATE, IN_1, OUT_1, TOTAL, OT, PUNCH_TYPE, LATE, EARLY_OUTS) VALUES (?, ?, ?, ?, ?, ?, ?, false, false)"; // Explicitly false for LATE/EARLY
-             try (PreparedStatement ps = con.prepareStatement(insertSql)) { ps.setInt(1, eid); ps.setDate(2, java.sql.Date.valueOf(utcDbDate)); ps.setNull(3, Types.TIMESTAMP); ps.setNull(4, Types.TIMESTAMP); ShowPunches.setOptionalDouble(ps, 5, totalHoursToAdd); ps.setDouble(6, 0.0); ps.setString(7, punchType.trim());
-                 int r = ps.executeUpdate(); if (r > 0) { sendJsonResponse(response, true, "Hours added successfully."); return; } else { sendJsonResponse(response, false, "Add failed (db insert)."); return; } }
-          } catch (DateTimeParseException e) {errorMessage="Invalid date format."; logger.log(Level.WARNING, errorMessage, e);} catch (NumberFormatException e) {errorMessage="Invalid hours format."; logger.log(Level.WARNING, errorMessage, e);} catch (IllegalArgumentException e) {errorMessage=e.getMessage(); logger.log(Level.WARNING, errorMessage);} catch (SQLException e) { errorMessage = "Database error while adding hours."; logger.log(Level.SEVERE, errorMessage, e); } catch (Exception e) { errorMessage = "Unexpected server error while adding hours."; logger.log(Level.SEVERE, errorMessage, e); e.printStackTrace();}
-          finally { if (con != null) { try { con.close();} catch (SQLException ex) {} } }
-          if (errorMessage != null) { sendJsonResponse(response, false, errorMessage); } else { sendJsonResponse(response, false, "Unknown error adding hours."); }
-    } // --- End handleAdd ---
-
-     // --- handleDelete method ---
-     private void handleDelete(HttpServletRequest request, HttpServletResponse response, int eid) throws IOException {
-        String punchIdStr = request.getParameter("deletePunchId"); String errorMessage = null; logger.info("Processing handleDelete for PunchID: " + punchIdStr);
-        if (punchIdStr == null || punchIdStr.trim().isEmpty()) { sendJsonResponse(response, false, "Missing Punch ID for delete."); return; } long punchId; try { punchId = Long.parseLong(punchIdStr.trim()); } catch (NumberFormatException e) { sendJsonResponse(response, false, "Invalid Punch ID format."); return; }
-        String deleteSql = "DELETE FROM PUNCHES WHERE PUNCH_ID = ?"; Connection con = null;
-        try { con = DatabaseConnection.getConnection(); try (PreparedStatement ps = con.prepareStatement(deleteSql)) { ps.setLong(1, punchId); int r = ps.executeUpdate(); if (r > 0) { sendJsonResponse(response, true, "Punch deleted successfully."); return; } else { sendJsonResponse(response, false, "Delete failed (Record not found?)."); return; } }
-         } catch (SQLException e) { errorMessage = "Database error during delete."; logger.log(Level.SEVERE, errorMessage, e); } catch (Exception e) { errorMessage = "Unexpected server error during delete."; logger.log(Level.SEVERE, errorMessage, e); e.printStackTrace();}
-         finally { if (con != null) { try { con.close();} catch (SQLException ex) {} } }
-         if (errorMessage != null) { sendJsonResponse(response, false, errorMessage); } else { sendJsonResponse(response, false, "Unknown error during delete."); }
-    } // --- End handleDelete ---
-
-    // --- sendJsonResponse helper ---
-    private void sendJsonResponse(HttpServletResponse response, boolean success, String message) throws IOException {
-        PrintWriter out = null; String json = "{\"success\": false, \"error\": \"Failed to generate JSON response.\"}";
-        try { logger.fine("Attempting to send JSON Response. Success=" + success + ", Message=" + message); if (response.isCommitted()) { logger.warning("Response already committed before sendJsonResponse!"); return; } String escapedMessage = message != null ? message.replace("\"", "\\\"") : ""; json = String.format("{\"success\": %b, \"%s\": \"%s\"}", success, (success ? "message" : "error"), escapedMessage); logger.fine("Generated JSON String: " + json); response.setContentType("application/json"); response.setCharacterEncoding("UTF-8"); logger.fine("Getting PrintWriter..."); out = response.getWriter(); logger.fine("PrintWriter obtained. Writing JSON..."); out.print(json); logger.fine("JSON written to PrintWriter. Flushing..."); out.flush(); logger.info("Successfully sent JSON Response: " + json);
-        } catch (IOException ioException) { logger.log(Level.SEVERE, "IOException within sendJsonResponse: " + json, ioException); }
-        catch (Exception e) { logger.log(Level.SEVERE, "Unexpected Exception within sendJsonResponse: " + json, e); }
+            }
+            if (punchOwnerEid != contextEid) {
+                 logger.warning("Context EID from form (" + contextEid + ") does not match punch owner EID (" + punchOwnerEid + ") for punch ID " + punchId + ". Using actual punch owner EID for operations.");
+            }
+            String originalAccrualCol = getAccrualColumn(originalPunchTypeDb);
+            if (originalAccrualCol != null && originalTotalHoursDb != null && originalTotalHoursDb > 0) {
+                logger.info("Restoring original accrual: " + originalTotalHoursDb + "h of '" + originalPunchTypeDb + "' to EID " + punchOwnerEid);
+                String restoreSql = "UPDATE EMPLOYEE_DATA SET " + originalAccrualCol + " = " + originalAccrualCol + " + ? WHERE EID = ? AND TenantID = ?";
+                try (PreparedStatement psRestore = con.prepareStatement(restoreSql)) {
+                    psRestore.setDouble(1, originalTotalHoursDb); psRestore.setInt(2, punchOwnerEid); psRestore.setInt(3, tenantId);
+                    psRestore.executeUpdate();
+                }
+            }
+            Timestamp newUtcInTimestamp = null; Timestamp newUtcOutTimestamp = null;
+            LocalDate newUtcDbDate = null; Double newFinalTotalHoursForAccrual = null;
+            boolean isNewTypeHoursOnly = isHoursOnlyType(newPunchType);
+            String updatePunchSql; PreparedStatement psUpdatePunch;
+            if (isNewTypeHoursOnly) {
+                logger.info("Processing edit as Hours-Only type: " + newPunchType);
+                if (!isValid(totalHoursManualStr)) { throw new SQLException("Total Hours value is required for type '" + newPunchType + "'."); }
+                try {
+                    newFinalTotalHoursForAccrual = Double.parseDouble(totalHoursManualStr.trim());
+                    if (newFinalTotalHoursForAccrual <= 0.00 || newFinalTotalHoursForAccrual > 24) { throw new SQLException("Hours must be > 0 and <= 24."); }
+                    newFinalTotalHoursForAccrual = Math.round(newFinalTotalHoursForAccrual * 100.0) / 100.0;
+                } catch (NumberFormatException e) { throw new SQLException("Invalid format for Total Hours: '" + totalHoursManualStr + "'."); }
+                newUtcDbDate = localPunchDate.atStartOfDay(userInputZoneId).toInstant().atZone(ZoneOffset.UTC).toLocalDate();
+                updatePunchSql = "UPDATE PUNCHES SET DATE = ?, IN_1 = NULL, OUT_1 = NULL, TOTAL = ?, PUNCH_TYPE = ? WHERE PUNCH_ID = ? AND TenantID = ? AND EID = ?";
+                psUpdatePunch = con.prepareStatement(updatePunchSql);
+                psUpdatePunch.setDate(1, java.sql.Date.valueOf(newUtcDbDate));
+                setOptionalDouble(psUpdatePunch, 2, newFinalTotalHoursForAccrual);
+                psUpdatePunch.setString(3, newPunchType); psUpdatePunch.setLong(4, punchId);
+                psUpdatePunch.setInt(5, tenantId); psUpdatePunch.setInt(6, punchOwnerEid);
+            } else {
+                logger.info("Processing edit as Timed type: " + newPunchType);
+                try {
+                    if (isValid(inTimeStr)) {
+                        LocalTime localInTime = LocalTime.parse(inTimeStr.trim(), TIME_FORMATTER_FROM_USER);
+                        newUtcInTimestamp = Timestamp.from(LocalDateTime.of(localPunchDate, localInTime).atZone(userInputZoneId).toInstant());
+                    }
+                    if (isValid(outTimeStr)) {
+                        LocalTime localOutTime = LocalTime.parse(outTimeStr.trim(), TIME_FORMATTER_FROM_USER);
+                        LocalDateTime ldtOut = LocalDateTime.of(localPunchDate, localOutTime);
+                        if (newUtcInTimestamp != null && localOutTime.isBefore(LocalDateTime.ofInstant(newUtcInTimestamp.toInstant(), userInputZoneId).toLocalTime())) {
+                            ldtOut = ldtOut.plusDays(1);
+                        }
+                        newUtcOutTimestamp = Timestamp.from(ldtOut.atZone(userInputZoneId).toInstant());
+                    }
+                } catch (DateTimeParseException e_time) { throw new SQLException("Invalid Time format: " + e_time.getMessage()); }
+                if (newUtcInTimestamp != null) { newUtcDbDate = newUtcInTimestamp.toInstant().atZone(ZoneOffset.UTC).toLocalDate(); }
+                else if (newUtcOutTimestamp != null) { newUtcDbDate = newUtcOutTimestamp.toInstant().atZone(ZoneOffset.UTC).toLocalDate(); }
+                else { newUtcDbDate = localPunchDate.atStartOfDay(userInputZoneId).toInstant().atZone(ZoneOffset.UTC).toLocalDate(); }
+                updatePunchSql = "UPDATE PUNCHES SET DATE = ?, IN_1 = ?, OUT_1 = ?, PUNCH_TYPE = ? WHERE PUNCH_ID = ? AND TenantID = ? AND EID = ?";
+                psUpdatePunch = con.prepareStatement(updatePunchSql);
+                psUpdatePunch.setDate(1, java.sql.Date.valueOf(newUtcDbDate));
+                setOptionalTimestamp(psUpdatePunch, 2, newUtcInTimestamp); setOptionalTimestamp(psUpdatePunch, 3, newUtcOutTimestamp);
+                psUpdatePunch.setString(4, newPunchType); psUpdatePunch.setLong(5, punchId);
+                psUpdatePunch.setInt(6, tenantId); psUpdatePunch.setInt(7, punchOwnerEid);
+            }
+            if (psUpdatePunch.executeUpdate() == 0) { throw new SQLException("Failed to update punch record (ID: " + punchId + ")."); }
+            psUpdatePunch.close();
+            if (!isNewTypeHoursOnly && newUtcInTimestamp != null && newUtcOutTimestamp != null) {
+                if (newUtcOutTimestamp.toInstant().isAfter(newUtcInTimestamp.toInstant())) {
+                    ShowPunches.calculateAndUpdatePunchTotal(con, tenantId, punchOwnerEid, newUtcInTimestamp, newUtcOutTimestamp, punchId);
+                } else {
+                    String updateTotalToNullSql = "UPDATE PUNCHES SET TOTAL = NULL WHERE PUNCH_ID = ?";
+                    try (PreparedStatement psNullTotal = con.prepareStatement(updateTotalToNullSql)) { psNullTotal.setLong(1, punchId); psNullTotal.executeUpdate(); }
+                }
+            } else if (!isNewTypeHoursOnly && (newUtcInTimestamp == null || newUtcOutTimestamp == null)) {
+                String updateTotalToNullSql = "UPDATE PUNCHES SET TOTAL = NULL WHERE PUNCH_ID = ?";
+                try (PreparedStatement psNullTotal = con.prepareStatement(updateTotalToNullSql)) { psNullTotal.setLong(1, punchId); psNullTotal.executeUpdate(); }
+            }
+            String newEffectiveAccrualCol = getAccrualColumn(newPunchType);
+            if (newEffectiveAccrualCol != null && isNewTypeHoursOnly && newFinalTotalHoursForAccrual != null && newFinalTotalHoursForAccrual > 0) {
+                String deductSql = "UPDATE EMPLOYEE_DATA SET " + newEffectiveAccrualCol + " = " + newEffectiveAccrualCol + " - ? WHERE EID = ? AND TenantID = ?";
+                try (PreparedStatement psDeduct = con.prepareStatement(deductSql)) {
+                    psDeduct.setDouble(1, newFinalTotalHoursForAccrual); psDeduct.setInt(2, punchOwnerEid); psDeduct.setInt(3, tenantId);
+                    if(psDeduct.executeUpdate() == 0) logger.warning("Failed to deduct accrual for EID " + punchOwnerEid);
+                }
+            }
+            con.commit();
+            sendJsonResponse(response, HttpServletResponse.SC_OK, true, "Punch record updated successfully.", null);
+        } catch (SQLException e_sql) {
+            rollback(con); logger.log(Level.SEVERE, "SQL error in handleEditPunch for PunchID " + punchIdStr, e_sql);
+            sendJsonResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, false, "Database error: " + escapeHtml(e_sql.getMessage()), null);
+        } catch (Exception e_gen) {
+            rollback(con); logger.log(Level.SEVERE, "General error in handleEditPunch for PunchID " + punchIdStr, e_gen);
+            sendJsonResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, false, "Server error: " + escapeHtml(e_gen.getMessage()), null);
+        } finally {
+            if (con != null) { try { con.setAutoCommit(true); con.close(); } catch (SQLException e_close) { logger.log(Level.WARNING, "Error closing connection in handleEditPunch", e_close); } }
+        }
     }
 
-    // --- encode helper ---
-    private String encode(String value) throws IOException {
-        if (value == null) return "";
-        return URLEncoder.encode(value, StandardCharsets.UTF_8.toString());
+    // Signature changed to accept Integer for tenantId
+    private void handleAddHoursOrTimedPunch(HttpServletRequest request, HttpServletResponse response, Integer tenantId, int eid) throws IOException {
+        if (tenantId == null || tenantId <= 0) {
+            logger.warning("[Servlet] handleAddHoursOrTimedPunch: Called with invalid TenantID.");
+            sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Invalid Tenant context.", null);
+            return;
+        }
+        String dateStr = request.getParameter("punchDate");
+        String punchTypeStr = request.getParameter("punchType");
+        String totalHoursManualStr = request.getParameter("totalHoursManual");
+        String inTimeStr = request.getParameter("timeIn");
+        String outTimeStr = request.getParameter("timeOut");
+        String userTimeZoneStr = request.getParameter("userTimeZone");
+
+        ZoneId userInputZoneId = ZoneId.systemDefault();
+        if (isValid(userTimeZoneStr)) {
+            try { userInputZoneId = ZoneId.of(userTimeZoneStr); }
+            catch (Exception e) { logger.warning("[Servlet] Invalid userTimeZone for addHours: " + userTimeZoneStr + ". Falling back."); }
+        }
+
+        logger.info(String.format("-> handleAddHoursOrTimedPunch: EID=%d, Date=%s, Type=%s, ManualHours=%s, InTime=%s, OutTime=%s, UserTZ=%s",
+                eid, dateStr, punchTypeStr, totalHoursManualStr, inTimeStr, outTimeStr, userInputZoneId.toString()));
+
+        if (!isValid(dateStr) || !isValid(punchTypeStr)) {
+            sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Date and Punch Type are required.", null); return;
+        }
+        String punchType = punchTypeStr.trim();
+        boolean isHoursOnly = isHoursOnlyType(punchType);
+
+        LocalDate localPunchDate; Double finalTotalHoursForAccrual = null;
+        LocalDate utcDbDate; Timestamp utcInTimestamp = null; Timestamp utcOutTimestamp = null;
+
+        try {
+            localPunchDate = LocalDate.parse(dateStr.trim(), DATE_FORMATTER_FROM_USER);
+            utcDbDate = localPunchDate.atStartOfDay(userInputZoneId).toInstant().atZone(ZoneOffset.UTC).toLocalDate();
+            if (isHoursOnly) {
+                if (!isValid(totalHoursManualStr)) { sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Total Hours are required for type '" + escapeHtml(punchType) + "'.", null); return; }
+                finalTotalHoursForAccrual = Double.parseDouble(totalHoursManualStr.trim());
+                if (finalTotalHoursForAccrual <= 0.00 || finalTotalHoursForAccrual > 24) { sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Total Hours must be > 0 and <= 24.", null); return; }
+                finalTotalHoursForAccrual = Math.round(finalTotalHoursForAccrual * 100.0) / 100.0;
+            } else {
+                if (!isValid(inTimeStr)) { sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Time In is required for type '" + escapeHtml(punchType) + "'.", null); return; }
+                try {
+                    LocalTime localInTime = LocalTime.parse(inTimeStr.trim(), TIME_FORMATTER_FROM_USER);
+                    utcInTimestamp = Timestamp.from(LocalDateTime.of(localPunchDate, localInTime).atZone(userInputZoneId).toInstant());
+                    utcDbDate = utcInTimestamp.toInstant().atZone(ZoneOffset.UTC).toLocalDate();
+                    if (isValid(outTimeStr)) {
+                        LocalTime localOutTime = LocalTime.parse(outTimeStr.trim(), TIME_FORMATTER_FROM_USER);
+                        LocalDateTime ldtOut = LocalDateTime.of(localPunchDate, localOutTime);
+                        if (localOutTime.isBefore(localInTime)) ldtOut = ldtOut.plusDays(1);
+                        utcOutTimestamp = Timestamp.from(ldtOut.atZone(userInputZoneId).toInstant());
+                    }
+                } catch (DateTimeParseException e_time) { sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Invalid Time format: " + escapeHtml(e_time.getParsedString()), null); return; }
+            }
+        } catch (DateTimeParseException e_date) { sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Invalid date format.", null); return;}
+          catch (NumberFormatException e_num)  { sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Invalid number format for hours.", null); return;}
+          catch (Exception e_parse) { logger.log(Level.SEVERE, "Error parsing inputs for add punch", e_parse); sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Error processing input data.", null); return;}
+
+        String accrualColumn = getAccrualColumn(punchType);
+        Connection con = null;
+        // ... (rest of handleAddHoursOrTimedPunch logic from Turn 18 remains the same) ...
+        try {
+            con = DatabaseConnection.getConnection(); con.setAutoCommit(false);
+            String insertSql = "INSERT INTO PUNCHES (TenantID, EID, DATE, IN_1, OUT_1, TOTAL, PUNCH_TYPE, OT, LATE, EARLY_OUTS) VALUES (?, ?, ?, ?, ?, ?, ?, 0.0, FALSE, FALSE)";
+            long newPunchId = -1;
+            try (PreparedStatement psInsert = con.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
+                psInsert.setInt(1, tenantId); psInsert.setInt(2, eid);
+                psInsert.setDate(3, java.sql.Date.valueOf(utcDbDate));
+                setOptionalTimestamp(psInsert, 4, utcInTimestamp); setOptionalTimestamp(psInsert, 5, utcOutTimestamp);
+                if (isHoursOnly) { setOptionalDouble(psInsert, 6, finalTotalHoursForAccrual); }
+                else { psInsert.setNull(6, Types.DOUBLE); }
+                psInsert.setString(7, punchType);
+                if (psInsert.executeUpdate() == 0) throw new SQLException("Insert punch failed.");
+                try (ResultSet generatedKeys = psInsert.getGeneratedKeys()) {
+                    if (generatedKeys.next()) newPunchId = generatedKeys.getLong(1);
+                    else throw new SQLException("Creating punch failed, no ID.");
+                }
+                logger.info("Inserted punch (ID: " + newPunchId + ") for EID " + eid);
+            }
+            if (!isHoursOnly && utcInTimestamp != null && utcOutTimestamp != null) {
+                if (utcOutTimestamp.toInstant().isAfter(utcInTimestamp.toInstant())) {
+                    ShowPunches.calculateAndUpdatePunchTotal(con, tenantId, eid, utcInTimestamp, utcOutTimestamp, newPunchId);
+                } else { logger.warning("New timed punch ID " + newPunchId + " has OUT not after IN."); }
+            }
+            if (isHoursOnly && accrualColumn != null && finalTotalHoursForAccrual != null && finalTotalHoursForAccrual > 0) {
+                String updateSql = "UPDATE EMPLOYEE_DATA SET " + accrualColumn + " = " + accrualColumn + " - ? WHERE EID = ? AND TenantID = ?";
+                try (PreparedStatement psUpdate = con.prepareStatement(updateSql)) {
+                    psUpdate.setDouble(1, finalTotalHoursForAccrual); psUpdate.setInt(2, eid); psUpdate.setInt(3, tenantId);
+                    if (psUpdate.executeUpdate() == 0) logger.warning("Failed to update " + accrualColumn + " for EID " + eid);
+                }
+            }
+            con.commit();
+            String successMessage = escapeHtml(punchType) + (isHoursOnly ? " hours" : " punch") + " added successfully." + (isHoursOnly && accrualColumn != null ? " Accrual balance adjusted." : "");
+            sendJsonResponse(response, HttpServletResponse.SC_OK, true, successMessage, null);
+        } catch (SQLException e_sql) {
+            rollback(con); logger.log(Level.SEVERE, "SQL Error in handleAddHoursOrTimedPunch for EID " + eid, e_sql);
+            sendJsonResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, false, "Database error: " + escapeHtml(e_sql.getMessage()), null);
+        } catch (Exception e_gen) {
+            rollback(con); logger.log(Level.SEVERE, "General error in handleAddHoursOrTimedPunch for EID " + eid, e_gen);
+            sendJsonResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, false, "Server error: " + escapeHtml(e_gen.getMessage()), null);
+        } finally {
+            if (con != null) { try { con.setAutoCommit(true); con.close(); } catch (SQLException e_close) { logger.log(Level.WARNING, "Error closing connection", e_close); } }
+        }
     }
 
-} // End Servlet Class
+    private void handleAddGlobalHours(HttpServletRequest request, HttpServletResponse response, Integer tenantId, int loggedInUserEid) throws IOException {
+        if (tenantId == null || tenantId <= 0) {
+             logger.warning("[Servlet] handleAddGlobalHours: Called with invalid TenantID.");
+             // Changed to use sendRedirect as add_global_data.jsp expects URL params
+             response.sendRedirect("add_global_data.jsp?error=" + URLEncoder.encode("Invalid Tenant context.", StandardCharsets.UTF_8.name()));
+             return;
+        }
+        String dateStr = request.getParameter("addHoursDate");
+        String totalHoursStr = request.getParameter("addHoursTotal");
+        String punchTypeStr = request.getParameter("addHoursPunchTypeDropDown");
+
+        logger.info(String.format("-> handleAddGlobalHours: Date=%s, TotalHours=%s, PunchType=%s, TenantID=%d",
+                dateStr, totalHoursStr, punchTypeStr, tenantId));
+
+        if (!isValid(dateStr) || !isValid(totalHoursStr) || !isValid(punchTypeStr)) {
+            response.sendRedirect("add_global_data.jsp?error=" + URLEncoder.encode("Date, Total Hours, and Punch Type are required.", StandardCharsets.UTF_8.name()));
+            return;
+        }
+
+        LocalDate localPunchDate; double totalHours; String punchType = punchTypeStr.trim();
+        try {
+            localPunchDate = LocalDate.parse(dateStr.trim(), DATE_FORMATTER_FROM_USER);
+            totalHours = Double.parseDouble(totalHoursStr.trim());
+            if (totalHours <= 0.00 || totalHours > 24) {
+                response.sendRedirect("add_global_data.jsp?error=" + URLEncoder.encode("Total Hours must be > 0 and <= 24.", StandardCharsets.UTF_8.name()));
+                return;
+            }
+            totalHours = Math.round(totalHours * 100.0) / 100.0;
+        } catch (DateTimeParseException | NumberFormatException e) {
+            response.sendRedirect("add_global_data.jsp?error=" + URLEncoder.encode("Invalid date or hours format.", StandardCharsets.UTF_8.name()));
+            return;
+        }
+
+        if (!isHoursOnlyType(punchType)) {
+            response.sendRedirect("add_global_data.jsp?error=" + URLEncoder.encode("Invalid punch type for global entry. Only hours-based types are allowed.", StandardCharsets.UTF_8.name()));
+            return;
+        }
+
+        Connection con = null; int employeesAffected = 0; List<Integer> activeEmployeeIds = new ArrayList<>();
+        String fetchActiveEmployeesSql = "SELECT EID FROM EMPLOYEE_DATA WHERE TenantID = ? AND ACTIVE = TRUE";
+        try {
+            con = DatabaseConnection.getConnection(); con.setAutoCommit(false);
+            try (PreparedStatement psFetch = con.prepareStatement(fetchActiveEmployeesSql)) {
+                psFetch.setInt(1, tenantId);
+                try (ResultSet rs = psFetch.executeQuery()) { while (rs.next()) { activeEmployeeIds.add(rs.getInt("EID")); } }
+            }
+            if (activeEmployeeIds.isEmpty()) {
+                response.sendRedirect("add_global_data.jsp?message=" + URLEncoder.encode("No active employees found to add global hours to.", StandardCharsets.UTF_8.name()));
+                return;
+            }
+            String insertPunchSql = "INSERT INTO PUNCHES (TenantID, EID, DATE, IN_1, OUT_1, TOTAL, PUNCH_TYPE, OT, LATE, EARLY_OUTS) VALUES (?, ?, ?, NULL, NULL, ?, ?, 0.0, FALSE, FALSE)";
+            String accrualColumn = getAccrualColumn(punchType);
+            String updateAccrualSql = (accrualColumn != null) ? "UPDATE EMPLOYEE_DATA SET " + accrualColumn + " = " + accrualColumn + " - ? WHERE EID = ? AND TenantID = ?" : null;
+
+            try (PreparedStatement psInsert = con.prepareStatement(insertPunchSql);
+                 PreparedStatement psUpdateAccrual = (updateAccrualSql != null) ? con.prepareStatement(updateAccrualSql) : null) {
+                for (int eid : activeEmployeeIds) {
+                    psInsert.setInt(1, tenantId); psInsert.setInt(2, eid);
+                    psInsert.setDate(3, java.sql.Date.valueOf(localPunchDate));
+                    setOptionalDouble(psInsert, 4, totalHours);
+                    psInsert.setString(5, punchType);
+                    psInsert.addBatch();
+                    if (psUpdateAccrual != null) {
+                        psUpdateAccrual.setDouble(1, totalHours); psUpdateAccrual.setInt(2, eid); psUpdateAccrual.setInt(3, tenantId);
+                        psUpdateAccrual.addBatch();
+                    }
+                }
+                int[] insertCounts = psInsert.executeBatch();
+                employeesAffected = Arrays.stream(insertCounts).filter(c -> c >=0 || c == Statement.SUCCESS_NO_INFO).map(c -> c == Statement.SUCCESS_NO_INFO ? 1 : c).sum();
+
+                if (psUpdateAccrual != null) {
+                    int[] updateCounts = psUpdateAccrual.executeBatch();
+                    logger.info("Accruals updated for " + Arrays.stream(updateCounts).filter(c -> c >=0 || c == Statement.SUCCESS_NO_INFO).map(c -> c == Statement.SUCCESS_NO_INFO ? 1 : c).sum() + " employees.");
+                }
+            }
+            con.commit();
+            String successMsg = String.format("%s (%.2f hours) added globally for %d active employee(s).", escapeHtml(punchType), totalHours, employeesAffected) + (accrualColumn != null ? " Accrual balances adjusted." : "");
+            response.sendRedirect("add_global_data.jsp?message=" + URLEncoder.encode(successMsg, StandardCharsets.UTF_8.name()));
+        } catch (SQLException e_sql) {
+            rollback(con); logger.log(Level.SEVERE, "SQL Error in handleAddGlobalHours", e_sql);
+            response.sendRedirect("add_global_data.jsp?error=" + URLEncoder.encode("Database error: " + escapeHtml(e_sql.getMessage()), StandardCharsets.UTF_8.name()));
+        } catch (Exception e_gen) {
+            rollback(con); logger.log(Level.SEVERE, "General error in handleAddGlobalHours", e_gen);
+            response.sendRedirect("add_global_data.jsp?error=" + URLEncoder.encode("Server error: " + escapeHtml(e_gen.getMessage()), StandardCharsets.UTF_8.name()));
+        } finally {
+            if (con != null) { try { con.setAutoCommit(true); con.close(); } catch (SQLException e_close) { logger.log(Level.WARNING, "Error closing connection", e_close); } }
+        }
+    }
+
+    // Signature changed to accept Integer for tenantId
+    private void handleDeletePunch(HttpServletRequest request, HttpServletResponse response, Integer tenantId) throws IOException {
+         if (tenantId == null || tenantId <= 0) {
+             logger.warning("[Servlet] handleDeletePunch: Called with invalid TenantID.");
+             sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Invalid Tenant context.", null);
+             return;
+        }
+        // ... (Rest of method from Turn 18)
+        String punchIdStr = request.getParameter("punchId");
+        if (!isValid(punchIdStr)) { sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Missing Punch ID for deletion.", null); return; }
+        long punchId;
+        try { punchId = Long.parseLong(punchIdStr.trim()); }
+        catch (NumberFormatException e) { sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Invalid Punch ID format: " + escapeHtml(punchIdStr), null); return; }
+        logger.info("-> handleDeletePunch: PunchID=" + punchId + ", TenantID=" + tenantId);
+        Connection con = null;
+        try {
+            con = DatabaseConnection.getConnection(); con.setAutoCommit(false);
+            String originalPunchType = null; Double originalHours = null; int punchOwnerEid = -1;
+            String getSql = "SELECT EID, TOTAL, PUNCH_TYPE FROM PUNCHES WHERE PUNCH_ID = ? AND TenantID = ?";
+            try (PreparedStatement psGet = con.prepareStatement(getSql)) {
+                psGet.setLong(1, punchId); psGet.setInt(2, tenantId);
+                try (ResultSet rs = psGet.executeQuery()) {
+                    if (rs.next()) { punchOwnerEid = rs.getInt("EID"); originalPunchType = rs.getString("PUNCH_TYPE"); originalHours = rs.getDouble("TOTAL"); if (rs.wasNull()) originalHours = null; }
+                    else { logger.warning("handleDeletePunch: Punch record ID " + punchId + " not found for TenantID " + tenantId); sendJsonResponse(response, HttpServletResponse.SC_NOT_FOUND, false, "Punch record not found.", null); con.rollback(); return;}
+                }
+            }
+            if (punchOwnerEid <= 0) { throw new SQLException("Invalid EID (<=0) retrieved for punch ID " + punchId); }
+            String accrualCol = getAccrualColumn(originalPunchType); boolean restoredAccrual = false;
+            if (accrualCol != null && originalHours != null && originalHours > 0) {
+                logger.info("Restoring " + originalHours + " of '" + originalPunchType + "' to EID " + punchOwnerEid);
+                String restoreSql = "UPDATE EMPLOYEE_DATA SET " + accrualCol + " = " + accrualCol + " + ? WHERE EID = ? AND TenantID = ?";
+                try (PreparedStatement psRestore = con.prepareStatement(restoreSql)) {
+                    psRestore.setDouble(1, originalHours); psRestore.setInt(2, punchOwnerEid); psRestore.setInt(3, tenantId);
+                    if (psRestore.executeUpdate() > 0) { restoredAccrual = true; logger.info("Accrual restored successfully for EID " + punchOwnerEid); }
+                    else { logger.warning("Failed to restore accrual hours for EID " + punchOwnerEid + " (or no change needed)."); }
+                }
+            }
+            String deleteSql = "DELETE FROM PUNCHES WHERE PUNCH_ID = ? AND TenantID = ?";
+            try (PreparedStatement psDel = con.prepareStatement(deleteSql)) {
+                psDel.setLong(1, punchId); psDel.setInt(2, tenantId);
+                int rowsDeleted = psDel.executeUpdate();
+                if (rowsDeleted > 0) {
+                    con.commit(); String successMsg = "Punch deleted successfully" + (restoredAccrual ? ". Accrued hours were restored." : ".");
+                    logger.info(successMsg + " (PunchID: " + punchId + ")"); sendJsonResponse(response, HttpServletResponse.SC_OK, true, successMsg, null);
+                } else { con.rollback(); logger.warning("Delete failed for punch ID " + punchId + ". Row not found or not deleted."); sendJsonResponse(response, HttpServletResponse.SC_NOT_FOUND, false, "Delete failed. Punch not found or no change made.", null); }
+            }
+        } catch (SQLException e_sql) {
+            rollback(con); logger.log(Level.SEVERE, "SQL error in handleDeletePunch for PunchID " + punchIdStr, e_sql);
+            sendJsonResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, false, "Database error during punch deletion: " + escapeHtml(e_sql.getMessage()), null);
+        } catch (Exception e_gen) {
+            rollback(con); logger.log(Level.SEVERE, "General error in handleDeletePunch for PunchID " + punchIdStr, e_gen);
+            sendJsonResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, false, "An unexpected server error occurred during punch deletion.", null);
+        } finally {
+            if (con != null) { try { con.setAutoCommit(true); con.close(); } catch (SQLException e_close) { logger.log(Level.WARNING, "Error closing connection in handleDeletePunch", e_close); } }
+        }
+    }
+
+    private void sendJsonResponse(HttpServletResponse response, int statusCode, boolean success, String message, String additionalJsonKeyValuePairs) throws IOException {
+        response.setContentType("application/json"); response.setCharacterEncoding("UTF-8"); response.setStatus(statusCode);
+        String statusType = success ? "message" : "error";
+        String escapedMessage = (message == null) ? "" : message.replace("\\", "\\\\").replace("\"", "\\\"");
+        StringBuilder jsonBuilder = new StringBuilder();
+        jsonBuilder.append(String.format("{\"success\": %b, \"%s\": \"%s\"", success, statusType, escapedMessage));
+        if (additionalJsonKeyValuePairs != null && !additionalJsonKeyValuePairs.trim().isEmpty()) {
+            jsonBuilder.append(", \"additionalData\": {").append(additionalJsonKeyValuePairs).append("}");
+        }
+        jsonBuilder.append("}");
+        response.getWriter().write(jsonBuilder.toString());
+    }
+
+    private void rollback(Connection con) {
+        if (con != null) { try { if (!con.getAutoCommit()) { logger.info("Attempting to rollback transaction."); con.rollback(); logger.info("Transaction rolled back successfully."); } } catch (SQLException rbEx) { logger.log(Level.SEVERE, "Rollback failed!", rbEx); } }
+    }
+
+    private void logParameters(HttpServletRequest request) {
+        if (logger.isLoggable(Level.INFO)) {
+            logger.info("--- AddEditAndDeletePunchesServlet Request Parameters ---");
+            Enumeration<String> paramNames = request.getParameterNames();
+            if (!paramNames.hasMoreElements()) { logger.info("No parameters found in the request."); }
+            else {
+                while (paramNames.hasMoreElements()) {
+                    String paramName = paramNames.nextElement();
+                    String[] paramValues = request.getParameterValues(paramName);
+                    logger.info(String.format("Param: %s = %s", paramName, java.util.Arrays.toString(paramValues)));
+                }
+            }
+            logger.info("--- End Request Parameters ---");
+        }
+    }
+
+    private String escapeHtml(String input) {
+        if (input == null) return "";
+        return input.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&#39;");
+    }
+}

@@ -1,198 +1,306 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8"
-    pageEncoding="UTF-8"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="jakarta.servlet.http.HttpSession" %>
 <%@ page import="timeclock.Configuration"%>
+<%@ page import="java.sql.SQLException" %>
+<%@ page import="java.net.URLEncoder" %>
+<%@ page import="java.nio.charset.StandardCharsets" %>
+<%@ page import="java.util.logging.Logger" %>
+<%@ page import="java.util.logging.Level" %>
 <%@ page import="java.time.LocalDate" %>
 <%@ page import="java.time.format.DateTimeFormatter" %>
-<%@ page import="java.time.format.DateTimeParseException" %>
+<%@ page import="java.time.DayOfWeek" %>
+<%@ page import="java.time.temporal.TemporalAdjusters" %>
 <%@ page import="java.util.Locale" %>
-<%@ page import="java.util.Map" %>
-<%@ page import="java.text.NumberFormat" %>
 
+<%!
+    private String escapeHtml(String text) {
+        if (text == null) return "";
+        return text.replace("&", "&amp;")
+                   .replace("<", "&lt;")
+                   .replace(">", "&gt;")
+                   .replace("\"", "&quot;")
+                   .replace("'", "&#39;");
+    }
+
+    private String escapeForJavaScriptString(String input) {
+        if (input == null) return "";
+        return input.replace("\\", "\\\\")
+                    .replace("\"", "\\\"")
+                    .replace("'", "\\'")
+                    .replace("\n", "\\n")
+                    .replace("\r", "\\r")
+                    .replace("\t", "\\t")
+                    .replace("<", "\\u003C") 
+                    .replace(">", "\\u003E");
+    }
+    private static final Logger jspSettingsPageLogger = Logger.getLogger("settings_jsp_wizard_v5_preserve_changes");
+%>
 <%
-    // --- Load ALL current settings ---
-    // Ensure Configuration class is loaded and properties file is accessible
-    String currentFirstDay = Configuration.getProperty("FirstDayOfWeek", "Sunday");
-    String currentGracePeriod = Configuration.getProperty("GracePeriod", "0");
-    String currentPayPeriod = Configuration.getProperty("PayPeriodType", "Weekly");
-    boolean currentOvertimeEnabled = "true".equalsIgnoreCase(Configuration.getProperty("Overtime", "true"));
-    boolean currentHolidayPayEnabled = "true".equalsIgnoreCase(Configuration.getProperty("HolidayPay", "true"));
-    boolean currentOvertimeDailyEnabled = "true".equalsIgnoreCase(Configuration.getProperty("OvertimeDaily", "false"));
-    String currentOvertimeRate = Configuration.getProperty("OvertimeRate", "1.5");
-    // Default Holiday Pay Rate might now logically be "1.0" if that's more common? Adjust default if needed.
-    String currentHolidayPayRate = Configuration.getProperty("HolidayPayRate", "1.0"); // Changed default assumption
-    String currentOvertimeDailyThreshold = Configuration.getProperty("OvertimeDailyThreshold", "8");
+    String pageLevelError_settings = null;
+    String pageLevelSuccess_settings = null;
+
+    String paramError = request.getParameter("error");
+    String paramMessage = request.getParameter("message");
+    // Acknowledge that a restriction type was just configured
+    String restrictionConfigured = request.getParameter("restrictionConfigured"); 
+
+    if (paramError != null && !paramError.isEmpty()) pageLevelError_settings = paramError;
+    if (paramMessage != null && !paramMessage.isEmpty()) pageLevelSuccess_settings = paramMessage;
+    if (restrictionConfigured != null && !restrictionConfigured.isEmpty() && pageLevelSuccess_settings != null) {
+        // If returning from a sub-config page with a success message, ensure it's displayed prominently
+        pageLevelSuccess_settings = "Successfully configured " + restrictionConfigured.replace("timeDay", "Time/Day") + " restrictions. " + pageLevelSuccess_settings;
+    }
+
+
+    HttpSession currentSession_settings = request.getSession(false);
+    Integer tenantId_settings = null;
+    String userPermissions_settings = null;
+    String companyNameForWizardHeader = "Your Company";
+
+    if (currentSession_settings != null) {
+        Object tenantIdObj = currentSession_settings.getAttribute("TenantID");
+        if (tenantIdObj instanceof Integer) tenantId_settings = (Integer) tenantIdObj;
+        userPermissions_settings = (String) currentSession_settings.getAttribute("Permissions");
+        Object companyNameSessionObj = currentSession_settings.getAttribute("CompanyNameSignup");
+        if (companyNameSessionObj instanceof String && !((String)companyNameSessionObj).isEmpty()) {
+            companyNameForWizardHeader = (String) companyNameSessionObj;
+        }
+        if (!"Administrator".equalsIgnoreCase(userPermissions_settings)) {
+            response.sendRedirect(request.getContextPath() + "/login.jsp?error=" + URLEncoder.encode("Access Denied.", StandardCharsets.UTF_8.name()));
+            return;
+        }
+    } else {
+        response.sendRedirect(request.getContextPath() + "/login.jsp?error=" + URLEncoder.encode("Session expired.", StandardCharsets.UTF_8.name()));
+        return;
+    }
+    if (tenantId_settings == null || tenantId_settings <= 0) {
+        pageLevelError_settings = (pageLevelError_settings == null ? "" : pageLevelError_settings + " ") + "Invalid session.";
+    }
+
+    boolean inSetupWizardMode_JSP = false;
+    String companyStateFromSignup = null;
+    String wizardStepForPage = null;
+
+    if (currentSession_settings != null && Boolean.TRUE.equals(currentSession_settings.getAttribute("startSetupWizard"))) {
+        String requestWizardParam = request.getParameter("setup_wizard");
+        String requestStepParam = request.getParameter("step");
+        String sessionWizardStep = (String) currentSession_settings.getAttribute("wizardStep");
+        if ("true".equalsIgnoreCase(requestWizardParam) && "settings_setup".equals(sessionWizardStep) && ("settings_setup".equals(requestStepParam) || requestStepParam == null) ) {
+            inSetupWizardMode_JSP = true;
+            wizardStepForPage = sessionWizardStep;
+            companyStateFromSignup = (String) currentSession_settings.getAttribute("SignupCompanyState");
+        }
+    }
+
+    final String STD_DEFAULT_PAY_PERIOD_TYPE = "Weekly";
+    final String STD_DEFAULT_FIRST_DAY_OF_WEEK = "Sunday";
+    LocalDate today = LocalDate.now();
+    DayOfWeek std_defaultFirstDayEnum = DayOfWeek.SUNDAY;
+    String std_configuredFirstDayInitial = STD_DEFAULT_FIRST_DAY_OF_WEEK;
+    if(tenantId_settings != null && tenantId_settings > 0 && pageLevelError_settings == null && !inSetupWizardMode_JSP) { std_configuredFirstDayInitial = Configuration.getProperty(tenantId_settings, "FirstDayOfWeek", STD_DEFAULT_FIRST_DAY_OF_WEEK); }
+    try { if (std_configuredFirstDayInitial != null && !std_configuredFirstDayInitial.isEmpty()) { std_defaultFirstDayEnum = DayOfWeek.valueOf(std_configuredFirstDayInitial.toUpperCase(Locale.ENGLISH)); }} catch (Exception e) { std_defaultFirstDayEnum = DayOfWeek.SUNDAY; }
+    final String STD_DEFAULT_PAY_PERIOD_START_DATE = today.with(TemporalAdjusters.previousOrSame(std_defaultFirstDayEnum)).format(DateTimeFormatter.ISO_DATE);
+    final String STD_DEFAULT_OVERTIME_RULE_MODE = "Manual"; final String STD_DEFAULT_OVERTIME_STATE = ""; final String STD_FIXED_OVERTIME_ENABLED_VALUE = "true"; final String STD_DEFAULT_OVERTIME_RATE = "1.5"; final String STD_DEFAULT_OVERTIME_DAILY_ENABLED = "false"; final String STD_DEFAULT_OVERTIME_DAILY_THRESHOLD = "8.0"; final String STD_DEFAULT_OVERTIME_DOUBLE_TIME_ENABLED = "false"; final String STD_DEFAULT_OVERTIME_DOUBLE_TIME_THRESHOLD = "12.0"; final String STD_DEFAULT_OVERTIME_SEVENTH_DAY_ENABLED = "false"; final String STD_DEFAULT_OVERTIME_SEVENTH_DAY_OT_THRESHOLD = "8.0"; final String STD_DEFAULT_OVERTIME_SEVENTH_DAY_DT_THRESHOLD = "8.0"; final String STD_DEFAULT_HOLIDAYPAY_RATE_VALUE = "1.0"; final String STD_DEFAULT_PUNCH_RESTRICTIONS_ENABLED = "false";
+
+    String currentPayPeriod = STD_DEFAULT_PAY_PERIOD_TYPE; String currentFirstDayOfWeek = STD_DEFAULT_FIRST_DAY_OF_WEEK; String currentPayPeriodStartDate = STD_DEFAULT_PAY_PERIOD_START_DATE; String currentGracePeriod = "0"; String currentOvertimeRuleMode = STD_DEFAULT_OVERTIME_RULE_MODE; String currentOvertimeState = STD_DEFAULT_OVERTIME_STATE; String currentHolidayPayRate = STD_DEFAULT_HOLIDAYPAY_RATE_VALUE; boolean currentPunchRestrictionsEnabled = Boolean.parseBoolean(STD_DEFAULT_PUNCH_RESTRICTIONS_ENABLED); boolean currentRestrictByTimeDay = false; boolean currentRestrictByLocation = false; boolean currentRestrictByNetwork = false; boolean currentRestrictByDevice = false; String currentOvertimeRate = STD_DEFAULT_OVERTIME_RATE; boolean currentOvertimeDailyEnabled = Boolean.parseBoolean(STD_DEFAULT_OVERTIME_DAILY_ENABLED); String currentOvertimeDailyThreshold = STD_DEFAULT_OVERTIME_DAILY_THRESHOLD; boolean currentOvertimeDoubleTimeEnabled = Boolean.parseBoolean(STD_DEFAULT_OVERTIME_DOUBLE_TIME_ENABLED); String currentOvertimeDoubleTimeThreshold = STD_DEFAULT_OVERTIME_DOUBLE_TIME_THRESHOLD; boolean currentOvertimeSeventhDayEnabled = Boolean.parseBoolean(STD_DEFAULT_OVERTIME_SEVENTH_DAY_ENABLED); String currentOvertimeSeventhDayOTThreshold = STD_DEFAULT_OVERTIME_SEVENTH_DAY_OT_THRESHOLD; String currentOvertimeSeventhDayDTThreshold = STD_DEFAULT_OVERTIME_SEVENTH_DAY_DT_THRESHOLD;
+
+    if (tenantId_settings != null && tenantId_settings > 0 && pageLevelError_settings == null) {
+        // This flag determines if we are on the *very first* load of settings.jsp in wizard mode for this tenant.
+        // We can use a non-existent setting key to check this.
+        boolean isFirstWizardSettingsLoad = false;
+        if (inSetupWizardMode_JSP) {
+            String firstLoadCheck = Configuration.getProperty(tenantId_settings, "WizardSettingsInitialized");
+            if (firstLoadCheck == null) {
+                isFirstWizardSettingsLoad = true;
+            }
+        }
+
+        if (inSetupWizardMode_JSP && isFirstWizardSettingsLoad) {
+            jspSettingsPageLogger.info("[settings.jsp] FIRST WIZARD LOAD: Applying and SAVING Wizard Defaults for TenantID: " + tenantId_settings);
+            currentPayPeriod = "Weekly"; currentFirstDayOfWeek = "Sunday"; currentPayPeriodStartDate = LocalDate.now().format(DateTimeFormatter.ISO_DATE); currentGracePeriod = "0"; currentOvertimeRuleMode = "AutoByState"; currentOvertimeState = (companyStateFromSignup != null && !companyStateFromSignup.isEmpty()) ? companyStateFromSignup : "FLSA"; currentHolidayPayRate = "1.0"; currentPunchRestrictionsEnabled = false; currentRestrictByTimeDay = false; currentRestrictByLocation = false; currentRestrictByNetwork = false; currentRestrictByDevice = false; currentOvertimeRate = "1.5"; currentOvertimeDailyEnabled = false; currentOvertimeDailyThreshold = "8.0"; currentOvertimeDoubleTimeEnabled = false; currentOvertimeDoubleTimeThreshold = "12.0"; currentOvertimeSeventhDayEnabled = false; currentOvertimeSeventhDayOTThreshold = "8.0"; currentOvertimeSeventhDayDTThreshold = "8.0";
+            try {
+                Configuration.saveProperty(tenantId_settings, "PayPeriodType", currentPayPeriod); Configuration.saveProperty(tenantId_settings, "FirstDayOfWeek", currentFirstDayOfWeek); Configuration.saveProperty(tenantId_settings, "PayPeriodStartDate", currentPayPeriodStartDate); Configuration.saveProperty(tenantId_settings, "GracePeriod", currentGracePeriod); Configuration.saveProperty(tenantId_settings, "OvertimeRuleMode", currentOvertimeRuleMode); Configuration.saveProperty(tenantId_settings, "OvertimeState", currentOvertimeState); Configuration.saveProperty(tenantId_settings, "HolidayPayRate", currentHolidayPayRate); Configuration.saveProperty(tenantId_settings, "PunchRestrictionsEnabled", String.valueOf(currentPunchRestrictionsEnabled)); Configuration.saveProperty(tenantId_settings, "RestrictByTimeDay", "false"); Configuration.saveProperty(tenantId_settings, "RestrictByLocation", "false"); Configuration.saveProperty(tenantId_settings, "RestrictByNetwork", "false"); Configuration.saveProperty(tenantId_settings, "RestrictByDevice", "false"); Configuration.saveProperty(tenantId_settings, "Overtime", STD_FIXED_OVERTIME_ENABLED_VALUE); Configuration.saveProperty(tenantId_settings, "HolidayPay", "true"); Configuration.saveProperty(tenantId_settings, "OvertimeRate", currentOvertimeRate); Configuration.saveProperty(tenantId_settings, "OvertimeDaily", String.valueOf(currentOvertimeDailyEnabled)); Configuration.saveProperty(tenantId_settings, "OvertimeDailyThreshold", currentOvertimeDailyThreshold); Configuration.saveProperty(tenantId_settings, "OvertimeDoubleTimeEnabled", String.valueOf(currentOvertimeDoubleTimeEnabled)); Configuration.saveProperty(tenantId_settings, "OvertimeDoubleTimeThreshold", currentOvertimeDoubleTimeThreshold); Configuration.saveProperty(tenantId_settings, "OvertimeSeventhDayEnabled", String.valueOf(currentOvertimeSeventhDayEnabled)); Configuration.saveProperty(tenantId_settings, "OvertimeSeventhDayOTThreshold", currentOvertimeSeventhDayOTThreshold); Configuration.saveProperty(tenantId_settings, "OvertimeSeventhDayDTThreshold", currentOvertimeSeventhDayDTThreshold);
+                Configuration.saveProperty(tenantId_settings, "WizardSettingsInitialized", "true"); // Mark that wizard defaults have been set
+                if (pageLevelSuccess_settings == null) pageLevelSuccess_settings = "Initial company settings populated. Review and click 'Next'.";
+            } catch (SQLException e) { jspSettingsPageLogger.log(Level.SEVERE, "[settings.jsp] WIZARD DEFAULTS SAVE FAILED T:" + tenantId_settings, e); pageLevelError_settings = "Error saving initial settings: " + e.getMessage(); }
+        } else { // Not the first wizard load OR not in wizard mode: Load normally from DB, initializing with STD defaults if needed
+            try {
+                if (Configuration.getProperty(tenantId_settings, "PayPeriodType") == null) Configuration.saveProperty(tenantId_settings, "PayPeriodType", STD_DEFAULT_PAY_PERIOD_TYPE);
+                // ... (All other Configuration.saveProperty if null checks for standard defaults from Turn 35) ...
+                 if (Configuration.getProperty(tenantId_settings, "FirstDayOfWeek") == null) Configuration.saveProperty(tenantId_settings, "FirstDayOfWeek", STD_DEFAULT_FIRST_DAY_OF_WEEK); if (Configuration.getProperty(tenantId_settings, "PayPeriodStartDate") == null) Configuration.saveProperty(tenantId_settings, "PayPeriodStartDate", STD_DEFAULT_PAY_PERIOD_START_DATE); if (Configuration.getProperty(tenantId_settings, "GracePeriod") == null) Configuration.saveProperty(tenantId_settings, "GracePeriod", "0"); if (Configuration.getProperty(tenantId_settings, "OvertimeRuleMode") == null) Configuration.saveProperty(tenantId_settings, "OvertimeRuleMode", STD_DEFAULT_OVERTIME_RULE_MODE); if (Configuration.getProperty(tenantId_settings, "OvertimeState") == null) Configuration.saveProperty(tenantId_settings, "OvertimeState", STD_DEFAULT_OVERTIME_STATE); if (Configuration.getProperty(tenantId_settings, "HolidayPayRate") == null) Configuration.saveProperty(tenantId_settings, "HolidayPayRate", STD_DEFAULT_HOLIDAYPAY_RATE_VALUE); if (Configuration.getProperty(tenantId_settings, "PunchRestrictionsEnabled") == null) Configuration.saveProperty(tenantId_settings, "PunchRestrictionsEnabled", STD_DEFAULT_PUNCH_RESTRICTIONS_ENABLED); if (!STD_FIXED_OVERTIME_ENABLED_VALUE.equals(Configuration.getProperty(tenantId_settings, "Overtime"))) Configuration.saveProperty(tenantId_settings, "Overtime", STD_FIXED_OVERTIME_ENABLED_VALUE); if (Configuration.getProperty(tenantId_settings, "OvertimeRate") == null) Configuration.saveProperty(tenantId_settings, "OvertimeRate", STD_DEFAULT_OVERTIME_RATE); if (Configuration.getProperty(tenantId_settings, "OvertimeDaily") == null) Configuration.saveProperty(tenantId_settings, "OvertimeDaily", STD_DEFAULT_OVERTIME_DAILY_ENABLED); if (Configuration.getProperty(tenantId_settings, "OvertimeDailyThreshold") == null) Configuration.saveProperty(tenantId_settings, "OvertimeDailyThreshold", STD_DEFAULT_OVERTIME_DAILY_THRESHOLD); if (Configuration.getProperty(tenantId_settings, "OvertimeDoubleTimeEnabled") == null) Configuration.saveProperty(tenantId_settings, "OvertimeDoubleTimeEnabled", STD_DEFAULT_OVERTIME_DOUBLE_TIME_ENABLED); if (Configuration.getProperty(tenantId_settings, "OvertimeDoubleTimeThreshold") == null) Configuration.saveProperty(tenantId_settings, "OvertimeDoubleTimeThreshold", STD_DEFAULT_OVERTIME_DOUBLE_TIME_THRESHOLD); if (Configuration.getProperty(tenantId_settings, "OvertimeSeventhDayEnabled") == null) Configuration.saveProperty(tenantId_settings, "OvertimeSeventhDayEnabled", STD_DEFAULT_OVERTIME_SEVENTH_DAY_ENABLED); if (Configuration.getProperty(tenantId_settings, "OvertimeSeventhDayOTThreshold") == null) Configuration.saveProperty(tenantId_settings, "OvertimeSeventhDayOTThreshold", STD_DEFAULT_OVERTIME_SEVENTH_DAY_OT_THRESHOLD); if (Configuration.getProperty(tenantId_settings, "OvertimeSeventhDayDTThreshold") == null) Configuration.saveProperty(tenantId_settings, "OvertimeSeventhDayDTThreshold", STD_DEFAULT_OVERTIME_SEVENTH_DAY_DT_THRESHOLD); if (!"true".equals(Configuration.getProperty(tenantId_settings, "HolidayPay"))) Configuration.saveProperty(tenantId_settings, "HolidayPay", "true"); if (Configuration.getProperty(tenantId_settings, "RestrictByTimeDay") == null) Configuration.saveProperty(tenantId_settings, "RestrictByTimeDay", "false"); if (Configuration.getProperty(tenantId_settings, "RestrictByLocation") == null) Configuration.saveProperty(tenantId_settings, "RestrictByLocation", "false"); if (Configuration.getProperty(tenantId_settings, "RestrictByNetwork") == null) Configuration.saveProperty(tenantId_settings, "RestrictByNetwork", "false"); if (Configuration.getProperty(tenantId_settings, "RestrictByDevice") == null) Configuration.saveProperty(tenantId_settings, "RestrictByDevice", "false");
+
+            } catch (SQLException e) { jspSettingsPageLogger.log(Level.SEVERE, "[settings.jsp] SQLException during standard default initialization T:" + tenantId_settings, e); pageLevelError_settings = "Error initializing settings: " + e.getMessage(); }
+
+            // Always load current values from DB to populate the JSP variables
+            currentPayPeriod = Configuration.getProperty(tenantId_settings, "PayPeriodType", STD_DEFAULT_PAY_PERIOD_TYPE);
+            currentFirstDayOfWeek = Configuration.getProperty(tenantId_settings, "FirstDayOfWeek", STD_DEFAULT_FIRST_DAY_OF_WEEK);
+            // ... (Load ALL other current* vars from Configuration.getProperty as in Turn 35) ...
+            currentPayPeriodStartDate = Configuration.getProperty(tenantId_settings, "PayPeriodStartDate", STD_DEFAULT_PAY_PERIOD_START_DATE); currentGracePeriod = Configuration.getProperty(tenantId_settings, "GracePeriod", "0"); currentOvertimeRuleMode = Configuration.getProperty(tenantId_settings, "OvertimeRuleMode", STD_DEFAULT_OVERTIME_RULE_MODE); currentOvertimeState = Configuration.getProperty(tenantId_settings, "OvertimeState", STD_DEFAULT_OVERTIME_STATE); currentHolidayPayRate = Configuration.getProperty(tenantId_settings, "HolidayPayRate", STD_DEFAULT_HOLIDAYPAY_RATE_VALUE); currentPunchRestrictionsEnabled = "true".equalsIgnoreCase(Configuration.getProperty(tenantId_settings, "PunchRestrictionsEnabled", STD_DEFAULT_PUNCH_RESTRICTIONS_ENABLED)); currentRestrictByTimeDay = "true".equalsIgnoreCase(Configuration.getProperty(tenantId_settings, "RestrictByTimeDay", "false")); currentRestrictByLocation = "true".equalsIgnoreCase(Configuration.getProperty(tenantId_settings, "RestrictByLocation", "false")); currentRestrictByNetwork = "true".equalsIgnoreCase(Configuration.getProperty(tenantId_settings, "RestrictByNetwork", "false")); currentRestrictByDevice = "true".equalsIgnoreCase(Configuration.getProperty(tenantId_settings, "RestrictByDevice", "false")); currentOvertimeRate = Configuration.getProperty(tenantId_settings, "OvertimeRate", STD_DEFAULT_OVERTIME_RATE); currentOvertimeDailyEnabled = "true".equalsIgnoreCase(Configuration.getProperty(tenantId_settings, "OvertimeDaily", STD_DEFAULT_OVERTIME_DAILY_ENABLED)); currentOvertimeDailyThreshold = Configuration.getProperty(tenantId_settings, "OvertimeDailyThreshold", STD_DEFAULT_OVERTIME_DAILY_THRESHOLD); currentOvertimeDoubleTimeEnabled = "true".equalsIgnoreCase(Configuration.getProperty(tenantId_settings, "OvertimeDoubleTimeEnabled", STD_DEFAULT_OVERTIME_DOUBLE_TIME_ENABLED)); currentOvertimeDoubleTimeThreshold = Configuration.getProperty(tenantId_settings, "OvertimeDoubleTimeThreshold", STD_DEFAULT_OVERTIME_DOUBLE_TIME_THRESHOLD); currentOvertimeSeventhDayEnabled = "true".equalsIgnoreCase(Configuration.getProperty(tenantId_settings, "OvertimeSeventhDayEnabled", STD_DEFAULT_OVERTIME_SEVENTH_DAY_ENABLED)); currentOvertimeSeventhDayOTThreshold = Configuration.getProperty(tenantId_settings, "OvertimeSeventhDayOTThreshold", STD_DEFAULT_OVERTIME_SEVENTH_DAY_OT_THRESHOLD); currentOvertimeSeventhDayDTThreshold = Configuration.getProperty(tenantId_settings, "OvertimeSeventhDayDTThreshold", STD_DEFAULT_OVERTIME_SEVENTH_DAY_DT_THRESHOLD);
+        }
+    }
 %>
 
 <!DOCTYPE html>
 <html>
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Settings</title>
-<link rel="stylesheet" href="css/settings.css?v=6"> <%-- Link to settings.css --%>
-<link rel="stylesheet" href="css/navbar.css">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Settings<% if(inSetupWizardMode_JSP) { %> - Company Setup Wizard<% } %></title>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/settings.css?v=<%= System.currentTimeMillis() %>">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/navbar.css?v=<%= System.currentTimeMillis() %>">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        .wizard-header { background-color: #004080; color: white; padding: 15px 20px; text-align: center; margin-bottom:20px; border-radius: 0 0 5px 5px; }
+        .wizard-header h2 { margin-top:0; margin-bottom: 5px; font-weight: 500;}
+        .wizard-header p { margin-bottom:0; font-size:0.9em; opacity: 0.9;}
+        .page-message { padding: 10px 15px; margin-bottom: 15px; border-radius: 4px; display: flex; align-items: center; }
+        .page-message i { margin-right: 8px; font-size: 1.2em; }
+        .success-message { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error-message { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    </style>
 </head>
 <body>
-    <%-- Consider adding Navbar include here if it's missing --%>
-    <%-- <%@ include file="/WEB-INF/includes/navbar.jspf" %> --%>
-
     <div class="parent-container">
-    <%@ include file="/WEB-INF/includes/navbar.jspf" %>
-        <h1>Settings</h1>
+    <% if (!inSetupWizardMode_JSP) { %>
+        <%@ include file="/WEB-INF/includes/navbar.jspf" %>
+    <% } else { %>
+        <div class="wizard-header">
+            <h2>Company Setup: Initial Settings for <%= escapeHtml(companyNameForWizardHeader) %></h2>
+            <p>Please review and confirm these settings. You can change them anytime later.</p>
+        </div>
+    <% } %>
+        <h1><i class="fas fa-cogs"></i>Global Settings<% if(inSetupWizardMode_JSP) { %> <span style="font-size:0.8em; color:#555;">(Setup Step)</span><% } %></h1>
+        <% if (pageLevelSuccess_settings != null && !pageLevelSuccess_settings.isEmpty()) { %><div class="page-message success-message"><i class="fas fa-check-circle"></i> <%= escapeHtml(pageLevelSuccess_settings) %></div><% } %>
+        <% if (pageLevelError_settings != null && !pageLevelError_settings.isEmpty()) { %><div class="page-message error-message"><i class="fas fa-exclamation-triangle"></i> <%= escapeHtml(pageLevelError_settings) %></div><% } %>
 
+        <% if (tenantId_settings != null && tenantId_settings > 0 && pageLevelError_settings == null) { %>
         <form id="settingsForm" onsubmit="return false;">
-
-            <%-- Section 1: Pay Period & Work Week --%>
-            <div class="setting-item">
-                 <h4 class="section-heading">Pay Period & Work Week</h4>
-                 <div class="form-row">
-                    <div class="form-item">
-                        <label for="payPeriod">Pay Period Type:</label>
-                        <select id="payPeriod" name="PayPeriodType">
-                            <option value="Daily" <% if ("Daily".equals(currentPayPeriod)) out.print(" selected"); %>>Daily</option>
-                            <option value="Weekly" <% if ("Weekly".equals(currentPayPeriod)) out.print(" selected"); %>>Weekly</option>
-                            <option value="Bi-Weekly" <% if ("Bi-Weekly".equals(currentPayPeriod)) out.print(" selected"); %>>Bi-Weekly</option>
-                            <option value="Semi-Monthly" <% if ("Semi-Monthly".equals(currentPayPeriod)) out.print(" selected"); %>>Semi-Monthly</option>
-                            <option value="Monthly" <% if ("Monthly".equals(currentPayPeriod)) out.print(" selected"); %>>Monthly</option>
-                        </select>
-                        <span id="payPeriod-status" class="save-status"></span>
-                    </div>
-                    <div class="form-item">
-                        <label for="firstDay">First Day of Work Week:</label>
-                        <select id="firstDay" name="FirstDayOfWeek">
-                             <option value="Sunday" <% if ("Sunday".equals(currentFirstDay)) out.print(" selected"); %>>Sunday</option>
-                             <option value="Monday" <% if ("Monday".equals(currentFirstDay)) out.print(" selected"); %>>Monday</option>
-                             <option value="Tuesday" <% if ("Tuesday".equals(currentFirstDay)) out.print(" selected"); %>>Tuesday</option>
-                             <option value="Wednesday" <% if ("Wednesday".equals(currentFirstDay)) out.print(" selected"); %>>Wednesday</option>
-                             <option value="Thursday" <% if ("Thursday".equals(currentFirstDay)) out.print(" selected"); %>>Thursday</option>
-                             <option value="Friday" <% if ("Friday".equals(currentFirstDay)) out.print(" selected"); %>>Friday</option>
-                             <option value="Saturday" <% if ("Saturday".equals(currentFirstDay)) out.print(" selected"); %>>Saturday</option>
-                        </select>
-                        <span id="firstDay-status" class="save-status"></span>
-                    </div>
-                 </div>
-                 <div class="setting-warning">
-                    <strong>Note:</strong> Changing 'Pay Period Type' or 'First Day of Work Week' mid-period may affect calculations. It's recommended to make these changes only after closing the current pay period.
-                 </div>
-            </div>
-
-            <%-- Section 2: Grace Period --%>
-            <div class="setting-item">
-                 <h4 class="section-heading">Tardy / Early Out Rules</h4>
-                <div class="form-row">
-                    <div class="form-item">
-                        <label for="gracePeriod">Grace Period (Minutes):</label>
-                        <select id="gracePeriod" name="GracePeriod">
-                            <option value="0" <% if ("0".equals(currentGracePeriod)) out.print(" selected"); %>>0</option>
-                            <option value="1" <% if ("1".equals(currentGracePeriod)) out.print(" selected"); %>>1</option>
-                            <option value="2" <% if ("2".equals(currentGracePeriod)) out.print(" selected"); %>>2</option>
-                            <option value="3" <% if ("3".equals(currentGracePeriod)) out.print(" selected"); %>>3</option>
-                            <option value="4" <% if ("4".equals(currentGracePeriod)) out.print(" selected"); %>>4</option>
-                            <option value="5" <% if ("5".equals(currentGracePeriod)) out.print(" selected"); %>>5</option>
-                            <option value="10" <% if ("10".equals(currentGracePeriod)) out.print(" selected"); %>>10</option>
-                            <option value="15" <% if ("15".equals(currentGracePeriod)) out.print(" selected"); %>>15</option>
-                            <option value="30" <% if ("30".equals(currentGracePeriod)) out.print(" selected"); %>>30</option>
-                            <option value="60" <% if ("60".equals(currentGracePeriod)) out.print(" selected"); %>>60</option>
-                        </select>
-                        <span id="gracePeriod-status" class="save-status"></span>
-                    </div>
-                     <div class="form-item"></div> <%-- Empty item for spacing --%>
-                </div>
-                 <div class="setting-info">
-                    <strong>Info:</strong> This Grace Period is used to determine how many minutes after the scheduled start (or before the scheduled end) an employee can clock in/out before being marked as tardy or leaving early.
-                 </div>
-            </div>
-
-            <%-- Section 3: Overtime Rules (Combined Weekly & Daily) --%>
-             <div class="setting-item">
-                 <h4 class="section-heading">Overtime Rules</h4>
-
-                 <%-- Row 3a: Weekly Overtime --%>
-                 <div class="form-row">
-                    <div class="form-item" style="flex-basis: 30%; flex-grow:0.5;">
-                        <label for="overtime">Enable Overtime (Weekly):</label>
-                        <span class="styled-checkbox">
-                              <input type="checkbox" id="overtime" name="Overtime" value="true" <% if (currentOvertimeEnabled) out.print(" checked"); %>>
-                              <label for="overtime">Enabled</label>
-                        </span>
-                    </div>
-                    <div class="form-item">
-                         <label>Overtime Rate:</label>
-                         <div class="radio-group">
-                             <span class="styled-radio">
-                                 <input type="radio" id="overtimeRate1.5" name="OvertimeRate" value="1.5" <% if ("1.5".equals(currentOvertimeRate)) out.print(" checked"); %>>
-                                 <label for="overtimeRate1.5">1.5x Rate</label>
-                             </span>
-                             <span class="styled-radio">
-                                 <input type="radio" id="overtimeRate2.0" name="OvertimeRate" value="2.0" <% if ("2.0".equals(currentOvertimeRate)) out.print(" checked"); %>>
-                                 <label for="overtimeRate2.0">2.0x Rate</label>
-                             </span>
-                             <span id="OvertimeRate-status" class="save-status" style="margin-left: 0; display: block; width: 100%;"></span>
-                         </div>
-                    </div>
-                 </div>
-
-                 <%-- Row 3b: Daily Overtime --%>
-                 <div class="form-row" style="margin-top: 15px;">
-                      <div class="form-item" style="flex-basis: 30%; flex-grow:0.5;">
-                          <label for="overtimeDaily">Enable Daily Overtime:</label>
-                          <span class="styled-checkbox">
-                              <input type="checkbox" id="overtimeDaily" name="OvertimeDaily" value="true" <% if (currentOvertimeDailyEnabled) out.print(" checked"); %>>
-                              <label for="overtimeDaily">Enabled (After X hours)</label>
-                          </span>
-                      </div>
-                       <div class="form-item">
-                           <label for="overtimeDailyThreshold">Daily Overtime Threshold:</label>
-                           <input type="number" id="overtimeDailyThreshold" name="OvertimeDailyThreshold" min="1" step="1" placeholder="e.g., 8"
-                                  value="<%= currentOvertimeDailyThreshold %>"
-                                  <% if (!currentOvertimeDailyEnabled) out.print(" disabled"); %>
-                                  <% if (currentOvertimeDailyEnabled) out.print(" required"); %>>
-                           <span id="overtimeDailyThreshold-status" class="save-status"></span>
-                       </div>
-                 </div>
-            </div> <%-- End Overtime Rules setting-item --%>
-
-
-            <%-- Section 4: Holiday Pay Settings --%>
-            <div class="setting-item">
-                <h4 class="section-heading">Holiday Pay Rules</h4>
-                 <div class="form-row">
-                    <div class="form-item" style="flex-basis: 30%; flex-grow:0.5;">
-                        <label for="holidayPay">Enable Holiday Pay:</label>
-                         <span class="styled-checkbox">
-                              <input type="checkbox" id="holidayPay" name="HolidayPay" value="true" <% if (currentHolidayPayEnabled) out.print(" checked"); %>>
-                              <label for="holidayPay">Enabled</label>
-                        </span>
-                    </div>
-                    <div class="form-item">
-                        <label>Holiday Pay Rate:</label>
-                        <div class="radio-group">
-                             <%-- **** ADDED 1.0x Rate Option **** --%>
-                             <span class="styled-radio">
-                                 <input type="radio" id="holidayPayRate1.0" name="HolidayPayRate" value="1.0" <% if ("1.0".equals(currentHolidayPayRate)) out.print(" checked"); %> <% if (!currentHolidayPayEnabled) out.print(" disabled"); %>>
-                                 <label for="holidayPayRate1.0">1.0x Rate (Regular)</label>
-                             </span>
-                             <%-- **** End New Option **** --%>
-
-                             <span class="styled-radio">
-                                 <input type="radio" id="holidayPayRate1.5" name="HolidayPayRate" value="1.5" <% if ("1.5".equals(currentHolidayPayRate)) out.print(" checked"); %> <% if (!currentHolidayPayEnabled) out.print(" disabled"); %>>
-                                 <label for="holidayPayRate1.5">1.5x Rate</label>
-                             </span>
-                             <span class="styled-radio">
-                                 <input type="radio" id="holidayPayRate2.0" name="HolidayPayRate" value="2.0" <% if ("2.0".equals(currentHolidayPayRate)) out.print(" checked"); %> <% if (!currentHolidayPayEnabled) out.print(" disabled"); %>>
-                                 <label for="holidayPayRate2.0">2.0x Rate</label>
-                             </span>
-                              <span id="HolidayPayRate-status" class="save-status" style="margin-left: 0; display: block; width: 100%;"></span>
-                         </div>
-                    </div>
-                </div>
-            </div>
-
+            <%-- Paste your FULL HTML form from settings.jsp (Turn 9 or the last full version I provided) HERE. --%>
+            <%-- Ensure all its input fields, selects, and checkboxes correctly use the 'current*' JSP variables --%>
+            <%-- Example of Pay Period Section (ensure all other sections follow this pattern from Turn 35) --%>
+            <div class="setting-item"><h4 class="section-heading"><i class="fas fa-calendar-alt"></i>Pay Period</h4><div class="form-row"><div class="setting-block"><label for="payPeriodType" class="setting-label-fixed">Pay Period Type:</label><div class="setting-controls-wrapper"><select id="payPeriodType" name="PayPeriodType" style="min-width:180px;"><option value="Daily" <% if ("Daily".equals(currentPayPeriod)) out.print(" selected"); %>>Daily</option><option value="Weekly" <% if ("Weekly".equals(currentPayPeriod)) out.print(" selected"); %>>Weekly</option><option value="Bi-Weekly" <% if ("Bi-Weekly".equals(currentPayPeriod)) out.print(" selected"); %>>Bi-Weekly</option><option value="Semi-Monthly" <% if ("Semi-Monthly".equals(currentPayPeriod)) out.print(" selected"); %>>Semi-Monthly</option><option value="Monthly" <% if ("Monthly".equals(currentPayPeriod)) out.print(" selected"); %>>Monthly</option></select><span id="PayPeriodType-status" class="save-status"></span></div></div> <div class="setting-block" id="firstDayOfWeekBlock"><label for="firstDayOfWeek" class="setting-label-fixed">First Day of Work Week:</label><div class="setting-controls-wrapper"><select id="firstDayOfWeek" name="FirstDayOfWeek" style="min-width:180px;"><option value="Sunday" <% if ("Sunday".equalsIgnoreCase(currentFirstDayOfWeek)) out.print(" selected"); %>>Sunday</option><option value="Monday" <% if ("Monday".equalsIgnoreCase(currentFirstDayOfWeek)) out.print(" selected"); %>>Monday</option><option value="Tuesday" <% if ("Tuesday".equalsIgnoreCase(currentFirstDayOfWeek)) out.print(" selected"); %>>Tuesday</option><option value="Wednesday" <% if ("Wednesday".equalsIgnoreCase(currentFirstDayOfWeek)) out.print(" selected"); %>>Wednesday</option><option value="Thursday" <% if ("Thursday".equalsIgnoreCase(currentFirstDayOfWeek)) out.print(" selected"); %>>Thursday</option><option value="Friday" <% if ("Friday".equalsIgnoreCase(currentFirstDayOfWeek)) out.print(" selected"); %>>Friday</option><option value="Saturday" <% if ("Saturday".equalsIgnoreCase(currentFirstDayOfWeek)) out.print(" selected"); %>>Saturday</option></select><span id="FirstDayOfWeek-status" class="save-status"></span></div></div> <div class="setting-block" id="payPeriodStartDateBlock"><label for="payPeriodStartDate" class="setting-label-fixed">Pay Period Start Date:</label><div class="setting-controls-wrapper"><input type="date" id="payPeriodStartDate" name="PayPeriodStartDate" value="<%= escapeHtml(currentPayPeriodStartDate) %>" style="min-width:180px;"><span id="PayPeriodStartDate-status" class="save-status"></span></div></div> <div class="setting-block" id="payPeriodEndDateBlock"><label class="setting-label-fixed">Calculated Pay Period End:</label><div class="setting-controls-wrapper"><span id="payPeriodEndDateDisplay" class="calculated-date-display"></span></div></div></div></div>
+            <%-- ... (ALL OTHER setting-item divs for Grace, Overtime, Holiday, Punch Restrictions from Turn 35) ... --%>
+            <div class="setting-item"><h4 class="section-heading"><i class="fas fa-user-clock"></i>Tardy / Early Out Rules</h4><div class="form-row"><div class="setting-block"><label for="gracePeriod" class="setting-label-fixed">Grace Period (Minutes):</label><div class="setting-controls-wrapper"><select id="gracePeriod" name="GracePeriod" style="min-width:100px;"><% for (int i : new int[]{0, 1, 2, 3, 4, 5, 10, 15, 30, 60}) { %><option value="<%= i %>" <% if (String.valueOf(i).equals(currentGracePeriod)) out.print(" selected"); %>><%= i %></option><% } %></select><span id="GracePeriod-status" class="save-status"></span></div></div></div></div>
+            <div class="setting-item"><h4 class="section-heading"><i class="fas fa-hourglass-half"></i>Overtime Rules</h4><div class="form-row"><div class="setting-block"><label class="setting-label-fixed">Overtime Calculation Mode:</label><div class="setting-controls-wrapper"><div class="radio-group"><span class="styled-radio"><input type="radio" id="otModeManual" name="OvertimeRuleMode" value="Manual" <% if ("Manual".equals(currentOvertimeRuleMode)) out.print(" checked"); %>> <label for="otModeManual">Manual</label></span> <span class="styled-radio"><input type="radio" id="otModeAuto" name="OvertimeRuleMode" value="AutoByState" <% if ("AutoByState".equals(currentOvertimeRuleMode)) out.print(" checked"); %>> <label for="otModeAuto">Automatic by State</label></span></div> <span id="OvertimeRuleMode-status" class="save-status radio-group-status"></span></div></div></div><div id="autoStateOvertimeSection" style="margin-top:15px; <% if (!"AutoByState".equals(currentOvertimeRuleMode)) out.print("display:none;"); %>"><div class="form-row"><div class="setting-block"><label for="overtimeStateSelect" class="setting-label-fixed">Select State:</label><div class="setting-controls-wrapper"> <select id="overtimeStateSelect" name="OvertimeState" style="min-width:250px;"></select> <span id="OvertimeState-status" class="save-status"></span> </div></div></div><div id="stateSpecificNotesDisplay" style="margin-top:10px; font-style:italic; color: #555; background-color: #f0f0f0; border: 1px solid #ddd; padding: 8px; border-radius: 4px;"></div></div><div id="manualOvertimeSettings" style="margin-top:20px; border-top:1px dashed #ccc; padding-top:15px; <% if ("AutoByState".equals(currentOvertimeRuleMode)) { out.print("opacity:0.7;"); } %>"><div class="form-row"><div class="setting-block"><label class="setting-label-fixed">Weekly Overtime (FLSA):</label> <div class="setting-controls-wrapper"><label class="switch"><input type="checkbox" id="overtimeWeeklyEnabled" name="Overtime" value="true" checked disabled><span class="slider round"></span></label><span style="margin-left: 5px;">Enabled (After 40 hours)</span><small class="fixed-setting-note" style="margin-left:10px;">Fixed</small></div></div><div class="setting-block"><label class="setting-label-fixed">Std. Overtime Rate:</label><div class="setting-controls-wrapper"><div class="radio-group"><span class="styled-radio"><input type="radio" id="overtimeRate1.5" name="OvertimeRate" value="1.5" <% if ("1.5".equals(currentOvertimeRate)) out.print(" checked"); %>><label for="overtimeRate1.5">1.5x</label></span> <span class="styled-radio"><input type="radio" id="overtimeRate2.0" name="OvertimeRate" value="2.0" <% if ("2.0".equals(currentOvertimeRate)) out.print(" checked"); %>><label for="overtimeRate2.0">2.0x</label></span></div><span id="OvertimeRate-status" class="save-status radio-group-status"></span></div></div></div><hr style="border:0; border-top: 1px dashed #eee; margin: 15px 0;"><div class="form-row"><div class="setting-block"><label for="overtimeDaily" class="setting-label-fixed">Enable Daily OT:</label><div class="setting-controls-wrapper"><label class="switch"><input type="checkbox" id="overtimeDaily" name="OvertimeDaily" value="true" <% if (currentOvertimeDailyEnabled) out.print(" checked"); %>><span class="slider round"></span></label><span id="OvertimeDaily-status" class="save-status checkbox-status"></span></div></div><div class="setting-block" id="overtimeDailyThresholdBlock" style="<% if (!currentOvertimeDailyEnabled && "Manual".equals(currentOvertimeRuleMode)) out.print("opacity:0.5;"); %>"><label for="overtimeDailyThreshold" class="setting-label-fixed">Daily OT After (Hrs):</label><div class="setting-controls-wrapper"><input type="number" id="overtimeDailyThreshold" name="OvertimeDailyThreshold" min="0.5" max="23.5" step="0.5" placeholder="e.g., 8.0" value="<%= currentOvertimeDailyThreshold %>" class="short-input"><span id="OvertimeDailyThreshold-status" class="save-status"></span></div></div></div><div class="form-row"><div class="setting-block"><label for="overtimeDoubleTimeEnabled" class="setting-label-fixed">Enable Daily DT:</label><div class="setting-controls-wrapper"><label class="switch"><input type="checkbox" id="overtimeDoubleTimeEnabled" name="OvertimeDoubleTimeEnabled" value="true" <% if (currentOvertimeDoubleTimeEnabled) out.print(" checked"); %>><span class="slider round"></span></label><span id="OvertimeDoubleTimeEnabled-status" class="save-status checkbox-status"></span></div></div><div class="setting-block" id="overtimeDoubleTimeThresholdBlock" style="<% if (!currentOvertimeDoubleTimeEnabled && "Manual".equals(currentOvertimeRuleMode)) out.print("opacity:0.5;"); %>"><label for="overtimeDoubleTimeThreshold" class="setting-label-fixed">Daily DT After (Hrs):</label><div class="setting-controls-wrapper"><input type="number" id="overtimeDoubleTimeThreshold" name="OvertimeDoubleTimeThreshold" min="0.5" max="23.5" step="0.5" placeholder="e.g., 12.0" value="<%= currentOvertimeDoubleTimeThreshold %>" class="short-input"><span id="OvertimeDoubleTimeThreshold-status" class="save-status"></span></div></div></div><hr style="border:0; border-top: 1px dashed #eee; margin: 15px 0;"><div class="form-row"><div class="setting-block"><label for="overtimeSeventhDayEnabled" class="setting-label-fixed">Enable 7th Day OT:</label><div class="setting-controls-wrapper"><label class="switch"><input type="checkbox" id="overtimeSeventhDayEnabled" name="OvertimeSeventhDayEnabled" value="true" <% if (currentOvertimeSeventhDayEnabled) out.print(" checked"); %>><span class="slider round"></span></label><span id="OvertimeSeventhDayEnabled-status" class="save-status checkbox-status"></span></div></div></div><div class="form-row" id="seventhDayOTDetailsBlock" style="padding-left:20px; <% if(!currentOvertimeSeventhDayEnabled) out.print("display:none;"); %> <% if (!currentOvertimeSeventhDayEnabled && "Manual".equals(currentOvertimeRuleMode)) out.print("opacity:0.5;"); %>"><div class="setting-block"><label for="overtimeSeventhDayOTThreshold" class="setting-label-fixed" style="font-weight:normal;">7th Day 1.5x Up To (Hrs):</label><div class="setting-controls-wrapper"><input type="number" id="overtimeSeventhDayOTThreshold" name="OvertimeSeventhDayOTThreshold" min="0.5" max="24" step="0.5" placeholder="e.g., 8.0" value="<%= currentOvertimeSeventhDayOTThreshold %>" class="short-input"><span style="margin-left:5px;">hours</span><span id="OvertimeSeventhDayOTThreshold-status" class="save-status"></span></div></div><div class="setting-block"><label for="overtimeSeventhDayDTThreshold" class="setting-label-fixed" style="font-weight:normal;">7th Day 2.0x After (Hrs):</label><div class="setting-controls-wrapper"><input type="number" id="overtimeSeventhDayDTThreshold" name="OvertimeSeventhDayDTThreshold" min="0.5" max="24" step="0.5" placeholder="e.g., 8.0" value="<%= currentOvertimeSeventhDayDTThreshold %>" class="short-input"><span style="margin-left:5px;">hours</span><span id="OvertimeSeventhDayDTThreshold-status" class="save-status"></span></div></div></div></div></div>
+            <div class="setting-item"><h4 class="section-heading"><i class="fas fa-gifts"></i>Holiday Pay Rules</h4><div class="form-row"><div class="setting-block"><label class="setting-label-fixed">Holiday Pay Rate:</label><div class="setting-controls-wrapper"><div class="radio-group"> <span class="styled-radio"><input type="radio" id="holidayPayRate1.0" name="HolidayPayRate" value="1.0" <% if ("1.0".equals(currentHolidayPayRate)) out.print(" checked"); %>><label for="holidayPayRate1.0">1.0x (Regular)</label></span> <span class="styled-radio"><input type="radio" id="holidayPayRate1.5" name="HolidayPayRate" value="1.5" <% if ("1.5".equals(currentHolidayPayRate)) out.print(" checked"); %>><label for="holidayPayRate1.5">1.5x</label></span> <span class="styled-radio"><input type="radio" id="holidayPayRate2.0" name="HolidayPayRate" value="2.0" <% if ("2.0".equals(currentHolidayPayRate)) out.print(" checked"); %>><label for="holidayPayRate2.0">2.0x</label></span></div><span id="HolidayPayRate-status" class="save-status radio-group-status"></span></div></div></div></div>
+            <div class="setting-item"><h4 class="section-heading"><i class="fas fa-fingerprint"></i>Punch Restrictions</h4><div class="setting-info" style="margin-bottom: 15px;"><strong>Note:</strong> Global settings...</div><div class="setting-block" style="margin-bottom:10px;"><label for="punchRestrictionsEnabled" class="setting-label-fixed">Enable Punch Restrictions:</label><div class="setting-controls-wrapper"><label class="switch"><input type="checkbox" id="punchRestrictionsEnabled" name="PunchRestrictionsEnabled" value="true" <% if (currentPunchRestrictionsEnabled) out.print(" checked"); %>><span class="slider round"></span></label><span id="PunchRestrictionsEnabled-status" class="save-status checkbox-status"></span></div></div><div id="specificPunchRestrictionsGroup" class="sub-settings-group" style="<% if (!currentPunchRestrictionsEnabled) out.print("opacity:0.6;"); %>"><div class="punch-restriction-item"><label class="switch"><input type="checkbox" id="restrictByTimeDay" name="RestrictByTimeDay" value="true" <% if (currentRestrictByTimeDay) out.print(" checked"); %> <% if(!currentPunchRestrictionsEnabled) out.print("disabled");%>><span class="slider round"></span></label><label for="restrictByTimeDay" class="slider-label <% if(!currentPunchRestrictionsEnabled) out.print("disabled-text");%>"><i class="far fa-calendar-alt"></i>Restrict by Time/Day</label><span class="spacer"></span><button type="button" class="configure-button" id="configureTimeDayBtn" <% if(!currentPunchRestrictionsEnabled || !currentRestrictByTimeDay) out.print("disabled");%>>Configure</button></div><div class="punch-restriction-item"><label class="switch"><input type="checkbox" id="restrictByLocation" name="RestrictByLocation" value="true" <% if (currentRestrictByLocation) out.print(" checked"); %> <% if(!currentPunchRestrictionsEnabled) out.print("disabled");%>><span class="slider round"></span></label><label for="restrictByLocation" class="slider-label <% if(!currentPunchRestrictionsEnabled) out.print("disabled-text");%>"><i class="fas fa-map-marker-alt"></i>Restrict by Location<span class="required-asterisk">*</span></label><span class="spacer"></span><button type="button" class="configure-button" id="configureLocationBtn" <% if(!currentPunchRestrictionsEnabled || !currentRestrictByLocation) out.print("disabled");%>>Configure</button></div><div class="punch-restriction-item"><label class="switch"><input type="checkbox" id="restrictByNetwork" name="RestrictByNetwork" value="true" <% if (currentRestrictByNetwork) out.print(" checked"); %> <% if(!currentPunchRestrictionsEnabled) out.print("disabled");%>><span class="slider round"></span></label><label for="restrictByNetwork" class="slider-label <% if(!currentPunchRestrictionsEnabled) out.print("disabled-text");%>"><i class="fas fa-network-wired"></i>Restrict by Network</label><span class="spacer"></span><button type="button" class="configure-button" id="configureNetworkBtn" <% if(!currentPunchRestrictionsEnabled || !currentRestrictByNetwork) out.print("disabled");%>>Configure</button></div><div class="punch-restriction-item"><label class="switch"><input type="checkbox" id="restrictByDevice" name="RestrictByDevice" value="true" <% if (currentRestrictByDevice) out.print(" checked"); %> <% if(!currentPunchRestrictionsEnabled) out.print("disabled");%>><span class="slider round"></span></label><label for="restrictByDevice" class="slider-label <% if(!currentPunchRestrictionsEnabled) out.print("disabled-text");%>"><i class="fas fa-mobile-alt"></i>Restrict by Device</label><span class="spacer"></span><button type="button" class="configure-button" id="configureDeviceBtn" <% if(!currentPunchRestrictionsEnabled || !currentRestrictByDevice) out.print("disabled");%>>Configure</button></div></div><div class="setting-info" style="margin-top: 20px; padding-left: 10px;"><span class="required-asterisk" style="font-size:1em; margin-right: 5px; font-style:normal; font-weight:bold;">*</span> Wi-Fi or device GPS is recommended...</div></div>
         </form>
+
+        <% if (inSetupWizardMode_JSP) { %>
+            <div class="wizard-navigation" style="text-align: right; margin-top: 30px; padding-top:20px; border-top: 1px solid #eee;">
+                <button type="button" id="wizardSettingsNextButton" class="glossy-button text-green" style="padding: 10px 20px; font-size: 1.1em;">
+                    Next: Departments Setup <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        <% } %>
+
+        <% } else {
+             if (pageLevelError_settings == null || pageLevelError_settings.isEmpty()) { pageLevelError_settings = "Settings cannot be loaded due to an invalid session or tenant configuration."; } %>
+             <div class="page-message error-message"><i class="fas fa-exclamation-triangle"></i><%= escapeHtml(pageLevelError_settings) %></div>
+        <% } %>
     </div>
 
-    <%-- Link the External JavaScript file --%>
-    <script src="js/settings.js?v=7"></script> <%-- Increment version if JS changes needed (none for this) --%>
+    <script>
+        window.settingsConfig = { payPeriodType: "<%= escapeForJavaScriptString(currentPayPeriod) %>", firstDayOfWeek: "<%= escapeForJavaScriptString(currentFirstDayOfWeek) %>", payPeriodStartDate: "<%= escapeForJavaScriptString(currentPayPeriodStartDate) %>", gracePeriod: "<%= escapeForJavaScriptString(currentGracePeriod) %>", overtimeRuleMode: "<%= escapeForJavaScriptString(currentOvertimeRuleMode) %>", overtimeState: "<%= escapeForJavaScriptString(currentOvertimeState) %>", holidayPayRate: "<%= escapeForJavaScriptString(currentHolidayPayRate) %>", punchRestrictionsEnabled: <%= currentPunchRestrictionsEnabled %>, overtimeRate: "<%= escapeForJavaScriptString(currentOvertimeRate) %>", overtimeDailyEnabled: <%= currentOvertimeDailyEnabled %>, overtimeDailyThreshold: "<%= escapeForJavaScriptString(currentOvertimeDailyThreshold) %>", overtimeDoubleTimeEnabled: <%= currentOvertimeDoubleTimeEnabled %>, overtimeDoubleTimeThreshold: "<%= escapeForJavaScriptString(currentOvertimeDoubleTimeThreshold) %>", overtimeSeventhDayEnabled: <%= currentOvertimeSeventhDayEnabled %>, overtimeSeventhDayOTThreshold: "<%= escapeForJavaScriptString(currentOvertimeSeventhDayOTThreshold) %>", overtimeSeventhDayDTThreshold: "<%= escapeForJavaScriptString(currentOvertimeSeventhDayDTThreshold) %>", restrictByTimeDay: <%= currentRestrictByTimeDay %>, restrictByLocation: <%= currentRestrictByLocation %>, restrictByNetwork: <%= currentRestrictByNetwork %>, restrictByDevice: <%= currentRestrictByDevice %> };
+        window.inWizardMode_Page = <%= inSetupWizardMode_JSP %>;
+        window.currentWizardStep_Page = "<%= wizardStepForPage != null ? escapeForJavaScriptString(wizardStepForPage) : "" %>";
+    </script>
+    <script src="${pageContext.request.contextPath}/js/settings.js?v=<%= System.currentTimeMillis() %>"></script>
+    <%@ include file="/WEB-INF/includes/common-scripts.jspf" %>
 
+    <% if (inSetupWizardMode_JSP) { %>
+<script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const nextButton = document.getElementById('wizardSettingsNextButton');
+            
+            // Capture the context path from JSP into a JavaScript const ONCE.
+            // Your logs have shown this line *does* correctly get '/Clockify'.
+            const THE_APP_CONTEXT_PATH = "<%= request.getContextPath() %>";
+            
+            console.log("[settings.jsp 'Next' Button JS] Page Loaded. THE_APP_CONTEXT_PATH captured as: '" + THE_APP_CONTEXT_PATH + "'");
+
+            if (nextButton) {
+                console.log("[settings.jsp 'Next' Button JS] 'wizardSettingsNextButton' found. Attaching click listener.");
+                nextButton.addEventListener('click', function() {
+                    console.log("[settings.jsp 'Next' Button JS] 'Next' button CLICKED.");
+                    this.disabled = true;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Proceeding...';
+
+                    // Construct the URL for WizardStatusServlet
+                    // Ensure THE_APP_CONTEXT_PATH is used.
+                    let fetchUrlToWizardServlet = "";
+                    if (THE_APP_CONTEXT_PATH && THE_APP_CONTEXT_PATH !== "" && THE_APP_CONTEXT_PATH !== "/") {
+                        fetchUrlToWizardServlet = THE_APP_CONTEXT_PATH + "/WizardStatusServlet";
+                    } else { // Handles root context ("") or if context is somehow just "/"
+                        fetchUrlToWizardServlet = "/WizardStatusServlet";
+                    }
+                    console.log("[settings.jsp JS] Attempting to POST to WizardStatusServlet at: '" + fetchUrlToWizardServlet + "'");
+
+                    fetch(fetchUrlToWizardServlet, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                        body: new URLSearchParams({
+                            'action': 'setWizardStep',
+                            'nextStep': 'departments'
+                        })
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            const status = response.status;
+                            const statusText = response.statusText;
+                            logger.error("[settings.jsp JS] Fetch to WizardStatusServlet FAILED. Status: " + status + " " + statusText);
+                            // Attempt to get response text for more debug info
+                            return response.text().then(text => {
+                                throw { 
+                                    name: "HTTPError", status: status, statusText: statusText, 
+                                    message: `Server error calling WizardStatusServlet: ${status} ${statusText}`, 
+                                    responseText: text 
+                                };
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success && data.nextStep) {
+                            console.log("[settings.jsp JS] WizardStatusServlet success. Next step from server: '" + data.nextStep + "'");
+                            
+                            // Construct the redirect URL for departments.jsp
+                            // CRITICAL: Explicitly use THE_APP_CONTEXT_PATH
+                            let redirectUrlToDepartments = "";
+                            if (THE_APP_CONTEXT_PATH && THE_APP_CONTEXT_PATH !== "" && THE_APP_CONTEXT_PATH !== "/") {
+                                redirectUrlToDepartments = THE_APP_CONTEXT_PATH + "/departments.jsp?setup_wizard=true&step=" + data.nextStep;
+                            } else { // Handles root context ("") or if context is somehow just "/"
+                                redirectUrlToDepartments = "/departments.jsp?setup_wizard=true&step=" + data.nextStep;
+                            }
+                            
+                            console.log("[settings.jsp JS] Preparing to redirect to: '" + redirectUrlToDepartments + "'");
+                            window.location.href = redirectUrlToDepartments;
+                        } else {
+                            console.warn("[settings.jsp JS] WizardStatusServlet call did not indicate success or missing nextStep. Data:", data);
+                            alert("Error proceeding to the next setup step: " + (data.error || "Wizard step update failed. Please try again."));
+                            this.disabled = false;
+                            this.innerHTML = 'Next: Departments Setup <i class="fas fa-arrow-right"></i>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error("[settings.jsp JS] Error during fetch to WizardStatusServlet or processing its response:", error);
+                        let errorMsg = "Could not contact the server or an error occurred processing the request.";
+                        if (error && error.name === "HTTPError") {
+                            errorMsg = `Server Error ${error.status}: ${error.statusText || error.message}.`;
+                            console.error("Server response text (if any):", error.responseText);
+                        } else if (error && error.message) {
+                            errorMsg = error.message;
+                        }
+                        alert(errorMsg + " Please check the console for more details and try again.");
+                        this.disabled = false;
+                        this.innerHTML = 'Next: Departments Setup <i class="fas fa-arrow-right"></i>';
+                    });
+                });
+            } else {
+                 console.error("[settings.jsp JS] CRITICAL: 'wizardSettingsNextButton' was not found on the page!");
+            }
+        });
+    </script>
+    <% } %>
 </body>
 </html>

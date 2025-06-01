@@ -1,0 +1,243 @@
+/* css/signup.css - v4 */
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #f4f7f6;
+    color: #333;
+    line-height: 1.6;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+}
+
+.signup-container {
+    background-color: #fff;
+    padding: 30px 40px;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 700px;
+    margin: 20px auto;
+}
+
+.signup-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.signup-header .logo-link {
+    font-size: 1.8em;
+    font-weight: 700;
+    color: #005A9C;
+    text-decoration: none;
+    display: inline-block;
+    margin-bottom: 15px;
+}
+.signup-header .logo-link i {
+    margin-right: 8px;
+}
+
+.signup-header h1 {
+    font-size: 1.8em;
+    color: #343a40;
+    margin-bottom: 5px;
+}
+
+.signup-header p {
+    font-size: 0.95em;
+    color: #6c757d;
+    margin-bottom: 20px;
+}
+
+.error-message, .success-message {
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    text-align: center;
+    border: 1px solid transparent;
+}
+.error-message {
+    background-color: #f8d7da;
+    color: #721c24;
+    border-color: #f5c6cb;
+}
+.success-message {
+    background-color: #d4edda;
+    color: #155724;
+    border-color: #c3e6cb;
+}
+
+.signup-form fieldset {
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 20px 25px;
+    margin-bottom: 25px;
+}
+
+.signup-form legend {
+    font-size: 1.2em;
+    font-weight: 600;
+    color: #005A9C;
+    padding: 0 10px;
+    margin-left: -10px;
+}
+.signup-form .fieldset-description {
+    font-size: 0.85em;
+    color: #6c757d;
+    margin-top: -5px;
+    margin-bottom: 20px;
+    padding-left: 5px;
+}
+
+.form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    /* margin-bottom is now handled by .form-group unless it's the last element */
+}
+
+.form-group {
+    flex-grow: 1;
+    flex-basis: 100%;
+    min-width: 0;
+    margin-bottom: 18px; /* INCREASED: Universal bottom margin for form groups */
+}
+
+/* Remove bottom margin from the last form-group or form-row within a fieldset */
+fieldset > .form-group:last-child,
+fieldset > .form-row:last-child > .form-group:last-child { /* More specific for form-row contents */
+    margin-bottom: 0;
+}
+/* If a form-row is last, ensure its contents' margins don't cause issues with fieldset padding */
+fieldset > .form-row:last-child {
+    margin-bottom: 0; /* The groups inside will also have their last-child margin removed by above rule if needed */
+}
+
+
+.form-group.half-width {
+    flex-basis: calc(50% - 10px);
+}
+.form-group.third-width {
+    flex-basis: calc(33.333% - 13.33px); /* Adjust if gap changes, (100% - (N-1)*gap) / N */
+}
+
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px; /* INCREASED: More space between label and input */
+    font-weight: 500;
+    font-size: 0.9em;
+    color: #495057;
+}
+.form-group label .required {
+    color: #dc3545;
+    margin-left: 2px;
+    font-weight: bold;
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="tel"],
+.form-group input[type="password"],
+.form-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 0.95em;
+    height: 40px;
+    font-family: inherit;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-group select {
+    appearance: none;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23007bff%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: .65em auto;
+    padding-right: 30px;
+}
+
+
+.form-group input:focus,
+.form-group select:focus {
+    border-color: #005A9C;
+    box-shadow: 0 0 0 0.2rem rgba(0, 90, 156, 0.25);
+    outline: none;
+}
+.form-group small {
+    display: block;
+    font-size: 0.8em;
+    color: #6c757d;
+    margin-top: 6px; /* INCREASED: More space above small text */
+    line-height: 1.3; /* ADDED: Slightly more line height for multi-line small text */
+}
+
+.form-actions {
+    margin-top: 30px;
+    text-align: center;
+}
+.form-actions .terms-notice {
+    font-size: 0.85em;
+    color: #6c757d;
+    margin-bottom: 20px;
+}
+.form-actions .terms-notice a {
+    color: #005A9C;
+    text-decoration: underline;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 25px;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: 500;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    cursor: pointer;
+    text-align: center;
+    border: none;
+}
+.btn-large {
+    padding: 14px 30px;
+    font-size: 1.1em;
+}
+.btn-primary {
+    background-color: #007bff;
+    color: white;
+}
+.btn-primary:hover {
+    background-color: #0056b3;
+    transform: translateY(-1px);
+}
+.btn-primary:active {
+    transform: translateY(0px);
+}
+.btn-primary i {
+    margin-left: 8px;
+    font-size: 0.9em;
+}
+.btn:disabled {
+    background-color: #cccccc;
+    color: #666666;
+    cursor: not-allowed;
+    transform: none;
+}
+
+
+.login-redirect {
+    text-align: center;
+    margin-top: 25px;
+    font-size: 0.9em;
+}
+.login-redirect a {
+    color: #005A9C;
+    font-weight: 500;
+    text-decoration: underline;
+}

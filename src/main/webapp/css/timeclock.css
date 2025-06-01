@@ -4,67 +4,70 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
-    padding: 0; /* Remove default body padding if navbar handles spacing */
-    padding-top: 60px; /* Add padding matching navbar height to prevent overlap - ADJUST IF NAVBAR HEIGHT DIFFERS */
+    padding: 0;
+    padding-top: 70px;
     min-height: 100vh;
-    background-color: #dcdcdc; /* Light gray background */
+    background-color: #e9ebee;
     box-sizing: border-box;
     color: #333;
 }
 
-/* === Navbar Placeholder (Styles should be in navbar.css) === */
-/* Ensure navbar has a fixed height, e.g., 60px, and potentially a z-index lower than 9999 */
-
-/* === Main Parent Container (Adjust as needed) === */
-/* This container was present in your original timeclock.css example */
-/* If you wrapped content, adjust padding/margins as needed */
+/* === Main Parent Container === */
 .parent-container {
     padding: 20px;
 }
 
-
 /* === Clock Container === */
 #main-clock-container {
-    max-width: 450px;
-    margin: 20px auto 25px auto; /* Adjusted margins after adding body padding-top */
-    padding: 15px 20px;
-    background-color: #f8f8f8;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    max-width: 750px;
+    width: 90%;
+    margin: 20px auto 30px auto; /* Retained user's bottom margin preference if different */
+    padding: 25px 30px;
+    background: linear-gradient(145deg, #2c3e50, #34495e);
+    color: #ecf0f1;
+    border: 1px solid #2c3e50;
+    border-radius: 10px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25),
+                inset 0 2px 4px rgba(0, 0, 0, 0.3),
+                inset 0 -3px 3px rgba(255,255,255,0.05);
     text-align: center;
-    font-family: 'Orbitron', 'Courier New', monospace; /* Orbitron first */
-    font-size: 1.5em;
-    color: #1a1a1a;
-    font-weight: 500;
-    letter-spacing: 1px;
+    font-family: 'Orbitron', 'Courier New', monospace;
+    font-size: 2.2em;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-shadow: 0 0 5px rgba(236, 240, 241, 0.3),
+                 0 0 10px rgba(236, 240, 241, 0.2);
+    line-height: 1.2;
+    box-sizing: border-box;
 }
 
-/* === Employee Selector (Positioned Above Timecard) === */
+/* === Employee Selector === */
 .employee-selector-container {
-    max-width: 700px; /* Match timecard max-width */
-    margin: 0 auto 25px auto; /* Center horizontally, space below */
-    padding: 15px;
+    max-width: 750px;
+    width: 90%;
+    margin: 2% auto 20px auto; /* <<< USER'S APPLIED CHANGE */
+    padding: 20px 25px;
     text-align: center;
-    background-color: #f8f9fa; /* Optional light background */
+    background-color: #fcf8e3;
+    border: 1px solid #a4a08a;
     border-radius: 6px;
-    border: 1px solid #dee2e6; /* Subtle border */
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    box-sizing: border-box;
 }
 .employee-selector-container label {
     margin-right: 10px;
     font-weight: 600;
-    color: #5c584a; /* Match timecard theme */
+    color: #5c584a;
 }
 .employee-selector-container select {
     padding: 8px 12px;
     min-width: 250px;
     max-width: 80%;
-    border: 1px solid #b0a991; /* Match timecard theme */
+    border: 1px solid #b0a991;
     border-radius: 4px;
     font-size: 1em;
     cursor: pointer;
-    height: 38px; /* Consistent height */
+    height: 38px;
     vertical-align: middle;
     background-color: #fff;
 }
@@ -79,35 +82,38 @@ body {
     width: 100%;
     display: flex;
     justify-content: center;
-    align-items: flex-start; /* Align to top */
-    padding-top: 0; /* Removed extra top padding */
+    align-items: flex-start;
+    padding-top: 0;
 }
 
 .timecard {
-    background-color: #fcf8e3; /* Creamy background */
-    border: 1px solid #a4a08a; /* Darker border */
+    background-color: #fcf8e3;
+    border: 1px solid #a4a08a;
     box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.2);
     border-radius: 6px;
     padding: 20px 25px 30px 25px;
     width: 90%;
-    max-width: 700px; /* Consistent max width */
+    max-width: 750px;
     box-sizing: border-box;
 }
 
 /* === Timecard Header === */
 .timecard-header {
     text-align: center;
-    border-bottom: 3px double #8c866d; /* Double line border */
+    border-bottom: 3px double #8c866d;
     padding-bottom: 10px;
     margin-bottom: 15px;
 }
 .timecard-header h1 {
     margin: 0 0 8px 0;
-    color: #5c584a; /* Muted color */
+    color: #5c584a;
     font-family: 'Courier New', Courier, monospace;
     font-size: 1.8em;
     font-weight: bold;
     text-transform: uppercase;
+    border-bottom: none;
+    padding-bottom: 0;
+    justify-content: center;
 }
 .timecard-pay-period {
     font-size: 0.95em;
@@ -115,8 +121,7 @@ body {
     color: #444;
     margin-top: 5px;
 }
-/* Style H2 if used in header */
-.timecard-header h2 {
+.timecard-header h2 { /* Kept for consistency if used elsewhere */
     font-size: 0.95em;
     font-weight: 600;
     color: #444;
@@ -124,16 +129,16 @@ body {
     margin-bottom: 0;
 }
 
-/* === Top Notification Bar (For page load errors) === */
+/* === Top Notification Bar === */
 #notification-bar {
-    max-width: 100%; /* Take full width within parent */
-    margin: 0 0 15px 0; /* Margin below */
+    max-width: 100%;
+    margin: 0 0 15px 0;
     padding: 12px 15px;
     border-radius: 4px;
     text-align: center;
     font-weight: 500;
     box-sizing: border-box;
-    display: block; /* Ensure it's potentially visible on load */
+    display: block;
 }
 #notification-bar.success-message {
     background-color: #d4edda;
@@ -146,210 +151,189 @@ body {
     border: 1px solid #f5c2c7;
 }
 
-
-/* === Info Sections === */
+/* === Info Sections - UPDATED LAYOUT === */
 .timecard-info {
     display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap; /* Allow wrapping on smaller screens */
-    margin-bottom: 15px;
+    justify-content: space-between; /* Distributes space between left and right columns */
+    flex-wrap: wrap; /* Allows columns to wrap on smaller screens if needed */
+    gap: 15px; /* Provides a gap between .info-left and .info-right if they wrap */
+    margin-bottom: 20px;
     padding-bottom: 15px;
-    border-bottom: 1px solid #d3cbae; /* Lighter separator */
+    border-bottom: 1px solid #d3cbae;
     font-size: 0.9em;
-    line-height: 1.7;
+    line-height: 1.6;
 }
-.info-left { flex-basis: 40%; min-width: 200px; }
-.info-right { flex-basis: 58%; min-width: 250px; }
-.info-left div, .info-right div { margin-bottom: 4px; }
-.info-left strong, .info-right strong {
-    display: inline-block;
-    width: 85px; /* Fixed width for alignment */
+
+.info-left, .info-right {
+    flex: 1 1 calc(50% - 10px); /* Aim for two equal columns, subtracting half the gap */
+    min-width: 280px; /* Minimum width before wrapping/shrinking too much */
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 5px; /* Space between each info item (div) */
+}
+
+/* Style for each individual line of info (the div wrapping <strong> and <span>) */
+.timecard-info .info-item {
+    display: flex;
+    align-items: baseline; /* Aligns the text nicely */
+}
+
+.timecard-info .info-item strong { /* This is the label part */
     font-weight: 600;
     color: #5c584a;
-    margin-right: 5px;
+    margin-right: 8px;
+    min-width: 95px;  /* Adjusted width for labels like "Employee ID:" */
+    flex-shrink: 0;   /* Prevent label from shrinking */
+    text-align: left;
 }
+
+.timecard-info .info-item .info-value { /* This is the new span for the value */
+    text-align: left;
+    word-break: break-word; /* Allow longer values to wrap if needed */
+    flex-grow: 1; /* Allows value to take up remaining space */
+}
+
+/* Specifically for Employee ID to try and prevent its value from wrapping */
+/* This targets the first .info-item within .info-left */
+.info-left .info-item:first-child .info-value {
+    white-space: nowrap;
+    /* If it still wraps, it means the container .info-left is not wide enough
+       or the .info-value is not allowed to expand.
+       Consider if max-width for .timecard itself needs to be wider. */
+}
+
 
 /* === Timecard Table Styling === */
 .timecard-table-container {
     width: 100%;
-    max-height: 450px; /* Allow scrolling for long lists */
+    max-height: 450px;
     overflow-y: auto;
-    overflow-x: hidden; /* Hide horizontal scrollbar */
-    border: 1px solid #b0a991; /* Table border */
+    overflow-x: auto;
+    border: 1px solid #b0a991;
     margin-bottom: 25px;
-    background-color: #fff; /* White background for table */
+    background-color: #fff;
+    position: relative;
+    scroll-behavior: smooth;
 }
 table.timecard-table {
     width: 100%;
     border-collapse: collapse;
-    font-family: 'Consolas', 'Courier New', Courier, monospace; /* Monospaced font */
+    font-family: 'Consolas', 'Courier New', Courier, monospace;
     font-size: 0.9em;
-    margin-bottom: 0; /* Remove margin if container handles it */
+    margin-bottom: 0;
 }
 .timecard-table th,
 .timecard-table td {
-    border: none; /* Remove individual cell borders */
-    border-bottom: 1px solid #e0dacb; /* Light horizontal line */
-    padding: 6px 8px; /* Adjust padding */
+    border: none;
+    border-bottom: 1px solid #e0dacb;
+    padding: 7px 6px;
     text-align: center;
     vertical-align: middle;
 }
-.timecard-table th {
-    background-color: #e8e1c6; /* Header background */
+.timecard-table thead th {
+    background-color: #e8e1c6;
     color: #5c584a;
     font-weight: bold;
-    position: sticky; /* Keep header visible on scroll */
+    position: sticky;
     top: 0;
-    z-index: 1; /* Lower than modal */
-    border-bottom-width: 2px; /* Thicker bottom border for header */
+    z-index: 10;
+    border-bottom-width: 2px;
     border-color: #b0a991;
+    white-space: nowrap;
 }
-/* Align specific columns */
-.timecard-table td:nth-child(1), .timecard-table th:nth-child(1) { width: 20%; text-align: left; padding-left: 10px;} /* Date */
-.timecard-table td:nth-child(2), .timecard-table th:nth-child(2) { width: 17%; } /* IN */
-.timecard-table td:nth-child(3), .timecard-table th:nth-child(3) { width: 17%; } /* OUT */
-.timecard-table td:nth-child(4), .timecard-table th:nth-child(4) { width: 18%; text-align: right;} /* Total Hours */
-.timecard-table td:nth-child(5), .timecard-table th:nth-child(5) { width: 28%; text-align: left; padding-right: 10px;} /* Punch Type */
 
-/* Remove border from last row */
+/* Column Widths and Alignments */
+.timecard-table th:nth-child(1), .timecard-table td:nth-child(1) { width: 10%; min-width: 55px; text-align: left; padding-left: 10px; white-space: nowrap; }
+.timecard-table th:nth-child(2), .timecard-table td:nth-child(2) { width: 18%; min-width: 90px; text-align: left; white-space: nowrap; }
+.timecard-table th:nth-child(3), .timecard-table td:nth-child(3) { width: 17%; min-width: 95px; text-align: center; white-space: nowrap; }
+.timecard-table th:nth-child(4), .timecard-table td:nth-child(4) { width: 17%; min-width: 95px; text-align: center; white-space: nowrap; }
+.timecard-table th:nth-child(5), .timecard-table td:nth-child(5) { width: 13%; min-width: 70px; text-align: right; white-space: nowrap; }
+.timecard-table th:nth-child(6), .timecard-table td:nth-child(6) { width: 25%; min-width: 120px; text-align: left; padding-right: 10px; word-break: break-word; overflow-wrap: break-word; white-space: normal; }
+
+/* Row Banding Styles by Day */
+.timecard-table tbody tr.band-a {
+    background-color: #ffffff;
+}
+.timecard-table tbody tr.band-b {
+    background-color: #f7f7f0; /* Slightly off-white for banding, distinct from tfoot */
+}
+
+
 .timecard-table tbody tr:last-child td {
     border-bottom: none;
 }
 
-/* Highlighting for Late/Early Punches */
-.lateOrEarlyOutTag { /* Class name generated by ShowPunches.java */
-    color: #c00000; /* Red text */
+.lateOrEarlyOutTag {
+    color: #c00000;
     font-weight: bold;
-    background-color: #fff0f0; /* Very light red background */
+    background-color: #fff0f0; /* Provides a subtle background to the text */
+    padding: 1px 3px; /* Small padding to make the background visible */
+    border-radius: 2px;
 }
 
-/* --- Table Footer Styling --- */
+/* === Sticky Footer Styles === */
+.timecard-table tfoot {
+    position: -webkit-sticky;
+    position: sticky;
+    bottom: -1px;
+    z-index: 10;
+}
 .timecard-table tfoot tr {
-    background-color: #e8e1c6; /* Match header background */
+    background-color: #e8e1c6;
     font-weight: bold;
     color: #5c584a;
 }
 .timecard-table tfoot td {
-    border-top: 2px solid #b0a991 !important; /* Ensure top border is visible */
-    border-bottom: none; /* No bottom border needed for footer */
-    padding: 8px 8px; /* Consistent padding */
+    background-color: inherit;
+    border-bottom: none;
+    padding: 8px 8px;
 }
-/* --- End Footer Styling --- */
+.timecard-table tfoot tr:first-child td {
+    border-top: 2px solid #b0a991 !important;
+}
+.timecard-table tfoot td.period-total-label {
+    text-align: right;
+    font-weight: bold;
+    padding-right: 5px;
+}
+.timecard-table tfoot td.period-total-value {
+    text-align: right;
+    font-weight: bold;
+}
+.timecard-table tfoot td.period-total-spacer {}
+.timecard-table tfoot tr.hours-breakdown-row td {
+    text-align: right;
+    font-size: 0.9em;
+    font-weight: normal;
+    padding-top: 4px;
+    padding-bottom: 8px;
+    border-top: none !important;
+    color: #333;
+}
 
 /* === Accrual Balances Section === */
-.accrual-balances {
-    margin-top: 25px;
-    margin-bottom: 20px;
-    padding-top: 15px;
-    border-top: 1px solid #d3cbae; /* Separator line */
-    text-align: center;
-}
-.accrual-title {
-    margin-top: 0;
-    margin-bottom: 15px;
-    font-size: 1.1em;
-    font-weight: 600;
-    color: #5c584a;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-.balance-item {
-    display: inline-block; /* Align items horizontally */
-    margin: 0 15px 10px 15px;
-    font-size: 0.95em;
-    white-space: nowrap; /* Prevent wrapping */
-}
-.balance-label {
-    font-weight: 600;
-    color: #444;
-    margin-right: 5px;
-}
-.balance-value {
-    font-weight: bold;
-    color: #333;
-    background-color: #ffffff;
-    padding: 3px 8px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-    display: inline-block;
-    min-width: 50px; /* Ensure some width */
-    text-align: right;
-}
-/* === End Accrual Balances Section === */
+.accrual-balances { margin-top: 25px; margin-bottom: 20px; padding-top: 15px; border-top: 1px solid #d3cbae; text-align: center;}
+.accrual-title { margin-top: 0; margin-bottom: 15px; font-size: 1.1em; font-weight: 600; color: #5c584a; text-transform: uppercase; letter-spacing: 0.5px;}
+.balance-item { display: inline-block; margin: 0 15px 10px 15px; font-size: 0.95em; white-space: nowrap;}
+.balance-label { font-weight: 600; color: #444; margin-right: 5px;}
+.balance-value { font-weight: bold; color: #333; background-color: #ffffff; padding: 3px 8px; border-radius: 4px; border: 1px solid #ccc; display: inline-block; min-width: 50px; text-align: right;}
 
 /* === Punch Button Styles === */
-.punch-buttons {
-    display: flex;
-    justify-content: space-around;
-    margin-top: 20px;
-    padding: 15px 10px 5px 10px;
-    border-top: 1px solid #d3cbae; /* Separator line */
-    gap: 20px; /* Space between buttons */
-}
-.punch-buttons form {
-    flex: 1; /* Allow forms/buttons to grow equally */
-    display: flex; /* Make form fill the space for the button */
-    margin: 0;
-}
-.punch-button {
-    flex-grow: 1; /* Make button fill the form space */
-    padding: 12px 10px;
-    font-size: 1.3em;
-    font-weight: bold;
-    border-radius: 5px;
-    border: 1px solid #555;
-    cursor: pointer;
-    transition: background-color 0.2s ease, box-shadow 0.2s ease;
-    box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
-    text-transform: uppercase;
-}
+.punch-buttons { display: flex; justify-content: space-around; margin-top: 20px; padding: 15px 10px 5px 10px; border-top: 1px solid #d3cbae; gap: 20px;}
+.punch-buttons form { flex: 1; display: flex; margin: 0;}
+.punch-button { flex-grow: 1; padding: 12px 10px; font-size: 1.3em; font-weight: bold; border-radius: 5px; border: 1px solid #555; cursor: pointer; transition: background-color 0.2s ease, box-shadow 0.2s ease; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); text-transform: uppercase;}
 .punch-button:hover { filter: brightness(1.1); }
 .punch-button:active { box-shadow: inset 1px 1px 3px rgba(0,0,0,0.4); filter: brightness(0.95); }
 .punch-in { background-color: #5cb85c; border-color: #4cae4c; color: white; }
 .punch-out { background-color: #c13030; border-color: #a12828; color: white; }
 
-/* === Modal Styles (Includes #notificationModal) === */
-/* --- POSITIONING MODIFIED --- */
-.modal {
-    display: none; /* Hidden by default */
-    position: fixed; /* Stay in place */
-    z-index: 9999; /* Ensure it's on top */
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0,0,0,0.5);
-    /* Use flexbox alignment */
-    align-items: flex-start; /* Align content to the top of the container */
-    justify-content: center; /* Center content horizontally */
-    /* Add padding from the top to push content down */
-    padding-top: 15vh; /* Push down by 15% of viewport height. Adjust as needed. */
-    /* Alternatively use a fixed pixel value: */
-    /* padding-top: 150px; */
-    box-sizing: border-box; /* Include padding in height calculation */
-}
-.modal.modal-visible {
-    display: flex; /* Use flex for centering */
-}
-.modal-content {
-    background-color: #fefefe;
-    /* Let flexbox handle alignment, use margin only for horizontal auto */
-    margin: 0 auto; /* Center horizontally within flex container */
-    padding: 25px 30px;
-    border: 1px solid #888;
-    width: 90%;
-    max-width: 450px;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2),0 6px 20px rgba(0,0,0,0.19);
-    text-align: center;
-    position: relative; /* For close button */
-    /* Removed absolute positioning and transform */
-}
-/* --- END POSITIONING MODIFICATION --- */
-
+/* === Modal Styles === */
+.modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); align-items: flex-start; justify-content: center; padding-top: 15vh; box-sizing: border-box;}
+.modal.modal-visible { display: flex;}
+.modal-content { background-color: #fefefe; margin: 0 auto; padding: 25px 30px; border: 1px solid #888; width: 90%; max-width: 450px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19); text-align: center; position: relative;}
 .modal-content h2 { margin-top: 0; color: #333; font-size: 1.4em; margin-bottom: 15px; }
-.modal-content p { margin-top: 0; margin-bottom: 25px; font-size: 1.1em; line-height: 1.6; color: #333; text-align: left; }
+.modal-content p { margin-top: 0; margin-bottom: 25px; font-size: 1.1em; line-height: 1.6; color: #333; text-align: center; }
 .modal-content.error p { color: #a94442; font-weight: bold; }
 .modal-content.error .modal-ok-button { background-color: #c13030; }
 .modal-content.error .modal-ok-button:hover { background-color: #a12828; }
@@ -360,4 +344,21 @@ table.timecard-table {
 .modal-ok-button:hover { background-color: #4cae4c; }
 
 /* === Specific Error Row Styling === */
-.report-error-row td { color: #a94442 !important; font-weight: bold !important; text-align: center !important; font-style: normal !important; background-color: #f2dede !important; padding: 15px !important; }
+.report-error-row td { color: #a94442 !important; font-weight: bold !important; text-align: center !important; font-style: normal !important; background-color: #f2dede !important; padding: 15px !important;}
+
+/* === Styles for Report Mode Actions on Timecard Page === */
+.report-actions-container { text-align: center; margin-top: 25px; padding-top: 20px; border-top: 1px solid #d3cbae;}
+.report-action-button { padding: 10px 25px; font-size: 1.0em; font-weight: bold; color: white; background-color: #007bff; border: 1px solid #0069d9; border-radius: 5px; cursor: pointer; transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out; min-width: 200px; }
+.report-action-button:hover { background-color: #0056b3; border-color: #0056b3;}
+
+/* --- Print Media Styles --- */
+@media print {
+    .report-actions-container,
+    .main-navbar,
+    .employee-selector-container,
+    #main-clock-container
+     { display: none !important; }
+    body { padding-top: 20px !important; background-color: #fff !important; }
+    .parent-container { width: 100% !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important; box-shadow: none !important; border: none !important; }
+    .timecard { width: 100% !important; max-width: 100% !important; box-shadow: none !important; border: none !important; padding: 0 !important; }
+}

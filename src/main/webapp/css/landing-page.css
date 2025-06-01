@@ -1,0 +1,266 @@
+/* css/landing-page.css - v1 */
+body {
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    padding: 0;
+    color: #333;
+    line-height: 1.6;
+    background-color: #f4f7f6; /* Light neutral background */
+}
+
+.container {
+    width: 90%;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 15px;
+}
+
+/* --- Header --- */
+.landing-header {
+    background-color: #fff;
+    padding: 15px 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.landing-header .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-size: 1.8em;
+    font-weight: 700;
+    color: #005A9C; /* Using a blue similar to reports theme */
+    text-decoration: none; /* Ensure logo is a link and styled */
+}
+.logo i {
+    margin-right: 8px;
+}
+
+.landing-nav .nav-link {
+    margin-left: 20px;
+    text-decoration: none;
+    color: #555;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+.landing-nav .nav-link:hover {
+    color: #005A9C;
+}
+.landing-nav .login-link {
+    padding: 8px 15px; /* Consistent padding */
+}
+.landing-nav .signup-link-header.btn-secondary { /* Match btn-secondary styles below */
+    background-color: #6c757d;
+    color: white;
+    padding: 8px 18px;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+}
+.landing-nav .signup-link-header.btn-secondary:hover {
+    background-color: #5a6268;
+    color: white;
+}
+
+
+/* --- Hero Section --- */
+.hero-section {
+    background: linear-gradient(to right, #005A9C, #007bff); /* Blue gradient */
+    color: white;
+    padding: 80px 0;
+    text-align: center;
+}
+.hero-section h1 {
+    font-size: 2.8em;
+    margin-bottom: 20px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+.hero-section .subtitle {
+    font-size: 1.2em;
+    margin-bottom: 30px;
+    font-weight: 300;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.cta-buttons .btn {
+    margin: 0 10px;
+}
+
+/* --- Buttons (General Styles) --- */
+.btn {
+    display: inline-block;
+    padding: 12px 25px;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: 500;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    cursor: pointer;
+    text-align: center;
+    border: none; /* Ensuring no default browser borders interfere */
+}
+.btn-large {
+    padding: 15px 35px;
+    font-size: 1.1em;
+}
+.btn-primary {
+    background-color: #007bff; /* Primary action color (e.g., your glossy button blue) */
+    color: white;
+    /* border: 1px solid #007bff; Removed if using flat buttons, add back for outlined look */
+}
+.btn-primary:hover {
+    background-color: #0056b3;
+    /* border-color: #0056b3; */
+    transform: translateY(-2px);
+}
+.btn-secondary {
+    background-color: #6c757d; /* A secondary color */
+    color: white;
+    /* border: 1px solid #6c757d; */
+}
+.btn-secondary:hover {
+    background-color: #5a6268;
+    /* border-color: #5a6268; */
+    transform: translateY(-2px);
+}
+.btn-outline { /* Specifically for hero or sections needing contrast */
+    background-color: transparent;
+    color: white; /* For hero section */
+    border: 2px solid white; /* For hero section */
+}
+.btn-outline:hover {
+    background-color: white;
+    color: #005A9C; /* Text color on hover */
+}
+.btn-block {
+    display: block;
+    width: 100%;
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+}
+
+
+/* --- Features Section --- */
+.features-section {
+    padding: 60px 0;
+    background-color: #fff;
+}
+.features-section h2 {
+    text-align: center;
+    font-size: 2em;
+    margin-bottom: 40px;
+    color: #343a40;
+}
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 30px;
+}
+.feature-item {
+    text-align: center;
+    padding: 20px;
+}
+.feature-icon {
+    font-size: 2.5em;
+    color: #005A9C; /* Icon color */
+    margin-bottom: 15px;
+}
+.feature-item h3 {
+    font-size: 1.3em;
+    margin-bottom: 10px;
+    color: #343a40;
+}
+.feature-item p {
+    font-size: 0.95em;
+    color: #6c757d;
+}
+
+/* --- Pricing Section --- */
+.pricing-section {
+    padding: 60px 0;
+    background-color: #f4f7f6; /* Light neutral background */
+}
+.pricing-section h2 {
+    text-align: center;
+    font-size: 2em;
+    margin-bottom: 40px;
+    color: #343a40;
+}
+.pricing-box {
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 30px;
+    max-width: 400px;
+    margin: 0 auto;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    text-align: center;
+}
+.pricing-box h3 {
+    font-size: 1.5em;
+    color: #005A9C;
+    margin-bottom: 15px;
+}
+.pricing-box .price {
+    font-size: 2.5em;
+    font-weight: 700;
+    color: #343a40;
+    margin-bottom: 10px;
+}
+.pricing-box .price span { /* For "/ month" or similar text */
+    font-size: 0.5em;
+    font-weight: 400;
+    /* vertical-align: super; */ /* Adjust as needed */
+    color: #6c757d;
+}
+.pricing-box ul {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0;
+    text-align: left;
+    display: inline-block; /* To center the list based on its content width */
+}
+.pricing-box ul li {
+    margin-bottom: 10px;
+    color: #555;
+}
+.pricing-box ul li i { /* For checkmark icons */
+    color: #28a745; /* Green checkmark */
+    margin-right: 8px;
+}
+
+/* --- Final CTA Section --- */
+.final-cta-section {
+    padding: 60px 0;
+    background-color: #343a40; /* Dark background for contrast */
+    color: white;
+    text-align: center;
+}
+.final-cta-section h2 {
+    font-size: 1.8em;
+    margin-bottom: 25px;
+}
+
+/* --- Footer --- */
+.landing-footer {
+    background-color: #2c3e50; /* Dark footer */
+    color: #bdc3c7;
+    text-align: center;
+    padding: 30px 0;
+    font-size: 0.9em;
+}
+.landing-footer p {
+    margin: 5px 0;
+}
+.landing-footer a {
+    color: #ecf0f1;
+    text-decoration: none;
+}
+.landing-footer a:hover {
+    text-decoration: underline;
+}

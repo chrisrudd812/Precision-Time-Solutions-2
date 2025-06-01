@@ -1,130 +1,159 @@
-@charset "UTF-8";
-
-/* General Styles */
-/* These styles apply to the whole page */
+/* css/login.css - v7 */
 body {
-    font-family: Arial, sans-serif; /* Use a standard sans-serif font */
-    margin: 0; /* Remove default body margins */
-    padding: 0;
-    display: flex; /* Use flexbox for centering */
-    justify-content: center; /* Center horizontally */
-    align-items: flex-start; /* Align content to the top */
-    min-height: 100vh; /* Ensure at least full viewport height */
-    background-color: #f4f4f4; /* Light gray background */
-}
-
-.parent-container {
-    background-color: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    width: 80%;     /* Responsive width */
-    max-width: 800px; /* Limit maximum width */
-    text-align: center;
-}
-
-
-h1, h3 {
-    text-align: center;
+    font-family: 'Roboto', sans-serif;
     color: #333;
-    margin-bottom: 20px;
-}
-/* --- Modal Background Overlay (HIDDEN by default) --- */
-.modal {
-    display: none; /* Hidden */
-    position: fixed;
-    z-index: 1000;
-    left: 0; top: 0; width: 100%; height: 100%;
-    overflow: auto;
-    background-color: rgba(0,0,0,0.4);
-    /* Centering applied via .modal-visible */
+    line-height: 1.6;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(to bottom right, #e7f0f7, #d0d9e2);
 }
 
-/* --- Class to SHOW modal centered --- */
-.modal.modal-visible {
-    display: flex; /* Use flex to enable centering */
-    align-items: center; /* Vertical center */
-    justify-content: center; /* Horizontal center */
-}
-
-/* --- General Modal Content Box --- */
-.modal-content {
-	background-color: #fefefe;
-    border: 1px solid #888;
-    width: 450px;
-    max-width: 90%;
-    box-sizing: border-box;
-    border-radius: 5px;
-    box-shadow: 0 3px 7px rgba(0,0,0,0.3);
-    margin: 0; /* Let flexbox handle centering */
-    padding: 0;
-    max-height: 90vh; /* Limit height */
-    overflow-y: auto; /* Add scroll if needed */
-    position: relative;
-}
-
-/* --- Close Button ('x') --- */
-.close {
-	color: rgb(255, 0, 0);
-	position: absolute; top: 10px; right: 15px;
-    font-size: 28px; font-weight: bold; line-height: 1; cursor: pointer;
-}
-.close:hover, .close:focus { color: #333; text-decoration: none; }
-
-/* --- Modal Headers --- */
-.modal-content > h2 {
-     padding: 20px 20px 10px 20px; margin: 0;
-     text-align: center; font-size: 1.5em; border-bottom: 1px solid #eee;
-}
-#notificationModal .modal-content > h2 { border-bottom: none; padding-bottom: 0; }
-#notificationModal .modal-content > p { padding: 15px 20px 20px 20px; margin: 0; text-align: center; }
-
-/* --- Modal Form Styles (Add/Edit) --- */
-/* Style the form itself - make sure it doesn't interfere */
-.modal-content form {
-    padding: 20px; /* Padding INSIDE the form area */
-    margin: 0; /* No margin on form itself */
-    box-sizing: border-box;
-}
-.modal-content form .form-item {
-    margin-bottom: 15px; /* Consistent spacing between form items */
-}
-.modal-content form label {
-	display: block; margin-bottom: 5px; font-weight: bold; text-align: left;
-}
-.modal-content form input { /* Target only inputs inside forms */
-    width: 100%; padding: 8px; border: 1px solid #ccc;
-    border-radius: 4px; box-sizing: border-box; font-size: 16px;
-    display: block; text-align: left;
-    /* Removed margin-bottom here, use .form-item for spacing */
-}
-
-/* --- Modal Button Row --- */
-/* Style the container for the buttons */
-.modal-content .button-row {
-    display: flex; /* Use flexbox for buttons */
-    gap: 10px; /* Space between buttons */
-    padding: 0 20px 20px 20px; /* Space above/below/beside buttons */
-    box-sizing: border-box;
+.login-container {
+    background-color: #fff;
+    padding: 30px 40px 40px 40px;
+    border-radius: 8px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.15);
     width: 100%;
+    max-width: 420px;
+    margin: 20px;
+    text-align: center;
 }
 
-/* --- Modal Button Styling --- */
-/* Style the buttons INSIDE the .button-row */
-.modal-content .button-row button {
-    flex: 1; /* Make buttons share width equally */
-    margin: 0; /* No margin on buttons themselves */
-    /* Height is set in general button styles */
+.login-header {
+    margin-bottom: 40px;
 }
 
-/* Specific Modal Button Colors */
-.modal .submit-btn { background-color: #4CAF50; color: white; }
-.modal .cancel-btn { background-color: #f44336; color: white; }
+.login-header .logo-link {
+    font-size: 2.5em;
+    font-weight: 700;
+    color: #005A9C;
+    text-decoration: none;
+    display: inline-block;
+    margin-bottom: 10px;
+}
+.login-header .logo-link i {
+    margin-right: 12px;
+    font-size: 0.9em;
+}
 
-/* Notification Modal OK button */
-#notificationModal .button-row { justify-content: center; padding-top: 0; }
-#notificationModal .button-row button#okButton {
-     background-color: #4CAF50; color: white;
-     flex-grow: 0; /* Prevent single button from expanding */
-     min-width: 100px;
+.error-message.login-page-message {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    padding: 12px 15px;
+    border-radius: 4px;
+    margin: 0 auto 20px auto;
+    text-align: center;
+    max-width: calc(100% - 30px);
+    font-size: 0.9em;
+}
+
+.login-form .form-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.login-form .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    font-size: 0.9em;
+    color: #495057;
+}
+.login-form .form-group label .required {
+    color: #dc3545;
+    margin-left: 3px;
+}
+
+.login-form .form-group input[type="text"],
+.login-form .form-group input[type="email"],
+.login-form .form-group input[type="password"] {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 1em;
+    height: 40px;
+    font-family: inherit;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.login-form .form-group input:focus {
+    border-color: #005A9C;
+    box-shadow: 0 0 0 0.2rem rgba(0, 90, 156, 0.25);
+    outline: none;
+}
+
+.login-form .form-actions {
+    margin-top: 30px;
+}
+
+.login-submit-button.glossy-button {
+    width: 100%;
+    height: 40px; /* Match input height */
+    padding-top: 0;
+    padding-bottom: 0;
+    font-size: 1.0em;
+    line-height: 40px; /* Vertically center text */
+}
+.login-submit-button.glossy-button i {
+    margin-right: 8px;
+}
+
+.signup-redirect,
+.forgot-password-link {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 0.9em;
+}
+.signup-redirect a,
+.forgot-password-link a {
+    color: #005A9C;
+    font-weight: 500;
+    text-decoration: underline;
+}
+
+/* Notification modal on login page specific adjustments */
+#notificationModal .modal-content {
+    max-width: 550px; /* Wider for the signup success message */
+    text-align: left; /* Default text align to left for paragraphs */
+}
+#notificationModal .modal-content h2 {
+    text-align: center; /* Center modal title */
+}
+#notificationModal #notificationMessage { /* The div containing paragraphs */
+    padding: 15px 25px; /* Adjust padding */
+}
+#notificationModal #notificationMessage p {
+    margin-bottom: 12px; /* Space between paragraphs */
+    text-align: left;
+    line-height: 1.5;
+    font-size: 0.95em;
+}
+#notificationModal #notificationMessage p:last-child {
+    margin-bottom: 0;
+}
+#notificationModal #notificationMessage strong {
+    color: #005A9C;
+    font-weight: 600;
+}
+/* Styling for the button row in notification modal on login page */
+.notification-button-row { /* Class applied in login.jsp */
+    justify-content: space-between !important; /* Space out the two buttons */
+    gap: 15px; /* Space between buttons */
+}
+.notification-button-row button.glossy-button { /* Target both buttons */
+    flex: 1 1 auto !important; /* Allow buttons to share space */
+    min-width: 150px; /* Ensure they have a decent minimum width */
+}
+/* Styles for red asterisks on required labels */
+.required {
+    color: #dc3545;
+    font-weight: bold;
+    margin-left: 2px;
 }

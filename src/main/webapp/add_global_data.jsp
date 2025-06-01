@@ -2,15 +2,13 @@
 <%@ page import="java.time.LocalDate" %>
 <%@ page import="java.time.format.DateTimeFormatter" %>
 <%
-    // Check for redirect messages
     String successMessage = request.getParameter("message");
     String errorMessage = request.getParameter("error");
-    String pageError = null; // Use this if errors can originate directly from this JSP's logic
+    String pageError = null;
     if (errorMessage != null && !errorMessage.isEmpty()) {
-         pageError = errorMessage; // Assign error message from parameter
-         successMessage = null; // Ensure success message isn't shown if there's an error
+         pageError = errorMessage;
+         successMessage = null;
     }
-    // Format today's date for the input field default value
     String todayDate = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
 %>
 <!DOCTYPE html>
@@ -19,31 +17,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>Add Global Hours</title>
-    <%-- Link shared CSS (navbar) --%>
     <link rel="stylesheet" href="css/navbar.css">
-    <%-- Link page-specific styles --%>
-    <link rel="stylesheet" href="css/add_global_data.css?v=2"> <%-- Updated version --%>
-    <%-- Removed inline <style> block --%>
+    <link rel="stylesheet" href="css/add_global_data.css?v=<%= System.currentTimeMillis() %>">
+    <link rel="stylesheet" href="css/punches.css?v=<%= System.currentTimeMillis() %>">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
-<%-- Added class="add-global-page" --%>
 <body class="add-global-page">
-    <%-- Include Navbar --%>
-    <%@ include file="/WEB-INF/includes/navbar.jspf" %> <%-- Verify this path is correct --%>
+    <%@ include file="/WEB-INF/includes/navbar.jspf" %>
 
     <div class="parent-container">
         <h1>Add Global Hours</h1>
-        <%-- Added class="intro-paragraph" --%>
         <p class="intro-paragraph">Add non-clocked time (like Holiday, Sick Day) for ALL active employees.</p>
 
-        <%-- Display Success/Error Bar --%>
-        <%-- Ensure these classes match CSS (.success-message, .error-message) --%>
         <% if (successMessage != null && !successMessage.isEmpty()) { %>
             <div id="notification-bar" class="success-message"><%= successMessage %></div>
         <% } else if (pageError != null && !pageError.isEmpty()) { %>
             <div id="notification-bar" class="error-message"><%= pageError %></div>
         <% } %>
 
-        <div class="form-container"> <%-- Wrapper for centering & styling --%>
+        <div class="form-container">
             <form id="addGlobalHoursForm" action="AddEditAndDeletePunchesServlet" method="post">
                 <input type="hidden" name="action" value="addGlobalHoursSubmit">
 
@@ -54,21 +46,18 @@
 
                  <div class="form-item">
                      <label for="addHoursTotal">Hours:</label>
-                     <%-- Added value="8" and autofocus --%>
                      <input type="number" id="addHoursTotal" name="addHoursTotal" step="0.01" min="0.01" max="24" required placeholder="e.g., 8.0"
                             value="8" autofocus>
                  </div>
 
                 <div class="form-item">
                     <label for="addHoursPunchTypeDropDown">Reason / Punch Type:</label>
-                    <%-- Limited options typically used for global adds --%>
                     <select id="addHoursPunchTypeDropDown" name="addHoursPunchTypeDropDown" required>
-                        <option value="Holiday Time">Holiday Time</option>
-                        <option value="Vacation Time">Vacation Time (Global)</option>
-                        <option value="Sick Time">Sick Time (Global)</option>
-                        <option value="Personal Time">Personal Time (Global)</option>
+                        <option value="Holiday">Holiday</option>
+                        <option value="Vacation">Vacation</option>
+                        <option value="Sick">Sick</option>
+                        <option value="Personal">Personal</option>
                         <option value="Bereavement">Bereavement</option>
-                        <option value="Supervisor Override">Supervisor Override</option>
                         <option value="Other">Other</option>
                     </select>
                  </div>
@@ -78,10 +67,20 @@
                 </div>
             </form>
         </div>
+    </div>
 
-    </div> <%-- End parent-container --%>
+    <div id="notificationModal" class="modal">
+         <div class="modal-content">
+             <span class="close-button" id="closeNotificationModal">&times;</span>
+             <h2>Notification</h2>
+             <p id="notificationMessage"></p>
+             <div class="modal-footer" style="justify-content: center;">
+                 <button type="button" id="okButton" class="modal-ok-button">OK</button>
+             </div>
+         </div>
+    </div>
 
-    <%-- Include JS file here if/when needed --%>
-    <%-- <script type="text/javascript" src="js/add_global_data.js?v=1"></script> --%>
+    <script type="text/javascript" src="js/punches.js?v=<%= System.currentTimeMillis() %>"></script>
+    <%@ include file="/WEB-INF/includes/common-scripts.jspf" %>
 </body>
 </html>

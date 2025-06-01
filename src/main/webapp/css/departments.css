@@ -1,263 +1,40 @@
-/* General Styles */
-body {
-	font-family: Arial, sans-serif;
-	margin: 0;
-	padding: 0;
-	display: flex;
-	justify-content: center;
-	align-items: flex-start;
-	min-height: 100vh;
-	background-color: #f4f4f4;
-}
+/* === css/departments.css === */
+/* v9: Specific styles for departments.jsp, if any, that override reports.css */
 
-.parent-container {
-	background-color: white;
-	padding: 20px;
-	border-radius: 8px;
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-	width: 80%;
-	max-width: 800px;
-	margin: 5% auto 5% auto;
-	/* Give some top/bottom margin, centered horizontally */
-}
+/*
+    Most styling (page layout, tables, modals, base glossy buttons, text/icon button colors)
+    is inherited from css/reports.css by applying common classes in departments.jsp.
+*/
 
-h1 {
-	text-align: center !important;
-	color: #333;
-	margin-bottom: 20px;
-}
-
-h4 {
-	text-align: left;
-	color: rgb(255, 0, 0);
-	margin-bottom: 5px;
-}
-
-/* Table Styles */
-.table-container {
-	overflow-x: auto;
-	width: 100%;
-	margin-bottom: 20px;
-}
-
-table.punches {
-	border-collapse: collapse;
-	width: 100%;
-	margin-bottom: 20px;
-}
-
-.punches th, .punches td {
-	border: 1px solid #ddd;
-	padding: 8px;
-	text-align: left;
-}
-
-.punches th {
-	background-color: rgb(0, 128, 64);
-	color: rgb(255, 255, 255);
-}
-
-.punches tr.selected {
-	background-color: #c0e7ff;
-}
-
-/* --- Button Styles --- */
-button {
-	padding: 10px 15px;
-	border: none;
-	border-radius: 4px;
-	cursor: pointer;
-	font-size: 16px;
-	transition: background-color 0.3s;
-	box-sizing: border-box;
-	height: 40px; /* Consistent height */
-	line-height: 1.2; /* Helps vertical alignment */
-}
-
-button:not(:disabled):hover, .submit-btn:not(:disabled):hover,
-	.cancel-btn:not(:disabled):hover, #okButton:not(:disabled):hover {
-	filter: brightness(1.2);
-}
-
-button:disabled, #btnEditRow:disabled, #btnDeleteRow:disabled,
-	.submit-btn:disabled, .cancel-btn:disabled, #okButton:disabled {
-	background-color: #aaa !important;
-	cursor: not-allowed;
-	color: white !important;
-	filter: none;
-}
-
-/* --- Main Page Button Container --- */
+/* Example: If the #button-container on departments.jsp specifically needed
+   justify-content: flex-start instead of space-around from reports.css: */
+/*
 #button-container {
-	display: flex;
-	justify-content: space-between;
-	width: 100%;
-	margin-top: 20px;
+    justify-content: flex-start;
+    gap: 20px;
+}
+#button-container button.glossy-button {
+    flex-grow: 0;
+    flex-shrink: 0;
+}
+*/
+
+/* Styling for the "To Edit or Delete..." h4 subheading if needed */
+/* This is currently styled inline in the JSP, but could be moved here:
+.departments-page h4 {
+    text-align: left;
+    color: #6c757d;
+    margin-bottom: 10px;
+    font-size: 0.9em;
+    font-weight: normal;
+}
+*/
+
+.required-asterisk { /* If not globally defined in reports.css */
+    color: #dc3545;
+    margin-left: 2px;
+    font-weight: bold;
 }
 
-#btnAddDepartment, #btnEditDepartment, #btnDeleteDepartment {
-	width: 30%;
-	color: white;
-}
-
-#btnAddDepartment {
-	background-color: #4CAF50;
-} /* GREEN */
-#btnEditDepartment {
-	background-color: #f2dc0e;
-	color: black;
-} /* YELLOW */
-#btnDeleteDepartment {
-	background-color: #ca3030;
-} /* RED */
-
-/* ======================== */
-/* === Modal Styles === */
-/* ======================== */
-
-/* --- Modal Background Overlay (HIDDEN by default) --- */
-.modal {
-	display: none; /* Hidden */
-	position: fixed;
-	z-index: 1000;
-	left: 0;
-	top: 0;
-	width: 100%;
-	height: 100%;
-	overflow: auto;
-	background-color: rgba(0, 0, 0, 0.4);
-	/* Centering applied via .modal-visible */
-}
-
-/* --- Class to SHOW modal centered --- */
-.modal.modal-visible {
-	display: flex; /* Use flex to enable centering */
-	align-items: center; /* Vertical center */
-	justify-content: center; /* Horizontal center */
-}
-
-/* --- General Modal Content Box --- */
-.modal-content {
-	background-color: #fefefe;
-	border: 1px solid #888;
-	width: 450px;
-	max-width: 90%;
-	box-sizing: border-box;
-	border-radius: 5px;
-	box-shadow: 0 3px 7px rgba(0, 0, 0, 0.3);
-	margin: 0; /* Let flexbox handle centering */
-	padding: 0;
-	max-height: 90vh; /* Limit height */
-	overflow-y: auto; /* Add scroll if needed */
-	position: relative;
-}
-
-/* --- Close Button ('x') --- */
-.close {
-	color: rgb(255, 0, 0);
-	position: absolute;
-	top: 10px;
-	right: 15px;
-	font-size: 28px;
-	font-weight: bold;
-	line-height: 1;
-	cursor: pointer;
-}
-
-.close:hover, .close:focus {
-	color: #333;
-	text-decoration: none;
-}
-
-/* --- Modal Headers --- */
-.modal-content>h2 {
-	padding: 20px 20px 10px 20px;
-	margin: 0;
-	text-align: center;
-	font-size: 1.5em;
-	border-bottom: 1px solid #eee;
-}
-
-#notificationModal .modal-content>h2 {
-	border-bottom: none;
-	padding-bottom: 0;
-}
-
-#notificationModal .modal-content>p {
-	padding: 15px 20px 20px 20px;
-	margin: 0;
-	text-align: center;
-}
-
-/* --- Modal Form Styles (Add/Edit) --- */
-/* Style the form itself - make sure it doesn't interfere */
-.modal-content form {
-	padding: 20px; /* Padding INSIDE the form area */
-	margin: 0; /* No margin on form itself */
-	box-sizing: border-box;
-}
-
-.modal-content form .form-item {
-	margin-bottom: 15px; /* Consistent spacing between form items */
-}
-
-.modal-content form label {
-	display: block;
-	margin-bottom: 5px;
-	font-weight: bold;
-	text-align: left;
-}
-
-.modal-content form input { /* Target only inputs inside forms */
-	width: 100%;
-	padding: 8px;
-	border: 1px solid #ccc;
-	border-radius: 4px;
-	box-sizing: border-box;
-	font-size: 16px;
-	display: block;
-	text-align: left;
-	/* Removed margin-bottom here, use .form-item for spacing */
-}
-
-/* --- Modal Button Row --- */
-/* Style the container for the buttons */
-.modal-content .button-row {
-	display: flex; /* Use flexbox for buttons */
-	gap: 10px; /* Space between buttons */
-	padding: 0 20px 20px 20px; /* Space above/below/beside buttons */
-	box-sizing: border-box;
-	width: 100%;
-}
-
-/* --- Modal Button Styling --- */
-/* Style the buttons INSIDE the .button-row */
-.modal-content .button-row button {
-	flex: 1; /* Make buttons share width equally */
-	margin: 0; /* No margin on buttons themselves */
-	/* Height is set in general button styles */
-}
-
-/* Specific Modal Button Colors */
-.modal .submit-btn {
-	background-color: #4CAF50;
-	color: white;
-}
-
-.modal .cancel-btn {
-	background-color: #f44336;
-	color: white;
-}
-
-/* Notification Modal OK button */
-#notificationModal .button-row {
-	justify-content: center;
-	padding-top: 0;
-}
-
-#notificationModal .button-row button#okButton {
-	background-color: #4CAF50;
-	color: white;
-	flex-grow: 0; /* Prevent single button from expanding */
-	min-width: 100px;
-}
+/* Add any other styles absolutely unique to departments.jsp elements here. */
+/* For now, it remains minimal. */

@@ -1,0 +1,148 @@
+/* css/manageAccruedHours.css - v2 (Styling for consolidated modal) */
+
+/* Base page styling from reports.css via body.reports-page */
+
+.reports-page h1 {
+    margin-bottom: 15px;
+}
+.reports-page .parent-container.reports-container > p {
+    text-align: center;
+    color: #6c757d;
+    margin-bottom: 20px;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Modal specific styles to match screenshot image_bcc7ee.png */
+#manageAccruedHoursModal .modal-content {
+    max-width: 480px; /* Adjusted for screenshot look */
+    min-width: 350px;
+    padding: 0px; /* Remove padding to control sections with more detail */
+}
+
+#manageAccruedHoursModal h2#manageAccrualModalTitle {
+    /* Uses .modal-content > h2 from reports.css which includes gradient */
+    font-size: 1.25em; /* Slightly adjusted size */
+    padding: 16px 20px;
+    margin-bottom: 0;
+    border-bottom: 1px solid #dee2e6; /* Standard border */
+}
+
+#manageAccruedHoursModal p.modal-description {
+    font-size: 0.88em;
+    color: #555;
+    margin-bottom:18px;
+    padding: 15px 20px 0px 20px; /* Padding top and sides */
+    text-align: left;
+    line-height: 1.4;
+}
+
+#manageAccruedHoursModal form#manageAccruedHoursForm {
+    padding: 10px 20px 15px 20px; /* Padding inside the form, below description */
+    background-color: #fff;
+}
+
+#manageAccruedHoursModal .form-item {
+    margin-bottom: 12px; /* Tighter spacing between form items */
+    text-align: left;
+    display: flex; /* Use flex for label-input alignment */
+    flex-wrap: wrap; /* Allow wrapping if needed */
+    align-items: center; /* Vertically align label and input */
+}
+
+#manageAccruedHoursModal .form-item label {
+    flex-basis: 120px; /* Fixed width for labels */
+    flex-shrink: 0; /* Don't allow labels to shrink */
+    margin-bottom: 0; /* Remove bottom margin as flex handles spacing */
+    font-weight: 500;
+    font-size: .9em;
+    color: #495057;
+    padding-right: 10px; /* Space between label and input */
+}
+
+#manageAccruedHoursModal .form-item label .required-asterisk {
+    color: #dc3545;
+    margin-left: 2px;
+}
+
+#manageAccruedHoursModal .form-item input[type="number"],
+#manageAccruedHoursModal .form-item input[type="date"],
+#manageAccruedHoursModal .form-item select {
+    flex-grow: 1; /* Allow input/select to take remaining space */
+    width: auto; /* Override 100% width from reports.css for this flex item */
+    padding: 8px 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 0.95em;
+    height: 36px; /* Slightly smaller height */
+}
+
+#manageAccruedHoursModal .form-item input:focus,
+#manageAccruedHoursModal .form-item select:focus {
+    border-color: #005A9C;
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(0, 90, 156, 0.25);
+}
+
+/* Checkbox specific styling */
+#manageAccruedHoursModal .form-item.apply-global-checkbox {
+    justify-content: flex-start; /* Align checkbox to the left */
+    padding-left: 130px; /* Align with inputs (label width + padding) */
+    margin-top: 15px;
+    margin-bottom: 15px;
+}
+
+#manageAccruedHoursModal .form-item.apply-global-checkbox input[type="checkbox"] {
+    width: auto;
+    height: auto;
+    margin-right: 8px;
+    accent-color: #005A9C;
+    transform: scale(1.1);
+    vertical-align: middle;
+}
+#manageAccruedHoursModal .form-item.apply-global-checkbox label {
+    flex-basis: auto; /* Let label take natural width */
+    margin-bottom: 0;
+    font-weight: normal;
+    padding-right: 0;
+    vertical-align: middle;
+}
+
+/* Employee select container within this modal */
+#manageAccruedHoursModal #employeeSelectContainerManage {
+    display: flex; /* Keep this for label-input alignment */
+    align-items: center;
+    margin-bottom: 12px;
+}
+#manageAccruedHoursModal #employeeSelectContainerManage label {
+    /* Uses .form-item label styles */
+}
+#manageAccruedHoursModal #employeeSelectContainerManage select {
+    /* Uses .form-item select styles */
+}
+
+
+#manageAccruedHoursModal .button-row {
+    justify-content: center; /* Center buttons */
+    gap: 15px;
+    padding: 15px 20px 10px 20px; /* Adjusted padding */
+    border-top: 1px solid #e9ecef;
+    background-color: #f8f9fa; /* Light footer background */
+}
+
+#manageAccruedHoursModal .button-row button {
+    min-width: 120px;
+    font-size: 0.9em; /* Slightly smaller button text */
+    padding: 8px 15px; /* Adjust button padding */
+}
+
+/* Ensure notification bar on page has space if form container is also used */
+.add-global-page #notification-bar,
+.reports-page #pageNotificationArea .page-message { /* For messages on manageAccruedHours.jsp */
+    max-width: 600px; /* Consistent width for page notifications */
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 20px;
+}

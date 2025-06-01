@@ -2,9 +2,11 @@
 <web-app>
     <display-name>Clockify</display-name>
     <welcome-file-list>
+    <welcome-file>index.jsp</welcome-file>
         <welcome-file>login.jsp</welcome-file>
     </welcome-file-list>
     <listener>
         <listener-class>timeclock.listener.ApplicationListener</listener-class>
     </listener>
+        
 </web-app>

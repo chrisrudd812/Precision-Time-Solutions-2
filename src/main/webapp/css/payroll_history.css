@@ -1,0 +1,59 @@
+/* === css/payroll_history.css === */
+/* v3: Specific styles for payroll_history.jsp, including button layout */
+
+/*
+    Most styling (page layout, tables, modals, base glossy buttons)
+    is inherited from css/reports.css by applying common classes.
+*/
+
+/* Align currency cells to the right if not already handled by .report-table */
+table#historyTable td.currency,
+table#historyTable th[data-sort-type="currency"] {
+    text-align: right !important;
+}
+
+.no-history { /* For the "No payroll history..." message in table */
+    text-align: center !important;
+    padding: 20px !important;
+    font-style: italic;
+    color: #6c757d;
+}
+
+/* --- Button Container for Payroll History Actions --- */
+/* Override #button-container from reports.css if it used space-around */
+#button-container.payroll-history-actions {
+    display: flex;
+    justify-content: space-between; /* Pushes children to opposite ends */
+    align-items: center; /* Vertically align items if they have different heights */
+    width: 100%; /* Take full width of its parent */
+    margin-top: 25px; /* Space above buttons */
+    margin-bottom: 20px;
+    padding-top: 15px; /* Space above buttons if a separator is desired */
+    border-top: 1px solid #e9ecef; /* Light separator line */
+    gap: 20px; /* Fallback if only one child in left/right due to permissions */
+}
+
+.payroll-history-actions .action-left {
+    /* Takes up space on the left */
+    text-align: left;
+}
+
+.payroll-history-actions .action-right {
+    /* Takes up space on the right */
+    text-align: right;
+}
+
+/* Styling for the buttons themselves - size, etc. */
+/* .glossy-button class from reports.css provides base style */
+.payroll-history-actions button.glossy-button {
+    min-width: 200px; /* Give buttons a good minimum width */
+    /* flex-grow: 0; /* Prevent buttons from growing beyond their content + padding */
+    /* flex-shrink: 0; */
+}
+
+/* Ensure icons within these specific buttons inherit the text color */
+#btnViewDetails.text-green i { color: #19692c !important; }
+#btnPrintHistory.text-blue i { color: #0056b3 !important; }
+
+
+/* Add any other styles unique to payroll_history.jsp elements */

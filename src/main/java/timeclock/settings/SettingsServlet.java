@@ -5,53 +5,119 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import timeclock.Configuration;
 import java.io.IOException;
+import java.sql.SQLException; // Make sure SQLException is imported
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import timeclock.Configuration; 
-
 /**
- * Servlet to handle saving settings from the settings page via AJAX.
- * Sends plain text response ("OK" or "Error: ...").
+ * Handles saving individual configuration settings via AJAX requests
+ * from the settings.jsp page.
+ * ** UPDATED for Enhanced Error Handling **
  */
 @WebServlet("/saveSetting")
 public class SettingsServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final Logger logger = Logger.getLogger(SettingsServlet.class.getName());
-    // *** REMOVED: private static final Gson gson = new Gson(); ***
 
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        String key = request.getParameter("settingKey");
-        String value = request.getParameter("settingValue");
+    /**
+     * Retrieves the TenantID from the current user's session.
+     * @param request The HttpServletRequest.
+     * @return The TenantID as an Integer, or null if not found or session is invalid.
+     */
+    private Integer getTenantId(HttpServletRequest request) {
+        HttpSession session = request.getSession(false); // Do not create a new session
+        if (session != null) {
+            Object tenantIdObj = session.getAttribute("TenantID");
+            if (tenantIdObj instanceof Integer) {
+                return (Integer) tenantIdObj;
+            }
+        }
+        return null;
+    }
 
-        logger.info("Received setting save request: Key=" + key + ", Value=" + value);
+    /**
+     * Handles POST requests to save a single setting.
+     */
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        request.setCharacterEncoding("UTF-8");
+        logger.info("[SettingsServlet] Received POST to save a setting.");
 
-        response.setContentType("text/plain"); // Set content type to plain text
-        response.setCharacterEncoding("UTF-8");
+        HttpSession session = request.getSession(false);
+        Integer tenantIdAsInteger = getTenantId(request);
 
-        // Basic validation
-        if (key == null || key.trim().isEmpty() || value == null) {
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST); // 400 Bad Request
-            response.getWriter().write("Error: Missing setting key or value."); // Send plain text error
-            logger.warning("Save setting failed: Missing key or value.");
+        // --- Session and Permission Checks ---
+        if (tenantIdAsInteger == null) {
+            logger.warning("[SettingsServlet] TenantID is null in session. Cannot save setting.");
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("Error: Session invalid or tenant not identified.");
+            return;
+        }
+        int tenantId = tenantIdAsInteger.intValue();
+
+        String userPermissions = (String) session.getAttribute("Permissions");
+        if (!"Administrator".equalsIgnoreCase(userPermissions)) {
+            logger.warning("[SettingsServlet] User (TenantID: " + tenantId + ") is not Administrator. Save setting denied.");
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.getWriter().write("Error: Access Denied.");
             return;
         }
 
+        // --- Get Parameters ---
+        String settingKey = request.getParameter("settingKey");
+        String settingValue = request.getParameter("settingValue");
+
+        logger.info("[SettingsServlet] Attempting to save for TenantID: " + tenantId + ", Key='" + settingKey + "', Value='" + settingValue + "'");
+        response.setContentType("text/plain");
+        response.setCharacterEncoding("UTF-8");
+
+        // --- Parameter Validation ---
+        if (settingKey == null || settingKey.trim().isEmpty() || settingValue == null) {
+            logger.warning("[SettingsServlet] Missing settingKey or settingValue (value was null). Key: " + settingKey);
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            response.getWriter().write("Error: Missing setting key or value was null.");
+            return;
+        }
+        settingKey = settingKey.trim();
+
+        // --- Basic Server-side Validation (Example) ---
+        if (settingKey.contains("Threshold") || settingKey.equals("GracePeriod") || settingKey.endsWith("Rate")) {
+            if (!settingValue.isEmpty()) {
+                try {
+                    Double.parseDouble(settingValue);
+                } catch (NumberFormatException e) {
+                    logger.warning("[SettingsServlet] Invalid number format for Key: " + settingKey + ", Value: " + settingValue);
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    response.getWriter().write("Error: Invalid number format for " + settingKey);
+                    return;
+                }
+            }
+        }
+
+        // --- Save Setting and Handle Errors ---
         try {
-            // Call your configuration class to save the property
-            Configuration.saveProperty(key.trim(), value);
+            // Call the 3-argument saveProperty (which now throws SQLException)
+            Configuration.saveProperty(tenantId, settingKey, settingValue);
 
-            // Send plain text success response
-            response.getWriter().write("OK");
-            logger.info("Setting saved successfully: Key=" + key);
+            response.getWriter().write("OK"); // Send "OK" only on full success
+            logger.info("[SettingsServlet] Setting saved successfully for TenantID: " + tenantId + ", Key=" + settingKey + ", Value=" + settingValue);
 
-        } catch (Exception e) {
-            logger.log(Level.SEVERE, "Error saving setting: Key=" + key, e);
-            // Send plain text error response
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR); // 500 Internal Server Error
-            response.getWriter().write("Error: Failed to save setting due to server error.");
+        } catch (IllegalArgumentException e) {
+             logger.log(Level.WARNING, "[SettingsServlet] Invalid argument saving setting for TenantID: " + tenantId + ", Key=" + settingKey + ": " + e.getMessage(), e);
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            response.getWriter().write("Error: Invalid input - " + e.getMessage());
+        } catch (SQLException e) { // <-- Catch SQLException explicitly
+            logger.log(Level.SEVERE, "[SettingsServlet] SQLException saving setting for TenantID: " + tenantId + ", Key=" + settingKey, e);
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.getWriter().write("Error: Database error during save. Check logs.");
+        } catch (Exception e) { // Catch any other unexpected exceptions
+            logger.log(Level.SEVERE, "[SettingsServlet] Unexpected error saving setting for TenantID: " + tenantId + ", Key=" + settingKey, e);
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.getWriter().write("Error: An unexpected server error occurred during save.");
         }
     }
-
 }

@@ -1,213 +1,279 @@
-/* settings.css */
-/* Styles for the Settings page - Final Layout & Checkbox/Radio Styles */
+@charset "UTF-8";
 
 /* === General Styles === */
 body { font-family: Arial, sans-serif; margin: 0; padding: 0; min-height: 100vh; background-color: #f4f4f4; }
 .parent-container { background-color: white; padding: 30px 40px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); width: 90%; max-width: 900px; margin: 3% auto 5% auto; box-sizing: border-box; }
-h1 { text-align: center; color: #333; margin-bottom: 40px; font-size: 1.8em; }
+h1 { text-align: center; color: #006400; margin-bottom: 30px; font-size: 1.8em; display: flex; align-items: center; justify-content: center; padding-bottom: 10px; border-bottom: 1px solid #eee;}
+h1 .fas { color: #006400; margin-right: 10px;}
 
 /* === Settings Form Styles === */
 #settingsForm { margin-top: 20px; }
+.setting-item { margin-bottom: 25px; padding-bottom: 25px; border-bottom: 1px solid #eee; }
+.setting-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 10px; }
+h4.section-heading { font-size: 1.3em; font-weight: 600; color: #006400; margin-top: 10px; margin-bottom: 20px; padding-bottom: 5px; display: flex; align-items: center; }
+h4.section-heading .fas, h4.section-heading .far { margin-right: 10px; color: #006400; font-size: 1em; }
 
-/* Style for each logical setting group */
-.setting-item {
-    margin-bottom: 15px; /* Space below item */
-    padding-bottom: 25px; /* Space above border */
-    border-bottom: 1px solid #eee; /* Separator line */
-}
-.setting-item:last-child {
-    border-bottom: none; /* No line after the last item */
-    margin-bottom: 0;
-    padding-bottom: 10px;
-}
-
-/* Style for section headings */
-h4.section-heading {
-    font-size: 1.3em;
-    font-weight: bold;
-    color: #006400; /* Darker Green */
-    margin-top: 10px;
-    margin-bottom: 20px; /* Space below heading */
-    padding-bottom: 0;
-    border-bottom: none; /* REMOVED border from heading */
-}
-
-/* Layout for rows within a setting item */
 .form-row {
     display: flex;
+    flex-direction: column; 
+    gap: 5px; 
+    margin-bottom: 10px; 
+}
+.form-row:last-child { margin-bottom: 0; }
+
+.form-row.setting-pair-row {
+    flex-direction: row !important; 
     flex-wrap: wrap;
-    gap: 20px;
-    align-items: flex-start; /* Align items to the top of the row */
-    margin-bottom: 18px; /* Consistent spacing */
+    align-items: flex-start; 
+    gap: 15px 20px;      
 }
-.form-row:last-child { margin-bottom: 0; } /* No extra margin on last row within item */
-
-.form-item {
-    flex: 1;
-    min-width: 200px;
+.form-row.setting-pair-row > .setting-block {
+    flex-basis: calc(50% - 10px); 
+    min-width: 320px; 
 }
 
-/* Label for specific controls */
-#settingsForm label { display: block; margin-bottom: 8px; font-weight: bold; font-size: 1.0em; color: #444; }
-/* Label for radio/checkbox groups */
-.form-item > label:first-child { font-size: 1.0em; margin-bottom: 8px; }
 
-/* Standard Controls */
+.setting-block {
+    display: flex;          
+    align-items: center;    
+    gap: 15px;              
+    padding: 6px 0; 
+    box-sizing: border-box;
+    width: 100%;            
+}
+
+.setting-block .setting-label-fixed { 
+    flex-basis: 230px;  
+    flex-shrink: 0;    
+    font-weight: bold;
+    text-align: left;   
+    white-space: nowrap; 
+    margin-bottom: 0;   
+    color: #333;
+    font-size: 0.95em;
+}
+
+.setting-block .setting-controls-wrapper { 
+    display: flex;        
+    align-items: center; 
+    flex-grow: 1;         
+    gap: 10px;            
+    justify-content: flex-start; 
+    flex-wrap: nowrap;    
+}
+
 #settingsForm select,
-#settingsForm input[type="number"] {
-    display: block; width: 100%; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px;
-    box-sizing: border-box; font-size: 1em; font-family: inherit; height: 40px;
+#settingsForm input[type="number"],
+#settingsForm input[type="date"] {
+    padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px;
+    box-sizing: border-box; font-size: 0.95em; font-family: inherit; height: 38px; 
+    margin-top: 0; 
+    width: auto; 
+    min-width: 180px; /* Default min-width for these controls */
 }
-#settingsForm select { cursor: pointer; }
-#settingsForm input[type="number"] { padding-right: 5px; }
-#settingsForm select:focus,
-#settingsForm input[type="number"]:focus { border-color: #007bff; outline: none; box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25); }
-#settingsForm select:hover { border-color: #888; }
+#payPeriodType, #firstDayOfWeek, #payPeriodStartDate {
+    min-width: 180px; /* Consistent width for pay period inputs/selects */
+}
+.calculated-date-display { 
+    font-weight: bold;
+    padding: 8px 10px;
+    height: 38px; 
+    line-height: 20px; /* Approx center for 38px height */
+    display: inline-block;
+    min-width: 180px; /* Match other inputs in that row */
+    background-color: #e9ecef; 
+    color: #495057;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    box-sizing: border-box;
+    vertical-align: middle; 
+    text-align: left; 
+}
 
-/* Save status message */
-.save-status { display: block; margin-left: 0; margin-top: 5px; font-size: 0.9em; font-style: italic; color: green; opacity: 0; transition: opacity 0.5s ease-in-out, color 0.3s ease; }
+
+.setting-block .setting-controls-wrapper select,
+.setting-block .setting-controls-wrapper input[type="number"],
+.setting-block .setting-controls-wrapper input[type="date"] {
+    flex-grow: 0; 
+}
+.setting-block .setting-controls-wrapper input[type="number"].short-input {
+    width: 80px !important; 
+    max-width: 80px !important;
+    min-width: 80px !important; /* Ensure it doesn't shrink further */
+    padding: 8px 5px; 
+}
+.setting-block .setting-controls-wrapper .radio-group {
+    display: flex; flex-wrap: nowrap; align-items: center; gap: 15px; 
+}
+.setting-block .setting-controls-wrapper .switch { margin-left: 0; }
+.setting-block .setting-controls-wrapper .fixed-setting-note { margin-left: 5px; white-space: nowrap;}
+.setting-block .setting-controls-wrapper .save-status { margin-left: 10px; flex-shrink:0; }
+
+.save-status { display: inline-block; margin-left: 10px; margin-top: 0; vertical-align: middle; font-size: 0.85em; font-style: italic; color: green; opacity: 0; transition: opacity 0.5s ease-in-out, color 0.3s ease; min-height: 1em; }
 .save-status.error { color: red; }
+.save-status.info { color: #0056b3; }
 .save-status.visible { opacity: 1; }
+.save-status.radio-group-status { display: inline-block; margin-left: 15px; }
+.save-status.checkbox-status { display: inline-block; margin-left: 10px; }
 
-/* Info/Warning messages */
-.setting-warning, .setting-info {
-    font-size: 0.85em; font-style: italic; padding: 10px 15px;
-    margin-top: 10px; margin-bottom: 0px; border-radius: 3px; line-height: 1.4;
-    clear: both; width: auto; box-sizing: border-box;
-}
-.setting-warning { color: #555; background-color: #fffadf; border: 1px solid #ffeeba; border-left: 4px solid #ffc107; }
-.setting-info { color: #666; background-color: #e7f3fe; border: 1px solid #d0e3f0; border-left: 4px solid #2196F3; }
-.setting-warning strong, .setting-info strong { font-style: normal; color: #444; }
+.setting-warning, .setting-info { font-size: 0.9em; font-style: normal; padding: 10px 15px; margin-top: 10px; margin-bottom: 15px; border-radius: 4px; line-height: 1.5; clear: both; width: auto; box-sizing: border-box;}
+.setting-warning { color: #856404; background-color: #fff3cd; border: 1px solid #ffeeba; border-left: 4px solid #ffc107; }
+.setting-info { color: #0c5460; background-color: #d1ecf1; border: 1px solid #bee5eb; border-left: 4px solid #17a2b8; }
+.setting-info a .fas { font-size: 0.8em; margin-left: 3px; }
+.setting-warning strong, .setting-info strong { font-weight: bold; color: inherit; }
+.fixed-setting-note { font-size: 0.85em; color: #6c757d; display: inline-block; margin-left: 8px; vertical-align: middle; font-style: italic; white-space: nowrap;}
 
+.switch { position: relative; display: inline-block; width: 50px; height: 24px; vertical-align: middle; margin-left: 0; flex-shrink: 0; }
+.switch input[type="checkbox"] { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px;}
+.slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+.switch input[type="checkbox"]:checked + .slider { background-color: #006400; }
+.switch input[type="checkbox"]:focus + .slider { box-shadow: 0 0 2px #006400; }
+.switch input[type="checkbox"]:checked + .slider:before { transform: translateX(26px); }
+.switch input[type="checkbox"]:disabled + .slider { background-color: #e0e0e0; cursor: not-allowed; opacity: 0.7;}
+.switch input[type="checkbox"]:disabled + .slider:before { background-color: #bdbdbd; }
+.switch input[type="checkbox"]:checked:disabled + .slider { background-color: #006400; opacity: 0.5; cursor: not-allowed; }
+.switch input[type="checkbox"]:checked:disabled + .slider:before { background-color: #b2dfdb; opacity: 0.7;}
 
-/* === Checkbox Styling === */
-.styled-checkbox { /* Wrapper span */
-    display: inline-flex; align-items: center; vertical-align: middle;
-    cursor: pointer; position: relative; padding-left: 28px; height: 22px; line-height: 22px;
-    background: transparent; flex-shrink: 0; opacity: 1;
+.slider-label { 
+    font-weight: normal; color: #333; margin-right: 8px; display: flex; align-items: center; cursor: default; 
 }
-.styled-checkbox input[type="checkbox"] { /* Hidden input */
-    position: absolute; opacity: 0; cursor: pointer; height: 100%; width: 100%;
-    left: 0; top: 0; z-index: 1; margin: 0; appearance: none; -webkit-appearance: none;
-}
-.styled-checkbox label { /* Text label */
-    margin-left: 0; margin-bottom: 0; font-weight: normal; cursor: pointer;
-    white-space: nowrap; display: inline-flex; align-items: center;
-    color: #333; background: transparent; opacity: 1;
-}
-.styled-checkbox label::before { /* Custom box */
-    content: ''; position: absolute; left: 0; top: 1px;
-    width: 20px; height: 20px; border: 1px solid #999; border-radius: 3px;
-    background-color: white; /* Default white */
-    transition: background-color 0.2s ease, border-color 0.2s ease;
-    z-index: 0; cursor: pointer; opacity: 1;
-}
-.styled-checkbox input[type="checkbox"]:checked + label::before { /* Checked box */
-    background-color: #4CAF50; border-color: #4CAF50; /* Green */
-    content: '\2714'; color: white; font-size: 14px;
-    text-align: center; line-height: 20px; font-weight: bold;
-}
-.styled-checkbox input[type="checkbox"]:focus + label::before { /* Focus */
-     box-shadow: 0 0 0 2px rgba(0,123,255,.25); border-color: #86b7fe;
-}
-/* --- End Checkbox Styling --- */
+.setting-block > .slider-label, .form-item-inline > .slider-label { font-weight: bold; }
+.slider-label.disabled-text { color: #999; cursor: not-allowed; }
+.slider-label.disabled-text .fas, .slider-label.disabled-text .far { color: #bbb !important; }
 
+.radio-group { display: flex; flex-wrap: nowrap; gap: 10px; align-items: center; }
+.styled-radio { 
+    display: inline-flex; align-items: center; vertical-align: middle; 
+    cursor: pointer; position: relative; 
+    padding-left: 30px; height: 24px; line-height: 24px; 
+}
+.styled-radio input[type="radio"] { position: absolute; opacity: 0; cursor: pointer; height: 100%; width: 100%; left: 0; top: 0; z-index: 1; margin: 0; }
+.styled-radio label { margin-left: 0; margin-bottom: 0; font-weight: normal; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; color: #333; }
+.styled-radio label::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; border: 2px solid #999; border-radius: 50%; background-color: white; transition: all 0.2s ease; z-index: 0; }
+.styled-radio input[type="radio"]:checked + label::before { background-color: #006400; border-color: #004d00; box-shadow: inset 0 0 0 5px white; }
+.styled-radio input[type="radio"]:focus + label::before { border-color: #004d00; box-shadow: 0 0 0 3px rgba(0,100,0,.25), inset 0 0 0 5px white; }
 
-/* === Radio Button Styling === */
-.radio-group { /* Container */
-    display: flex; flex-wrap: wrap; gap: 15px 25px; padding-top: 5px; align-items: center;
-}
-.styled-radio { /* Wrapper span */
-    display: inline-flex; align-items: center; vertical-align: middle;
-    cursor: pointer; position: relative; padding-left: 28px;
-    height: 22px; line-height: 22px; background: transparent; flex-shrink: 0;
-    opacity: 1; /* <<< Ensure opaque */
-}
-.styled-radio input[type="radio"] { /* Hidden input */
-    position: absolute; opacity: 0; cursor: pointer; height: 100%; width: 100%;
-    left: 0; top: 0; z-index: 1; margin: 0; appearance: none; -webkit-appearance: none;
-}
-.styled-radio label { /* Text label */
-    margin-left: 0; margin-bottom: 0; font-weight: normal; cursor: pointer;
-    white-space: nowrap; display: inline-flex; align-items: center;
-    color: #333; background: transparent; opacity: 1; /* <<< Ensure opaque */
-}
-.styled-radio label::before { /* Custom circle */
-    content: ''; position: absolute; left: 0; top: 1px;
-    width: 18px; height: 18px; border: 1px solid #999; border-radius: 50%;
-    background-color: white; transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-    z-index: 0; cursor: pointer; opacity: 1; /* <<< Ensure opaque */
-}
-.styled-radio input[type="radio"]:checked + label::before { /* Checked circle */
-    background-color: #4CAF50; border-color: #4CAF50; /* Green */
-    box-shadow: inset 0 0 0 4px white;
-}
-.styled-radio input[type="radio"]:focus + label::before { /* Focus */
-     box-shadow: 0 0 0 2px rgba(0,123,255,.25), inset 0 0 0 4px white;
-     border-color: #86b7fe;
+#settingsForm input[type="radio"]:disabled + label { color: #aaa !important; cursor: not-allowed !important; opacity: 0.7 !important; }
+#settingsForm input[type="radio"]:disabled + label::before { background-color: #f0f0f0 !important; border-color: #ddd !important; cursor: not-allowed !important; box-shadow: none !important; opacity: 0.7 !important; }
+#settingsForm input[type="radio"]:checked:disabled + label::before {
+    background-color: #a9d1a9 !important; 
+    border-color: #8cb08c !important;    
+    box-shadow: inset 0 0 0 5px #e0e0e0 !important; 
 }
 
-/* Style for DISABLED radio button LABEL text */
-/* Use direct CSS :disabled selector on input to affect sibling label */
-#settingsForm input[type="radio"]:disabled + label {
-    color: #aaa; /* Lighter text color for disabled label */
-    cursor: not-allowed; /* Disabled cursor for label too */
-    opacity: 0.7; /* Match disabled input opacity */
+.punch-restriction-item { display: flex; align-items: center; margin-bottom: 12px; padding: 6px 0; min-height: 30px;}
+.punch-restriction-item .switch { margin-right: 12px; margin-left: 0; flex-shrink: 0;}
+.punch-restriction-item .slider-label { font-weight: normal; color: #333; cursor: default; display: flex; align-items: center; margin-bottom: 0; margin-right: 0; }
+.punch-restriction-item .slider-label .fas, 
+.punch-restriction-item .slider-label .far { margin-right: 8px; color: #006400; width: 18px; text-align: center; font-size: 0.95em;}
+.punch-restriction-item .spacer { flex-grow: 1; }
+.punch-restriction-item .save-status.checkbox-status { min-width: 60px; text-align: left; margin-left: 10px; margin-right: 10px; flex-shrink: 0;}
+.configure-button { 
+    padding: 7px 15px; font-size: 0.9em; background-color: #006400; color: white;
+    border: none; border-radius: 5px; cursor: pointer; min-width: 125px; text-align: center;
+    transition: background-color 0.2s ease-in-out, transform 0.1s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0; 
 }
-/* Style for DISABLED radio button custom circle */
-#settingsForm input[type="radio"]:disabled + label::before {
-    background-color: #f0f0f0; /* Light gray background */
-    border-color: #ddd; /* Lighter border */
-    cursor: not-allowed;
-    box-shadow: none; /* Remove inner dot effect */
-    opacity: 0.7; /* Match disabled input opacity */
+.configure-button .fas { margin-right: 6px; }
+.configure-button:hover { background-color: #004d00; transform: translateY(-1px); }
+.configure-button:active { transform: translateY(0px); box-shadow: inset 0 1px 2px rgba(0,0,0,0.2); }
+.configure-button:disabled { background-color: #adb5bd; color: #6c757d; cursor: not-allowed; opacity: 0.65; transform: none; box-shadow: none;}
+.sub-settings-group { padding-left: 15px; margin-top: 15px; margin-left: 0; border-left: 2px solid #e9ecef; }
+
+#settingsForm input:disabled:not([type="checkbox"]):not([type="radio"]),
+#settingsForm select:disabled {
+     background-color: #e9ecef !important; color: #6c757d !important;
+     cursor: not-allowed !important; border-color: #ced4da !important;
+     opacity: 0.7 !important; 
 }
-/* --- End Radio Styling --- */
-
-
-/* --- Modal Button Styles --- (Keep for Notification Modal) --- */
-.modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
-.modal.modal-visible { display: flex; align-items: center; justify-content: center; }
-.modal-content { /* Base modal styles */ }
-.close { /* Close button styles */ }
-.modal-content > h2 { /* Modal title styles */ }
-.modal-content form { padding: 20px; margin: 0; box-sizing: border-box; } /* Add back padding for notification */
-#notificationModal .modal-content { width: 400px; padding: 20px; text-align: center; }
-#notificationModal .modal-content > h2 { border-bottom: none; padding-bottom: 0; }
-#notificationModal .modal-content > p { padding: 15px 0 20px 0; margin: 0; }
-#notificationModal .button-row { justify-content: center; padding: 0 20px 20px 20px; border-top: none; margin-top: 0;} /* Adjust notification button padding */
-#notificationModal .button-row button#okButton { background-color: #4CAF50; color: white; flex-grow: 0; min-width: 100px; border:none; padding: 10px; border-radius: 4px; cursor:pointer; font-size: 16px; height: 40px;}
-#notificationModal .button-row button#okButton:hover { filter: brightness(1.2); }
-
-
-/* --- SPECIFIC Disabled input style --- */
-/* Only target actual input/select elements */
-#settingsForm input[type="text"]:disabled,
-#settingsForm input[type="time"]:disabled,
-#settingsForm input[type="number"]:disabled,
-#settingsForm select:disabled,
-#settingsForm input[type="text"]:read-only,
-#settingsForm input[type="time"]:read-only,
-#settingsForm input[type="number"]:read-only {
-     background-color: #e9ecef;
-     color: #6c757d;
-     cursor: not-allowed !important; /* Keep important for cursor */
-     border-color: #ced4da;
-     opacity: 0.7; /* Apply opacity only here */
+#seventhDayOTDetailsBlock input[type="number"]:disabled {
+     background-color: #e9ecef !important; color: #6c757d !important;
+     cursor: not-allowed !important; border-color: #ced4da !important;
+     opacity: 0.7 !important;
 }
 
-/* Cursor override for active styled checkboxes/radios */
-/* Ensure these wrappers/labels DON'T get disabled styles */
-#settingsForm .styled-checkbox, #settingsForm .styled-checkbox label,
-#settingsForm .styled-radio, #settingsForm .styled-radio label {
-    cursor: pointer !important;
-    opacity: 1 !important; /* Force opacity */
-    color: #333 !important; /* Force default color */
-    background: transparent !important; /* Force no background */
+.required-asterisk { color: #007bff; font-size: 1em; font-weight: bold; margin-right: 3px; }
+.punch-restriction-item .slider-label .required-asterisk {
+    font-size: 1em; vertical-align: super; line-height: 1; margin-left: 3px;
 }
-/* Exception: Apply disabled styles to RADIO labels when INPUT is disabled */
-#settingsForm input[type="radio"]:disabled + label {
-     color: #999 !important; /* Lighter text color override */
-     cursor: not-allowed !important;
-     opacity: 0.7 !important; /* Match opacity */
+
+#manualOvertimeSettings.auto-mode-fields-disabled .setting-label-fixed,
+#manualOvertimeSettings.auto-mode-fields-disabled .styled-radio label {
+    color: #6c757d; 
 }
+#manualOvertimeSettings.auto-mode-fields-disabled .styled-radio input[type="radio"]:disabled + label {
+    color: #aaa !important; 
+}
+
+#stateSpecificNotesDisplay {
+    font-size: 0.85em; padding: 8px; background-color: #f0f0f0; 
+    border-radius: 3px; border: 1px solid #ddd; margin-top: 5px; 
+}
+
+#seventhDayOTDetailsBlock {
+    display: flex; 
+    flex-direction: column; 
+    gap: 5px;
+    padding-left: 20px; 
+    margin-top: 10px;
+}
+
+/* Page Messages (from JSP - if uncommented) */
+.page-message { margin-bottom: 20px !important; display: flex; align-items: center; padding: 10px 15px; border-radius: 4px; }
+.page-message .fas { margin-right: 10px; font-size: 1.2em;}
+.page-message.success-message { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+.page-message.error-message { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+/* Toast Notification Styles */
+.toast-notification-container {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    z-index: 1055; display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+.toast-notification {
+    background-color: #333; color: white; padding: 12px 20px; border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    opacity: 0; visibility: hidden;
+    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out, transform 0.3s ease-in-out;
+    transform: translateY(20px);
+    min-width: 250px; max-width: 350px; margin-bottom: 10px; text-align: center;
+}
+.toast-notification:last-child { margin-bottom: 0; }
+.toast-notification.show { opacity: 1; visibility: visible; transform: translateY(0); }
+.toast-notification.success { background-color: #28a745; color: white; }
+.toast-notification.error { background-color: #dc3545; color: white; }
+.toast-notification.info { background-color: #17a2b8; color: white; }
+
+/* Modal Styles (Copied from punches.css for consistency if any modals were planned for settings page) */
+/* If no modals are used on settings.jsp, this section can be smaller or removed from settings.css */
+.modal { display: none !important; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); padding-top: 60px; }
+.modal.modal-visible { display: flex !important; align-items: center; justify-content: center; }
+.modal-content { background-color: #fefefe; margin: auto; padding: 25px 30px; border: 1px solid #888; width: 90%; max-width: 550px; border-radius: 8px; box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19); position: relative; font-family: Arial, sans-serif; }
+.modal-content h2 { text-align: center; margin-top: 0; margin-bottom: 25px; color: #333; }
+.modal-content p { margin-top: 0; margin-bottom: 15px; font-size: 1em; line-height: 1.6; color: #333; text-align: center; }
+#confirmCloseModal .modal-content p { text-align: left; font-size: 0.95em; line-height: 1.6; }
+#confirmCloseModal .modal-content p:first-of-type { font-weight: bold; color: #dc3545; text-align: center; font-size: 1.1em; }
+.modal .close { color: #aaa; position: absolute; top: 8px; right: 12px; font-size: 28px; font-weight: bold; line-height: 1; padding: 0; background: none; border: none; cursor:pointer; }
+.modal .close:hover, .modal .close:focus { color: black; text-decoration: none; }
+.modal .form-row { margin-bottom: 15px; }
+.modal .form-row label { display: block; margin-bottom: 5px; font-weight: bold; text-align: left; }
+.modal .form-row input[type="text"], .modal .form-row input[type="date"], .modal .form-row input[type="time"], .modal .form-row input[type="number"], .modal .form-row select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; height: 38px; }
+.modal .form-row small { width: 100%; padding-left: 0; font-size: 0.85em; color: #666; margin-top: 3px; display: block;}
+.modal-content input, .modal-content select { font-family: inherit; font-size: 1em; color: #333; }
+.modal-content input[type="date"], .modal-content input[type="time"] { padding: 8px 10px; }
+.modal .button-row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px; }
+.modal-footer { padding-top: 15px; margin-top: 20px; border-top: 1px solid #eee; flex-shrink: 0; display: flex; justify-content: flex-end; gap: 10px; }
+.modal-footer button { padding: 10px 20px; }
+.modal-footer button[type="submit"] { background-color: #5cb85c; color: white; }
+.modal-footer button[type="submit"]:hover { background-color: #4cae4c; }
+.modal-footer button[type="button"]:not(.glossy-button) { background-color: #aaa; color: white; }
+.modal-footer button[type="button"]:not(.glossy-button):hover { background-color: #888; }
+.confirm-close-footer { display: flex; justify-content: space-around; gap: 20px; }
+.confirm-close-footer button { flex-grow: 1; margin-bottom: 0; max-width: 200px; }
+#confirmCloseButton { background-color: #4CAF50; color: white; }
+#confirmCloseButton:hover { background-color: #45a049; }
+#cancelCloseButton { background-color: #dc3545; color: white; }
+#cancelCloseButton:hover { background-color: #c82333; }
+#addHoursModal .modal-content, #editPunchModal .modal-content { max-width: 450px; }
+#confirmCloseModal .modal-content { max-width: 550px; }

@@ -1,0 +1,296 @@
+/* configureNetworkRestrictions.css (Revised to include styles previously from settings.css) */
+
+/* --- Page Specific Container & Wizard Header --- */
+.config-container {
+    padding: 20px;
+    max-width: 900px;
+    margin: 20px auto;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.wizard-header {
+    background-color: #004080;
+    color: white;
+    padding: 15px 20px;
+    text-align: center;
+    margin-bottom: 20px;
+    border-radius: 0 0 5px 5px;
+}
+.wizard-header h2 { margin-top: 0; margin-bottom: 5px; }
+.wizard-header p { margin-bottom: 0; font-size: 0.9em; }
+
+/* --- Headings Styling (Making them Green) --- */
+.config-container > h1 {
+    color: #006400; /* Dark green */
+    /* display: flex; align-items: center; justify-content: center; */ /* Already centered by default in your screenshot */
+}
+.config-container > h1 .fas { /* Icon within main H1 */
+    color: #006400; /* Match icon color to heading */
+    /* margin-right: 10px; */ /* Adjust if needed */
+}
+
+h2 {
+    color: #006400; /* Dark green */
+    font-size: 1.3em; /* From previous version */
+    border-bottom: 1px solid #eee; /* From previous version */
+    padding-bottom: 8px; /* From previous version */
+    margin-top:0; /* From previous version */
+    margin-bottom: 15px; /* From previous version */
+}
+h2 .fas { /* Icons within section H2s */
+    color: #006400; /* Match icon color */
+    /* margin-right: 8px; */ /* Adjust if needed */
+}
+
+/* --- Form Sections and Items --- */
+.form-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    border: 1px solid #e0e0e0;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+.form-item {
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column; /* Default: labels above inputs */
+}
+
+.form-item label {
+    margin-bottom: 5px;
+    font-weight: 500;
+    font-size: 0.9em;
+}
+
+.form-item input[type="text"],
+.form-item textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 0.95em;
+}
+.form-item textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+.required-asterisk {
+    color: #dc3545;
+    margin-left: 2px;
+}
+
+.button-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    justify-content: flex-start;
+}
+
+/* --- Switch Styles (Adopted from settings.css) --- */
+.switch-container { /* For label + switch alignment, used in both Add form and Modal */
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    /* Ensure horizontal layout if its parent .form-item is column */
+    flex-direction: row;
+}
+.form-item.switch-container > label:first-of-type { /* Specifically for the text label like "Enabled:" */
+    margin-bottom: 0; /* Override .form-item label's margin-bottom */
+    flex-shrink: 0;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;  /* Width of the switch */
+    height: 24px; /* Height of the switch */
+    vertical-align: middle;
+    flex-shrink: 0;
+}
+.switch input[type="checkbox"] {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc; /* Default background for off state */
+    transition: .4s;
+    border-radius: 24px; /* Makes the slider background rounded */
+}
+.slider:before { /* This is the sliding knob */
+    position: absolute;
+    content: "";
+    height: 16px; /* Height of the knob */
+    width: 16px;  /* Width of the knob */
+    left: 4px;    /* Position from left when off */
+    bottom: 4px;  /* Position from bottom */
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%; /* Makes the knob a circle */
+}
+.switch input[type="checkbox"]:checked + .slider {
+    background-color: #006400; /* Green background for on state */
+}
+.switch input[type="checkbox"]:focus + .slider {
+    box-shadow: 0 0 2px #006400; /* Focus outline */
+}
+.switch input[type="checkbox"]:checked + .slider:before {
+    transform: translateX(26px); /* How far the knob slides */
+}
+/* Disabled states for switch */
+.switch input[type="checkbox"]:disabled + .slider {
+    background-color: #e0e0e0;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+.switch input[type="checkbox"]:disabled + .slider:before {
+    background-color: #bdbdbd;
+}
+.switch input[type="checkbox"]:checked:disabled + .slider {
+    background-color: #006400; /* Keep green but indicate disabled */
+    opacity: 0.5;
+}
+.switch input[type="checkbox"]:checked:disabled + .slider:before {
+    background-color: #b2dfdb; /* Lighter knob for checked disabled */
+    opacity: 0.7;
+}
+/* If your JSP uses <span class="slider round">, these ensure roundness.
+   The above .slider and .slider:before already make it round. */
+.slider.round { border-radius: 24px; } /* Redundant if .slider already has it */
+.slider.round:before { border-radius: 50%; } /* Redundant if .slider:before already has it */
+
+
+/* --- Network Table Specific Styles --- */
+.network-table th,
+.network-table td {
+    padding: 10px;
+    vertical-align: middle;
+}
+.network-table thead th {
+    font-weight: bold;
+    /* If using with .report-table, reports.css will provide sticky header.
+       If NOT using .report-table, uncomment below for a simple header: */
+    /* background-color: #f2f2f2; */
+    /* color: #333; */
+    /* border-bottom: 2px solid #ccc; */
+}
+.network-table tr:nth-child(even) {
+    /* background-color: #f9f9f9; */ /* Optional: zebra striping if not from .report-table */
+}
+.network-table .action-icon-btn {
+    margin-right: 5px;
+    padding: 5px 8px;
+    border: 1px solid transparent;
+    background-color: transparent;
+    cursor: pointer;
+    font-size: 1.1em;
+}
+.network-table .action-icon-btn.edit { color: #007bff; }
+.network-table .action-icon-btn.delete { color: #dc3545; }
+.network-table .action-icon-btn:hover { background-color: #e9ecef; border-color: #ddd; }
+
+.no-networks {
+    text-align: center !important;
+    color: #777;
+    font-style: italic;
+    padding: 20px !important;
+}
+
+/* --- Modal for Editing Network (networkModal) --- */
+/* Assuming global .modal and .modal-visible from reports.css handle display */
+#networkModal .modal-content {
+    padding: 25px;
+    max-width: 600px; /* You can adjust this */
+}
+#networkModal .modal-content h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    /* Assuming text color comes from global modal h2 style or is default */
+}
+#networkModal .button-row {
+    justify-content: flex-end;
+}
+
+/* --- Toast Notifications (CENTERED) --- */
+.toast-notification-container {
+    position: fixed;
+    left: 50%;
+    top: 50%; /* Position the top-left corner of the container at the center */
+    transform: translate(-50%, -50%); /* Shift the container back by half its own width and height */
+    z-index: 1055; /* Ensure it's above most other content */
+    display: flex;
+    flex-direction: column; /* Stack multiple toasts vertically */
+    align-items: center; /* Center toasts horizontally if the container is wider */
+    gap: 10px; /* Space between multiple toasts */
+    /* Optional: Set a max-width for the container if toasts can get very wide */
+    /* max-width: 90%; */
+}
+
+.toast-notification {
+    pointer-events: auto;
+    background-color: #333; /* Default background */
+    color: white;
+    padding: 12px 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out, transform 0.3s ease-in-out;
+    transform: translateY(20px); /* Initial position for slide-in effect */
+    min-width: 250px;  /* Minimum width of a toast */
+    max-width: 350px;  /* Maximum width of a toast, adjust as needed */
+    margin-bottom: 10px; /* Only relevant if not using 'gap' in container, or for the last item */
+    text-align: center; /* Center the text within each toast message */
+}
+.toast-notification:last-child {
+    margin-bottom: 0; /* Remove margin from the last toast if using gap */
+}
+
+.toast-notification.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0); /* Final position after slide-in */
+}
+
+.toast-notification.success {
+    background-color: #28a745; /* Green for success */
+    color: white;
+}
+
+.toast-notification.error {
+    background-color: #dc3545; /* Red for error */
+    color: white;
+}
+
+/* --- Enhancements (Fancy Styling - Subtle) --- */
+/* Add a subtle hover effect to table rows if not already provided by .report-table */
+.network-table tbody tr:not(.no-networks):hover td {
+    /* background-color: #f5f5f5; */ /* Light hover, if .report-table doesn't do this or if .report-table is removed */
+}
+
+/* Slightly more prominent focus style for form inputs on this page */
+.config-container .form-item input[type="text"]:focus,
+.config-container .form-item textarea:focus {
+    border-color: #006400; /* Green border on focus */
+    box-shadow: 0 0 0 .2rem rgba(0,100,0,.15); /* Subtle green glow */
+}
+
+/* Style for the "Back to Settings" link to make it consistent with other page actions */
+.form-actions .cancel-link.glossy-button {
+    /* Styling for this specific button is expected from reports.css or a global stylesheet.
+       This ensures it uses the .glossy-button and .text-grey classes effectively.
+       No new CSS needed here if those classes are defined globally and work. */
+}

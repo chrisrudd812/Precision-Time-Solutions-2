@@ -1,145 +1,102 @@
-/* scheduling.css */
-/* Styles for the Schedule Management page - Final attempt for checkbox appearance */
+/* === css/scheduling.css === */
+/* v17: Specific styles for scheduling.jsp, including selected row highlight */
 
-/* === General Styles === */
-body { font-family: Arial, sans-serif; margin: 0; padding: 0; min-height: 100vh; background-color: #f4f4f4; }
-.parent-container { background-color: white; padding: 20px 40px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); width: 95%; max-width: 1400px; margin: 3% auto 5% auto; box-sizing: border-box; }
-h1 { text-align: center; color: #333; margin-bottom: 30px; }
-.top-message { color: red; margin-bottom: 15px; font-weight: bold; text-align: center; }
+/*
+    Base page layout, table structure, modals, and glossy buttons
+    are primarily handled by css/reports.css.
+    This file contains overrides or styles specific to scheduling.jsp elements.
+*/
 
-/* === Schedule Table Styles === */
-.table-container { overflow-x: auto; width: 100%; margin-bottom: 20px; max-height: 700px; overflow-y: auto; }
-table#schedulesTable { border-collapse: collapse; width: 100%; margin-bottom: 20px; font-size: 0.85em; }
-#schedulesTable th { background-color: rgb(0, 128, 64); color: rgb(255, 255, 255); position: sticky; top: 0; z-index: 2; border: 1px solid #ddd; padding: 8px 10px; text-align: left; white-space: nowrap; }
-#schedulesTable td { border: 1px solid #ddd; padding: 8px 10px; text-align: left; vertical-align: middle; color: #333; font-weight: normal; /* white-space: nowrap; */ /* Removed */ }
-
-/* --- Row Styling (Hover and Selection Fix using TD background) --- */
-#schedulesTable tbody tr:hover td { background-color: #f0f8ff; } /* No !important needed if specific enough */
-#schedulesTable tbody tr.selected td { background-color: #c0e7ff; } /* No !important needed if specific enough */
-/* --- End Row Styling --- */
-
-#schedulesTable th.center-text, #schedulesTable td:nth-child(2), #schedulesTable td:nth-child(3), #schedulesTable td:nth-child(4), #schedulesTable td:nth-child(5), #schedulesTable td:nth-child(6), #schedulesTable td:nth-child(7), #schedulesTable td:nth-child(8), #schedulesTable td:nth-child(9), #schedulesTable td:nth-child(10) {
+/* Styles for the "To Edit or Delete..." message on scheduling.jsp */
+.reports-page .top-message {
+    color: #dc3545; /* Red color */
+    margin-bottom: 15px;
+    font-weight: bold;
     text-align: center;
+    font-size: 0.9em;
 }
 
-#schedulesTable th.center-text { width:80px } /* Right align Wage */
-#schedulesTable th:nth-child(7),#schedulesTable th:nth-child(8), #schedulesTable th:nth-child(9) { width:100px } /* Right align Wage */
-#schedulesTable th:nth-child(6) { text-align: center; } /* Right align Wage */
-
-/* === Button Styles (Main Page) === */
-#button-container { display: flex; justify-content: space-between; width: 100%; margin-top: 20px; gap: 15px; }
-#button-container button { width: 30%; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; transition: background-color 0.3s, filter 0.3s; box-sizing: border-box; height: 40px; line-height: 1.2; font-family: inherit; color: white; }
-#addScheduleButton { background-color: #4CAF50; }
-#editScheduleButton { background-color: #f2dc0e; color: black; }
-#deleteScheduleButton { background-color: #ca3030; }
-#button-container button:not(:disabled):hover { filter: brightness(1.2); }
-#button-container button:disabled { background-color: #aaa !important; cursor: not-allowed; color: white !important; filter: none; } /* Keep !important */
-
-/* === Modal Styles === */
-.modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
-.modal.modal-visible { display: flex; align-items: center; justify-content: center; }
-.modal-content { background-color: #fefefe; border: 1px solid #888; width: 650px; max-width: 95%; box-sizing: border-box; border-radius: 5px; box-shadow: 0 3px 7px rgba(0,0,0,0.3); margin: 0; padding: 0; max-height: 90vh; overflow-y: auto; position: relative; }
-.close { color: red; position: absolute; top: 10px; right: 15px; font-size: 28px; font-weight: bold; line-height: 1; cursor: pointer; }
-.close:hover, .close:focus { color: darkred; text-decoration: none; }
-.modal-content > h2 { padding: 20px 40px 15px 20px; margin: 0; text-align: center; font-size: 1.5em; border-bottom: 1px solid #eee; }
-
-/* --- Modal Form Styles --- */
-.modal-content form { padding: 20px; margin: 0; box-sizing: border-box; }
-.modal-content form .form-item { margin-bottom: 18px; }
-.modal-content form .form-row { display: flex; gap: 15px; margin-bottom: 18px; }
-.modal-content form .form-row .form-item { flex: 1; min-width: 0; margin-bottom: 0; }
-.modal-content form label { display: block; margin-bottom: 5px; font-weight: bold; }
-.modal-content form input[type="text"], .modal-content form input[type="time"], .modal-content form input[type="number"], .modal-content form select { width: 100%; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; font-family: inherit; height: 40px; }
-.modal-content form .form-item input, .modal-content form .form-item select, .modal-content form .form-item .checkbox-group { margin-bottom: 0; }
-
-
-/* --- Checkbox Styling --- */
-.checkbox-group { /* Container for Days Worked */
-    padding: 8px 10px; display: flex; flex-wrap: nowrap; gap: 10px;
-    border: 1px solid #eee; border-radius: 4px; overflow-x: auto; justify-content: space-around;
+/* --- Modal Form Styles specific to scheduling modals --- */
+.modal-content form input[type="time"] {
+    height: 40px;
+    padding: 9px 12px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 0.95em;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    box-sizing: border-box;
+    width: 100%;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
-/* Wrapper for individual styled checkbox+label pair */
-.styled-checkbox {
-    display: inline-flex; align-items: center; vertical-align: middle;
-    cursor: pointer; position: relative; padding-left: 26px; /* Adjusted space */
-    height: 20px; line-height: 20px; margin-bottom: 0; background: transparent; flex-shrink: 0;
-    opacity: 1; /* Ensure full opacity */
+.modal-content form input[type="time"]::-webkit-datetime-edit-fields-wrapper { padding: 0; }
+.modal-content form input[type="time"]::-webkit-clear-button,
+.modal-content form input[type="time"]::-webkit-inner-spin-button { display: none; }
+.modal-content form input[type="time"]:focus {
+    border-color: #005A9C;
+    box-shadow: 0 0 0 0.2rem rgba(0,90,156,0.25);
+    outline: none;
 }
-/* Hide the actual browser checkbox */
-.styled-checkbox input[type="checkbox"] {
-    appearance: none; -webkit-appearance: none; -moz-appearance: none;
-    position: absolute; opacity: 0; cursor: pointer; height: 100%; width: 100%;
-    left: 0; top: 0; z-index: 1; margin: 0;
-}
-/* The text label part */
-.styled-checkbox label {
-    margin-left: 0; margin-bottom: 0; font-weight: normal; cursor: pointer;
-    white-space: nowrap; display: inline-flex; align-items: center;
-    color: #333; background: transparent; opacity: 1;
-}
-/* The custom box using ::before on the LABEL */
-.styled-checkbox label::before {
-    content: ''; position: absolute; left: 0; top: 1px; /* Align box */
-    width: 18px; height: 18px; border: 1px solid #999; border-radius: 3px;
-    background-color: white; /* <<< Default White Background */
-    transition: background-color 0.2s ease, border-color 0.2s ease;
-    z-index: 0;
-    opacity: 1; /* Ensure fully opaque */
-}
-/* The checked state - style the ::before */
-.styled-checkbox input[type="checkbox"]:checked + label::before {
-    background-color: #4CAF50; border-color: #4CAF50; /* Green */
-    content: '\2714'; color: white; font-size: 13px; text-align: center;
-    line-height: 18px; font-weight: bold;
-}
-/* Focus state for accessibility */
-.styled-checkbox input[type="checkbox"]:focus + label::before {
-     box-shadow: 0 0 0 2px rgba(0,123,255,.25);
-     border-color: #86b7fe;
-}
-/* --- End Checkbox Styling --- */
 
+.auto-lunch-section {
+    border: 1px solid #d1d9e2;
+    border-radius: 6px;
+    padding: 15px 20px 10px 20px;
+    margin-top: 20px;
+    margin-bottom: 18px;
+    background: linear-gradient(to bottom, #f0f4f8, #e9ecef);
+}
+.auto-lunch-section .form-item { margin-bottom: 12px !important; }
+.auto-lunch-section .form-item:last-child { margin-bottom: 0 !important; }
+.auto-lunch-section .form-row { margin-bottom: 0 !important; }
+.auto-lunch-section label { font-size: 0.85em; color: #495057; }
+.auto-lunch-toggle-group { display: flex; align-items: center; min-width: auto; flex-basis: 100% !important; flex-grow: 0 !important; margin-right: 15px; margin-bottom: 10px !important; }
+.auto-lunch-toggle-group .styled-checkbox { padding-left: 26px; }
+.auto-lunch-toggle-group label { white-space: nowrap; font-size: 0.9em; }
 
-/* --- Modal Button Styles --- */
-.modal-content .button-row { display: flex; gap: 10px; padding: 15px 0 0 0; box-sizing: border-box; width: 100%; border-top: 1px solid #eee; margin-top: 20px; }
-.modal-content .button-row button { flex: 1; margin: 0; padding: 10px; font-size: 16px; border-radius: 4px; cursor: pointer; min-width: 0; box-sizing: border-box; line-height: 1.2; height: 40px; vertical-align: middle; appearance: none; border: none; }
-.modal .submit-btn { background-color: #4CAF50; color: white; }
-.modal .cancel-btn { background-color: #f44336; color: white; }
-.modal .submit-btn:not(:disabled):hover, .modal .cancel-btn:not(:disabled):hover { filter: brightness(1.2); }
-.modal button:disabled { background-color: #aaa !important; cursor: not-allowed; filter: none; color: white !important; }
+.modal-section-header {
+    font-size: 1.0em; color: #005A9C; margin-top: 18px; margin-bottom: 12px;
+    padding-bottom: 6px; border-bottom: 1px solid #e0e0e0; font-weight: 600;
+}
+.modal-section-header:first-of-type { margin-top: 5px; }
 
+.checkbox-group { padding: 8px 5px; display: flex; flex-wrap: wrap; gap: 5px 10px; border: 1px solid #ced4da; border-radius: 4px; justify-content: flex-start; margin-top: 5px; background-color: #fff; }
+.styled-checkbox { display: inline-flex; align-items: center; cursor: pointer; position: relative; padding-left: 26px; height: 22px; line-height: 22px; margin: 2px 5px; font-size: 0.9em; }
+.styled-checkbox input[type="checkbox"] { position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0; }
+.styled-checkbox label { margin-left: 0; margin-bottom: 0; font-weight: normal; cursor: pointer; white-space: nowrap; color: #343a40; position: relative; user-select: none; }
+.styled-checkbox label::before { content: ''; position: absolute; left: -26px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; border: 1px solid #adb5bd; border-radius: 3px; background-color: #fff; transition: all 0.15s ease-in-out; }
+.styled-checkbox input[type="checkbox"]:checked + label::before { background-color: #007bff; border-color: #0056b3; content: '\2714'; color: white; font-size: 12px; text-align: center; line-height: 16px; font-weight: bold; }
+.styled-checkbox input[type="checkbox"]:focus + label::before { box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25); border-color: #80bdff; }
+.styled-checkbox input[type="checkbox"]:disabled + label { color: #6c757d; cursor: not-allowed; }
+.styled-checkbox input[type="checkbox"]:disabled + label::before { background-color: #e9ecef; border-color: #ced4da; cursor: not-allowed; }
 
-/* --- SPECIFIC Disabled input style --- */
-/* Only target actual input/select elements */
 .modal-content form input[type="text"]:disabled,
 .modal-content form input[type="time"]:disabled,
 .modal-content form input[type="number"]:disabled,
-.modal-content form select:disabled,
-.modal-content form input[type="text"]:read-only,
-.modal-content form input[type="time"]:read-only,
-.modal-content form input[type="number"]:read-only {
-     background-color: #e9ecef;
-     color: #6c757d;
-     cursor: not-allowed !important; /* Keep important for cursor */
-     border-color: #ced4da;
-     opacity: 0.7; /* Apply opacity only here */
+.modal-content form input[type="text"][readonly] {
+     background-color: #e9ecef; color: #6c757d; cursor: not-allowed !important; opacity: 0.7; border-color: #ced4da;
+}
+.required-asterisk { color: #dc3545; margin-left: 2px; font-weight: bold; }
+
+
+/* --- Row Styling for Schedule Table --- */
+/* Base hover (if not selected) for TDs to ensure background changes */
+table#schedulesTable tbody tr:not(.selected):hover td {
+    background-color: #e9ecef !important; /* Light gray hover from reports.css */
+    cursor: pointer;
 }
 
-/* Ensure cursor is pointer for checkbox wrappers/labels */
-.modal-content form .styled-checkbox,
-.modal-content form .styled-checkbox label {
-    cursor: pointer !important; /* Keep important for cursor */
-    opacity: 1; /* Override any inherited opacity */
-    background: transparent; /* Ensure no accidental background */
-    color: #333; /* Ensure default text color */
+/* MORE SPECIFIC and !important selected row highlight for scheduling.jsp's table */
+table#schedulesTable tbody tr.selected td { /* Target TDs within the selected TR */
+    background-color: #b8daff !important; /* A distinct blue selection color */
+    font-weight: bold; /* Make text bold in selected row */
+    color: #004085 !important; /* Darker blue text for contrast on selection */
 }
-/* --- End Disabled Styling Fix --- */
 
-
-/* Notification Modal Styles */
-#notificationModal .modal-content { width: 400px; padding: 20px; text-align: center; }
-#notificationModal .modal-content > h2 { border-bottom: none; padding-bottom: 0; }
-#notificationModal .modal-content > p { padding: 15px 0 20px 0; margin: 0; }
-#notificationModal .button-row { justify-content: center; padding-top: 0; border-top: none; }
-#notificationModal .button-row button#okButton { background-color: #4CAF50; color: white; flex-grow: 0; min-width: 100px; }
-#notificationModal .button-row button#okButton:hover { filter: brightness(1.2); }
+/* Optional: Add a subtle left/right border to the selected row for more emphasis */
+table#schedulesTable tbody tr.selected td:first-child {
+    border-left: 3px solid #0056b3 !important; /* Darker blue left accent */
+}
+table#schedulesTable tbody tr.selected td:last-child {
+    border-right: 3px solid #0056b3 !important; /* Darker blue right accent */
+}
+/* --- END Row Styling for Schedule Table --- */
