@@ -1,1 +1,25 @@
+# Compiled class files and build outputs
+*.class
 /target/
+/build/
+
+# Package files
+*.jar
+*.war
+*.ear
+
+# Log files
+*.log
+/logs/
+
+# Eclipse IDE settings
+.project
+.classpath
+.settings/
+
+# OS-generated files (macOS, Windows)
+.DS_Store
+Thumbs.db
+
+# Sensitive configuration files (add any other sensitive files here)
+config.properties
