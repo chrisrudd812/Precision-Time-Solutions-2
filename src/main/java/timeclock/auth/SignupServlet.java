@@ -45,12 +45,20 @@ public class SignupServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final Logger logger = Logger.getLogger(SignupServlet.class.getName());
 
-    private static final String STRIPE_SECRET_KEY = "";
-    private static final String STRIPE_PRICE_ID = "price_1RWNdXBtvyYfb2KWWt6p9F4X";
+	private static final String STRIPE_PRICE_ID = "price_1RWNdXBtvyYfb2KWWt6p9F4X";
 
     static {
-        Stripe.apiKey = STRIPE_SECRET_KEY;
-        logger.info("[SignupServlet] Stripe API Key initialized.");
+        // Read the secret key from an environment variable
+        String stripeApiKey = System.getenv("STRIPE_API_KEY");
+
+        // Check if the key was found
+        if (stripeApiKey == null || stripeApiKey.trim().isEmpty()) {
+            logger.severe("CRITICAL ERROR: STRIPE_API_KEY environment variable not set!");
+            // In a real application, you might want to prevent the servlet from initializing
+        } else {
+            Stripe.apiKey = stripeApiKey;
+            logger.info("[SignupServlet] Stripe API Key initialized successfully.");
+        }
     }
 
     @Override
