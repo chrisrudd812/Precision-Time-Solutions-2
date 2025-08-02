@@ -41,8 +41,8 @@
 
 <nav class="main-navbar">
     <div class="navbar-brand">
-        <a href="${pageContext.request.contextPath}/timeclock.jsp">
-            <i class="fas fa-stopwatch"></i> YourTimeClock
+        <a href="${pageContext.request.contextPath}/index.jsp">
+            <i class="fas fa-stopwatch"></i> Precision Time Solutions
         </a>
     </div>
 

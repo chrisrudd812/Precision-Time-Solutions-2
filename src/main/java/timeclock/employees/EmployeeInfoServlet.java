@@ -1,4 +1,4 @@
-package timeclock.employees; // Ensure this matches your package
+package timeclock.employees;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -8,7 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import timeclock.db.DatabaseConnection;
-import timeclock.punches.ShowPunches; // For getEmployeeTimecardInfo
+import timeclock.punches.ShowPunches;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -36,87 +36,48 @@ public class EmployeeInfoServlet extends HttpServlet {
     private Integer getTenantIdFromSession(HttpSession session) {
         if (session == null) return null;
         Object tenantIdObj = session.getAttribute("TenantID");
-        if (tenantIdObj instanceof Integer) {
-            Integer id = (Integer) tenantIdObj;
-            return (id > 0) ? id : null;
-        }
-        return null;
+        return (tenantIdObj instanceof Integer) ? (Integer) tenantIdObj : null;
     }
 
     private boolean isValid(String s) { return s != null && !s.trim().isEmpty(); }
 
-    private String buildRedirectUrl(String page, int globalEid, String successMessage, String errorMessage) throws IOException {
-        StringBuilder url = new StringBuilder(page);
-        boolean firstParam = true;
-        
-        // Only add EID if it's relevant (e.g., redirecting to a specific employee view after an action)
-        // For reset password, we might want to re-select the employee row
-        if (globalEid > 0) { 
-            url.append(firstParam ? "?" : "&").append("eid=").append(globalEid);
-            firstParam = false;
-        }
-        if (errorMessage != null && !errorMessage.isEmpty()) {
-            url.append(firstParam ? "?" : "&").append("error=").append(URLEncoder.encode(errorMessage, StandardCharsets.UTF_8.name()));
-        } else if (successMessage != null && !successMessage.isEmpty()) {
-            url.append(firstParam ? "?" : "&").append("message=").append(URLEncoder.encode(successMessage, StandardCharsets.UTF_8.name()));
-        }
-        logger.info("[EmployeeInfoServlet] Redirecting to: " + url.toString());
-        return url.toString();
-    }
-
     private void writeJsonResponse(HttpServletResponse response, String jsonString, int statusCode) throws IOException {
-        if (response.isCommitted()) { logger.warning("Response already committed! JSON not sent: " + jsonString); return; }
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
         response.setStatus(statusCode);
-        try (PrintWriter out = response.getWriter()) { out.print(jsonString); out.flush(); }
-        catch (IllegalStateException e) { logger.log(Level.SEVERE, "Failed to get writer for JSON: " + jsonString, e); }
+        try (PrintWriter out = response.getWriter()) {
+            out.print(jsonString);
+        }
     }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        request.setCharacterEncoding(StandardCharsets.UTF_8.name());
         String action = request.getParameter("action");
+        logger.info("EmployeeInfoServlet received GET action: " + action);
         String eidStr = request.getParameter("eid"); 
         int globalEid = 0; 
-        String redirectPage = "employees.jsp";
-
+        
         HttpSession session = request.getSession(false);
         Integer tenantId = getTenantIdFromSession(session);
 
         if (tenantId == null) {
-            logger.warning("EmployeeInfoServlet action '" + action + "' fail: No TenantID in session.");
-            if ("getScheduleInfo".equals(action)) {
-                JSONObject jsonError = new JSONObject().put("success", false).put("message", "Session expired. Log in.");
-                writeJsonResponse(response, jsonError.toString(), HttpServletResponse.SC_UNAUTHORIZED);
-            } else {
-                response.sendRedirect(buildRedirectUrl("login.jsp", -1, null, "Session error. Log in."));
-            }
+            logger.warning("Action '" + action + "' failed: No TenantID in session.");
+            JSONObject jsonError = new JSONObject().put("success", false).put("error", "Your session has expired. Please log in again.");
+            writeJsonResponse(response, jsonError.toString(), HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
 
-        if ("resetPassword".equals(action) || "getScheduleInfo".equals(action)) {
+        if ("resetPassword".equals(action) || "getScheduleInfo".equals(action) || "getEmployeeDetails".equals(action)) {
             if (!isValid(eidStr)) {
-                String errorMsg = "Missing Employee ID for action: " + action;
-                if ("getScheduleInfo".equals(action)) {
-                    JSONObject jsonError = new JSONObject().put("success", false).put("message", errorMsg);
-                    writeJsonResponse(response, jsonError.toString(), HttpServletResponse.SC_BAD_REQUEST);
-                } else {
-                    response.sendRedirect(buildRedirectUrl(redirectPage, -1, null, errorMsg));
-                }
+                logger.warning("Action '" + action + "' failed: Missing EID parameter.");
+                writeJsonResponse(response, new JSONObject().put("success", false).put("error", "Missing Employee ID.").toString(), HttpServletResponse.SC_BAD_REQUEST);
                 return;
             }
             try {
                 globalEid = Integer.parseInt(eidStr);
-                if (globalEid <= 0) throw new NumberFormatException("Global EID must be positive.");
             } catch (NumberFormatException e) {
-                String errorMsg = "Invalid Employee ID format: " + eidStr;
-                if ("getScheduleInfo".equals(action)) {
-                    JSONObject jsonError = new JSONObject().put("success", false).put("message", errorMsg);
-                    writeJsonResponse(response, jsonError.toString(), HttpServletResponse.SC_BAD_REQUEST);
-                } else {
-                    response.sendRedirect(buildRedirectUrl(redirectPage, -1, null, errorMsg));
-                }
+                logger.warning("Action '" + action + "' failed: Invalid EID format '" + eidStr + "'.");
+                writeJsonResponse(response, new JSONObject().put("success", false).put("error", "Invalid Employee ID format.").toString(), HttpServletResponse.SC_BAD_REQUEST);
                 return;
             }
         }
@@ -125,123 +86,115 @@ public class EmployeeInfoServlet extends HttpServlet {
             case "getScheduleInfo":
                 handleGetScheduleInfo(request, response, tenantId, globalEid);
                 break;
+            case "getEmployeeDetails":
+                handleGetEmployeeDetails(request, response, tenantId, globalEid);
+                break;
             case "resetPassword":
-                handleResetPassword(request, response, tenantId, globalEid, redirectPage);
+                handleResetPassword(request, response, tenantId, globalEid);
                 break;
             default:
-                logger.warning("Unknown GET action: " + action + " for T:" + tenantId);
-                response.sendRedirect(buildRedirectUrl(redirectPage, (globalEid > 0 ? globalEid : -1), null, "Unknown action."));
+                logger.warning("Unknown GET action: " + action);
+                response.sendRedirect("employees.jsp?error=" + URLEncoder.encode("Unknown action.", StandardCharsets.UTF_8));
                 break;
         }
     }
 
-    private void handleResetPassword(HttpServletRequest request, HttpServletResponse response, int tenantId, int globalEid, String redirectPage) throws IOException {
-        String successMessage = null; 
-        String errorMessage = null;
-        logger.info("Attempting PIN reset for T:" + tenantId + ", Global EID:" + globalEid);
+    private void handleGetEmployeeDetails(HttpServletRequest request, HttpServletResponse response, int tenantId, int globalEid) throws IOException {
+        logger.info("HANDLE_GET_EMPLOYEE_DETAILS: Starting for EID=" + globalEid + ", TenantID=" + tenantId);
+        JSONObject jsonResponse = new JSONObject();
+        // ** THIS IS THE FIX: Changed WORK_SCHED to WORK_SCHEDULE **
+        String sql = "SELECT EID, TenantEmployeeNumber, FIRST_NAME, LAST_NAME, DEPT, SCHEDULE, SUPERVISOR, " +
+                     "PERMISSIONS, WORK_SCHEDULE, ADDRESS, CITY, STATE, ZIP, PHONE, EMAIL, HIRE_DATE, " +
+                     "WAGE_TYPE, WAGE, ACCRUAL_POLICY FROM EMPLOYEE_DATA WHERE EID = ? AND TenantID = ?";
 
-        String fetchEmployeeDetailsSql = "SELECT FIRST_NAME, LAST_NAME, TenantEmployeeNumber FROM EMPLOYEE_DATA WHERE EID = ? AND TenantID = ?";
-        String updatePinSql = "UPDATE EMPLOYEE_DATA SET PasswordHash = ?, RequiresPasswordChange = TRUE WHERE EID = ? AND TenantID = ?";
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = con.prepareStatement(sql)) {
+
+            pstmt.setInt(1, globalEid);
+            pstmt.setInt(2, tenantId);
+            logger.info("HANDLE_GET_EMPLOYEE_DETAILS: Executing query...");
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    logger.info("HANDLE_GET_EMPLOYEE_DETAILS: Employee record found. Building JSON object.");
+                    JSONObject employee = new JSONObject();
+                    employee.put("eid", rs.getInt("EID"));
+                    employee.put("tenantemployeenumber", rs.getObject("TenantEmployeeNumber"));
+                    employee.put("firstname", rs.getString("FIRST_NAME"));
+                    employee.put("lastname", rs.getString("LAST_NAME"));
+                    employee.put("dept", rs.getString("DEPT"));
+                    employee.put("schedule", rs.getString("SCHEDULE"));
+                    employee.put("supervisor", rs.getString("SUPERVISOR"));
+                    employee.put("permissions", rs.getString("PERMISSIONS"));
+                    // ** THIS IS THE FIX: Changed worksched key to use WORK_SCHEDULE from DB **
+                    employee.put("worksched", rs.getString("WORK_SCHEDULE"));
+                    employee.put("address", rs.getString("ADDRESS"));
+                    employee.put("city", rs.getString("CITY"));
+                    employee.put("state", rs.getString("STATE"));
+                    employee.put("zip", rs.getString("ZIP"));
+                    employee.put("phone", rs.getString("PHONE"));
+                    employee.put("email", rs.getString("EMAIL"));
+                    employee.put("hiredate", rs.getDate("HIRE_DATE"));
+                    employee.put("wagetype", rs.getString("WAGE_TYPE"));
+                    employee.put("wage", rs.getBigDecimal("WAGE"));
+                    employee.put("accrualpolicy", rs.getString("ACCRUAL_POLICY"));
+                    
+                    jsonResponse.put("success", true);
+                    jsonResponse.put("employee", employee);
+                    logger.info("HANDLE_GET_EMPLOYEE_DETAILS: Successfully built JSON. Sending response.");
+                    writeJsonResponse(response, jsonResponse.toString(), HttpServletResponse.SC_OK);
+                } else {
+                    logger.warning("HANDLE_GET_EMPLOYEE_DETAILS: No employee record found for EID=" + globalEid + ", TenantID=" + tenantId);
+                    jsonResponse.put("success", false).put("error", "Employee not found for this company.");
+                    writeJsonResponse(response, jsonResponse.toString(), HttpServletResponse.SC_NOT_FOUND);
+                }
+            }
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "HANDLE_GET_EMPLOYEE_DETAILS: An exception occurred for EID: " + globalEid, e);
+            jsonResponse.put("success", false).put("error", "A server error occurred while fetching employee data.");
+            writeJsonResponse(response, jsonResponse.toString(), HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        }
+    }
+    
+    private void handleResetPassword(HttpServletRequest request, HttpServletResponse response, int tenantId, int globalEid) throws IOException {
         String defaultPin = "1234";
         String defaultPinHash = BCrypt.hashpw(defaultPin, BCrypt.gensalt(12));
-
-        Connection con = null;
-        PreparedStatement psFetch = null;
-        PreparedStatement psUpdate = null;
-        ResultSet rsFetch = null;
-
-        try {
-            con = DatabaseConnection.getConnection();
-            con.setAutoCommit(false); // Manage transaction
-
-            String employeeName = "Employee";
-            String tenantEmployeeIdNum = String.valueOf(globalEid); // Fallback to global EID if specific not found
-
-            psFetch = con.prepareStatement(fetchEmployeeDetailsSql);
-            psFetch.setInt(1, globalEid);
-            psFetch.setInt(2, tenantId);
-            rsFetch = psFetch.executeQuery();
-
-            if (rsFetch.next()) {
-                String fetchedFirstName = rsFetch.getString("FIRST_NAME");
-                String fetchedLastName = rsFetch.getString("LAST_NAME");
-                Integer fetchedTenantEmpNoObj = (Integer) rsFetch.getObject("TenantEmployeeNumber");
-
-                if (isValid(fetchedFirstName)) {
-                    employeeName = fetchedFirstName;
-                    if (isValid(fetchedLastName)) {
-                        employeeName += " " + fetchedLastName;
-                    }
-                }
-                if (fetchedTenantEmpNoObj != null && fetchedTenantEmpNoObj > 0) {
-                    tenantEmployeeIdNum = String.valueOf(fetchedTenantEmpNoObj);
-                }
-
-                psUpdate = con.prepareStatement(updatePinSql);
-                psUpdate.setString(1, defaultPinHash);
-                psUpdate.setInt(2, globalEid);
-                psUpdate.setInt(3, tenantId);
-                int rowsUpdated = psUpdate.executeUpdate();
-
-                if (rowsUpdated > 0) {
-                    con.commit(); // Commit successful update
-                    successMessage = "PIN reset for " + employeeName + " (ID: " + tenantEmployeeIdNum + "). Default PIN is " + defaultPin + ".";
-                    logger.info(successMessage + " T:" + tenantId);
-                } else {
-                    con.rollback(); // Rollback if update failed despite finding employee
-                    errorMessage = "Failed to reset PIN (employee found but update failed).";
-                    logger.warning("PIN reset failed (update affected 0 rows) for EID:" + globalEid + ", T:" + tenantId);
-                }
+        String sql = "UPDATE EMPLOYEE_DATA SET PasswordHash = ?, RequiresPasswordChange = TRUE WHERE EID = ? AND TenantID = ?";
+        try (Connection con = DatabaseConnection.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, defaultPinHash);
+            ps.setInt(2, globalEid);
+            ps.setInt(3, tenantId);
+            int rows = ps.executeUpdate();
+            if (rows > 0) {
+                response.sendRedirect("employees.jsp?eid=" + globalEid + "&message=" + URLEncoder.encode("PIN has been reset to " + defaultPin, StandardCharsets.UTF_8));
             } else {
-                con.rollback(); // Rollback as employee not found for this tenant
-                errorMessage = "Failed to reset PIN. Employee not found for your company.";
-                logger.warning("PIN reset failed (EID not found for tenant) for EID:" + globalEid + ", T:" + tenantId);
+                response.sendRedirect("employees.jsp?eid=" + globalEid + "&error=" + URLEncoder.encode("Employee not found, could not reset PIN.", StandardCharsets.UTF_8));
             }
         } catch (SQLException e) {
-            if (con != null) { try { con.rollback(); } catch (SQLException se) { logger.log(Level.SEVERE, "Rollback failed", se); } }
-            logger.log(Level.SEVERE, "DB error resetting PIN for EID:" + globalEid + ", T:" + tenantId, e);
-            errorMessage = "Database error during PIN reset: " + e.getMessage();
-        } catch (Exception e) { // Catch any other unexpected errors
-            if (con != null) { try { con.rollback(); } catch (SQLException se) { logger.log(Level.SEVERE, "Rollback failed", se); } }
-            logger.log(Level.SEVERE, "Unexpected error during PIN reset for EID:" + globalEid + ", T:" + tenantId, e);
-            errorMessage = "Server error during PIN reset: " + e.getMessage();
-        } finally {
-            try { if (rsFetch != null) rsFetch.close(); } catch (SQLException e) { /* ignored */ }
-            try { if (psFetch != null) psFetch.close(); } catch (SQLException e) { /* ignored */ }
-            try { if (psUpdate != null) psUpdate.close(); } catch (SQLException e) { /* ignored */ }
-            if (con != null) {
-                try { con.setAutoCommit(true); } catch (SQLException e) { /* ignored */ } // Reset auto-commit
-                try { con.close(); } catch (SQLException e) { /* ignored */ }
-            }
+            logger.log(Level.SEVERE, "Error resetting PIN for EID " + globalEid, e);
+            response.sendRedirect("employees.jsp?eid=" + globalEid + "&error=" + URLEncoder.encode("Database error during PIN reset.", StandardCharsets.UTF_8));
         }
-        response.sendRedirect(buildRedirectUrl(redirectPage, globalEid, successMessage, errorMessage));
     }
-
     private void handleGetScheduleInfo(HttpServletRequest request, HttpServletResponse response, int tenantId, int globalEid) throws IOException {
         JSONObject jsonResponse = new JSONObject();
-        logger.info("Fetching schedule info for T:" + tenantId + ", Global EID:" + globalEid);
         try {
             Map<String, Object> info = ShowPunches.getEmployeeTimecardInfo(tenantId, globalEid);
-            if (info != null) {
+            if (info != null && !info.isEmpty()) {
                 jsonResponse.put("success", true);
-                jsonResponse.put("employeeName", info.getOrDefault("employeeName", "N/A"));
-                jsonResponse.put("scheduleName", info.getOrDefault("scheduleName", "N/A"));
+                jsonResponse.put("employeeName", info.get("employeeName"));
+                jsonResponse.put("scheduleName", info.get("scheduleName"));
                 Time shiftStart = (Time) info.get("shiftStart");
                 Time shiftEnd = (Time) info.get("shiftEnd");
                 jsonResponse.put("shiftStart", shiftStart != null ? SCHEDULE_TIME_FORMAT.format(shiftStart) : "N/A");
                 jsonResponse.put("shiftEnd", shiftEnd != null ? SCHEDULE_TIME_FORMAT.format(shiftEnd) : "N/A");
-                jsonResponse.put("globalEid", globalEid);
                 writeJsonResponse(response, jsonResponse.toString(), HttpServletResponse.SC_OK);
             } else {
-                logger.warning("No employee info found (getScheduleInfo) T:" + tenantId + ", EID:" + globalEid);
-                jsonResponse.put("success", false);
-                jsonResponse.put("message", "Employee information not found for your company or for this EID.");
+                jsonResponse.put("success", false).put("error", "Employee or schedule information not found.");
                 writeJsonResponse(response, jsonResponse.toString(), HttpServletResponse.SC_NOT_FOUND);
             }
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Error fetching schedule info (getScheduleInfo) T:" + tenantId + ", EID:" + globalEid, e);
-            jsonResponse.put("success", false);
-            jsonResponse.put("message", "Server error: " + e.getMessage());
+            logger.log(Level.SEVERE, "Error in getScheduleInfo for EID:" + globalEid, e);
+            jsonResponse.put("success", false).put("error", "A server error occurred.");
             writeJsonResponse(response, jsonResponse.toString(), HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
     }

@@ -309,12 +309,6 @@
         window.currentWizardStep_Page = "<%= currentWizardStepForPage_JSP != null ? escapeForJavaScriptString(currentWizardStepForPage_JSP) : "" %>";
         window.COMPANY_NAME_SIGNUP_JS = "<%= companyNameSignup_Sched != null ? escapeForJavaScriptString(companyNameSignup_Sched) : "Your Company" %>";
         window.SCHEDULE_JUST_ADDED_WIZARD = <%= scheduleJustAddedInWizard_JSP %>;
-        
-        jspSchedulingPageLogger.info("[scheduling.jsp JS Globals] InWizardMode: " + window.inWizardMode_Page + 
-                           ", CurrentStep: " + window.currentWizardStep_Page +
-                           ", ScheduleJustAdded: " + window.SCHEDULE_JUST_ADDED_WIZARD +
-                           ", CompanyName: " + window.COMPANY_NAME_SIGNUP_JS
-                           );
     </script>
 	<script src="<%= request.getContextPath() %>/js/scheduling.js?v=<%= System.currentTimeMillis() %>"></script>
 </body>

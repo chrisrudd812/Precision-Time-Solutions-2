@@ -7,6 +7,8 @@
     <title>Welcome to Your Time Clock Solution!</title>
     <link rel="stylesheet" href="css/landing-page.css?v=1"> <%-- We will create this CSS file --%>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="icon" href="<%= request.getContextPath() %>/favicon.png" type="image/png">
+    
     <%-- Optional: Link to a common font if you have one --%>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
 </head>
@@ -16,7 +18,7 @@
         <div class="container">
             <div class="logo">
                 <%-- You can put your logo image or text here --%>
-                <i class="fas fa-clock"></i> YourTimeClock
+                <i class="fas fa-clock"></i> Precision Time Solutions
             </div>
             <nav class="landing-nav">
                 <a href="login.jsp" class="nav-link login-link">Log In</a>

@@ -161,3 +161,21 @@ body {
    is already covered by the general rules provided earlier:
    e.g., .main-navbar ul.sub-dropdown-content li a { ... }
 */
+
+/* -- Body Background Image -- */
+body::before {
+    content: "";
+    position: fixed; /* Stays in place when scrolling */
+    text-align: center;
+    z-index: -1; /* Places it behind all other content */
+    
+    /* --- YOUR IMAGE AND SETTINGS --- */
+    /* background-image: url("../Images/background2.png"); */
+    opacity: 0.8; /* 50% opacity */
+    /* --- END YOUR SETTINGS --- */
+
+    width: 100vw;
+    height: 100vh;
+    background-position: center;
+    background-repeat: no-repeat;
+}
