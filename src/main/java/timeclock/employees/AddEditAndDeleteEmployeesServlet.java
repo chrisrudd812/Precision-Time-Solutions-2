@@ -123,19 +123,9 @@ public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
             con = DatabaseConnection.getConnection(); 
             con.setAutoCommit(false);
 
-            try (PreparedStatement psChkE = con.prepareStatement("SELECT EID FROM EMPLOYEE_DATA WHERE EMAIL = ? AND TenantID = ?")) { 
-                psChkE.setString(1, email.trim().toLowerCase()); 
-                psChkE.setInt(2, tenantId); 
-                if (psChkE.executeQuery().next()) { 
-                    throw new SQLException("Email address '" + email.trim() + "' is already registered.");
-                }
-            }
-            
-            int tenEmpNo = getNextTenantEmployeeNumber(con, tenantId);
-            int newGlobalEid = -1;
-
             String sqlIns = "INSERT INTO EMPLOYEE_DATA (TenantID,TenantEmployeeNumber,FIRST_NAME,LAST_NAME,DEPT,SCHEDULE,SUPERVISOR,PERMISSIONS,ADDRESS,CITY,STATE,ZIP,PHONE,EMAIL,ACCRUAL_POLICY,HIRE_DATE,WORK_SCHEDULE,WAGE_TYPE,WAGE,PasswordHash,RequiresPasswordChange,ACTIVE) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,TRUE)";
             try (PreparedStatement psAdd = con.prepareStatement(sqlIns, Statement.RETURN_GENERATED_KEYS)) {
+                int tenEmpNo = getNextTenantEmployeeNumber(con, tenantId);
                 psAdd.setInt(1, tenantId);
                 psAdd.setInt(2, tenEmpNo);
                 psAdd.setString(3, firstName.trim());
@@ -159,11 +149,11 @@ public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
                 psAdd.setBoolean(21, true);
 
                 if (psAdd.executeUpdate() > 0) {
+                    int newGlobalEid = -1;
                     try (ResultSet gK = psAdd.getGeneratedKeys()) { 
                         if (gK.next()) newGlobalEid = gK.getInt(1); 
                     }
                     con.commit();
-                    // ** FIX: Changed "ID" to "Emp ID" **
                     String successMessage = "Employee " + firstName.trim() + " " + lastName.trim() + " (Emp ID:" + tenEmpNo + ") added.";
                     if ("addMoreEmployees".equals(wizardStep)) {
                         session.setAttribute("employeeJustAddedInWizardName", firstName.trim() + " " + lastName.trim());
@@ -173,9 +163,30 @@ public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
                     throw new SQLException("Add employee failed, no rows affected."); 
                 }
             }
-        } catch (Exception e) { 
+        } catch (SQLException e) { 
             rollback(con); 
             logger.log(Level.SEVERE, "Error adding employee for TenantID: " + tenantId, e);
+            
+            String errorMessage;
+            if (e.getMessage() != null && e.getMessage().toLowerCase().contains("duplicate entry") && e.getMessage().contains("uq_employee_email_tenant")) {
+                errorMessage = "Email address '" + email.trim() + "' is already registered.";
+                String wizardAction = "addMoreEmployees".equals(wizardStep) ? "prompt_add_employees" : null;
+                String url = buildRedirectUrl(request, "employees.jsp", -1, null, errorMessage, wizardAction);
+                
+                url += (url.contains("?") ? "&" : "?") + "reopenModal=addEmployee";
+                url += "&email=" + URLEncoder.encode(email.trim(), StandardCharsets.UTF_8);
+
+                response.sendRedirect(url);
+                return;
+            } else {
+                 errorMessage = "Error: " + e.getMessage();
+            }
+
+            // Fallback for other errors
+            response.sendRedirect(buildRedirectUrl(request, "employees.jsp", -1, null, errorMessage, "addMoreEmployees".equals(wizardStep) ? "prompt_add_employees" : null));
+        } catch (Exception e) {
+            rollback(con);
+            logger.log(Level.SEVERE, "Unexpected error adding employee for TenantID: " + tenantId, e);
             response.sendRedirect(buildRedirectUrl(request, "employees.jsp", -1, null, "Error: " + e.getMessage(), "addMoreEmployees".equals(wizardStep) ? "prompt_add_employees" : null));
         } finally {
             if (con != null) { try { con.close(); } catch (SQLException ex) { logger.log(Level.WARNING, "Error closing connection", ex); } }
@@ -188,16 +199,18 @@ public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
         try {
             globalEID = Integer.parseInt(eidStr);
         } catch (NumberFormatException e) {
-            response.sendRedirect(buildRedirectUrl(request, "employees.jsp", -1, null, "Invalid Employee ID.", wizardStep != null ? "edit_admin_profile" : null));
+            response.sendRedirect(buildRedirectUrl(request, "employees.jsp", -1, null, "Invalid Employee ID.", null));
             return;
         }
+
+        // **FIX START**: Check if this is the admin verification step from the wizard
+        String isAdminVerifyStep = request.getParameter("admin_verify_step");
+        // **FIX END**
 
         String sqlUpd = "UPDATE EMPLOYEE_DATA SET FIRST_NAME=?,LAST_NAME=?,DEPT=?,SCHEDULE=?,SUPERVISOR=?,PERMISSIONS=?,ADDRESS=?,CITY=?,STATE=?,ZIP=?,PHONE=?,EMAIL=?,ACCRUAL_POLICY=?,HIRE_DATE=?,WORK_SCHEDULE=?,WAGE_TYPE=?,WAGE=? WHERE EID=? AND TenantID=?";
         String sqlGetEmpId = "SELECT TenantEmployeeNumber FROM EMPLOYEE_DATA WHERE EID = ? AND TenantID = ?";
         
         try (Connection con = DatabaseConnection.getConnection()) {
-            
-            // ** FIX: Get the TenantEmployeeNumber to display in the success message **
             int tenantEmployeeNumber = 0;
             try (PreparedStatement psGetId = con.prepareStatement(sqlGetEmpId)) {
                 psGetId.setInt(1, globalEID);
@@ -205,12 +218,10 @@ public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
                 try (ResultSet rs = psGetId.executeQuery()) {
                     if (rs.next()) {
                         tenantEmployeeNumber = rs.getInt("TenantEmployeeNumber");
+                    } else {
+                        throw new SQLException("Employee with EID " + globalEID + " not found for this tenant.");
                     }
                 }
-            }
-            if (tenantEmployeeNumber == 0) {
-                // If we didn't find the employee, throw an error before trying to update
-                throw new SQLException("Employee with EID " + globalEID + " not found for this tenant.");
             }
 
             try (PreparedStatement psU = con.prepareStatement(sqlUpd)) {
@@ -236,21 +247,24 @@ public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
                 
                 int rowsAffected = psU.executeUpdate();
                 if (rowsAffected > 0) {
-                    // ** FIX: Use the fetched TenantEmployeeNumber and "Emp ID" label **
                     String successMessage = "Employee (Emp ID:" + tenantEmployeeNumber + ") updated successfully.";
                     String wizardRedirectAction = null;
-                    if ("editAdminProfile".equals(wizardStep)) {
-                        session.setAttribute("wizardStep", "addMoreEmployees");
+                    
+                    // **FIX START**: Use the new parameter to advance the wizard state
+                    if (isAdminVerifyStep != null && "true".equals(isAdminVerifyStep)) {
+                        session.setAttribute("wizardStep", "add_employees_prompt");
                         wizardRedirectAction = "prompt_add_employees";
                     }
+                    // **FIX END**
+
                     response.sendRedirect(buildRedirectUrl(request, "employees.jsp", globalEID, successMessage, null, wizardRedirectAction));
                 } else {
-                    response.sendRedirect(buildRedirectUrl(request, "employees.jsp", globalEID, null, "Update failed. No changes were made.", wizardStep != null ? "edit_admin_profile" : null));
+                    response.sendRedirect(buildRedirectUrl(request, "employees.jsp", globalEID, null, "Update failed. No changes were made.", null));
                 }
             }
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error editing employee EID:" + globalEID, e);
-            response.sendRedirect(buildRedirectUrl(request, "employees.jsp", globalEID, null, "Error: " + e.getMessage(), wizardStep != null ? "edit_admin_profile" : null));
+            response.sendRedirect(buildRedirectUrl(request, "employees.jsp", globalEID, null, "Error: " + e.getMessage(), null));
         }
     }
     

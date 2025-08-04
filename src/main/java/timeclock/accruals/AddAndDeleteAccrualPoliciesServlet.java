@@ -3,7 +3,7 @@ package timeclock.accruals;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest; // Import HttpServletRequest
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import timeclock.db.DatabaseConnection;
@@ -36,10 +36,9 @@ public class AddAndDeleteAccrualPoliciesServlet extends HttpServlet {
         return URLEncoder.encode(value, StandardCharsets.UTF_8.name());
     }
 
-    // UPDATED buildRedirectUrl to include HttpServletRequest and wizard parameters
     private String buildRedirectUrl(HttpServletRequest request, String page, String error, String success,
                                     boolean inWizard, String wizardNextStep, boolean itemAddedInWizard) throws IOException {
-        StringBuilder url = new StringBuilder(request.getContextPath() + "/" + page); // Use contextPath
+        StringBuilder url = new StringBuilder(request.getContextPath() + "/" + page);
         boolean firstParam = true;
 
         if (inWizard && wizardNextStep != null) {
@@ -50,7 +49,6 @@ public class AddAndDeleteAccrualPoliciesServlet extends HttpServlet {
                 if ("accruals.jsp".equals(page)) {
                     url.append("&accrualAdded=true"); 
                 }
-                // Add other page-specific "added" flags for other entities if needed
             }
         }
 
@@ -64,36 +62,8 @@ public class AddAndDeleteAccrualPoliciesServlet extends HttpServlet {
         return url.toString();
     }
     
-    // Simpler overload for non-wizard redirects or when wizard context is not explicitly managed by this call
     private String buildRedirectUrl(HttpServletRequest request, String page, String error, String success) throws IOException {
         return buildRedirectUrl(request, page, error, success, false, null, false);
-    }
-
-
-    @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        request.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        String action = request.getParameter("action");
-        HttpSession session = request.getSession(false);
-        Integer tenantId = getTenantIdFromSession(session);
-
-        if (tenantId == null) {
-            response.sendRedirect(request.getContextPath() + "/login.jsp?error=" + encodeUrlParam("Session expired. Please log in."));
-            return;
-        }
-        String userPermissions = (String) session.getAttribute("Permissions");
-        if (!"Administrator".equalsIgnoreCase(userPermissions)) {
-            response.sendRedirect(buildRedirectUrl(request, "accruals.jsp", "Access Denied.", null));
-            return;
-        }
-        
-        if ("deleteAccrual".equals(action) || "deleteAccrualPolicy".equals(action)) { 
-            logger.warning("Received '" + action + "' action via GET for Accrual Policy. Handling as simple delete attempt.");
-            handleSimpleAccrualDeleteIfEmpty(request, response, tenantId);
-        } else {
-            logger.warning("GET request to AccrualPoliciesServlet with unknown or missing action: " + action);
-            response.sendRedirect(buildRedirectUrl(request, "accruals.jsp", "Invalid action specified.", null));
-        }
     }
 
     @Override
@@ -127,10 +97,6 @@ public class AddAndDeleteAccrualPoliciesServlet extends HttpServlet {
                 break;
             case "deleteAndReassignAccrualPolicy":
                 handleDeleteAndReassignAccrualPolicy(request, response, tenantId, session, isWizardModeActive, currentWizardStepInSession);
-                break;
-            case "deleteAccrualPolicy": // Legacy, ensure it calls the simple delete
-            case "deleteAccrual": 
-                handleSimpleAccrualDeleteIfEmpty(request, response, tenantId);
                 break;
             default:
                 logger.warning("Unknown POST action in AccrualPoliciesServlet: " + action);
@@ -172,7 +138,17 @@ public class AddAndDeleteAccrualPoliciesServlet extends HttpServlet {
                         psCheck.setString(2, policyName.trim().toLowerCase());
                         try (ResultSet rs = psCheck.executeQuery()) {
                             if (rs.next()) {
+                                // **FIX START**: This block is modified to handle the duplicate name error specifically.
                                 errorMessage = "Accrual policy '" + policyName.trim() + "' already exists.";
+                                String stepForRedirect = isWizardModeActive ? currentWizardStepInSession : null;
+                                String url = buildRedirectUrl(request, redirectPage, errorMessage, null, isWizardModeActive, stepForRedirect, false);
+                                
+                                url += (url.contains("?") ? "&" : "?") + "reopenModal=addAccrual";
+                                url += "&policyName=" + encodeUrlParam(policyName.trim());
+
+                                response.sendRedirect(url);
+                                return;
+                                // **FIX END**
                             }
                         }
                     }
@@ -221,7 +197,7 @@ public class AddAndDeleteAccrualPoliciesServlet extends HttpServlet {
         String redirectPage = "accruals.jsp";
         String errorMessage = null; 
         String successMessage = null;
-        String wizardRedirectNextStep = isWizardModeActive ? currentWizardStepInSession : null; // Stay on current prompt
+        String wizardRedirectNextStep = isWizardModeActive ? currentWizardStepInSession : null;
 
         if (!isValid(originalPolicyName) || !isValid(vacationDaysStr) || !isValid(sickDaysStr) || !isValid(personalDaysStr)) {
             errorMessage = "Original Policy name and all day counts are required for editing.";
@@ -314,54 +290,5 @@ public class AddAndDeleteAccrualPoliciesServlet extends HttpServlet {
             if (conn != null) { try { conn.setAutoCommit(true); conn.close(); } catch (SQLException e) { logger.log(Level.WARNING, "Error closing conn.", e); }}
         }
         response.sendRedirect(buildRedirectUrl(request, redirectPage, errorMessage, successMessage, isWizardModeActive, wizardRedirectNextStep, false));
-    }
-
-    private void handleSimpleAccrualDeleteIfEmpty(HttpServletRequest request, HttpServletResponse response, Integer tenantId) throws IOException {
-        String policyNameToDelete = request.getParameter("hiddenAccrualNameToDelete"); 
-        if (policyNameToDelete == null) policyNameToDelete = request.getParameter("accrualPolicyNameToDelete");
-        
-        String errorMessage = null; String successMessage = null;
-        String redirectPage = "accruals.jsp";
-
-        if (tenantId == null || tenantId <=0) {
-             response.sendRedirect(request.getContextPath() + "/login.jsp?error=" + encodeUrlParam("Session error or invalid tenant."));
-            return;
-        }
-        if (!isValid(policyNameToDelete)) errorMessage = "Accrual policy name required for deletion.";
-        else if ("None".equalsIgnoreCase(policyNameToDelete.trim())) errorMessage = "The 'None' policy cannot be deleted.";
-        
-        if (errorMessage != null) {
-            response.sendRedirect(buildRedirectUrl(request, redirectPage, errorMessage, null));
-            return;
-        }
-
-        String checkUsageSql = "SELECT COUNT(EID) as employee_count FROM employee_data WHERE ACCRUAL_POLICY = ? AND TenantID = ? AND ACTIVE = TRUE";
-        String sqlDelete = "DELETE FROM ACCRUALS WHERE NAME = ? AND TenantID = ?";
-        Connection conn = null;
-        try {
-            conn = DatabaseConnection.getConnection(); conn.setAutoCommit(false); 
-            int empCount = 0;
-            try (PreparedStatement psCheck = conn.prepareStatement(checkUsageSql)) {
-                psCheck.setString(1, policyNameToDelete.trim()); psCheck.setInt(2, tenantId);
-                try(ResultSet rs = psCheck.executeQuery()){ if(rs.next()) empCount = rs.getInt("employee_count"); }
-            }
-            if (empCount > 0) {
-                conn.rollback(); 
-                errorMessage = "Policy '" + policyNameToDelete.trim() + "' is assigned. Reassignment required via main delete button.";
-            } else {
-                try (PreparedStatement psDelete = conn.prepareStatement(sqlDelete)) {
-                    psDelete.setString(1, policyNameToDelete.trim()); psDelete.setInt(2, tenantId);
-                    int rowsAffected = psDelete.executeUpdate();
-                    if (rowsAffected > 0) { conn.commit(); successMessage = "Unassigned policy '" + policyNameToDelete.trim() + "' deleted."; }
-                    else { conn.rollback(); errorMessage = "Policy '" + policyNameToDelete.trim() + "' not found or already deleted."; }
-                }
-            }
-        } catch (SQLException e) {
-            if (conn != null) try { conn.rollback(); } catch (SQLException ex) { logger.log(Level.SEVERE, "Rollback failed", ex); }
-            errorMessage = "Database error: " + e.getMessage();
-        } finally {
-            if (conn != null) { try { conn.setAutoCommit(true); conn.close(); } catch (SQLException e) { logger.log(Level.WARNING, "Failed to close connection", e); }}
-        }
-        response.sendRedirect(buildRedirectUrl(request, redirectPage, errorMessage, successMessage));
     }
 }

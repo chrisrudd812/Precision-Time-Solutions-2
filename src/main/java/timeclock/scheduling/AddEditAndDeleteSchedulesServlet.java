@@ -25,7 +25,7 @@ import java.util.logging.Logger;
 
 @WebServlet("/AddEditAndDeleteSchedulesServlet")
 public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
-    private static final long serialVersionUID = 2L; // Version updated
+    private static final long serialVersionUID = 3L; // Version updated
     private static final Logger logger = Logger.getLogger(AddEditAndDeleteSchedulesServlet.class.getName());
     private static final DateTimeFormatter INPUT_TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
@@ -64,8 +64,10 @@ public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
 
         if (error != null && !error.isEmpty()) {
             url.append(firstParam ? "?" : "&").append("error=").append(encodeUrlParam(error));
+            firstParam = false;
         } else if (success != null && !success.isEmpty()) {
             url.append(firstParam ? "?" : "&").append("message=").append(encodeUrlParam(success));
+            firstParam = false;
         }
         logger.info("[AddEditAndDeleteSchedulesServlet] Redirecting to: " + url.toString());
         return url.toString();
@@ -202,10 +204,26 @@ public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
                 psCheck.setString(2, scheduleName.trim().toLowerCase());
                 try (ResultSet rs = psCheck.executeQuery()) {
                     if (rs.next()) {
+                        // **FIX START**: This block is modified to handle the duplicate name error specifically.
                         errorMessage = "Schedule '" + scheduleName.trim() + "' already exists for your company.";
+                        
+                        // Build the redirect URL with standard parameters.
                         String stepForRedirect = isWizardModeActive ? currentWizardStepInSession : null;
-                        response.sendRedirect(buildRedirectUrl(request, redirectPage, errorMessage, null, isWizardModeActive, stepForRedirect, false));
+                        String url = buildRedirectUrl(request, redirectPage, errorMessage, null, isWizardModeActive, stepForRedirect, false);
+                        
+                        // Append the special parameter to reopen the modal in the frontend.
+                        if (url.contains("?")) {
+                            url += "&reopenModal=addSchedule";
+                        } else {
+                            url += "?reopenModal=addSchedule";
+                        }
+                        
+                        // Also pass back the name that caused the error for repopulation.
+                        url += "&scheduleName=" + encodeUrlParam(scheduleName.trim());
+
+                        response.sendRedirect(url);
                         return;
+                        // **FIX END**
                     }
                 }
             }
@@ -251,9 +269,6 @@ public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
         response.sendRedirect(buildRedirectUrl(request, redirectPage, errorMessage, successMessage, isWizardModeActive, wizardRedirectNextStep, itemAddedInWizardFlow));
     }
 
-    /**
-     * FIX: Implemented the logic to handle editing a schedule.
-     */
     private void editSchedule(HttpServletRequest request, HttpServletResponse response, int tenantId, HttpSession session, 
                               boolean isWizardModeActive, String currentWizardStepInSession) throws IOException {
         String redirectPage = "scheduling.jsp";
@@ -266,7 +281,6 @@ public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
         if (!isValid(originalScheduleName)) {
             errorMessage = "Original schedule name was not provided. Cannot update.";
         } else if (originalScheduleName.toLowerCase().startsWith("open")) {
-            // This is a safeguard. The UI should prevent this, but we double-check here.
             errorMessage = "Default 'Open' schedules cannot be fully edited this way.";
         }
 
@@ -275,7 +289,6 @@ public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
             return;
         }
 
-        // Retrieve all form parameters
         Time shiftStart = parseTime(request.getParameter("shiftStart"));
         Time lunchStart = parseTime(request.getParameter("lunchStart"));
         Time lunchEnd = parseTime(request.getParameter("lunchEnd"));
@@ -283,8 +296,7 @@ public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
         String[] checkedDaysArray = request.getParameterValues("days");
         String daysWorked = getDaysWorkedString(checkedDaysArray);
         
-        // Checkbox value is only sent if it's checked.
-        boolean autoLunch = request.getParameter("autoLunch") != null && request.getParameter("autoLunch").equals("true");
+        boolean autoLunch = "true".equalsIgnoreCase(request.getParameter("autoLunch"));
         String hoursRequiredStr = request.getParameter("hoursRequired");
         String lunchLengthStr = request.getParameter("lunchLength");
 
@@ -320,17 +332,14 @@ public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
              PreparedStatement psUpdate = con.prepareStatement(sqlUpdate)) {
 
             int paramIdx = 1;
-            // Set time values or null
-            if (shiftStart != null) psUpdate.setTime(paramIdx++, shiftStart); else psUpdate.setNull(paramIdx++, Types.TIME);
-            if (lunchStart != null) psUpdate.setTime(paramIdx++, lunchStart); else psUpdate.setNull(paramIdx++, Types.TIME);
-            if (lunchEnd != null) psUpdate.setTime(paramIdx++, lunchEnd); else psUpdate.setNull(paramIdx++, Types.TIME);
-            if (shiftEnd != null) psUpdate.setTime(paramIdx++, shiftEnd); else psUpdate.setNull(paramIdx++, Types.TIME);
+            psUpdate.setTime(paramIdx++, shiftStart);
+            psUpdate.setTime(paramIdx++, lunchStart);
+            psUpdate.setTime(paramIdx++, lunchEnd);
+            psUpdate.setTime(paramIdx++, shiftEnd);
             
-            // Set other fields
             psUpdate.setString(paramIdx++, daysWorked);
             psUpdate.setBoolean(paramIdx++, autoLunch);
 
-            // Set auto-lunch fields or null
             if (autoLunch) {
                 psUpdate.setDouble(paramIdx++, hoursRequired);
                 psUpdate.setInt(paramIdx++, lunchLength);
@@ -339,7 +348,6 @@ public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
                 psUpdate.setNull(paramIdx++, Types.INTEGER);
             }
 
-            // Set WHERE clause parameters
             psUpdate.setInt(paramIdx++, tenantId);
             psUpdate.setString(paramIdx++, originalScheduleName);
 
@@ -350,7 +358,6 @@ public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
                 logger.info(successMessage + " For TenantID: " + tenantId);
             } else {
                 errorMessage = "Schedule '" + originalScheduleName + "' not found or no changes were made.";
-                logger.warning("Update failed for schedule '" + originalScheduleName + "' for TenantID: " + tenantId + ". No rows affected.");
             }
 
         } catch (SQLException e) {
@@ -393,7 +400,7 @@ public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
                 psUpdateEmp.setInt(2, tenantId);
                 psUpdateEmp.setString(3, scheduleNameToDelete);
                 employeesReassigned = psUpdateEmp.executeUpdate();
-                logger.info(employeesReassigned + " employees (if any) reassigned from '" + scheduleNameToDelete + "' to '" + targetScheduleForReassignment + "' for TenantID: " + tenantId);
+                logger.info(employeesReassigned + " employees reassigned from '" + scheduleNameToDelete + "' to '" + targetScheduleForReassignment + "' for TenantID: " + tenantId);
             }
 
             String deleteSql = "DELETE FROM SCHEDULES WHERE TenantID = ? AND NAME = ?";

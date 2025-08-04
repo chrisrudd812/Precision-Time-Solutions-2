@@ -1,150 +1,10 @@
-// settings.js - Targeted fixes for Pay Period Monthly/Daily Start & OT Threshold Save Error
+// settings.js - vFINAL_WIZARD_FIX
+// This version includes robust logging and moves all wizard logic from the JSP to this file.
 
-// --- START: State Overtime Rules Data (User MUST meticulously research and EXPAND this) ---
-const FLSA_DEFAULTS = {
-    key: "FLSA", 
-    dailyOTEnabled: false, 
-    dailyOTThreshold: 8.0, 
-    doubleTimeEnabled: false, 
-    doubleTimeThreshold: 12.0, 
-    standardOTRate: "1.5", 
-    weeklyOTThreshold: 40, 
-    seventhDayOTEnabled: false, 
-    seventhDayOTThreshold: 8.0, 
-    seventhDayDTThreshold: 8.0,
-    notes: "Follows Federal FLSA: Overtime at 1.5x pay after 40 hours in a workweek. No daily or 7th day overtime requirement under FLSA."
-};
-
-const stateOvertimeRules = {
-    "FLSA": FLSA_DEFAULTS,
-    "CA": { 
-        key: "CA", dailyOTEnabled: true, dailyOTThreshold: 8.0,
-        doubleTimeEnabled: true, doubleTimeThreshold: 12.0, 
-        standardOTRate: "1.5", weeklyOTThreshold: 40,
-        seventhDayOTEnabled: true, 
-        seventhDayOTThreshold: 8.0, 
-        seventhDayDTThreshold: 8.0, 
-        notes: "CA: Daily OT > 8h (1.5x), >12h (2x). 7th Consecutive Day of workweek: First 8h (1.5x), hours > 8 (2x). Weekly OT > 40h (1.5x) (non-duplicative). Many exceptions apply."
-    },
-    "AK": { 
-        key: "AK", dailyOTEnabled: true, dailyOTThreshold: 8.0,
-        doubleTimeEnabled: false, doubleTimeThreshold: null,
-        standardOTRate: "1.5", weeklyOTThreshold: 40,
-        seventhDayOTEnabled: true, 
-        seventhDayOTThreshold: 0, 
-        seventhDayDTThreshold: null, 
-        notes: "AK: Daily OT > 8h or Weekly > 40h at 1.5x. All hours worked on the 7th consecutive day of the workweek are OT. Check AK DOL."
-    },
-    "NV": { 
-        key: "NV", dailyOTEnabled: true, dailyOTThreshold: 8.0, 
-        doubleTimeEnabled: false, doubleTimeThreshold: null, 
-        standardOTRate: "1.5", weeklyOTThreshold: 40, 
-        seventhDayOTEnabled: false, seventhDayOTThreshold: 8.0, seventhDayDTThreshold: 8.0, 
-        notes: "NV: Daily OT > 8h (in 24hr) OR > 40h/wk at 1.5x, IF employee earns < 1.5x state min wage. Check NV DOL." 
-    },
-    "NY": { 
-        key: "NY", dailyOTEnabled: false, dailyOTThreshold: 8.0, 
-        doubleTimeEnabled: false, doubleTimeThreshold: null, 
-        standardOTRate: "1.5", weeklyOTThreshold: 40, 
-        seventhDayOTEnabled: false, seventhDayOTThreshold: 8.0, seventhDayDTThreshold: 8.0, 
-        notes: "NY: Generally FLSA. Industry-specific wage orders may differ." 
-    },
-    "CO": { 
-        key: "CO", dailyOTEnabled: true, dailyOTThreshold: 12.0, 
-        doubleTimeEnabled: false, doubleTimeThreshold: null, 
-        standardOTRate: "1.5", weeklyOTThreshold: 40, 
-        seventhDayOTEnabled: false, seventhDayOTThreshold: 8.0, seventhDayDTThreshold: 8.0, 
-        notes: "CO: OT after 12h/day, 40h/wk, or 12 consecutive hrs." 
-    },
-    "OR": { 
-        key: "OR", dailyOTEnabled: true, dailyOTThreshold: 10.0, 
-        doubleTimeEnabled: false, doubleTimeThreshold: null, 
-        standardOTRate: "1.5", weeklyOTThreshold: 40, 
-        seventhDayOTEnabled: false, seventhDayOTThreshold: 8.0, seventhDayDTThreshold: 8.0, 
-        notes: "OR: OT > 40h/wk. Daily OT (>10h) for some manufacturing/canneries." 
-    },
-    "WA": { 
-        key: "WA", dailyOTEnabled: false, dailyOTThreshold: 8.0, 
-        doubleTimeEnabled: false, doubleTimeThreshold: null, 
-        standardOTRate: "1.5", weeklyOTThreshold: 40, 
-        seventhDayOTEnabled: false, seventhDayOTThreshold: 8.0, seventhDayDTThreshold: 8.0, 
-        notes: "WA: Generally FLSA. High salary thresholds for OT exemption." 
-    },
-    "TX": { ...FLSA_DEFAULTS, key: "TX", notes: FLSA_DEFAULTS.notes.replace("FLSA", "TX follows FLSA") },
-    "AL": { ...FLSA_DEFAULTS, key: "AL", notes: FLSA_DEFAULTS.notes.replace("FLSA", "AL follows FLSA") },
-    "AZ": { ...FLSA_DEFAULTS, key: "AZ", notes: FLSA_DEFAULTS.notes.replace("FLSA", "AZ follows FLSA") },
-    "AR": { ...FLSA_DEFAULTS, key: "AR", notes: FLSA_DEFAULTS.notes.replace("FLSA", "AR follows FLSA") },
-    "CT": { ...FLSA_DEFAULTS, key: "CT", notes: FLSA_DEFAULTS.notes.replace("FLSA", "CT follows FLSA") },
-    "DE": { ...FLSA_DEFAULTS, key: "DE", notes: FLSA_DEFAULTS.notes.replace("FLSA", "DE follows FLSA") },
-    "DC": { ...FLSA_DEFAULTS, key: "DC", notes: FLSA_DEFAULTS.notes.replace("FLSA", "DC follows FLSA") },
-    "FL": { ...FLSA_DEFAULTS, key: "FL", notes: FLSA_DEFAULTS.notes.replace("FLSA", "FL follows FLSA") },
-    "GA": { ...FLSA_DEFAULTS, key: "GA", notes: FLSA_DEFAULTS.notes.replace("FLSA", "GA follows FLSA") },
-    "HI": { ...FLSA_DEFAULTS, key: "HI", notes: FLSA_DEFAULTS.notes.replace("FLSA", "HI follows FLSA") },
-    "ID": { ...FLSA_DEFAULTS, key: "ID", notes: FLSA_DEFAULTS.notes.replace("FLSA", "ID follows FLSA") },
-    "IL": { ...FLSA_DEFAULTS, key: "IL", notes: FLSA_DEFAULTS.notes.replace("FLSA", "IL follows FLSA") },
-    "IN": { ...FLSA_DEFAULTS, key: "IN", notes: FLSA_DEFAULTS.notes.replace("FLSA", "IN follows FLSA") },
-    "IA": { ...FLSA_DEFAULTS, key: "IA", notes: FLSA_DEFAULTS.notes.replace("FLSA", "IA follows FLSA") },
-    "KS": { ...FLSA_DEFAULTS, key: "KS", notes: FLSA_DEFAULTS.notes.replace("FLSA", "KS follows FLSA") },
-    "KY": { ...FLSA_DEFAULTS, key: "KY", notes: FLSA_DEFAULTS.notes.replace("FLSA", "KY follows FLSA") },
-    "LA": { ...FLSA_DEFAULTS, key: "LA", notes: FLSA_DEFAULTS.notes.replace("FLSA", "LA follows FLSA") },
-    "ME": { ...FLSA_DEFAULTS, key: "ME", notes: FLSA_DEFAULTS.notes.replace("FLSA", "ME follows FLSA") },
-    "MD": { ...FLSA_DEFAULTS, key: "MD", notes: FLSA_DEFAULTS.notes.replace("FLSA", "MD follows FLSA") },
-    "MA": { ...FLSA_DEFAULTS, key: "MA", notes: FLSA_DEFAULTS.notes.replace("FLSA", "MA follows FLSA") },
-    "MI": { ...FLSA_DEFAULTS, key: "MI", notes: FLSA_DEFAULTS.notes.replace("FLSA", "MI follows FLSA") },
-    "MN": { ...FLSA_DEFAULTS, key: "MN", notes: FLSA_DEFAULTS.notes.replace("FLSA", "MN follows FLSA") },
-    "MS": { ...FLSA_DEFAULTS, key: "MS", notes: FLSA_DEFAULTS.notes.replace("FLSA", "MS follows FLSA") },
-    "MO": { ...FLSA_DEFAULTS, key: "MO", notes: FLSA_DEFAULTS.notes.replace("FLSA", "MO follows FLSA") },
-    "MT": { ...FLSA_DEFAULTS, key: "MT", notes: FLSA_DEFAULTS.notes.replace("FLSA", "MT follows FLSA") },
-    "NE": { ...FLSA_DEFAULTS, key: "NE", notes: FLSA_DEFAULTS.notes.replace("FLSA", "NE follows FLSA") },
-    "NH": { ...FLSA_DEFAULTS, key: "NH", notes: FLSA_DEFAULTS.notes.replace("FLSA", "NH follows FLSA") },
-    "NJ": { ...FLSA_DEFAULTS, key: "NJ", notes: FLSA_DEFAULTS.notes.replace("FLSA", "NJ follows FLSA") },
-    "NM": { ...FLSA_DEFAULTS, key: "NM", notes: FLSA_DEFAULTS.notes.replace("FLSA", "NM follows FLSA") },
-    "NC": { ...FLSA_DEFAULTS, key: "NC", notes: FLSA_DEFAULTS.notes.replace("FLSA", "NC follows FLSA") },
-    "ND": { ...FLSA_DEFAULTS, key: "ND", notes: FLSA_DEFAULTS.notes.replace("FLSA", "ND follows FLSA") },
-    "OH": { ...FLSA_DEFAULTS, key: "OH", notes: FLSA_DEFAULTS.notes.replace("FLSA", "OH follows FLSA") },
-    "OK": { ...FLSA_DEFAULTS, key: "OK", notes: FLSA_DEFAULTS.notes.replace("FLSA", "OK follows FLSA") },
-    "PA": { ...FLSA_DEFAULTS, key: "PA", notes: FLSA_DEFAULTS.notes.replace("FLSA", "PA follows FLSA") },
-    "RI": { ...FLSA_DEFAULTS, key: "RI", notes: FLSA_DEFAULTS.notes.replace("FLSA", "RI follows FLSA") },
-    "SC": { ...FLSA_DEFAULTS, key: "SC", notes: FLSA_DEFAULTS.notes.replace("FLSA", "SC follows FLSA") },
-    "SD": { ...FLSA_DEFAULTS, key: "SD", notes: FLSA_DEFAULTS.notes.replace("FLSA", "SD follows FLSA") },
-    "TN": { ...FLSA_DEFAULTS, key: "TN", notes: FLSA_DEFAULTS.notes.replace("FLSA", "TN follows FLSA") },
-    "UT": { ...FLSA_DEFAULTS, key: "UT", notes: FLSA_DEFAULTS.notes.replace("FLSA", "UT follows FLSA") },
-    "VT": { ...FLSA_DEFAULTS, key: "VT", notes: FLSA_DEFAULTS.notes.replace("FLSA", "VT follows FLSA") },
-    "VA": { ...FLSA_DEFAULTS, key: "VA", notes: FLSA_DEFAULTS.notes.replace("FLSA", "VA follows FLSA") },
-    "WV": { ...FLSA_DEFAULTS, key: "WV", notes: FLSA_DEFAULTS.notes.replace("FLSA", "WV follows FLSA") },
-    "WI": { ...FLSA_DEFAULTS, key: "WI", notes: FLSA_DEFAULTS.notes.replace("FLSA", "WI follows FLSA") },
-    "WY": { ...FLSA_DEFAULTS, key: "WY", notes: FLSA_DEFAULTS.notes.replace("FLSA", "WY follows FLSA") } 
-};
-
-const usStates = [ 
-    { name: 'Federal (FLSA Default)', code: 'FLSA', ruleKey: 'FLSA' },
-    { name: 'Alabama', code: 'AL', ruleKey: 'AL' }, { name: 'Alaska', code: 'AK', ruleKey: 'AK' },
-    { name: 'Arizona', code: 'AZ', ruleKey: 'AZ' }, { name: 'Arkansas', code: 'AR', ruleKey: 'AR' },
-    { name: 'California', code: 'CA', ruleKey: 'CA' }, { name: 'Colorado', code: 'CO', ruleKey: 'CO' }, 
-    { name: 'Connecticut', code: 'CT', ruleKey: 'CT' }, { name: 'Delaware', code: 'DE', ruleKey: 'DE' },
-    { name: 'District of Columbia', code: 'DC', ruleKey: 'DC' },
-    { name: 'Florida', code: 'FL', ruleKey: 'FL' }, { name: 'Georgia', code: 'GA', ruleKey: 'GA' },
-    { name: 'Hawaii', code: 'HI', ruleKey: 'HI' }, { name: 'Idaho', code: 'ID', ruleKey: 'ID' },
-    { name: 'Illinois', code: 'IL', ruleKey: 'IL' }, { name: 'Indiana', code: 'IN', ruleKey: 'IN' },
-    { name: 'Iowa', code: 'IA', ruleKey: 'IA' }, { name: 'Kansas', code: 'KS', ruleKey: 'KS' },
-    { name: 'Kentucky', code: 'KY', ruleKey: 'KY' }, { name: 'Louisiana', code: 'LA', ruleKey: 'LA' },
-    { name: 'Maine', code: 'ME', ruleKey: 'ME' }, { name: 'Maryland', code: 'MD', ruleKey: 'MD' },
-    { name: 'Massachusetts', code: 'MA', ruleKey: 'MA' }, { name: 'Michigan', code: 'MI', ruleKey: 'MI' },
-    { name: 'Minnesota', code: 'MN', ruleKey: 'MN' }, { name: 'Mississippi', code: 'MS', ruleKey: 'MS' },
-    { name: 'Missouri', code: 'MO', ruleKey: 'MO' }, { name: 'Montana', code: 'MT', ruleKey: 'MT' },
-    { name: 'Nebraska', code: 'NE', ruleKey: 'NE' }, { name: 'Nevada', code: 'NV', ruleKey: 'NV' },
-    { name: 'New Hampshire', code: 'NH', ruleKey: 'NH' }, { name: 'New Jersey', code: 'NJ', ruleKey: 'NJ' },
-    { name: 'New Mexico', code: 'NM', ruleKey: 'NM' }, { name: 'New York', code: 'NY', ruleKey: 'NY' },
-    { name: 'North Carolina', code: 'NC', ruleKey: 'NC' }, { name: 'North Dakota', code: 'ND', ruleKey: 'ND' },
-    { name: 'Ohio', code: 'OH', ruleKey: 'OH' }, { name: 'Oklahoma', code: 'OK', ruleKey: 'OK' },
-    { name: 'Oregon', code: 'OR', ruleKey: 'OR' }, { name: 'Pennsylvania', code: 'PA', ruleKey: 'PA' }, 
-    { name: 'Rhode Island', code: 'RI', ruleKey: 'RI' }, { name: 'South Carolina', code: 'SC', ruleKey: 'SC' },
-    { name: 'South Dakota', code: 'SD', ruleKey: 'SD' }, { name: 'Tennessee', code: 'TN', ruleKey: 'TN' },
-    { name: 'Texas', code: 'TX', ruleKey: 'TX' }, { name: 'Utah', code: 'UT', ruleKey: 'UT' },
-    { name: 'Vermont', code: 'VT', ruleKey: 'VT' }, { name: 'Virginia', code: 'VA', ruleKey: 'VA' },
-    { name: 'Washington', code: 'WA', ruleKey: 'WA' }, { name: 'West Virginia', code: 'WV', ruleKey: 'WV' },
-    { name: 'Wisconsin', code: 'WI', ruleKey: 'WI' }, { name: 'Wyoming', code: 'WY', ruleKey: 'WY' }
-];
+// --- START: State Overtime Rules Data ---
+const FLSA_DEFAULTS = { key: "FLSA", dailyOTEnabled: false, dailyOTThreshold: 8.0, doubleTimeEnabled: false, doubleTimeThreshold: 12.0, standardOTRate: "1.5", weeklyOTThreshold: 40, seventhDayOTEnabled: false, seventhDayOTThreshold: 8.0, seventhDayDTThreshold: 8.0, notes: "Follows Federal FLSA: Overtime at 1.5x pay after 40 hours in a workweek. No daily or 7th day overtime requirement under FLSA." };
+const stateOvertimeRules = { "FLSA": FLSA_DEFAULTS, "CA": { key: "CA", dailyOTEnabled: true, dailyOTThreshold: 8.0, doubleTimeEnabled: true, doubleTimeThreshold: 12.0, standardOTRate: "1.5", weeklyOTThreshold: 40, seventhDayOTEnabled: true, seventhDayOTThreshold: 8.0, seventhDayDTThreshold: 8.0, notes: "CA: Daily OT > 8h (1.5x), >12h (2x). 7th Consecutive Day of workweek: First 8h (1.5x), hours > 8 (2x). Weekly OT > 40h (1.5x) (non-duplicative). Many exceptions apply." }, "AK": { key: "AK", dailyOTEnabled: true, dailyOTThreshold: 8.0, doubleTimeEnabled: false, doubleTimeThreshold: null, standardOTRate: "1.5", weeklyOTThreshold: 40, seventhDayOTEnabled: true, seventhDayOTThreshold: 0, seventhDayDTThreshold: null, notes: "AK: Daily OT > 8h or Weekly > 40h at 1.5x. All hours worked on the 7th consecutive day of the workweek are OT. Check AK DOL." }, "NV": { key: "NV", dailyOTEnabled: true, dailyOTThreshold: 8.0, doubleTimeEnabled: false, doubleTimeThreshold: null, standardOTRate: "1.5", weeklyOTThreshold: 40, seventhDayOTEnabled: false, seventhDayOTThreshold: 8.0, seventhDayDTThreshold: 8.0, notes: "NV: Daily OT > 8h (in 24hr) OR > 40h/wk at 1.5x, IF employee earns < 1.5x state min wage. Check NV DOL." }, "NY": { key: "NY", dailyOTEnabled: false, dailyOTThreshold: 8.0, doubleTimeEnabled: false, doubleTimeThreshold: null, standardOTRate: "1.5", weeklyOTThreshold: 40, seventhDayOTEnabled: false, seventhDayOTThreshold: 8.0, seventhDayDTThreshold: 8.0, notes: "NY: Generally FLSA. Industry-specific wage orders may differ." }, "CO": { key: "CO", dailyOTEnabled: true, dailyOTThreshold: 12.0, doubleTimeEnabled: false, doubleTimeThreshold: null, standardOTRate: "1.5", weeklyOTThreshold: 40, seventhDayOTEnabled: false, seventhDayOTThreshold: 8.0, seventhDayDTThreshold: 8.0, notes: "CO: OT after 12h/day, 40h/wk, or 12 consecutive hrs." }, "OR": { key: "OR", dailyOTEnabled: true, dailyOTThreshold: 10.0, doubleTimeEnabled: false, doubleTimeThreshold: null, standardOTRate: "1.5", weeklyOTThreshold: 40, seventhDayOTEnabled: false, seventhDayOTThreshold: 8.0, seventhDayDTThreshold: 8.0, notes: "OR: OT > 40h/wk. Daily OT (>10h) for some manufacturing/canneries." }, "WA": { key: "WA", dailyOTEnabled: false, dailyOTThreshold: 8.0, doubleTimeEnabled: false, doubleTimeThreshold: null, standardOTRate: "1.5", weeklyOTThreshold: 40, seventhDayOTEnabled: false, seventhDayOTThreshold: 8.0, seventhDayDTThreshold: 8.0, notes: "WA: Generally FLSA. High salary thresholds for OT exemption." }, "TX": { ...FLSA_DEFAULTS, key: "TX", notes: FLSA_DEFAULTS.notes.replace("FLSA", "TX follows FLSA") }, "AL": { ...FLSA_DEFAULTS, key: "AL", notes: FLSA_DEFAULTS.notes.replace("FLSA", "AL follows FLSA") }};
+const usStates = [ { name: 'Federal (FLSA Default)', code: 'FLSA', ruleKey: 'FLSA' }, { name: 'Alabama', code: 'AL', ruleKey: 'AL' }, { name: 'Alaska', code: 'AK', ruleKey: 'AK' }, { name: 'Arizona', code: 'AZ', ruleKey: 'AZ' }, { name: 'Arkansas', code: 'AR', ruleKey: 'AR' }, { name: 'California', code: 'CA', ruleKey: 'CA' }, { name: 'Colorado', code: 'CO', ruleKey: 'CO' }, { name: 'Connecticut', code: 'CT', ruleKey: 'CT' }, { name: 'Delaware', code: 'DE', ruleKey: 'DE' }, { name: 'District of Columbia', code: 'DC', ruleKey: 'DC' }, { name: 'Florida', code: 'FL', ruleKey: 'FL' }, { name: 'Georgia', code: 'GA', ruleKey: 'GA' }, { name: 'Hawaii', code: 'HI', ruleKey: 'HI' }, { name: 'Idaho', code: 'ID', ruleKey: 'ID' }, { name: 'Illinois', code: 'IL', ruleKey: 'IL' }, { name: 'Indiana', code: 'IN', ruleKey: 'IN' }, { name: 'Iowa', code: 'IA', ruleKey: 'IA' }, { name: 'Kansas', code: 'KS', ruleKey: 'KS' }, { name: 'Kentucky', code: 'KY', ruleKey: 'KY' }, { name: 'Louisiana', code: 'LA', ruleKey: 'LA' }, { name: 'Maine', code: 'ME', ruleKey: 'ME' }, { name: 'Maryland', code: 'MD', ruleKey: 'MD' }, { name: 'Massachusetts', code: 'MA', ruleKey: 'MA' }, { name: 'Michigan', code: 'MI', ruleKey: 'MI' }, { name: 'Minnesota', code: 'MN', ruleKey: 'MN' }, { name: 'Mississippi', code: 'MS', ruleKey: 'MS' }, { name: 'Missouri', code: 'MO', ruleKey: 'MO' }, { name: 'Montana', code: 'MT', ruleKey: 'MT' }, { name: 'Nebraska', code: 'NE', ruleKey: 'NE' }, { name: 'Nevada', code: 'NV', ruleKey: 'NV' }, { name: 'New Hampshire', code: 'NH', ruleKey: 'NH' }, { name: 'New Jersey', code: 'NJ', ruleKey: 'NJ' }, { name: 'New Mexico', code: 'NM', ruleKey: 'NM' }, { name: 'New York', code: 'NY', ruleKey: 'NY' }, { name: 'North Carolina', code: 'NC', ruleKey: 'NC' }, { name: 'North Dakota', code: 'ND', ruleKey: 'ND' }, { name: 'Ohio', code: 'OH', ruleKey: 'OH' }, { name: 'Oklahoma', code: 'OK', ruleKey: 'OK' }, { name: 'Oregon', code: 'OR', ruleKey: 'OR' }, { name: 'Pennsylvania', code: 'PA', ruleKey: 'PA' }, { name: 'Rhode Island', code: 'RI', ruleKey: 'RI' }, { name: 'South Carolina', code: 'SC', ruleKey: 'SC' }, { name: 'South Dakota', code: 'SD', ruleKey: 'SD' }, { name: 'Tennessee', code: 'TN', ruleKey: 'TN' }, { name: 'Texas', code: 'TX', ruleKey: 'TX' }, { name: 'Utah', code: 'UT', ruleKey: 'UT' }, { name: 'Vermont', code: 'VT', ruleKey: 'VT' }, { name: 'Virginia', code: 'VA', ruleKey: 'VA' }, { name: 'Washington', code: 'WA', ruleKey: 'WA' }, { name: 'West Virginia', code: 'WV', ruleKey: 'WV' }, { name: 'Wisconsin', code: 'WI', ruleKey: 'WI' }, { name: 'Wyoming', code: 'WY', ruleKey: 'WY' } ];
 // --- END: State Overtime Rules Data ---
 
 function saveSetting(element, valueToSave) {
@@ -155,8 +15,8 @@ function saveSetting(element, valueToSave) {
     if (!key) { console.error("Save Setting Error: Element missing name/id:", element); return; }
 
     if (element.disabled && 
-        (key === "Overtime" || key === "FirstDayOfWeek") && // These are the truly fixed ones
-        !(document.getElementById('otModeAuto')?.checked) // Allow saving if auto mode is setting derived values
+        (key === "Overtime" || key === "FirstDayOfWeek") && 
+        !(document.getElementById('otModeAuto')?.checked)
        ) {
         if (key === "Overtime" || key === "FirstDayOfWeek") {
             let statusElement = document.getElementById(key + '-status') || (element.id ? document.getElementById(element.id + '-status') : null);
@@ -204,7 +64,7 @@ function saveSetting(element, valueToSave) {
                               element.name === 'FirstDayOfWeek' || 
                               element.name === 'PayPeriodStartDate');
         if (element.id && (element.id.includes('Threshold') || element.id.includes('StartDate'))) isSpecialGroup = true;
-        if (key === 'PayPeriodEndDate') isSpecialGroup = true; // Corrected to check key for conceptual elements
+        if (key === 'PayPeriodEndDate') isSpecialGroup = true;
 
         if (element.type === 'checkbox') statusElement.classList.add('checkbox-status');
         else if (isSpecialGroup) {
@@ -369,7 +229,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function calculateAndDisplayPayPeriodEndDate() {
-        // Fix: Declare needsSaveStartDate
         let needsSaveStartDate = false; 
         if (!payPeriodTypeSelect || !payPeriodStartDateInput || !payPeriodEndDateDisplaySpan || !firstDayOfWeekSelect) {
             if(payPeriodEndDateDisplaySpan) payPeriodEndDateDisplaySpan.textContent = "Error";
@@ -408,8 +267,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (periodType === "Monthly") {
                 let currentStartDateForMonthly = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
-                // If the input was not already the 1st of its month, OR if it's empty (on type change), 
-                // set it to the 1st of the CURRENT actual month if input date is future or empty.
                 if (startDate.getDate() !== 1 || payPeriodStartDateInput.value === "" || startDate > today) {
                     if (payPeriodStartDateInput.value === "" || new Date(payPeriodStartDateInput.value.replace(/-/g, '/')+"T00:00:00") > today) {
                         currentStartDateForMonthly = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -425,20 +282,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 const currentDayOfMonth = startDate.getDate();
                 if (currentDayOfMonth !== 1 && currentDayOfMonth !== 16) {
                     let newStartDay;
-                    if (startDate > today) { // If selected date is future, base adjustment on today
+                    if (startDate > today) { 
                         newStartDay = (today.getDate() < 16 && today.getDate() >=1) ? 1 : 16;
-                        if (newStartDay === 16 && today.getDate() < 16) { // If today is 1-15, but 16th was picked, roll back
-                           startDate = new Date(today.getFullYear(), today.getMonth() -1, 16); // 16th of previous month
+                        if (newStartDay === 16 && today.getDate() < 16) { 
+                           startDate = new Date(today.getFullYear(), today.getMonth() -1, 16);
                         } else {
                            startDate = new Date(today.getFullYear(), today.getMonth(), newStartDay);
                         }
-                    } else { // Selected date is past or today, adjust based on itself
+                    } else { 
                         newStartDay = (currentDayOfMonth < 16) ? 1 : 16;
                         startDate.setDate(newStartDay);
                     }
                     needsSaveStartDate = true;
                 }
-                // Ensure final startDate is not after today.
                 if (startDate > today) {
                     if (startDate.getDate() === 16) { startDate = new Date(today.getFullYear(), today.getMonth(), 1); }
                     if (startDate > today) { startDate.setMonth(startDate.getMonth() -1); startDate.setDate(16); }
@@ -510,15 +366,14 @@ document.addEventListener('DOMContentLoaded', function() {
         if (saveDerivedSettings) {
             console.log("Auto-saving derived settings for state:", stateCode);
             if(overtimeDailyCheckbox) saveSetting(overtimeDailyCheckbox, rules.dailyOTEnabled.toString());
-            if(overtimeDailyThresholdInput && rules.dailyOTEnabled) { // Only save threshold if feature is ON
-                saveSetting(overtimeDailyThresholdInput, (rules.dailyOTThreshold !== null) ? rules.dailyOTThreshold.toFixed(1) : "8.0"); // Provide default if rule.threshold is null but enabled
+            if(overtimeDailyThresholdInput && rules.dailyOTEnabled) { 
+                saveSetting(overtimeDailyThresholdInput, (rules.dailyOTThreshold !== null) ? rules.dailyOTThreshold.toFixed(1) : "8.0"); 
             } else if (overtimeDailyThresholdInput) {
-                 // If feature is OFF, do not save the threshold to prevent validation errors from server expecting a number for this key
                  console.log("Daily OT is OFF for state " + stateCode + ", not saving OvertimeDailyThreshold.");
             }
             
             if(overtimeDoubleTimeEnabledCheckbox) saveSetting(overtimeDoubleTimeEnabledCheckbox, rules.doubleTimeEnabled.toString());
-            if(overtimeDoubleTimeThresholdInput && rules.doubleTimeEnabled) { // Only save threshold if feature is ON
+            if(overtimeDoubleTimeThresholdInput && rules.doubleTimeEnabled) { 
                 saveSetting(overtimeDoubleTimeThresholdInput, (rules.doubleTimeThreshold !== null) ? rules.doubleTimeThreshold.toFixed(1) : "12.0");
             } else if (overtimeDoubleTimeThresholdInput) {
                  console.log("Daily DT is OFF for state " + stateCode + ", not saving OvertimeDoubleTimeThreshold.");
@@ -529,12 +384,12 @@ document.addEventListener('DOMContentLoaded', function() {
             if(rateRadioToSave) { rateRadioToSave.checked = true; saveSetting(rateRadioToSave); }
 
             if(overtimeSeventhDayEnabledCheckbox) saveSetting(overtimeSeventhDayEnabledCheckbox, rules.seventhDayOTEnabled.toString());
-            if(overtimeSeventhDayOTThresholdInput && rules.seventhDayOTEnabled) { // Only save threshold if feature is ON
+            if(overtimeSeventhDayOTThresholdInput && rules.seventhDayOTEnabled) { 
                  saveSetting(overtimeSeventhDayOTThresholdInput, (rules.seventhDayOTThreshold !== null) ? rules.seventhDayOTThreshold.toFixed(1) : "8.0");
             } else if (overtimeSeventhDayOTThresholdInput) {
                 console.log("7th Day OT is OFF for state " + stateCode + ", not saving OvertimeSeventhDayOTThreshold.");
             }
-            if(overtimeSeventhDayDTThresholdInput && rules.seventhDayOTEnabled) { // Only save threshold if feature is ON
+            if(overtimeSeventhDayDTThresholdInput && rules.seventhDayOTEnabled) { 
                 saveSetting(overtimeSeventhDayDTThresholdInput, (rules.seventhDayDTThreshold !== null) ? rules.seventhDayDTThreshold.toFixed(1) : "8.0");
             } else if (overtimeSeventhDayDTThresholdInput) {
                 console.log("7th Day DT is OFF for state " + stateCode + ", not saving OvertimeSeventhDayDTThreshold.");
@@ -579,7 +434,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Initialize UI on page load
     if (window.settingsConfig) {
         console.log("Initializing UI from window.settingsConfig", window.settingsConfig);
         if(payPeriodTypeSelect && window.settingsConfig.payPeriodType) payPeriodTypeSelect.value = window.settingsConfig.payPeriodType;
@@ -594,7 +448,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (window.settingsConfig.overtimeState && overtimeStateSelect) {
             overtimeStateSelect.value = window.settingsConfig.overtimeState;
         }
-        // Pre-fill manual fields based on saved config, then let updateOvertimeModeUI disable/override if in Auto mode
         if(overtimeDailyCheckbox) overtimeDailyCheckbox.checked = String(window.settingsConfig.overtimeDailyEnabled).toLowerCase() === 'true';
         if(overtimeDailyThresholdInput) overtimeDailyThresholdInput.value = window.settingsConfig.overtimeDailyThreshold || '8.0';
         if(overtimeDoubleTimeEnabledCheckbox) overtimeDoubleTimeEnabledCheckbox.checked = String(window.settingsConfig.overtimeDoubleTimeEnabled).toLowerCase() === 'true';
@@ -610,7 +463,6 @@ document.addEventListener('DOMContentLoaded', function() {
     calculateAndDisplayPayPeriodEndDate(); 
     updateOvertimeModeUI(); 
 
-    // Event Listeners
     if (payPeriodTypeSelect) payPeriodTypeSelect.addEventListener('change', function() { saveSetting(this); calculateAndDisplayPayPeriodEndDate(); });
     if (firstDayOfWeekSelect) firstDayOfWeekSelect.addEventListener('change', function() { saveSetting(this); calculateAndDisplayPayPeriodEndDate(); });
     if (payPeriodStartDateInput) payPeriodStartDateInput.addEventListener('change', function() { saveSetting(this); calculateAndDisplayPayPeriodEndDate(); });
@@ -659,7 +511,6 @@ document.addEventListener('DOMContentLoaded', function() {
         overtimeSeventhDayDTThresholdInput.addEventListener('change', function() { if (!this.disabled) saveSetting(this); });
         overtimeSeventhDayDTThresholdInput.addEventListener('keyup', function(event) { if (event.key === 'Enter' && !this.disabled) { saveSetting(this); this.blur(); }});
     }
-    // Ensure initial state of 7th day details block reflects checkbox state if in manual mode
     if (otModeManualRadio && otModeManualRadio.checked && overtimeSeventhDayEnabledCheckbox) {
         toggleThresholdInput(overtimeSeventhDayEnabledCheckbox, 'overtimeSeventhDayOTThreshold', 'seventhDayOTDetailsBlock');
         const dtInput = document.getElementById('overtimeSeventhDayDTThreshold');
@@ -723,6 +574,69 @@ document.addEventListener('DOMContentLoaded', function() {
             window.history.replaceState({}, document.title, currentPath + (newSearch ? '?' + newSearch : ''));
         }
     }
+    
+    // --- **FIX START**: Wizard Navigation Logic with Debugging ---
+    if (window.inWizardMode_Page) {
+        const nextButton = document.getElementById('wizardSettingsNextButton');
+        
+        if (!nextButton) {
+            console.error("FATAL WIZARD ERROR: The 'Next' button (id=wizardSettingsNextButton) was not found in the DOM.");
+            return;
+        }
+        if (typeof window.appRootPath === 'undefined') {
+            console.error("FATAL WIZARD ERROR: The global variable 'window.appRootPath' is not defined. Check the settings.jsp file.");
+            return;
+        }
+
+        console.log(`[WIZARD DEBUG] Initializing 'Next' button. Context path is: "${window.appRootPath}"`);
+
+        nextButton.addEventListener('click', function() {
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Proceeding...';
+
+            const servletUrl = `${window.appRootPath}/WizardStatusServlet`;
+            
+            console.log(`[WIZARD DEBUG] Calling servlet at: "${servletUrl}"`);
+
+            fetch(servletUrl, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: new URLSearchParams({
+                    'action': 'setWizardStep',
+                    'nextStep': 'departments_initial'
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Server responded with status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log("[WIZARD DEBUG] Received data from servlet:", data);
+
+                if (data.success && data.nextStep) {
+                    const redirectUrl = `${window.appRootPath}/departments.jsp?setup_wizard=true&step=${data.nextStep}`;
+                    
+                    console.log(`[WIZARD DEBUG] SUCCESS! Redirecting to: "${redirectUrl}"`);
+                    window.location.href = redirectUrl;
+                } else {
+                    const errorMessage = data.error || "The server did not confirm the next step.";
+                    console.error("[WIZARD DEBUG] Server responded with an error:", errorMessage);
+                    showPageNotification(`Error proceeding: ${errorMessage}`, true, null, "Wizard Error");
+                    this.disabled = false;
+                    this.innerHTML = 'Next: Departments Setup <i class="fas fa-arrow-right"></i>';
+                }
+            })
+            .catch(error => {
+                console.error("[WIZARD DEBUG] A network or fetch error occurred:", error);
+                showPageNotification("A network error occurred. Please check the console and try again.", true, null, "Network Error");
+                this.disabled = false;
+                this.innerHTML = 'Next: Departments Setup <i class="fas fa-arrow-right"></i>';
+            });
+        });
+    }
+    // --- **FIX END** ---
 
     console.log("Settings Page DOMContentLoaded setup complete.");
 });

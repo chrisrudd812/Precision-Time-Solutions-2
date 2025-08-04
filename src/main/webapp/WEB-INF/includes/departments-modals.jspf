@@ -1,0 +1,82 @@
+<%-- /WEB-INF/includes/departments-modals.jspf --%>
+<%-- This file contains the modals for adding, editing, and deleting departments. --%>
+
+<%-- Add Department Modal --%>
+<div id="addDepartmentModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Add New Department</h2>
+        <form id="addDepartmentForm" action="<%= request.getContextPath() %>/AddAndDeleteDepartmentsServlet" method="post">
+            <input type="hidden" name="action" value="addDepartment">
+            <%-- This hidden input is added by JS if in wizard mode --%>
+            <div class="form-item">
+                <label for="addDeptName">Name:<span class="required-asterisk">*</span></label>
+                <input type="text" id="addDeptName" name="addDepartmentName" required maxlength="100" autofocus>
+            </div>
+            <div class="form-item">
+                <label for="addDeptDescription">Description:</label>
+                <input type="text" id="addDeptDescription" name="addDescription" maxlength="255">
+            </div>
+            <div class="form-item">
+                <label for="addDeptSupervisor">Supervisor:</label>
+                <input type="text" id="addDeptSupervisor" name="addSupervisor" maxlength="100">
+            </div>
+            <div class="button-row">
+                <button type="submit" class="glossy-button text-green">Submit</button>
+                <button type="button" class="cancel-btn glossy-button text-red">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<%-- Edit Department Modal --%>
+<div id="editDepartmentModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Edit Department</h2>
+        <form id="editDepartmentForm" action="<%= request.getContextPath() %>/AddAndDeleteDepartmentsServlet" method="post">
+            <input type="hidden" name="action" value="editDepartment">
+            <input type="hidden" id="originalDeptName" name="originalDepartmentName">
+            <div class="form-item">
+                <label for="editDeptNameDisplay">Name:</label>
+                <input type="text" id="editDeptNameDisplay" name="editDeptNameDisplay_form" readonly style="background-color: #e9ecef; cursor: not-allowed;" title="Department name cannot be changed.">
+            </div>
+            <div class="form-item">
+                <label for="editDeptDescription">Description:</label>
+                <input type="text" id="editDeptDescription" name="editDescription" maxlength="255">
+            </div>
+            <div class="form-item">
+                <label for="editDeptSupervisor">Supervisor:</label>
+                <input type="text" id="editDeptSupervisor" name="editSupervisor" maxlength="100">
+            </div>
+            <div class="button-row">
+                <button type="submit" class="glossy-button text-green">Update</button>
+                <button type="button" class="cancel-btn glossy-button text-red">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<%-- Delete and Reassign Department Modal --%>
+<div id="deleteAndReassignDeptModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Delete & Reassign Department</h2>
+        <p id="deleteReassignModalMessage"></p>
+        <div class="form-item">
+            <label for="targetReassignDeptSelect">Reassign employees to:</label>
+            <select id="targetReassignDeptSelect" name="targetReassignDeptSelect_form"></select>
+        </div>
+        <div class="button-row">
+            <button type="button" id="confirmDeleteAndReassignBtn" class="glossy-button text-red">Confirm Delete</button>
+            <button type="button" class="cancel-btn glossy-button text-grey">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<%-- Hidden form for the delete action --%>
+<form action="<%= request.getContextPath() %>/AddAndDeleteDepartmentsServlet" method="POST" id="deleteDepartmentForm" style="display:none;">
+    <input type="hidden" name="action" value="deleteAndReassignDepartment">
+    <input type="hidden" name="departmentNameToDelete" id="hiddenDeleteDepartmentName">
+    <input type="hidden" name="targetDepartmentForReassignment" id="hiddenTargetDepartmentForReassignment">
+</form>
