@@ -1,6 +1,5 @@
-// js/departments.js - vFINAL_WIZARD
+// js/departments.js
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("[DEBUG] departments.js (vFINAL_WIZARD) loaded.");
     
     // --- Helper Functions & Global Access ---
     const _showModal = window.showModal;
@@ -138,7 +137,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function openAddModal() {
         addForm.reset();
-        // If in wizard mode, add a hidden input to the form
         if (window.inWizardMode_Page) {
             let hiddenInput = addForm.querySelector('input[name="setup_wizard"]');
             if (!hiddenInput) {
@@ -150,6 +148,13 @@ document.addEventListener('DOMContentLoaded', function() {
             hiddenInput.value = 'true';
         }
         _showModal(addModal);
+        
+        setTimeout(() => {
+            const deptNameInput = addForm.querySelector('#addDeptName');
+            if (deptNameInput) {
+                deptNameInput.focus();
+            }
+        }, 150);
     }
 
     function openEditModal() {
@@ -203,6 +208,30 @@ document.addEventListener('DOMContentLoaded', function() {
         deleteForm.submit();
     });
     
+    // ADDED: Event listener to check for duplicate department names before submitting.
+    addForm.addEventListener('submit', function(event) {
+        event.preventDefault(); // Stop the form from submitting immediately.
+
+        const newDeptNameInput = addForm.querySelector('#addDeptName');
+        if (!newDeptNameInput) {
+            addForm.submit(); // Submit if the input isn't found for some reason.
+            return;
+        }
+        
+        const newDeptName = newDeptNameInput.value.trim().toLowerCase();
+        
+        // Check if a department with the same name already exists.
+        const isDuplicate = window.allAvailableDepartmentsForReassign.some(dept => dept.name.trim().toLowerCase() === newDeptName);
+
+        if (isDuplicate) {
+            // If it's a duplicate, show a notification and don't submit.
+            window.showPageNotification(`A department named "${newDeptNameInput.value.trim()}" already exists. Please choose a different name.`, true, notificationModal);
+        } else {
+            // If it's not a duplicate, submit the form.
+            addForm.submit();
+        }
+    });
+
     // --- INITIALIZATION ---
     if (window.inWizardMode_Page) {
         const stage = window.itemJustAdded_Page ? 'departments_after_add' : 'departments_initial';

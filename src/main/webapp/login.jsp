@@ -32,7 +32,7 @@
     String companyIdentifierRepop = request.getParameter("companyIdentifier");
     String adminEmailRepop = request.getParameter("adminEmail");
     String messageType = request.getParameter("msgType"); 
-    String autoLogoutMessage = request.getParameter("autoLogoutMessage"); // For auto-logout specific messages
+    String autoLogoutMessage = request.getParameter("autoLogoutMessage");
 %>
 <!DOCTYPE html>
 <html lang="en">
@@ -70,12 +70,12 @@
             </div>
             <div class="form-group">
                 <label for="email">Email Address <span class="required">*</span></label>
-                <input type="email" id="email" name="email"
+                 <input type="email" id="email" name="email"
                        value="<%= (adminEmailRepop != null ? adminEmailRepop.replace("\"", "&quot;") : "") %>"
                        autocomplete="email" required>
             </div>
             <div class="form-group">
-                <label for="password">PIN <span class="required">*</span></label>
+                 <label for="password">PIN <span class="required">*</span></label>
                 <input type="password" id="password" name="password" autocomplete="current-password" required>
             </div>
             <div class="form-actions">
@@ -87,6 +87,7 @@
         <p class="signup-redirect">Don't have a company account? <a href="signup_company_info.jsp">Sign Up Here</a></p>
     </div>
 
+    <%-- This modal is used for the post-signup success message --%>
     <div id="notificationModal" class="modal">
         <div class="modal-content">
             <span class="close" id="closeNotificationModal">&times;</span>

@@ -1,6 +1,6 @@
-// js/accruals.js - vFINAL_WIZARD_FIX_2
+// js/accruals.js
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("[DEBUG] accruals.js (vFINAL_WIZARD_FIX_2) loaded.");
+    console.log("[ACCRUALS.JS] DOMContentLoaded: Script loaded.");
 
     // --- Helper Functions & Global Access ---
     const _showModal = window.showModal || function(modalEl) { if(modalEl) { modalEl.style.display = 'flex'; } };
@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const notificationModal = document.getElementById('notificationModalGeneral');
     const okBtnGeneralNotify = document.getElementById('okButtonNotificationModalGeneral');
 
-    // --- WIZARD-SPECIFIC SELECTORS ---
+    // WIZARD-SPECIFIC SELECTORS
     const wizardGenericModal = document.getElementById('wizardGenericModal');
     const wizardTitleElement = document.getElementById('wizardGenericModalTitle');
     const wizardText1Element = document.getElementById('wizardGenericModalText1');
@@ -39,10 +39,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const wizardButtonRow = document.getElementById('wizardGenericModalButtonRow');
     const closeWizardGenericModalBtn = document.getElementById('closeWizardGenericModal');
 
+    // Adjustment Form Selectors
+    const adjustmentForm = document.getElementById('adjustAccrualBalanceForm');
+    const allEmployeesToggle = document.getElementById('allEmployeesToggle');
+    const employeeSelectContainer = document.getElementById('employeeSelectContainer');
+    const employeeSelect = document.getElementById('employeeSelect');
+    const adjustmentHoursInput = document.getElementById('adjustmentHours');
+
     // --- State Variables ---
     let wizardOpenedAddModal = false;
-    const appRoot = typeof appRootPath === 'string' ? appRootPath : "";
-    const companyNameToDisplayJS_Accruals = (typeof COMPANY_NAME_SIGNUP_JS_ACCRUALS !== 'undefined' && COMPANY_NAME_SIGNUP_JS_ACCRUALS) ? COMPANY_NAME_SIGNUP_JS_ACCRUALS : "your company";
+    const appRoot = typeof window.appRootPath === 'string' ? window.appRootPath : "";
+    const companyNameToDisplayJS_Accruals = (typeof window.COMPANY_NAME_SIGNUP_JS_ACCRUALS !== 'undefined' && window.COMPANY_NAME_SIGNUP_JS_ACCRUALS) ? window.COMPANY_NAME_SIGNUP_JS_ACCRUALS : "your company";
 
     // --- WIZARD HANDLING LOGIC ---
     const wizardStages = {
@@ -67,9 +74,17 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     function updateWizardModalView(stageKey) {
-        if (!wizardGenericModal) return;
+        console.log(`[ACCRUALS.JS] updateWizardModalView called with stage: '${stageKey}'`);
+        if (!wizardGenericModal) {
+            console.error("[ACCRUALS.JS] Wizard modal element not found. Cannot display wizard.");
+            return;
+        }
         const stageConfig = wizardStages[stageKey];
-        if (!stageConfig) { _hideModal(wizardGenericModal); return; }
+        if (!stageConfig) {
+            console.warn(`[ACCRUALS.JS] No configuration found for wizard stage: '${stageKey}'. Hiding modal.`);
+            _hideModal(wizardGenericModal);
+            return;
+        }
 
         if(wizardTitleElement) wizardTitleElement.textContent = stageConfig.title;
         if(wizardText1Element) wizardText1Element.innerHTML = stageConfig.text1;
@@ -85,6 +100,7 @@ document.addEventListener('DOMContentLoaded', function() {
             button.addEventListener('click', () => handleWizardAction(btnConfig.actionKey));
             if(wizardButtonRow) wizardButtonRow.appendChild(button);
         });
+        console.log("[ACCRUALS.JS] Wizard modal populated. Showing now.");
         _showModal(wizardGenericModal);
     }
 
@@ -94,7 +110,6 @@ document.addEventListener('DOMContentLoaded', function() {
             _hideModal(wizardGenericModal);
             openAddAccrualModal();
         } else if (actionKey === "advanceToEmployees") {
-            // This now points to a more specific step for the employees page to handle.
             advanceWizardToServerAndRedirect("verify_admin_prompt", "employees.jsp");
         }
     }
@@ -106,13 +121,17 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => response.ok ? response.json() : Promise.reject('Failed to update wizard step.'))
         .then(data => {
-            if (data.success) {
-                const redirectUrl = `${appRoot}/${nextPage}?setup_wizard=true&step=${encodeURIComponent(serverNextStep)}`;
+            if (data.success && data.nextStep) {
+                const redirectUrl = `${appRoot}/${nextPage}?setup_wizard=true&step=${encodeURIComponent(data.nextStep)}`;
                 window.location.href = redirectUrl;
+            } else {
+                window.showPageNotification("Could not proceed: " + (data.error || "Server error: Invalid response."), true, notificationModal, "Setup Error");
             }
-            else { window.showPageNotification("Could not proceed: " + (data.error || "Server error"), true, notificationModal, "Setup Error"); }
         })
-        .catch(error => { console.error("Wizard advancement error:", error); window.showPageNotification("Network error advancing wizard.", true, notificationModal, "Network Error"); });
+        .catch(error => {
+            console.error("Wizard advancement error:", error);
+            window.showPageNotification("Network error advancing wizard.", true, notificationModal, "Network Error");
+        });
     }
     
     function _hideAddModalAndHandleWizard() {
@@ -124,7 +143,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // --- Core Page Logic (unchanged) ---
+    // --- Core Page Logic ---
     function openAddAccrualModal() {
         if (addAccrualModal) {
             if (addAccrualForm) addAccrualForm.reset();
@@ -139,7 +158,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const currentSelected = tableBody.querySelector('tr.selected');
         if (row) {
             const policyName = row.dataset.name;
-            const isDefault = policyName === 'None' || policyName === 'Standard';
+            // FIX: Removed 'Standard' from this check to allow it to be edited and deleted.
+            const isDefault = policyName === 'None';
             if (isDefault) {
                 window.showPageNotification(`'${policyName}' is a default policy and cannot be edited or deleted.`, false, notificationModal, "System Policy");
                 if (currentSelected) currentSelected.classList.remove('selected');
@@ -164,16 +184,66 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // --- EVENT LISTENERS (unchanged) ---
-    if (addPolicyBtn) {
-        addPolicyBtn.addEventListener('click', () => {
-            if (window.inWizardMode_Page) {
-                updateWizardModalView('accruals_prompt');
-            } else {
-                openAddAccrualModal();
+    // --- Adjustment Form Logic ---
+    function handleAdjustmentForm() {
+        if (!adjustmentForm) return;
+
+        if (allEmployeesToggle) {
+            allEmployeesToggle.addEventListener('change', function() {
+                const singleEmployeeMode = !this.checked;
+                employeeSelectContainer.style.display = singleEmployeeMode ? 'block' : 'none';
+                employeeSelect.required = singleEmployeeMode;
+            });
+            allEmployeesToggle.dispatchEvent(new Event('change'));
+        }
+
+        adjustmentForm.addEventListener('submit', function(e) {
+            e.preventDefault(); 
+            let isValid = true;
+            let errorMessage = '';
+            const selectedOperation = adjustmentForm.querySelector('input[name="adjustmentOperation"]:checked').value;
+            if (!allEmployeesToggle.checked && !employeeSelect.value) { isValid = false; errorMessage = 'Please select an employee.'; } 
+            else if (adjustmentHoursInput.value === '') { isValid = false; errorMessage = 'Please enter a value for hours.'; } 
+            else {
+                const hours = parseFloat(adjustmentHoursInput.value);
+                if (selectedOperation === 'set' && hours < 0) { isValid = false; errorMessage = 'Balance to set cannot be negative.'; } 
+                else if (selectedOperation !== 'set' && hours <= 0) { isValid = false; errorMessage = 'Hours to add or subtract must be a positive number.'; }
             }
+            if (!isValid) { window.showPageNotification(errorMessage, true, notificationModal, "Validation Error"); return; }
+            
+            const formData = new FormData(adjustmentForm);
+            const successDiv = document.getElementById('pageNotificationDiv_Success_Accrual');
+            const errorDiv = document.getElementById('pageNotificationDiv_Error_Accrual');
+            if(successDiv) successDiv.style.display = 'none';
+            if(errorDiv) errorDiv.style.display = 'none';
+            const formActionUrl = adjustmentForm.getAttribute('action');
+
+            fetch(formActionUrl, { method: 'POST', body: new URLSearchParams(formData) })
+            .then(response => { if (!response.ok) { throw new Error(`Server responded with status: ${response.status}`); } return response.json(); })
+            .then(data => {
+                if (data.success) {
+                    if(successDiv) { successDiv.textContent = data.message; successDiv.style.display = 'block'; } 
+                    else { window.showPageNotification(data.message, false, notificationModal, "Success"); }
+                    adjustmentForm.reset();
+                    allEmployeesToggle.dispatchEvent(new Event('change'));
+                } else {
+                     if(errorDiv) { errorDiv.textContent = data.error; errorDiv.style.display = 'block'; } 
+                     else { window.showPageNotification(data.error, true, notificationModal, "Adjustment Failed"); }
+                }
+                window.scrollTo(0, 0);
+            })
+            .catch(error => {
+                console.error('Error submitting adjustment:', error);
+                const displayError = error.message.includes("JSON") ? 'An unexpected response was received from the server. Please check the server logs.' : 'A network error occurred. Please try again.';
+                if(errorDiv) { errorDiv.textContent = displayError; errorDiv.style.display = 'block'; } 
+                else { window.showPageNotification(displayError, true, notificationModal, "Network Error"); }
+                window.scrollTo(0, 0);
+            });
         });
     }
+
+    // --- EVENT LISTENERS ---
+    if (addPolicyBtn) addPolicyBtn.addEventListener('click', () => { if (window.inWizardMode_Page) { updateWizardModalView('accruals_prompt'); } else { openAddAccrualModal(); } });
     if (tableBody) tableBody.addEventListener('click', e => selectAccrualRow(e.target.closest('tr')));
     if (editPolicyBtn) {
         editPolicyBtn.addEventListener('click', () => {
@@ -216,40 +286,44 @@ document.addEventListener('DOMContentLoaded', function() {
             deleteAccrualForm.submit();
         });
     }
-    document.querySelectorAll('#addAccrualModal .close, #addAccrualModal .cancel-btn').forEach(btn => {
-        btn.addEventListener('click', _hideAddModalAndHandleWizard);
-    });
-    document.querySelectorAll('#editAccrualModal .close, #editAccrualModal .cancel-btn, #deleteAndReassignAccrualModal .close, #deleteAndReassignAccrualModal .cancel-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => _hideModal(e.target.closest('.modal')));
-    });
+    document.querySelectorAll('#addAccrualModal .close, #addAccrualModal .cancel-btn').forEach(btn => btn.addEventListener('click', _hideAddModalAndHandleWizard));
+    document.querySelectorAll('#editAccrualModal .close, #editAccrualModal .cancel-btn, #deleteAndReassignAccrualModal .close, #deleteAndReassignAccrualModal .cancel-btn').forEach(btn => btn.addEventListener('click', (e) => _hideModal(e.target.closest('.modal'))));
     if (okBtnGeneralNotify) okBtnGeneralNotify.addEventListener('click', () => _hideModal(notificationModal));
     if (closeWizardGenericModalBtn) closeWizardGenericModalBtn.addEventListener('click', () => _hideModal(wizardGenericModal));
 
-    // --- INITIALIZATION & URL PARAMETER HANDLING (unchanged) ---
+    // --- INITIALIZATION & URL PARAMETER HANDLING ---
+    handleAdjustmentForm();
+
+    // *** MODIFIED WIZARD INITIALIZATION FOR DEBUGGING ***
+    console.log(`[ACCRUALS.JS] Initializing Wizard check. Is in wizard mode? ${window.inWizardMode_Page}`);
     if (window.inWizardMode_Page === true) {
         const urlParamsForWizard = new URLSearchParams(window.location.search);
         const justAdded = urlParamsForWizard.get('accrualAdded') === 'true';
-        const stage = justAdded ? "accruals_after_add_prompt" : (window.currentWizardStep_Page || "accruals_prompt");
-        updateWizardModalView(stage);
+        const currentStep = window.currentWizardStep_Page;
+        
+        console.log(`[ACCRUALS.JS] Wizard context: justAdded=${justAdded}, currentStep='${currentStep}'`);
+        
+        const stage = justAdded ? "accruals_after_add_prompt" : (currentStep || "accruals_prompt");
+        
+        // Use a small timeout to ensure the DOM is fully ready before showing the modal
+        setTimeout(() => {
+             updateWizardModalView(stage);
+        }, 100);
     }
+
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('reopenModal') === 'addAccrual') {
         const errorMessage = urlParams.get('error');
         const prevPolicyName = urlParams.get('policyName');
         openAddAccrualModal(); 
-        if (addAccrualNameInput && prevPolicyName) {
-            addAccrualNameInput.value = _decodeHtmlEntities(prevPolicyName);
-        }
+        if (addAccrualNameInput && prevPolicyName) addAccrualNameInput.value = _decodeHtmlEntities(prevPolicyName);
         if (errorMessage) {
             window.showPageNotification(errorMessage, true, notificationModal, "Validation Error");
             if (okBtnGeneralNotify) {
                 const focusOnClose = (e) => {
                     e.stopImmediatePropagation(); 
                     _hideModal(notificationModal);
-                    if (addAccrualNameInput) {
-                        addAccrualNameInput.focus();
-                        addAccrualNameInput.select();
-                    }
+                    if (addAccrualNameInput) { addAccrualNameInput.focus(); addAccrualNameInput.select(); }
                     okBtnGeneralNotify.removeEventListener('click', focusOnClose); 
                 };
                 okBtnGeneralNotify.addEventListener('click', focusOnClose);

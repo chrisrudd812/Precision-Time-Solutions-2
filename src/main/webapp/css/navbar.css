@@ -1,6 +1,7 @@
-/* --- CSS - Reintegrating Original Styles - Step 3 - FINAL MODIFIED --- */
+/* --- CSS with Flyout Menu Gap Fixed --- */
 
-@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap'); /* Assuming this was in your original */
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap');
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css');
 
 body {
     padding-top: 55px !important;
@@ -22,7 +23,7 @@ body {
     align-items: center;
     padding: 0 15px;
     box-sizing: border-box;
-    overflow: visible !important; /* CRITICAL */
+    overflow: visible !important;
 }
 
 .main-navbar .navbar-brand { flex-shrink: 0; margin-right: 20px; }
@@ -35,11 +36,20 @@ body {
 
 .main-navbar ul.navbar-links > li > a,
 .main-navbar ul.navbar-links > li > .dropbtn {
-    display: flex; align-items: center; color: #e0e0e0; padding: 0 12px;
-    text-decoration: none; font-size: 0.9em; font-weight: 500;
+    display: flex; align-items: center; color: #e0e0e0; padding: 0 15px;
+    text-decoration: none; font-size: 1.1em; font-weight: 600;
     height: 100%; cursor: pointer; transition: background-color 0.2s, color 0.2s;
     white-space: nowrap;
 }
+
+.main-navbar ul.navbar-links > li > .dropbtn::after {
+    content: '\25BC';
+    font-size: 0.6em;
+    margin-left: 8px;
+    color: #b0c4de;
+    transition: transform 0.2s;
+}
+
 .main-navbar ul.navbar-links > li > a i.fas,
 .main-navbar ul.navbar-links > li > .dropbtn i.fas {
     margin-right: 6px; color: #b0c4de;
@@ -47,6 +57,10 @@ body {
 .main-navbar ul.navbar-links > li:hover > a,
 .main-navbar ul.navbar-links > li:hover > .dropbtn {
     background-color: rgba(255, 255, 255, 0.1); color: #ffffff;
+}
+
+.main-navbar ul.navbar-links > li:hover > .dropbtn::after {
+    color: #ffffff;
 }
 .main-navbar ul.navbar-links > li:hover > a i.fas,
 .main-navbar ul.navbar-links > li:hover > .dropbtn i.fas {
@@ -64,116 +78,103 @@ body {
     width: auto;
     box-shadow: 0 5px 15px rgba(0,0,0,0.15);
     z-index: 1060;
-    border: 1px solid #ccc;
+    border: 1px solid #ddd;
     list-style-type: none;
-    margin: 1px 0 0 0; /* Original v30 margin-top, or use margin:0; if preferred */
+    margin: 1px 0 0 0;
     border-radius: 0 0 4px 4px;
-    padding: 5px 0; /* This was likely from the scroll-wrapper, adjust if needed */
-    overflow: visible !important; /* CRITICAL */
+    padding: 5px 0;
+    overflow: visible !important;
 }
 
 .main-navbar ul.navbar-links > li.dropdown:hover > ul.dropdown-content {
     display: block;
 }
-.main-navbar ul.navbar-links > li.dropdown.open > ul.dropdown-content { /* JS Support */
+.main-navbar ul.navbar-links > li.dropdown.open > ul.dropdown-content {
     display: block;
 }
 
-/* General LI styling for any LI inside a dropdown-content or sub-dropdown-content */
 .main-navbar ul.dropdown-content li,
 .main-navbar ul.sub-dropdown-content li {
-    position: relative !important; /* ESSENTIAL */
+    position: relative !important;
     list-style-type: none;
     margin:0;
     padding:0;
 }
 
-/* General A and SPAN styling for any A/SPAN inside a dropdown-content or sub-dropdown-content */
 .main-navbar ul.dropdown-content li a,
 .main-navbar ul.dropdown-content li span.disabled-link,
 .main-navbar ul.sub-dropdown-content li a,
 .main-navbar ul.sub-dropdown-content li span.disabled-link {
-    padding: 10px 18px; text-decoration: none; display: block;
-    white-space: nowrap; color: #212529; font-size: 0.88em;
+    padding: 10px 30px 10px 18px;
+    text-decoration: none; display: block;
+    white-space: nowrap; color: #212529; font-size: 0.9em;
     line-height: 1.5; transition: background-color 0.15s, color 0.15s;
 }
 
-/* General hover for A tags within dropdown-content or sub-dropdown-content LIs */
 .main-navbar ul.dropdown-content li:hover > a,
 .main-navbar ul.sub-dropdown-content li:hover > a {
     background-color: #e9ecef; color: #0056b3;
 }
 
-/* General styling for disabled links */
 .main-navbar ul.dropdown-content li span.disabled-link,
 .main-navbar ul.sub-dropdown-content li span.disabled-link {
     color: #aaa; background-color: transparent; cursor: default;
 }
 
-/* Flyout Trigger Links Styling */
 .main-navbar li.sub-dropdown-trigger > a.sub-dropbtn {
     display: flex; justify-content: space-between; align-items: center;
+    position: relative;
 }
 .main-navbar li.sub-dropdown-trigger > a.sub-dropbtn::after {
-    content: '\25B8'; font-size: 0.7em; color: #777; padding-left: 8px;
+    content: '\f054';
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    font-size: 0.8em;
+    color: #555;
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    transition: color 0.15s;
 }
 .main-navbar li.sub-dropdown-trigger:hover > a.sub-dropbtn::after {
     color: #0056b3;
 }
-/* Ensure non-trigger links don't get arrows */
+
 .main-navbar ul.dropdown-content li > a:not(.sub-dropbtn)::after,
 .main-navbar ul.sub-dropdown-content li > a:not(.sub-dropbtn)::after {
     content: none;
 }
 
-/* --- THE FLY-OUT SUBMENU UL (ul.sub-dropdown-content) --- */
+
+/* === MODIFIED RULE: Removed margin and adjusted 'top' to eliminate the gap === */
 .main-navbar li.sub-dropdown-trigger > ul.sub-dropdown-content {
     display: none;
     position: absolute !important;
     left: 100% !important;
-    top: -1px !important;
+    top: -5px !important; /* Aligns menu with its parent list item */
     width: auto;
     min-width: 220px;
     background-color: #fff;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+    border: 1px solid #eee;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     padding: 5px 0;
-    margin: 0;
+    margin: 0; /* Removed margin that caused the gap */
     list-style-type: none;
     z-index: 1070 !important;
-
-    /* --- MODIFICATION FOR FIXING SUB-SUB-MENU CLIPPING --- */
-    overflow: visible !important; /* Allows child flyouts to be visible */
-    /* max-height: calc(100vh - 80px); /* REMOVED - Caused clipping of child flyouts */
-    /* overflow-y: auto; /* REMOVED - Caused clipping of child flyouts */
-    /* overflow-x: hidden; /* REMOVED - Related to overflow-y:auto */
-    /* min-height: 200px; /* You can keep this if you want flyouts to have a minimum physical height, but it won't cause this specific clipping issue. */
+    overflow: visible !important;
 }
 
-/* Show the Fly-out Menu on hover of its DIRECT PARENT li.sub-dropdown-trigger */
 .main-navbar li.sub-dropdown-trigger:hover > ul.sub-dropdown-content {
     display: block !important;
 }
 
-/*
-   Styling for LI, A, and SPAN within ul.sub-dropdown-content
-   is already covered by the general rules provided earlier:
-   e.g., .main-navbar ul.sub-dropdown-content li a { ... }
-*/
-
-/* -- Body Background Image -- */
 body::before {
     content: "";
-    position: fixed; /* Stays in place when scrolling */
+    position: fixed;
     text-align: center;
-    z-index: -1; /* Places it behind all other content */
-    
-    /* --- YOUR IMAGE AND SETTINGS --- */
-    /* background-image: url("../Images/background2.png"); */
-    opacity: 0.8; /* 50% opacity */
-    /* --- END YOUR SETTINGS --- */
-
+    z-index: -1;
     width: 100vw;
     height: 100vh;
     background-position: center;

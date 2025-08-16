@@ -13,7 +13,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const mainSubmitButton = document.getElementById('mainSubmitButton');
     const originalSubmitButtonHTML = mainSubmitButton ? mainSubmitButton.innerHTML : 'Create Account <i class="fas fa-arrow-right"></i>';
 
-    // Form Field References
     const companyNameInput = document.getElementById('companyName');
     const companyAddressInput = document.getElementById('companyAddress');
     const companyCityInput = document.getElementById('companyCity');
@@ -32,7 +31,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const acceptTermsCheckbox = document.getElementById('acceptTerms');
     const copyAddressCheckbox = document.getElementById('copyCompanyAddress');
     
-    // Promo Code References
     const usePromoCodeCheckbox = document.getElementById('usePromoCodeCheckbox');
     const promoCodeEntryDiv = document.getElementById('promoCodeEntry');
     const promoCodeInput = document.getElementById('promoCodeInput');
@@ -61,15 +59,16 @@ document.addEventListener('DOMContentLoaded', function() {
         if(fieldToFocus) {
             try {
                 fieldToFocus.focus();
-                if (fieldToFocus.style) fieldToFocus.style.borderColor = '#dc3545';
+                if (fieldToFocus.classList) fieldToFocus.classList.add('is-invalid');
             } catch(e){}
         }
     }
     
     function validateSignupFormBasic() {
-        document.querySelectorAll('.signup-form input, .signup-form select').forEach(el => {
-            if (el.style) el.style.borderColor = '';
+        document.querySelectorAll('.signup-form .is-invalid').forEach(el => {
+            el.classList.remove('is-invalid');
         });
+
         const requiredFields = [
             { el: companyNameInput, name: "Company Name" },
             { el: adminFirstNameInput, name: "Admin First Name" },
@@ -159,7 +158,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // --- Event Listeners ---
     if (copyAddressCheckbox) {
         const syncBillingAddress = () => {
             if (copyAddressCheckbox.checked) {

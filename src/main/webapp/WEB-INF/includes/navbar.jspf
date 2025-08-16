@@ -6,17 +6,13 @@
 <%@ page import="java.net.URLEncoder" %>
 <%@ page import="java.nio.charset.StandardCharsets" %>
 <%@ page import="timeclock.reports.ShowReports" %>
-<%@ page import="timeclock.punches.ShowPunches" %>
 <%@ page import="java.util.logging.Logger" %>
 
 <%!
+    private static final Logger navbarLogger = Logger.getLogger("navbar.jspf");
     private String escapeNavbarHtml(String input) {
         if (input == null) return "";
-        return input.replace("&", "&amp;")
-                    .replace("<", "&lt;")
-                    .replace(">", "&gt;")
-                    .replace("\"", "&quot;")
-                    .replace("'", "&#39;");
+        return input.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&#39;");
     }
 %>
 <%
@@ -24,19 +20,29 @@
     Integer tenantIdForNav_jspf = null;
     String userPermissionsForNav_jspf = null;
     String userFirstNameForNav_jspf = null;
+    String subscriptionStatus_jspf = null;
 
     if (navSession_jspf != null) {
-        Object tenantIdObj = navSession_jspf.getAttribute("TenantID");
-        if (tenantIdObj instanceof Integer) { tenantIdForNav_jspf = (Integer) tenantIdObj; }
-        Object permObj = navSession_jspf.getAttribute("Permissions");
-        if (permObj instanceof String && !((String)permObj).isEmpty()) { userPermissionsForNav_jspf = (String) permObj; }
-        Object userFirstNameObj = navSession_jspf.getAttribute("UserFirstName");
-        if (userFirstNameObj instanceof String) { userFirstNameForNav_jspf = (String) userFirstNameObj; }
+        tenantIdForNav_jspf = (Integer) navSession_jspf.getAttribute("TenantID");
+        userPermissionsForNav_jspf = (String) navSession_jspf.getAttribute("Permissions");
+        userFirstNameForNav_jspf = (String) navSession_jspf.getAttribute("UserFirstName");
+        subscriptionStatus_jspf = (String) navSession_jspf.getAttribute("SubscriptionStatus");
+        
+        // --- DEBUG LOGGING ---
+        navbarLogger.info("[Navbar] Loading for session: " + navSession_jspf.getId());
+        navbarLogger.info("[Navbar] TenantID: " + tenantIdForNav_jspf);
+        navbarLogger.info("[Navbar] Permissions: " + userPermissionsForNav_jspf);
+        navbarLogger.info("[Navbar] SubscriptionStatus: " + subscriptionStatus_jspf);
+        // --- END DEBUG LOGGING ---
     }
 
     boolean isLoggedIn_jspf = (navSession_jspf != null && navSession_jspf.getAttribute("EID") != null && tenantIdForNav_jspf != null);
     boolean isAdminForNav_jspf = "Administrator".equalsIgnoreCase(userPermissionsForNav_jspf);
-    int tenantIdLink_jspf = (tenantIdForNav_jspf != null && tenantIdForNav_jspf > 0) ? tenantIdForNav_jspf : 0;
+    boolean isSubscriptionActive_jspf = "active".equalsIgnoreCase(subscriptionStatus_jspf) || "trialing".equalsIgnoreCase(subscriptionStatus_jspf);
+    
+    if (isLoggedIn_jspf && !isAdminForNav_jspf) {
+        isSubscriptionActive_jspf = true; // Non-admin users are not affected by subscription status for navigation
+    }
 %>
 
 <nav class="main-navbar">
@@ -60,148 +66,75 @@
                 <li><a href="${pageContext.request.contextPath}/<%= timeClockLinkNav %>"><i class="fas fa-clock"></i> Time Clock</a></li>
 
                 <% if (isAdminForNav_jspf) { %>
-                    <li class="dropdown">
-                        <a href="javascript:void(0);" class="dropbtn"><i class="fas fa-edit"></i> Punch Management</a>
-                        <ul class="dropdown-content">
-                            <li><a href="${pageContext.request.contextPath}/add_global_data.jsp">Add Global Hours (Holiday, etc.)</a></li>
-                            <li><a href="${pageContext.request.contextPath}/punches.jsp">Edit Employee Punches</a></li>
-                        </ul>
-                    </li>
+                    <%-- This block of admin links is now conditional on an active subscription --%>
+                    <% if (isSubscriptionActive_jspf) { %>
+                        <li class="dropdown">
+                            <a href="javascript:void(0);" class="dropbtn"><i class="fas fa-edit"></i> Punch Management</a>
+                            <ul class="dropdown-content">
+                                <li><a href="${pageContext.request.contextPath}/add_global_data.jsp">Add Global Hours (Holiday, etc.)</a></li>
+                                <li><a href="${pageContext.request.contextPath}/punches.jsp">Edit Employee Punches</a></li>
+                            </ul>
+                        </li>
+                        <li class="dropdown">
+                            <a href="javascript:void(0);" class="dropbtn"><i class="fas fa-users"></i> Employees</a>
+                            <ul class="dropdown-content">
+                                <li><a href="${pageContext.request.contextPath}/employees.jsp">Manage Employees</a></li>
+                                <li class="sub-dropdown-trigger">
+                                    <a href="javascript:void(0);" class="sub-dropbtn">Reassign Employees by:</a>
+                                    <ul class="dropdown-content sub-dropdown-content">
+                                        <li><a href="${pageContext.request.contextPath}/reassign.jsp?type=department">By Department</a></li>
+                                        <li><a href="${pageContext.request.contextPath}/reassign.jsp?type=schedule">By Schedule</a></li>
+                                        <li><a href="${pageContext.request.contextPath}/reassign.jsp?type=accrual_policy">By Accrual Policy</a></li>
+                                        <li><a href="${pageContext.request.contextPath}/reassign.jsp?type=supervisor">By Supervisor</a></li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                        <li><a href="${pageContext.request.contextPath}/departments.jsp"><i class="fas fa-building"></i> Departments</a></li>
+                        <li><a href="${pageContext.request.contextPath}/scheduling.jsp"><i class="fas fa-calendar-alt"></i> Scheduling</a></li>
+                        <li><a href="${pageContext.request.contextPath}/accruals.jsp"><i class="fas fa-umbrella-beach"></i> Accruals</a></li>
+                        <li class="dropdown">
+                            <a href="javascript:void(0);" class="dropbtn"><i class="fas fa-file-invoice-dollar"></i> Payroll</a>
+                            <ul class="dropdown-content">
+                                <li><a href="${pageContext.request.contextPath}/payroll.jsp">Process Payroll</a></li>
+                                <li><a href="${pageContext.request.contextPath}/payroll_history.jsp">Payroll History</a></li>
+                            </ul>
+                        </li>
+                        <li class="dropdown">
+                            <a href="javascript:void(0);" class="dropbtn"><i class="fas fa-chart-bar"></i> Reports</a>
+                            <ul class="dropdown-content">
+                                <li><a href="${pageContext.request.contextPath}/reports.jsp?report=exception">Exception Report</a></li>
+                                <li><a href="${pageContext.request.contextPath}/reports.jsp?report=tardy">Tardy Report</a></li>
+                                <li><a href="${pageContext.request.contextPath}/reports.jsp?report=whosin">Who's In Report</a></li>
+                                <li class="sub-dropdown-trigger">
+                                    <a href="javascript:void(0);" class="sub-dropbtn">Time Card Reports</a>
+                                    <ul class="dropdown-content sub-dropdown-content">
+                                        <li><a href="${pageContext.request.contextPath}/timeclock.jsp?reportMode=true&eid=0">View Individual Timecard</a></li>
+                                    </ul>
+                                </li>
+                                <li class="sub-dropdown-trigger">
+                                    <a href="javascript:void(0);" class="sub-dropbtn">Employee Reports</a>
+                                    <ul class="dropdown-content sub-dropdown-content">
+                                        <li><a href="${pageContext.request.contextPath}/reports.jsp?report=activeEmployees">Active Employees</a></li>
+                                        <li><a href="${pageContext.request.contextPath}/reports.jsp?report=inactiveEmployees">Inactive Employees</a></li>
+                                    </ul>
+                                </li>
+                                <li><a href="${pageContext.request.contextPath}/archived_punches.jsp">Archived Punches</a></li>
+                            </ul>
+                        </li>
+                        <li><a href="${pageContext.request.contextPath}/settings.jsp"><i class="fas fa-cog"></i> Settings</a></li>
+                    <% } %>
                     
                     <li class="dropdown">
-                        <a href="javascript:void(0);" class="dropbtn"><i class="fas fa-users"></i> Employees</a>
+                        <a href="javascript:void(0);" class="dropbtn"><i class="fas fa-question-circle"></i> Help</a>
                         <ul class="dropdown-content">
-                            <li><a href="${pageContext.request.contextPath}/employees.jsp">Manage Employees</a></li>
-                            <li class="sub-dropdown-trigger">
-                                <a href="javascript:void(0);" class="sub-dropbtn">Reassign Employees by:</a>
-                                <ul class="dropdown-content sub-dropdown-content">
-                                    <li><a href="${pageContext.request.contextPath}/reassign.jsp?type=department">By Department</a></li>
-                                    <li><a href="${pageContext.request.contextPath}/reassign.jsp?type=schedule">By Schedule</a></li>
-                                    <li><a href="${pageContext.request.contextPath}/reassign.jsp?type=accrual_policy">By Accrual Policy</a></li>
-                                    <li><a href="${pageContext.request.contextPath}/reassign.jsp?type=supervisor">By Supervisor</a></li>
-                                </ul>
-                            </li>
+                            <li><a href="${pageContext.request.contextPath}/help.jsp">Help Topics</a></li>
+                            <li><a href="${pageContext.request.contextPath}/contact.jsp">Contact Us</a></li>
                         </ul>
                     </li>
-                    
-                    <li><a href="${pageContext.request.contextPath}/departments.jsp"><i class="fas fa-building"></i> Departments</a></li>
-                    <li><a href="${pageContext.request.contextPath}/scheduling.jsp"><i class="fas fa-calendar-alt"></i> Scheduling</a></li>
-
-                    <%-- MODIFIED: "Accruals" is now a direct link --%>
-                    <li><a href="${pageContext.request.contextPath}/accruals.jsp"><i class="fas fa-umbrella-beach"></i> Accruals</a></li>
-
-                    <li class="dropdown">
-                        <a href="javascript:void(0);" class="dropbtn"><i class="fas fa-file-invoice-dollar"></i> Payroll</a>
-                        <ul class="dropdown-content">
-                            <li><a href="${pageContext.request.contextPath}/payroll.jsp">Process Payroll</a></li>
-                            <li><a href="${pageContext.request.contextPath}/payroll_history.jsp">Payroll History</a></li>
-                        </ul>
-                    </li>
-                    <li class="dropdown">
-                        <a href="javascript:void(0);" class="dropbtn"><i class="fas fa-chart-bar"></i> Reports</a>
-                        <ul class="dropdown-content">
-                            <li><a href="${pageContext.request.contextPath}/reports.jsp?report=exception">Exception Report</a></li>
-                            <li><a href="${pageContext.request.contextPath}/reports.jsp?report=tardy">Tardy Report</a></li>
-                            <li><a href="${pageContext.request.contextPath}/reports.jsp?report=whosin">Who's In Report</a></li>
-                            <li class="sub-dropdown-trigger">
-                                <a href="javascript:void(0);" class="sub-dropbtn">Time Card Reports</a>
-                                <ul class="dropdown-content sub-dropdown-content">
-                                    <li><a href="${pageContext.request.contextPath}/timeclock.jsp?reportMode=true&eid=0">View Individual Timecard</a></li>
-                                    <% if (tenantIdLink_jspf > 0) { %>
-                                        <li><a href="${pageContext.request.contextPath}/PrintTimecardsServlet?tenantId=<%=tenantIdLink_jspf%>&filterType=all">All Employees (Print)</a></li>
-                                        <li class="sub-dropdown-trigger">
-                                            <a href="javascript:void(0);" class="sub-dropbtn">By Department</a>
-                                            <ul class="dropdown-content sub-dropdown-content">
-                                                <% List<Map<String, String>> d1 = ShowReports.getDepartmentsForTenant(tenantIdLink_jspf);
-                                                   if (d1 != null && !d1.isEmpty()) {
-                                                       for (Map<String, String> i : d1) { String n = i.get("name"); %>
-                                                           <li><a href="${pageContext.request.contextPath}/PrintTimecardsServlet?filterType=department&filterValue=<%=URLEncoder.encode(n, StandardCharsets.UTF_8.name())%>&tenantId=<%=tenantIdLink_jspf%>"><%=escapeNavbarHtml(n)%></a></li>
-                                                       <% }
-                                                   } else { %><li><span class="disabled-link">No Departments</span></li><% } %>
-                                            </ul>
-                                        </li>
-                                        <li class="sub-dropdown-trigger">
-                                            <a href="javascript:void(0);" class="sub-dropbtn">By Schedule</a>
-                                            <ul class="dropdown-content sub-dropdown-content">
-                                                <% List<Map<String, String>> s1 = ShowReports.getSchedulesForTenant(tenantIdLink_jspf);
-                                                   if (s1 != null && !s1.isEmpty()) {
-                                                       for (Map<String, String> i : s1) { String n = i.get("name"); %>
-                                                           <li><a href="${pageContext.request.contextPath}/PrintTimecardsServlet?filterType=schedule&filterValue=<%=URLEncoder.encode(n, StandardCharsets.UTF_8.name())%>&tenantId=<%=tenantIdLink_jspf%>"><%=escapeNavbarHtml(n)%></a></li>
-                                                       <% }
-                                                   } else { %><li><span class="disabled-link">No Schedules</span></li><% } %>
-                                            </ul>
-                                        </li>
-                                        <li class="sub-dropdown-trigger">
-                                            <a href="javascript:void(0);" class="sub-dropbtn">By Supervisor</a>
-                                            <ul class="dropdown-content sub-dropdown-content">
-                                                <% List<String> p1 = ShowReports.getSupervisorsForTenant(tenantIdLink_jspf);
-                                                   if (p1 != null && !p1.isEmpty()) {
-                                                       for (String n : p1) { %>
-                                                           <li><a href="${pageContext.request.contextPath}/PrintTimecardsServlet?filterType=supervisor&filterValue=<%=URLEncoder.encode(n, StandardCharsets.UTF_8.name())%>&tenantId=<%=tenantIdLink_jspf%>"><%=escapeNavbarHtml(n)%></a></li>
-                                                       <% }
-                                                   } else { %><li><span class="disabled-link">No Supervisors</span></li><% } %>
-                                            </ul>
-                                        </li>
-                                    <% } %>
-                                </ul>
-                            </li>
-                             <li class="sub-dropdown-trigger">
-                                <a href="javascript:void(0);" class="sub-dropbtn">Employee Reports</a>
-                                <ul class="dropdown-content sub-dropdown-content">
-                                    <li><a href="${pageContext.request.contextPath}/reports.jsp?report=activeEmployees">Active Employees</a></li>
-                                    <li><a href="${pageContext.request.contextPath}/reports.jsp?report=inactiveEmployees">Inactive Employees</a></li>
-                                     <% if (tenantIdLink_jspf > 0) { %>
-                                        <li class="sub-dropdown-trigger">
-                                            <a href="javascript:void(0);" class="sub-dropbtn">By Department</a>
-                                            <ul class="dropdown-content sub-dropdown-content">
-                                                 <% List<Map<String, String>> d2 = ShowReports.getDepartmentsForTenant(tenantIdLink_jspf);
-                                                   if (d2 != null && !d2.isEmpty()) {
-                                                       for (Map<String, String> i : d2) { String n = i.get("name"); %>
-                                                           <li><a href="${pageContext.request.contextPath}/reports.jsp?report=employeesByDept&filterValue=<%=URLEncoder.encode(n, StandardCharsets.UTF_8.name())%>"><%=escapeNavbarHtml(n)%></a></li>
-                                                       <% }
-                                                   } else { %><li><span class="disabled-link">No Departments</span></li><% } %>
-                                            </ul>
-                                        </li>
-                                        <li class="sub-dropdown-trigger">
-                                            <a href="javascript:void(0);" class="sub-dropbtn">By Schedule</a>
-                                            <ul class="dropdown-content sub-dropdown-content">
-                                                <% List<Map<String, String>> s2 = ShowReports.getSchedulesForTenant(tenantIdLink_jspf);
-                                                   if (s2 != null && !s2.isEmpty()) {
-                                                       for (Map<String, String> i : s2) { String n = i.get("name"); %>
-                                                           <li><a href="${pageContext.request.contextPath}/reports.jsp?report=employeesBySched&filterValue=<%=URLEncoder.encode(n, StandardCharsets.UTF_8.name())%>"><%=escapeNavbarHtml(n)%></a></li>
-                                                       <% }
-                                                   } else { %><li><span class="disabled-link">No Schedules</span></li><% } %>
-                                            </ul>
-                                        </li>
-                                        <li class="sub-dropdown-trigger">
-                                            <a href="javascript:void(0);" class="sub-dropbtn">By Supervisor</a>
-                                            <ul class="dropdown-content sub-dropdown-content">
-                                                 <% List<String> p2 = ShowReports.getSupervisorsForTenant(tenantIdLink_jspf);
-                                                   if (p2 != null && !p2.isEmpty()) {
-                                                       for (String n : p2) { %>
-                                                           <li><a href="${pageContext.request.contextPath}/reports.jsp?report=employeesBySup&filterValue=<%=URLEncoder.encode(n, StandardCharsets.UTF_8.name())%>"><%=escapeNavbarHtml(n)%></a></li>
-                                                       <% }
-                                                   } else { %><li><span class="disabled-link">No Supervisors</span></li><% } %>
-                                            </ul>
-                                        </li>
-                                     <% } %>
-                                </ul>
-                            </li>
-                            <li><a href="${pageContext.request.contextPath}/archived_punches.jsp">Archived Punches</a></li>
-                        </ul>
-                    </li>
-                    <li><a href="${pageContext.request.contextPath}/settings.jsp"><i class="fas fa-cog"></i> Settings</a></li>
+                    <li><a href="${pageContext.request.contextPath}/account.jsp"><i class="fas fa-user-circle"></i> Account</a></li>
+                    <li><a href="${pageContext.request.contextPath}/LogoutServlet"><i class="fas fa-sign-out-alt"></i> Log Out <% if (userFirstNameForNav_jspf != null) { %>(<%=escapeNavbarHtml(userFirstNameForNav_jspf)%>)<% } %></a></li>
                 <% } %>
-
-                <li class="dropdown">
-                    <a href="javascript:void(0);" class="dropbtn"><i class="fas fa-question-circle"></i> Help</a>
-                    <ul class="dropdown-content">
-                        <li><a href="${pageContext.request.contextPath}/help.jsp">Help Topics</a></li>
-                        <li><a href="${pageContext.request.contextPath}/contact.jsp">Contact Us</a></li>
-                    </ul>
-                </li>
-                <li><a href="${pageContext.request.contextPath}/account.jsp"><i class="fas fa-user-circle"></i> Account</a></li>
-                <li><a href="${pageContext.request.contextPath}/LogoutServlet"><i class="fas fa-sign-out-alt"></i> Log Out <% if (userFirstNameForNav_jspf != null) { %>(<%=escapeNavbarHtml(userFirstNameForNav_jspf)%>)<% } %></a></li>
             <% } else { %>
                 <li><a href="${pageContext.request.contextPath}/login.jsp">Login</a></li>
                 <li><a href="${pageContext.request.contextPath}/signup_company_info.jsp">Sign Up</a></li>

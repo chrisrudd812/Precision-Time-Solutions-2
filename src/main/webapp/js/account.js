@@ -4,9 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- Element Selectors ---
     const editCompanyDetailsBtn = document.getElementById('editCompanyDetailsBtn');
-    const editAccountLoginBtn = document.getElementById('editAccountLoginBtn');
     const manageBillingBtn = document.getElementById('manageBillingBtn');
-    const gpayButton = document.getElementById('gpay-button');
 
     const verifyAdminPasswordModal = document.getElementById('verifyAdminPasswordModal');
     const verifyAdminPasswordForm = document.getElementById('verifyAdminPasswordForm');
@@ -14,15 +12,45 @@ document.addEventListener('DOMContentLoaded', function() {
     const verifyAdminCurrentPasswordField = document.getElementById('verifyAdminCurrentPassword');
     const verificationNextAction = document.getElementById('verificationNextAction');
 
-    const billingModal = document.getElementById('billingModal');
-    const billingForm = document.getElementById('billingForm');
-    
     const editCompanyDetailsModal = document.getElementById('editCompanyDetailsModal');
     const updateCompanyDetailsForm = document.getElementById('updateCompanyDetailsForm');
     
-    const editAccountLoginModal = document.getElementById('editAccountLoginModal');
-    
     const notificationModal = document.getElementById('notificationModalGeneral');
+
+    // Function to handle checking subscription status after returning from portal
+    function checkSubscriptionStatus() {
+        const notificationDiv = document.getElementById('subscriptionStatusMessage');
+        if (!notificationDiv) return;
+
+        notificationDiv.textContent = 'Syncing your subscription details...';
+        notificationDiv.className = 'page-message info-message'; // A new style for 'info'
+        notificationDiv.style.display = 'block';
+
+        fetch('SubscriptionStatusServlet', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                notificationDiv.textContent = data.message;
+                notificationDiv.className = 'page-message success-message';
+            } else {
+                notificationDiv.textContent = data.error || 'Failed to sync subscription.';
+                notificationDiv.className = 'page-message error-message';
+            }
+            // Reload the page to show updated details from the server
+            setTimeout(() => {
+                // Clear the 'from_portal' param from URL and reload
+                window.location.href = window.location.pathname;
+            }, 2500);
+        })
+        .catch(error => {
+            console.error('Error checking subscription status:', error);
+            notificationDiv.textContent = 'A network error occurred while syncing.';
+            notificationDiv.className = 'page-message error-message';
+        });
+    }
+
 
     // --- Event Listener Setup ---
     if (verifyAdminEmailField && window.primaryCompanyAdminEmail) {
@@ -38,30 +66,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    if (editAccountLoginBtn) {
-        editAccountLoginBtn.addEventListener('click', function() {
-            if (verificationNextAction) verificationNextAction.value = 'editAccountLogin';
-            if (verifyAdminCurrentPasswordField) verifyAdminCurrentPasswordField.value = "";
-            showModal(verifyAdminPasswordModal);
-            if (verifyAdminCurrentPasswordField) verifyAdminCurrentPasswordField.focus();
-        });
-    }
-
     if (manageBillingBtn) {
         manageBillingBtn.addEventListener('click', function() {
-            if (verificationNextAction) verificationNextAction.value = 'openBillingModal';
-            if (verifyAdminCurrentPasswordField) verifyAdminCurrentPasswordField.value = "";
-            showModal(verifyAdminPasswordModal);
-            if (verifyAdminCurrentPasswordField) verifyAdminCurrentPasswordField.focus();
+             if (verificationNextAction) verificationNextAction.value = 'redirectToPortal';
+             if (verifyAdminCurrentPasswordField) verifyAdminCurrentPasswordField.value = "";
+             showModal(verifyAdminPasswordModal);
+             if (verifyAdminCurrentPasswordField) verifyAdminCurrentPasswordField.focus();
         });
     }
     
-    if (gpayButton) {
-        gpayButton.addEventListener('click', function() {
-            showPageNotification("Google Pay integration is coming soon! For now, please enter card details manually.", false, notificationModal, "Feature Update");
-        });
-    }
-
     if (verifyAdminPasswordForm) {
         verifyAdminPasswordForm.addEventListener('submit', function(event) {
             event.preventDefault();
@@ -84,12 +97,11 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 if (data.success) {
                     hideModal(verifyAdminPasswordModal);
-                    if (nextAction === 'openBillingModal') {
-                        fetchAndPopulateBillingInfo();
+                    if (nextAction === 'redirectToPortal') {
+                        // Find the form and submit it
+                        document.getElementById('stripePortalForm').submit();
                     } else if (nextAction === 'editCompanyDetails') {
                         fetchAndPopulateCompanyDetails();
-                    } else if (nextAction === 'editAccountLogin') {
-                        showModal(editAccountLoginModal);
                     }
                 } else {
                     showPageNotification(data.error || "Incorrect password.", true, notificationModal, "Verification Failed");
@@ -103,13 +115,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (submitButton) submitButton.disabled = false;
             });
         });
-    }
-
-    function fetchAndPopulateBillingInfo() {
-        // Since we don't store billing info, we just clear and show the modal.
-        if (billingForm) billingForm.reset();
-        document.getElementById('cardNumber').placeholder = '•••• •••• •••• ••••';
-        showModal(billingModal);
     }
 
     function fetchAndPopulateCompanyDetails() {
@@ -162,25 +167,17 @@ document.addEventListener('DOMContentLoaded', function() {
             });
          });
     }
-
-    // Add a simple submit handler for the billing form to show processing state
-    if (billingForm) {
-        billingForm.addEventListener('submit', function(e) {
-            const submitBtn = this.querySelector('button[type="submit"]');
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-            }
-        });
-    }
     
-    // The draggable functionality is handled globally by your commonUtils.js,
-    // so no specific calls are needed here.
-
     document.querySelectorAll('[data-close-modal]').forEach(button => {
         button.addEventListener('click', () => {
             const modalToClose = button.closest('.modal');
             if (modalToClose) hideModal(modalToClose);
         });
     });
+
+    // --- Page Load Logic ---
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('from_portal') === 'true') {
+        checkSubscriptionStatus();
+    }
 });

@@ -6,10 +6,8 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-
 import timeclock.db.DatabaseConnection;
 import timeclock.punches.ShowPunches;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URLEncoder;
@@ -23,7 +21,6 @@ import java.text.SimpleDateFormat;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import org.json.JSONObject; 
 import org.mindrot.jbcrypt.BCrypt; 
 
@@ -102,7 +99,8 @@ public class EmployeeInfoServlet extends HttpServlet {
     private void handleGetEmployeeDetails(HttpServletRequest request, HttpServletResponse response, int tenantId, int globalEid) throws IOException {
         logger.info("HANDLE_GET_EMPLOYEE_DETAILS: Starting for EID=" + globalEid + ", TenantID=" + tenantId);
         JSONObject jsonResponse = new JSONObject();
-        // ** THIS IS THE FIX: Changed WORK_SCHED to WORK_SCHEDULE **
+        
+        // *** FIX: Changed PAY_RATE to WAGE to match database schema ***
         String sql = "SELECT EID, TenantEmployeeNumber, FIRST_NAME, LAST_NAME, DEPT, SCHEDULE, SUPERVISOR, " +
                      "PERMISSIONS, WORK_SCHEDULE, ADDRESS, CITY, STATE, ZIP, PHONE, EMAIL, HIRE_DATE, " +
                      "WAGE_TYPE, WAGE, ACCRUAL_POLICY FROM EMPLOYEE_DATA WHERE EID = ? AND TenantID = ?";
@@ -126,7 +124,6 @@ public class EmployeeInfoServlet extends HttpServlet {
                     employee.put("schedule", rs.getString("SCHEDULE"));
                     employee.put("supervisor", rs.getString("SUPERVISOR"));
                     employee.put("permissions", rs.getString("PERMISSIONS"));
-                    // ** THIS IS THE FIX: Changed worksched key to use WORK_SCHEDULE from DB **
                     employee.put("worksched", rs.getString("WORK_SCHEDULE"));
                     employee.put("address", rs.getString("ADDRESS"));
                     employee.put("city", rs.getString("CITY"));
@@ -136,6 +133,7 @@ public class EmployeeInfoServlet extends HttpServlet {
                     employee.put("email", rs.getString("EMAIL"));
                     employee.put("hiredate", rs.getDate("HIRE_DATE"));
                     employee.put("wagetype", rs.getString("WAGE_TYPE"));
+                    // *** FIX: Changed PAY_RATE to WAGE to match database schema ***
                     employee.put("wage", rs.getBigDecimal("WAGE"));
                     employee.put("accrualpolicy", rs.getString("ACCRUAL_POLICY"));
                     

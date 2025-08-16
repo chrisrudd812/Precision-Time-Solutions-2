@@ -1,7 +1,7 @@
-// js/employees.js - vFINAL_WIZARD_FIX (Updated)
+// js/employees.js
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("[DEBUG] employees.js (vFINAL_WIZARD_FIX) loaded.");
 
+    // --- Global variables and references to DOM elements ---
     const _showModal = window.showModal;
     const _hideModal = window.hideModal;
     const _decode = window.decodeHtmlEntities;
@@ -10,14 +10,21 @@ document.addEventListener('DOMContentLoaded', function() {
     const addBtn = document.getElementById('addEmployeeButton');
     const editBtn = document.getElementById('editEmployeeButton');
     const deleteBtn = document.getElementById('deleteEmployeeButton');
-    const tableBody = document.getElementById('employeesTable')?.querySelector('tbody');
+    const employeesTable = document.getElementById('employeesTable');
+    const tableBody = employeesTable?.querySelector('tbody');
 
     const addModal = document.getElementById('addEmployeeModal');
     const editModal = document.getElementById('editEmployeeModal');
     const addForm = document.getElementById('addEmployeeForm');
     const editForm = document.getElementById('editEmployeeForm');
+    const deactivateModal = document.getElementById('deactivateConfirmModal');
+    const reactivateModal = document.getElementById('reactivateEmployeeModal');
     const notificationModal = document.getElementById('notificationModalGeneral');
+    
+    // FIX: Added a specific reference to the notification modal's OK button
+    const okBtnGeneralNotify = document.getElementById('okButtonNotificationModalGeneral');
 
+    const detailsPanel = document.getElementById('employeeDetailsSection');
     const wizardModal = document.getElementById('wizardGenericModal');
     const wizardTitle = document.getElementById('wizardGenericModalTitle');
     const wizardText1 = document.getElementById('wizardGenericModalText1');
@@ -25,16 +32,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const wizardButtons = document.getElementById('wizardGenericModalButtonRow');
 
     let selectedRow = null;
-    let wizardOpenedAddModal = false;
+    let selectedEmployeeData = null;
 
+    // --- WIZARD LOGIC ---
     const wizardStages = {
         "verify_admin_prompt": {
             title: "Final Step: Confirm Your Info",
             text1: "Let's quickly confirm your administrator account details.",
-            text2: "Your user account has been created with the information you provided. Please verify it and assign yourself to a department, schedule, and accrual policy.",
+            text2: "Please verify your information and assign yourself to the correct policies.",
             buttons: [{ id: "wizardConfirmAdmin", text: "Confirm My Info", class: "text-blue", action: "confirm_admin" }]
         },
-        "add_employees_prompt": {
+        "prompt_add_employees": {
             title: "Setup: Add Employees",
             text1: "Administrator account confirmed!",
             text2: "Now you can add the rest of your employees to the system.",
@@ -51,14 +59,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 { id: "wizardAddAnother", text: "Add Another Employee", class: "text-green", action: "open_add_employee" },
                 { id: "wizardFinishAfterAdd", text: "Finish Setup", class: "text-blue", action: "finish_setup" }
             ]
+        },
+        "setup_complete": {
+            title: "Congratulations! Setup Complete",
+            text1: "You have successfully configured your company and added your employees.",
+            text2: "You can now manage your employees or visit our help center to learn more.",
+            buttons: [
+                { id: "wizardGoToEmployees", text: "Go to Employee Management", class: "text-blue", action: "go_to_employees" },
+                { id: "wizardGoToHelp", text: "Visit Help Center", class: "text-grey", action: "go_to_help" }
+            ]
         }
     };
 
     function updateWizardView(stageKey) {
-        if (!wizardModal) return;
+        if (!wizardModal || !wizardStages[stageKey]) return;
         const stage = wizardStages[stageKey];
-        if (!stage) { _hideModal(wizardModal); return; }
-
         wizardTitle.textContent = stage.title;
         wizardText1.innerHTML = stage.text1;
         wizardText2.innerHTML = stage.text2;
@@ -74,78 +89,132 @@ document.addEventListener('DOMContentLoaded', function() {
         _showModal(wizardModal);
     }
 
-    function handleWizardAction(action) {
+    async function handleWizardAction(action) {
         _hideModal(wizardModal);
         if (action === 'confirm_admin') {
-            const adminRow = tableBody.querySelector('tr');
-            if (adminRow) {
-                selectRow(adminRow);
-                populateAndShowEditModal(true); 
+            const adminEid = window.wizardAdminEid;
+            if (!adminEid) {
+                alert("Error: Admin EID not found for wizard flow.");
+                return;
+            }
+            try {
+                const response = await fetch(`${appRoot}/EmployeeInfoServlet?action=getEmployeeDetails&eid=${adminEid}`);
+                const data = await response.json();
+                if (data.success) {
+                    populateAndShowEditModal(data.employee, true);
+                } else {
+                    alert('Error fetching admin details: ' + data.error);
+                }
+            } catch (err) {
+                console.error("Failed to fetch admin details:", err);
+                alert("A network error occurred while fetching your details.");
             }
         } else if (action === 'open_add_employee') {
             openAddModal();
         } else if (action === 'finish_setup') {
+            updateWizardView('setup_complete');
+        } else if (action === 'go_to_employees') {
             endWizard();
+        } else if (action === 'go_to_help') {
+            window.location.href = `${appRoot}/help.jsp`;
         }
     }
-    
+
     function endWizard() {
         fetch(`${appRoot}/WizardStatusServlet`, {
             method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({ 'action': 'endWizard' })
         })
-        .then(res => res.json())
-        .then(data => {
-            if(data.success) {
-                window.location.href = `${appRoot}/employees.jsp?message=Setup%20Complete!`;
-            } else {
-                showPageNotification(data.error || 'Could not finalize setup.', true, null, "Wizard Error");
-            }
-        })
-        .catch(() => showPageNotification('Network error ending setup.', true, null, "Network Error"));
+        .then(() => window.location.href = `${appRoot}/employees.jsp`);
     }
-
-    function populateDropdowns(form) {
-        // This function populates dropdowns for Departments, Schedules, and Accruals
-        // The data comes from the window object, which is populated in employees.jsp
-        const deptSelect = form.querySelector('select[name="departmentsDropDown"]');
-        const schedSelect = form.querySelector('select[name="schedulesDropDown"]');
-        const accrualSelect = form.querySelector('select[name="accrualsDropDown"]');
-        
-        if(deptSelect) {
-            deptSelect.innerHTML = '';
-            window.departmentsData.forEach(d => deptSelect.add(new Option(_decode(d.name), d.name)));
-        }
-
-        if(schedSelect) {
-            schedSelect.innerHTML = '';
-            window.schedulesData.forEach(s => schedSelect.add(new Option(_decode(s.name), s.name)));
-        }
-        
-        if(accrualSelect) {
-            accrualSelect.innerHTML = '';
-            window.accrualPoliciesData.forEach(p => accrualSelect.add(new Option(_decode(p.name), p.name)));
-        }
-    }
-
-    function openAddModal() {
-        addForm.reset();
-        _showModal(addModal);
-    }
-
-    // **FIX START**: Replaced with the fully updated function
-    function populateAndShowEditModal(isAdminVerification = false) {
-        if (!selectedRow) return;
-        editForm.reset();
-        
-        // This populates dropdowns like Department, Schedule, etc.
-        populateDropdowns(editForm);
     
-        const data = selectedRow.dataset;
+    function formatDateForInput(dateString) {
+        if (!dateString) return '';
+        const dateObj = new Date(dateString);
+        if (isNaN(dateObj.getTime())) return '';
+        dateObj.setMinutes(dateObj.getMinutes() + dateObj.getTimezoneOffset());
+        return dateObj.toISOString().slice(0, 10);
+    }
+
+    function formatDateForDisplay(dateString) {
+        if (!dateString) return '--';
+        const dateObj = new Date(dateString);
+        if (isNaN(dateObj.getTime())) return '--';
+        dateObj.setMinutes(dateObj.getMinutes() + dateObj.getTimezoneOffset());
+        return dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
+    function populateDropdown(selectElement, optionsArray, addBlankOption = false) {
+        if (!selectElement) return;
+        const currentValue = selectElement.value;
+        selectElement.innerHTML = '';
+        if (addBlankOption) {
+            selectElement.add(new Option('Select...', ''));
+        }
+        optionsArray.forEach(item => {
+            const text = typeof item === 'object' ? _decode(item.name) : item;
+            const value = typeof item === 'object' ? _decode(item.name) : item;
+            selectElement.add(new Option(text, value));
+        });
+        selectElement.value = currentValue;
+    }
+    
+    function populateAllDropdowns(form) {
+        const departments = [{name: "None"}, ...window.departmentsData.filter(d => d.name !== "None")];
+        const schedules = [{name: "Open"}, ...window.schedulesData.filter(s => s.name !== "Open")];
+        const accruals = [{name: "None"}, ...window.accrualPoliciesData.filter(p => p.name !== "None")];
+        populateDropdown(form.querySelector('select[name="departmentsDropDown"]'), departments);
+        populateDropdown(form.querySelector('select[name="schedulesDropDown"]'), schedules);
+        populateDropdown(form.querySelector('select[name="accrualsDropDown"]'), accruals);
         
-        // --- Populate all fields from the selected row's data-* attributes ---
-        editForm.querySelector('#editEmployeeId').value = data.eid;
+        const states = ["","AL","AK","AZ","AR","CA","CO","CT","DE","DC","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"];
+        populateDropdown(form.querySelector('select[name="state"]'), states, false);
+        populateDropdown(form.querySelector('select[name="permissionsDropDown"]'), ["User", "Administrator"]);
+        populateDropdown(form.querySelector('select[name="workScheduleDropDown"]'), ["Full Time", "Part Time", "Seasonal", "Temporary", "Contractor"]);
+        populateDropdown(form.querySelector('select[name="wageTypeDropDown"]'), ["Hourly", "Salary"]);
+    }
+
+    function openAddModal(prefillData = {}) {
+        addForm.reset();
+        clearValidation(addForm);
+        populateAllDropdowns(addForm);
+        
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        addForm.querySelector('#addHireDate').value = `${yyyy}-${mm}-${dd}`;
+        
+        addForm.querySelector('#addWorkSchedule').value = 'Full Time';
+        addForm.querySelector('#addWageType').value = 'Hourly';
+        addForm.querySelector('#addDepartment').value = 'None';
+        addForm.querySelector('#addSchedule').value = 'Open';
+        addForm.querySelector('#addAccrualPolicy').value = 'None';
+        addForm.querySelector('#addPermissions').value = 'User';
+
+        for (const key in prefillData) {
+            const field = addForm.querySelector(`[name="${key}"]`);
+            if (field) {
+                field.value = prefillData[key];
+            }
+        }
+
+        _showModal(addModal);
+        
+        setTimeout(() => {
+            addForm.querySelector('#addFirstName').focus();
+        }, 150);
+    }
+
+    function populateAndShowEditModal(data, isAdminVerification = false) {
+        if (!data) return;
+        
+        editForm.reset();
+        clearValidation(editForm);
+        populateAllDropdowns(editForm);
+        
+        editForm.querySelector('#editEmployeeId').value = data.eid || '';
         editForm.querySelector('#editFirstName').value = _decode(data.firstname);
         editForm.querySelector('#editLastName').value = _decode(data.lastname);
         editForm.querySelector('#editEmail').value = _decode(data.email);
@@ -154,82 +223,409 @@ document.addEventListener('DOMContentLoaded', function() {
         editForm.querySelector('#editState').value = _decode(data.state);
         editForm.querySelector('#editZip').value = _decode(data.zip);
         editForm.querySelector('#editPhone').value = _decode(data.phone);
-        editForm.querySelector('#editHireDate').value = data.isoDate;
-        editForm.querySelector('#editPayRate').value = data.wage;
-        
-        // **FIX**: Added population for the new fields
-        editForm.querySelector('#editWageType').value = _decode(data.wagetype);
-        editForm.querySelector('#editWorkSchedule').value = _decode(data.workschedule);
+        editForm.querySelector('#editHireDate').value = formatDateForInput(data.hiredate);
         editForm.querySelector('#editPermissions').value = _decode(data.permissions);
         editForm.querySelector('#editSupervisor').value = _decode(data.supervisor);
-    
-        // Populate existing dropdowns
-        editForm.querySelector('#editDepartment').value = _decode(data.dept);
-        editForm.querySelector('#editSchedule').value = _decode(data.schedule);
-        editForm.querySelector('#editAccrualPolicy').value = _decode(data.accrualpolicy);
         
-        // --- Wizard-specific logic ---
-        const emailInput = editForm.querySelector('#editEmail');
-        emailInput.readOnly = false;
-        emailInput.style.backgroundColor = '';
-    
-        if (isAdminVerification) {
-            let hiddenInput = editForm.querySelector('input[name="admin_verify_step"]');
-            if (!hiddenInput) {
-                hiddenInput = document.createElement('input');
-                hiddenInput.type = 'hidden';
-                hiddenInput.name = 'admin_verify_step';
-                editForm.appendChild(hiddenInput);
-            }
-            hiddenInput.value = 'true';
+        editForm.querySelector('#editDepartment').value = _decode(data.dept || 'None');
+        
+        editForm.querySelector('#editPayRate').value = (data.wage && parseFloat(data.wage) > 0) ? data.wage : '';
+        
+        editForm.querySelector('#editSchedule').value = data.schedule || 'Open';
+        editForm.querySelector('#editWorkSchedule').value = data.worksched || 'Full Time';
+        editForm.querySelector('#editWageType').value = data.wagetype || 'Hourly';
+        editForm.querySelector('#editAccrualPolicy').value = data.accrualpolicy || 'None';
+
+        let adminVerifyStepInput = editForm.querySelector('input[name="admin_verify_step"]');
+        if (!adminVerifyStepInput) {
+            adminVerifyStepInput = document.createElement('input');
+            adminVerifyStepInput.type = 'hidden';
+            adminVerifyStepInput.name = 'admin_verify_step';
+            adminVerifyStepInput.id = 'adminVerifyStep';
+            editForm.appendChild(adminVerifyStepInput);
         }
-    
+        adminVerifyStepInput.value = isAdminVerification ? 'true' : 'false';
+
         _showModal(editModal);
+
+        if (isAdminVerification) {
+            setTimeout(() => {
+                editForm.querySelector('#editAddress').focus();
+            }, 150);
+        }
     }
-    // **FIX END**
 
     function selectRow(row) {
         if (selectedRow) selectedRow.classList.remove('selected');
+        
         if (row) {
             row.classList.add('selected');
             selectedRow = row;
             editBtn.disabled = false;
             deleteBtn.disabled = false;
+
+            const dataAttr = row.dataset;
+            selectedEmployeeData = { eid: dataAttr.eid || '' };
+            
+            if (detailsPanel) {
+                const na = '--';
+                const cells = row.cells;
+                detailsPanel.querySelector('#detailEID').textContent = _decode(cells[0]?.textContent.trim() || na);
+                detailsPanel.querySelector('#detailFirstName').textContent = _decode(dataAttr.firstname || na);
+                detailsPanel.querySelector('#detailLastName').textContent = _decode(dataAttr.lastname || na);
+                detailsPanel.querySelector('#detailAddress').textContent = _decode(dataAttr.address || na);
+                detailsPanel.querySelector('#detailCity').textContent = _decode(dataAttr.city || na);
+                detailsPanel.querySelector('#detailState').textContent = _decode(dataAttr.state || na);
+                detailsPanel.querySelector('#detailZip').textContent = _decode(dataAttr.zip || na);
+                detailsPanel.querySelector('#detailPhone').textContent = _decode(dataAttr.phone || na);
+                detailsPanel.querySelector('#detailEmail').textContent = _decode(dataAttr.email || na);
+                detailsPanel.querySelector('#detailDept').textContent = _decode(dataAttr.dept || na);
+                detailsPanel.querySelector('#detailSchedule').textContent = _decode(dataAttr.schedule || na);
+                detailsPanel.querySelector('#detailSupervisor').textContent = _decode(dataAttr.supervisor || na);
+                detailsPanel.querySelector('#detailPermissions').textContent = _decode(dataAttr.permissions || na);
+                detailsPanel.querySelector('#detailHireDate').textContent = formatDateForDisplay(dataAttr.isoDate);
+                detailsPanel.querySelector('#detailWorkSched').textContent = _decode(dataAttr.workschedule || na);
+                detailsPanel.querySelector('#detailWageType').textContent = _decode(dataAttr.wagetype || na);
+                detailsPanel.querySelector('#detailWage').textContent = dataAttr.wage && parseFloat(dataAttr.wage) > 0 ? `$${parseFloat(dataAttr.wage).toFixed(2)}` : na;
+                detailsPanel.querySelector('#detailAccrualPolicy').textContent = _decode(dataAttr.accrualpolicy || na);
+                detailsPanel.querySelector('#detailVacHours').textContent = _decode(dataAttr.vachours || na);
+                detailsPanel.querySelector('#detailSickHours').textContent = _decode(dataAttr.sickhours || na);
+                detailsPanel.querySelector('#detailPersHours').textContent = _decode(dataAttr.pershours || na);
+                detailsPanel.querySelector('#resetFormEid').value = selectedEmployeeData.eid;
+                detailsPanel.querySelector('#btnResetPassword').disabled = false;
+                detailsPanel.style.display = 'block';
+            }
         } else {
             selectedRow = null;
+            selectedEmployeeData = null;
             editBtn.disabled = true;
             deleteBtn.disabled = true;
+            if (detailsPanel) detailsPanel.style.display = 'none';
         }
     }
 
-    if (addBtn) {
-        addBtn.addEventListener('click', () => {
-            if(window.inWizardMode_Page) {
-                updateWizardView('add_employees_prompt');
-            } else {
-                openAddModal();
+    function handleReactivation(eid) {
+        const form = new FormData();
+        form.append('action', 'reactivateEmployee');
+        form.append('eid', eid);
+        _hideModal(reactivateModal);
+        fetch(`${appRoot}/AddEditAndDeleteEmployeesServlet`, { method: 'POST', body: new URLSearchParams(form) })
+            .then(response => { if (response.redirected) window.location.href = response.url; else window.location.reload(); });
+    }
+
+    deleteBtn?.addEventListener('click', () => {
+        if (!selectedEmployeeData) return;
+        const employeeName = `${_decode(selectedRow.dataset.firstname)} ${_decode(selectedRow.dataset.lastname)}`;
+        deactivateModal.querySelector('#deactivateEmployeeName').textContent = employeeName;
+        _showModal(deactivateModal);
+        const confirmBtn = deactivateModal.querySelector('#confirmDeactivateBtn');
+        const cancelBtn = deactivateModal.querySelector('.cancel-btn');
+        const confirmHandler = () => {
+            const form = new FormData();
+            form.append('action', 'deactivateEmployee');
+            form.append('eid', selectedEmployeeData.eid);
+            fetch(`${appRoot}/AddEditAndDeleteEmployeesServlet`, { method: 'POST', body: new URLSearchParams(form) })
+            .then(response => { if(response.redirected) { window.location.href = response.url; } else { window.location.reload(); } });
+            _hideModal(deactivateModal);
+        };
+        confirmBtn.onclick = confirmHandler;
+        cancelBtn.onclick = () => _hideModal(deactivateModal);
+    });
+
+    function validateField(field) {
+        const isValid = field.checkValidity();
+        if (isValid) {
+            field.classList.add('is-valid');
+            field.classList.remove('is-invalid');
+        } else {
+            field.classList.add('is-invalid');
+            field.classList.remove('is-valid');
+        }
+        return isValid;
+    }
+    
+    function validateForm(form) {
+        let firstInvalidField = null;
+        let isFormValid = true;
+        form.querySelectorAll('[required], [pattern]').forEach(field => {
+            if (!validateField(field)) {
+                if (isFormValid) { 
+                    firstInvalidField = field;
+                }
+                isFormValid = false;
+            }
+        });
+        if (firstInvalidField) {
+            firstInvalidField.focus();
+        }
+        return isFormValid;
+    }
+    
+    function clearValidation(form) {
+        form.querySelectorAll('.is-valid, .is-invalid').forEach(field => {
+            field.classList.remove('is-valid', 'is-invalid');
+        });
+    }
+
+    [addForm, editForm].forEach(form => {
+        if(form) {
+            form.setAttribute('novalidate', 'true'); 
+            form.addEventListener('submit', event => {
+                if (!validateForm(form)) {
+                    event.preventDefault(); 
+                }
+            });
+            form.querySelectorAll('[required], [pattern]').forEach(field => {
+                field.addEventListener('input', () => validateField(field));
+                if (field.tagName === 'SELECT') {
+                    field.addEventListener('change', () => validateField(field));
+                }
+            });
+        }
+    });
+    
+    editForm?.addEventListener('submit', function (event) {
+        event.preventDefault();
+        if (!validateForm(this)) return;
+
+        const submitButton = this.querySelector('button[type="submit"]');
+        const originalButtonHtml = submitButton.innerHTML;
+        submitButton.disabled = true;
+        submitButton.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Saving...`;
+
+        const formData = new FormData(this);
+        const isAdminVerify = formData.get('admin_verify_step') === 'true';
+        const formActionUrl = this.getAttribute('action');
+        
+        console.log("--- DEBUGGING EMPLOYEE SAVE ---");
+        console.log("Submitting to URL:", formActionUrl);
+        console.log("Is Admin Verification:", isAdminVerify);
+        for (let [key, value] of formData.entries()) {
+            console.log(`Form Data -> ${key}: ${value}`);
+        }
+        console.log("---------------------------------");
+        
+        fetch(formActionUrl, {
+            method: 'POST',
+            body: new URLSearchParams(formData)
+        })
+        .then(response => {
+            if (!response.ok) {
+                console.error("Server responded with an error status:", response.status, response.statusText);
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+        
+            if (isAdminVerify) {
+                 return response.json();
+            }
+            if (response.redirected) {
+                window.location.href = response.url;
+                return null; 
+            }
+            return response.text();
+        })
+        .then(data => {
+            if (!data) return; 
+
+            if (typeof data === 'object' && data.success) {
+                _hideModal(editModal);
+                if (isAdminVerify) {
+                    const adminRow = tableBody?.querySelector(`tr[data-eid="${formData.get('eid')}"]`);
+                    if(adminRow) selectRow(adminRow);
+                    updateWizardView('prompt_add_employees');
+                }
+            } else if (typeof data === 'object' && !data.success) {
+                 alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Submit Error:', error);
+            alert('An error occurred during submission. Check the console for details.');
+        })
+        .finally(() => {
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalButtonHtml;
+        });
+    });
+    
+    function formatPhoneNumber(event) {
+        const input = event.target;
+        const digits = input.value.replace(/\D/g, '');
+        let formatted = '';
+        if (digits.length > 0) formatted = '(' + digits.substring(0, 3);
+        if (digits.length >= 4) formatted += ') ' + digits.substring(3, 6);
+        if (digits.length >= 7) formatted += '-' + digits.substring(6, 10);
+        input.value = formatted;
+        validateField(input);
+    }
+
+    const addPhoneInput = document.getElementById('addPhone');
+    const editPhoneInput = document.getElementById('editPhone');
+    if(addPhoneInput) addPhoneInput.addEventListener('input', formatPhoneNumber);
+    if(editPhoneInput) editPhoneInput.addEventListener('input', formatPhoneNumber);
+
+    function makeModalDraggable(modal) {
+        const header = modal.querySelector('h2');
+        const content = modal.querySelector('.modal-content');
+        if (!header || !content) return;
+        header.style.cursor = 'move';
+        let isDragging = false, initialMouseX, initialMouseY, initialContentX, initialContentY;
+        header.addEventListener('mousedown', (e) => {
+            if (e.target.closest('button, input, select, textarea, .close')) return;
+            isDragging = true;
+            initialMouseX = e.clientX;
+            initialMouseY = e.clientY;
+            const rect = content.getBoundingClientRect();
+            initialContentX = rect.left;
+            initialContentY = rect.top;
+            document.body.classList.add('is-dragging');
+        });
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            const dx = e.clientX - initialMouseX;
+            const dy = e.clientY - initialMouseY;
+            content.style.position = 'absolute';
+            content.style.left = `${initialContentX + dx}px`;
+            content.style.top = `${initialContentY + dy}px`;
+        });
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                document.body.classList.remove('is-dragging');
             }
         });
     }
-    if (editBtn) editBtn.addEventListener('click', () => populateAndShowEditModal(false));
-    if (tableBody) tableBody.addEventListener('click', e => selectRow(e.target.closest('tr')));
-    
-    document.querySelectorAll('.modal .close, .modal .cancel-btn').forEach(btn => {
-        btn.addEventListener('click', e => _hideModal(e.target.closest('.modal')));
+    const style = document.createElement('style');
+    style.textContent = '.is-dragging { user-select: none; }';
+    document.head.appendChild(style);
+    document.querySelectorAll('.modal').forEach(makeModalDraggable);
+
+    // --- EVENT LISTENERS ---
+    addBtn?.addEventListener('click', () => openAddModal());
+    editBtn?.addEventListener('click', () => {
+        if (!selectedEmployeeData || !selectedEmployeeData.eid) return;
+        fetch(`${appRoot}/EmployeeInfoServlet?action=getEmployeeDetails&eid=${selectedEmployeeData.eid}`)
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    populateAndShowEditModal(data.employee, false);
+                } else {
+                    alert('Could not load employee details.');
+                }
+            });
     });
-    document.getElementById('okButtonNotificationModalGeneral')?.addEventListener('click', () => _hideModal(notificationModal));
-    document.getElementById('closeWizardGenericModal')?.addEventListener('click', () => _hideModal(wizardModal));
+    tableBody?.addEventListener('click', e => selectRow(e.target.closest('tr')));
+    document.querySelectorAll('.modal .close, .modal .cancel-btn').forEach(btn => {
+        btn.addEventListener('click', e => {
+            const modal = e.target.closest('.modal');
+            const form = modal.querySelector('form');
+            if(form) clearValidation(form);
+            _hideModal(modal);
+        });
+    });
     
-    if (window.inWizardMode_Page) {
-        const params = new URLSearchParams(window.location.search);
-        let stage = window.currentWizardStep_Page;
-        
-        if (params.get('adminVerified') === 'true') {
-            stage = 'add_employees_prompt';
-        } else if (params.get('employeeAdded') === 'true') {
-            stage = 'after_add_employee_prompt';
+    // FIX: Added a specific event listener for the general notification modal's OK button
+    if (okBtnGeneralNotify) {
+        okBtnGeneralNotify.addEventListener('click', () => _hideModal(notificationModal));
+    }
+
+
+    // --- Page Load Logic ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const reactivatePrompt = urlParams.get('reactivatePrompt');
+
+    if (window.inSetupWizardMode_Page) {
+        let stage = urlParams.get('step') || window.currentWizardStep_Page;
+        updateWizardView(stage || 'verify_admin_prompt');
+    } else {
+        const reopenModal = urlParams.get('reopenModal');
+        if (reopenModal) {
+            const prefillData = {};
+            urlParams.forEach((value, key) => { prefillData[key] = value; });
+            if (reopenModal === 'add') openAddModal(prefillData);
+            window.history.replaceState({}, document.title, window.location.pathname);
+        } else {
+            const successMsg = urlParams.get('message');
+            const errorMsg = urlParams.get('error');
+            
+            if (errorMsg) {
+                window.showPageNotification(errorMsg, true, notificationModal, 'Error');
+            }
+            if (successMsg) {
+                window.showPageNotification(successMsg, false, notificationModal, 'Success');
+                // FIX: Target the correct OK button and set focus
+                if (okBtnGeneralNotify) {
+                    setTimeout(() => okBtnGeneralNotify.focus(), 150); 
+                }
+            }
+            if (reactivatePrompt === 'true') {
+                const eid = urlParams.get('eid');
+                const email = urlParams.get('email');
+                reactivateModal.querySelector('#reactivateEmail').textContent = email;
+                _showModal(reactivateModal);
+                reactivateModal.querySelector('#confirmReactivateBtn').onclick = () => handleReactivation(eid);
+                reactivateModal.querySelector('.cancel-btn').onclick = () => _hideModal(reactivateModal);
+            }
         }
         
-        updateWizardView(stage || 'verify_admin_prompt');
+        const selectedEid = urlParams.get('eid');
+        if (selectedEid && !reactivatePrompt) {
+            const rowToSelect = tableBody?.querySelector(`tr[data-eid="${selectedEid}"]`);
+            if (rowToSelect) {
+                selectRow(rowToSelect);
+                rowToSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        } else if (tableBody?.rows.length > 0) {
+            selectRow(tableBody.rows[0]);
+        }
+    }
+    
+    function makeTableSortable(table) {
+        const headers = table.querySelectorAll('th.sortable');
+        headers.forEach((header, index) => {
+            header.addEventListener('click', () => {
+                sortTableByColumn(table, index);
+            });
+        });
+    }
+
+    function sortTableByColumn(table, columnIndex) {
+        const tBody = table.tBodies[0];
+        const rows = Array.from(tBody.querySelectorAll("tr"));
+        const header = table.querySelectorAll('th.sortable')[columnIndex];
+        
+        const currentDirection = header.dataset.sortDirection || 'none';
+        let nextDirection = (currentDirection === 'asc') ? 'desc' : 'asc';
+        
+        const isNumeric = !isNaN(rows[0]?.cells[columnIndex]?.textContent.trim().replace(/[$,]/g, ''));
+
+        const sortedRows = rows.sort((a, b) => {
+            const aCellText = a.cells[columnIndex]?.textContent.trim() || '';
+            const bCellText = b.cells[columnIndex]?.textContent.trim() || '';
+            
+            if (isNumeric) {
+                const aVal = parseFloat(aCellText.replace(/[$,]/g, '')) || 0;
+                const bVal = parseFloat(bCellText.replace(/[$,]/g, '')) || 0;
+                return nextDirection === 'asc' ? aVal - bVal : bVal - aVal;
+            } else {
+                return nextDirection === 'asc' 
+                    ? aCellText.localeCompare(bCellText) 
+                    : bCellText.localeCompare(aCellText);
+            }
+        });
+
+        tBody.append(...sortedRows);
+
+        table.querySelectorAll('th.sortable').forEach(th => {
+            th.dataset.sortDirection = 'none';
+            th.classList.remove('sort-asc', 'sort-desc');
+        });
+        header.dataset.sortDirection = nextDirection;
+        header.classList.add(nextDirection === 'asc' ? 'sort-asc' : 'sort-desc');
+    }
+
+    if (employeesTable) {
+        makeTableSortable(employeesTable);
     }
 });

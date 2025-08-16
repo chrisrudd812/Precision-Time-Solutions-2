@@ -25,7 +25,7 @@ import java.util.logging.Logger;
 
 @WebServlet("/AddEditAndDeleteSchedulesServlet")
 public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
-    private static final long serialVersionUID = 3L; // Version updated
+    private static final long serialVersionUID = 5L; // Version updated
     private static final Logger logger = Logger.getLogger(AddEditAndDeleteSchedulesServlet.class.getName());
     private static final DateTimeFormatter INPUT_TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
@@ -204,26 +204,12 @@ public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
                 psCheck.setString(2, scheduleName.trim().toLowerCase());
                 try (ResultSet rs = psCheck.executeQuery()) {
                     if (rs.next()) {
-                        // **FIX START**: This block is modified to handle the duplicate name error specifically.
                         errorMessage = "Schedule '" + scheduleName.trim() + "' already exists for your company.";
-                        
-                        // Build the redirect URL with standard parameters.
                         String stepForRedirect = isWizardModeActive ? currentWizardStepInSession : null;
                         String url = buildRedirectUrl(request, redirectPage, errorMessage, null, isWizardModeActive, stepForRedirect, false);
-                        
-                        // Append the special parameter to reopen the modal in the frontend.
-                        if (url.contains("?")) {
-                            url += "&reopenModal=addSchedule";
-                        } else {
-                            url += "?reopenModal=addSchedule";
-                        }
-                        
-                        // Also pass back the name that caused the error for repopulation.
-                        url += "&scheduleName=" + encodeUrlParam(scheduleName.trim());
-
+                        url += (url.contains("?") ? "&" : "?") + "reopenModal=addSchedule&scheduleName=" + encodeUrlParam(scheduleName.trim());
                         response.sendRedirect(url);
                         return;
-                        // **FIX END**
                     }
                 }
             }
@@ -280,79 +266,117 @@ public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
         
         if (!isValid(originalScheduleName)) {
             errorMessage = "Original schedule name was not provided. Cannot update.";
-        } else if (originalScheduleName.toLowerCase().startsWith("open")) {
-            errorMessage = "Default 'Open' schedules cannot be fully edited this way.";
-        }
-
-        if (errorMessage != null) {
             response.sendRedirect(buildRedirectUrl(request, redirectPage, errorMessage, null, isWizardModeActive, wizardRedirectNextStep, false));
             return;
         }
 
-        Time shiftStart = parseTime(request.getParameter("shiftStart"));
-        Time lunchStart = parseTime(request.getParameter("lunchStart"));
-        Time lunchEnd = parseTime(request.getParameter("lunchEnd"));
-        Time shiftEnd = parseTime(request.getParameter("shiftEnd"));
-        String[] checkedDaysArray = request.getParameterValues("days");
-        String daysWorked = getDaysWorkedString(checkedDaysArray);
-        
-        boolean autoLunch = "true".equalsIgnoreCase(request.getParameter("autoLunch"));
-        String hoursRequiredStr = request.getParameter("hoursRequired");
-        String lunchLengthStr = request.getParameter("lunchLength");
+        String scheduleNameLower = originalScheduleName.trim().toLowerCase();
+        boolean isUneditableOpen = scheduleNameLower.equals("open");
+        boolean isAutoLunchOpen = scheduleNameLower.equals("open w/ auto lunch");
 
-        double hoursRequired = 0.0;
-        int lunchLength = 0;
-
-        if (autoLunch) {
-            if (!isValid(hoursRequiredStr) || !isValid(lunchLengthStr)) {
-                errorMessage = "If Auto Lunch is enabled, 'Hours Required' and 'Lunch Length' must be specified.";
-            } else {
-                try {
-                    hoursRequired = Double.parseDouble(hoursRequiredStr);
-                    lunchLength = Integer.parseInt(lunchLengthStr);
-                    if (hoursRequired <= 0 || lunchLength <= 0) {
-                        errorMessage = "For Auto Lunch, 'Hours Required' and 'Lunch Length' must be positive values.";
-                    }
-                } catch (NumberFormatException e) {
-                    errorMessage = "Invalid number format for Hours Required or Lunch Length.";
-                }
-            }
-        }
-        
-        if (errorMessage != null) {
+        if (isUneditableOpen) {
+            errorMessage = "The default 'Open' schedule cannot be edited.";
             response.sendRedirect(buildRedirectUrl(request, redirectPage, errorMessage, null, isWizardModeActive, wizardRedirectNextStep, false));
             return;
         }
 
-        String sqlUpdate = "UPDATE SCHEDULES SET SHIFT_START = ?, LUNCH_START = ?, LUNCH_END = ?, SHIFT_END = ?, " +
-                           "DAYS_WORKED = ?, AUTO_LUNCH = ?, HRS_REQUIRED = ?, LUNCH_LENGTH = ? " +
-                           "WHERE TenantID = ? AND NAME = ?";
+        String sqlUpdate;
+        if (isAutoLunchOpen) {
+            sqlUpdate = "UPDATE SCHEDULES SET HRS_REQUIRED = ?, LUNCH_LENGTH = ? WHERE TenantID = ? AND NAME = ?";
+        } else {
+            sqlUpdate = "UPDATE SCHEDULES SET SHIFT_START = ?, LUNCH_START = ?, LUNCH_END = ?, SHIFT_END = ?, " +
+                        "DAYS_WORKED = ?, AUTO_LUNCH = ?, HRS_REQUIRED = ?, LUNCH_LENGTH = ? " +
+                        "WHERE TenantID = ? AND NAME = ?";
+        }
 
         try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement psUpdate = con.prepareStatement(sqlUpdate)) {
 
-            int paramIdx = 1;
-            psUpdate.setTime(paramIdx++, shiftStart);
-            psUpdate.setTime(paramIdx++, lunchStart);
-            psUpdate.setTime(paramIdx++, lunchEnd);
-            psUpdate.setTime(paramIdx++, shiftEnd);
-            
-            psUpdate.setString(paramIdx++, daysWorked);
-            psUpdate.setBoolean(paramIdx++, autoLunch);
+            if (isAutoLunchOpen) {
+                // *** FIX: Logic specific to the "Open w/ auto lunch" schedule ***
+                double hoursRequired = 0.0;
+                int lunchLength = 0;
+                String hoursRequiredStr = request.getParameter("hoursRequired");
+                String lunchLengthStr = request.getParameter("lunchLength");
 
-            if (autoLunch) {
-                psUpdate.setDouble(paramIdx++, hoursRequired);
-                psUpdate.setInt(paramIdx++, lunchLength);
+                if (!isValid(hoursRequiredStr) || !isValid(lunchLengthStr)) {
+                    errorMessage = "For 'Open w/ Auto Lunch', 'Hours Required' and 'Lunch Length' must be specified.";
+                } else {
+                    try {
+                        hoursRequired = Double.parseDouble(hoursRequiredStr);
+                        lunchLength = Integer.parseInt(lunchLengthStr);
+                        if (hoursRequired <= 0 || lunchLength <= 0) {
+                            errorMessage = "For 'Open w/ Auto Lunch', 'Hours Required' and 'Lunch Length' must be positive values.";
+                        }
+                    } catch (NumberFormatException e) {
+                        errorMessage = "Invalid number format for Hours Required or Lunch Length.";
+                    }
+                }
+                
+                if (errorMessage != null) {
+                    response.sendRedirect(buildRedirectUrl(request, redirectPage, errorMessage, null, isWizardModeActive, wizardRedirectNextStep, false));
+                    return;
+                }
+
+                psUpdate.setDouble(1, hoursRequired);
+                psUpdate.setInt(2, lunchLength);
+                psUpdate.setInt(3, tenantId);
+                psUpdate.setString(4, originalScheduleName);
             } else {
-                psUpdate.setNull(paramIdx++, Types.DOUBLE);
-                psUpdate.setNull(paramIdx++, Types.INTEGER);
+                // *** FIX: Standard logic for all other schedules ***
+                double hoursRequired = 0.0;
+                int lunchLength = 0;
+                boolean autoLunch = "true".equalsIgnoreCase(request.getParameter("autoLunch"));
+
+                if (autoLunch) {
+                    String hoursRequiredStr = request.getParameter("hoursRequired");
+                    String lunchLengthStr = request.getParameter("lunchLength");
+                     if (!isValid(hoursRequiredStr) || !isValid(lunchLengthStr)) {
+                        errorMessage = "If Auto Lunch is enabled, 'Hours Required' and 'Lunch Length' must be specified.";
+                    } else {
+                        try {
+                            hoursRequired = Double.parseDouble(hoursRequiredStr);
+                            lunchLength = Integer.parseInt(lunchLengthStr);
+                            if (hoursRequired <= 0 || lunchLength <= 0) {
+                                errorMessage = "For Auto Lunch, 'Hours Required' and 'Lunch Length' must be positive values.";
+                            }
+                        } catch (NumberFormatException e) {
+                            errorMessage = "Invalid number format for Hours Required or Lunch Length.";
+                        }
+                    }
+                }
+                
+                if (errorMessage != null) {
+                    response.sendRedirect(buildRedirectUrl(request, redirectPage, errorMessage, null, isWizardModeActive, wizardRedirectNextStep, false));
+                    return;
+                }
+
+                Time shiftStart = parseTime(request.getParameter("shiftStart"));
+                Time lunchStart = parseTime(request.getParameter("lunchStart"));
+                Time lunchEnd = parseTime(request.getParameter("lunchEnd"));
+                Time shiftEnd = parseTime(request.getParameter("shiftEnd"));
+                String[] checkedDaysArray = request.getParameterValues("days");
+                String daysWorked = getDaysWorkedString(checkedDaysArray);
+
+                int paramIdx = 1;
+                psUpdate.setTime(paramIdx++, shiftStart);
+                psUpdate.setTime(paramIdx++, lunchStart);
+                psUpdate.setTime(paramIdx++, lunchEnd);
+                psUpdate.setTime(paramIdx++, shiftEnd);
+                psUpdate.setString(paramIdx++, daysWorked);
+                psUpdate.setBoolean(paramIdx++, autoLunch);
+                if (autoLunch) {
+                    psUpdate.setDouble(paramIdx++, hoursRequired);
+                    psUpdate.setInt(paramIdx++, lunchLength);
+                } else {
+                    psUpdate.setNull(paramIdx++, Types.DOUBLE);
+                    psUpdate.setNull(paramIdx++, Types.INTEGER);
+                }
+                psUpdate.setInt(paramIdx++, tenantId);
+                psUpdate.setString(paramIdx++, originalScheduleName);
             }
 
-            psUpdate.setInt(paramIdx++, tenantId);
-            psUpdate.setString(paramIdx++, originalScheduleName);
-
             int rowsAffected = psUpdate.executeUpdate();
-
             if (rowsAffected > 0) {
                 successMessage = "Schedule '" + originalScheduleName + "' updated successfully.";
                 logger.info(successMessage + " For TenantID: " + tenantId);

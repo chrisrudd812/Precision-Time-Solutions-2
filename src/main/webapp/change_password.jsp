@@ -34,11 +34,9 @@
     String userFirstNameForDisplay = "User"; 
     Boolean requiresChangeSessionFlag = null;
     Integer userEidForPinChange = null;
-    String sessionIDForLog = "N/A";
     final int PIN_CHANGE_TIMEOUT_SECONDS = 300; // 5 minutes for PIN change process
 
     if (cpSession != null) {
-        sessionIDForLog = cpSession.getId();
         Object eidObj = cpSession.getAttribute("EID");
         if (eidObj instanceof Integer) {
             userEidForPinChange = (Integer) eidObj;
@@ -49,30 +47,23 @@
             userFirstNameForDisplay = (String) nameObj;
         }
 
-        Object rpcObj = cpSession.getAttribute("RequiresPasswordChange"); 
+        // FIX: Changed this to look for the correct session attribute set by LoginServlet.
+        Object rpcObj = cpSession.getAttribute("pinChangeRequired");
         if (rpcObj instanceof Boolean) {
             requiresChangeSessionFlag = (Boolean) rpcObj;
         }
-        jspChangePasswordLogger.info("[change_password.jsp] Session ID: " + sessionIDForLog + 
-                                     ", EID from session: " + userEidForPinChange + 
-                                     ", RequiresPasswordChange flag from session (rpcObj): " + rpcObj + 
-                                     (rpcObj != null ? " (Type: " + rpcObj.getClass().getName() + ")" : "") +
-                                     ", Parsed requiresChangeSessionFlag: " + requiresChangeSessionFlag
-                                     );
-    } else {
-        jspChangePasswordLogger.warning("[change_password.jsp] No active session found when checking PIN change requirement.");
     }
 
+    // This security check now works correctly.
     if (cpSession == null || userEidForPinChange == null || userEidForPinChange <= 0 || 
         requiresChangeSessionFlag == null || !requiresChangeSessionFlag.booleanValue()) { 
         String redirectErrorMsg = "PIN change not currently required or session invalid.";
         jspChangePasswordLogger.warning("[change_password.jsp] Redirecting to login. Conditions not met for PIN change page.");
-        
         if(cpSession != null) {
-             cpSession.setAttribute("errorMessage", redirectErrorMsg); 
+             cpSession.setAttribute("errorMessage", redirectErrorMsg);
         }
         response.sendRedirect("login.jsp?error=" + URLEncoder.encode(redirectErrorMsg, StandardCharsets.UTF_8.name()));
-        return; 
+        return;
     } else {
         // PIN change IS required, extend session timeout for this page
         cpSession.setMaxInactiveInterval(PIN_CHANGE_TIMEOUT_SECONDS);
@@ -101,8 +92,8 @@
         <div class="change-password-header login-header">
             <a href="index.jsp" class="logo-link"><i class="fas fa-clock"></i> YourTimeClock</a>
             <h1>Set Your New Login PIN</h1>
-            <p>Hi <%= escapeHtml(userFirstNameForDisplay) %>, your temporary PIN for your <strong>user account login</strong> needs to be changed. 
-            <br>This PIN is used for clocking in/out and accessing your user-specific features. 
+            <p>Hi <%= escapeHtml(userFirstNameForDisplay) %>, your temporary PIN for your <strong>user account login</strong> needs to be changed.
+            <br>This PIN is used for clocking in/out and accessing your user-specific features.
             It is separate from your Company Administrator password (if applicable, which is used for company-wide settings).
             <br>Please set your new 4-digit numeric PIN below.</p>
         </div>
@@ -156,7 +147,7 @@
                         confirmPasswordField.focus(); isValid = false;
                     }
                     if (!isValid) { 
-                        event.preventDefault(); 
+                        event.preventDefault();
                     } else {
                         const submitButton = form.querySelector('button[type="submit"]');
                         if(submitButton){

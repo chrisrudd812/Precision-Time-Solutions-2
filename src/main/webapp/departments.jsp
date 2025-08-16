@@ -100,9 +100,6 @@
     <link rel="stylesheet" href="<%= request.getContextPath() %>/css/reports.css?v=<%= System.currentTimeMillis() %>">
     <link rel="stylesheet" href="<%= request.getContextPath() %>/css/departments.css?v=<%= System.currentTimeMillis() %>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <style> 
-        .modal { display: none; position: fixed; z-index: 1055; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center; } .modal.modal-visible { display: flex !important; } .modal-content { background-color: #fefefe; margin: auto; padding: 20px 25px; border: 1px solid #888; border-radius: 8px; width: 90%; max-width: 600px; box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19); text-align:left; } .modal-content h2 { margin-top: 0; font-size: 1.6em; color: #005A9C; padding-bottom: 10px; border-bottom: 1px solid #eee; text-align:center;} .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor:pointer; } .wizard-header { background-color: #004080; color: white; padding: 15px 20px; text-align: center; margin-bottom:20px; } .page-message { padding: 10px 15px; margin: 0 auto 20px auto; border-radius: 4px; text-align: center; } .success-message { background-color: #d4edda; color: #155724; border:1px solid #c3e6cb; } .error-message { background-color: #f8d7da; color: #721c24; border:1px solid #f5c6cb; }
-    </style>
 </head>
 <body class="reports-page">
     <% if (!inSetupWizardMode_JSP) { %>
@@ -128,7 +125,7 @@
         <h4 style="text-align: left; color: #6c757d; margin-bottom: 10px; font-size: 0.9em;">To Edit or Delete: Select a row from the table.</h4>
         <div class="table-container report-table-container department-table-container">
             <table id="departmentsTable" class="report-table">
-                <thead><tr><th>Name</th><th>Description</th><th>Supervisor</th></tr></thead>
+                <thead><tr><th class="sortable">Name</th><th class="sortable">Description</th><th class="sortable">Supervisor</th></tr></thead>
                 <tbody><%= departmentRowsHtml %></tbody>
             </table>
         </div>
@@ -140,6 +137,7 @@
     <div id="notificationModalGeneral" class="modal"><div class="modal-content" style="max-width:480px;"><span class="close">&times;</span><h2 id="notificationModalGeneralTitle"></h2><p id="notificationModalGeneralMessage"></p><div class="button-row"><button type="button" id="okButtonNotificationModalGeneral" class="glossy-button text-blue">OK</button></div></div></div>
 
     <script>
+        // --- Page-specific data from JSP ---
         window.appRootPath = "<%= request.getContextPath() %>";
         window.inWizardMode_Page = <%= inSetupWizardMode_JSP %>;
         window.currentWizardStep_Page = "<%= escapeForJS(currentWizardStepForPage_JSP) %>";

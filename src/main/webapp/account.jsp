@@ -37,6 +37,7 @@
         if (tenantId == null || tenantId <= 0) { return info; }
         String sqlTenant = "SELECT CompanyName, CompanyIdentifier, AdminEmail, PhoneNumber, Address, City, State, ZipCode FROM tenants WHERE TenantID = ?";
         String sqlAdminName = "SELECT FIRST_NAME, LAST_NAME FROM employee_data WHERE TenantID = ? AND LOWER(EMAIL) = LOWER(?) AND ACTIVE = TRUE LIMIT 1";
+        
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmtTenant = conn.prepareStatement(sqlTenant)) {
             pstmtTenant.setInt(1, tenantId);
@@ -66,7 +67,9 @@
                     }
                 }
             }
-        } catch (SQLException e) { jspAccountLogger.log(Level.SEVERE, "SQLException in getCompanyDisplayDetails for TenantID " + tenantId, e); } 
+        } catch (SQLException e) {
+            jspAccountLogger.log(Level.SEVERE, "SQLException in getCompanyDisplayDetails for TenantID " + tenantId, e);
+        } 
         return info;
     }
 %>
@@ -119,24 +122,8 @@
         .page-message { padding: 10px 15px; margin: -10px auto 20px auto; border-radius: 4px; text-align: center; }
         .success-message { background-color: #d4edda; color: #155724; border:1px solid #c3e6cb; }
         .error-message { background-color: #f8d7da; color: #721c24; border:1px solid #f5c6cb; }
-        .modal { display: none; position: fixed; z-index: 1055; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
+        .info-message { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
         .modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px 25px; border: 1px solid #888; border-radius: 8px; width: 80%; max-width: 500px; box-shadow: 0 4px 8px 0 rgba(0,0,0,0.19); }
-        .modal-content h2 { margin-top: 0; }
-        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
-        .form-item { margin-bottom: 15px; }
-        .form-item label { display: block; margin-bottom: 5px; font-weight: 500; }
-        .form-item input, .form-item select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        .button-row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
-        .form-row { display: flex; gap: 20px; }
-        .form-row .form-item { flex: 1; }
-        .card-icons { display: flex; align-items: center; gap: 8px; }
-        .card-icons img { height: 24px; width: auto; border-radius: 3px; }
-        .gpay-button { background-color: #000; color: #fff; border: none; border-radius: 28px; padding: 10px 24px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; min-width: 200px; transition: background-color 0.3s; }
-        .gpay-button:hover { background-color: #333; }
-        .gpay-button img { height: 24px; }
-        .separator { display: flex; align-items: center; text-align: center; color: #aaa; margin: 25px 0; }
-        .separator hr { flex-grow: 1; border: none; border-top: 1px solid #eee; }
-        .separator span { padding: 0 10px; font-size: 0.9em; }
     </style>
 </head>
 <body>
@@ -144,6 +131,9 @@
     <div class="parent-container">
         <div class="content-area account-page-container"> 
             <h1>Account Settings</h1>
+            
+            <div id="subscriptionStatusMessage" style="display: none;"></div>
+            
             <% if (pageSuccessMessage != null) { %><div class="page-message success-message"><%= escapeJspHtml(pageSuccessMessage) %></div><% } %>
             <% if (pageErrorMessage != null) { %><div class="page-message error-message"><%= escapeJspHtml(pageErrorMessage) %></div><% } %>
             
@@ -152,137 +142,29 @@
                 <ul>
                     <li><i class="fas fa-briefcase"></i><span class="info-label">Company Name:</span> <span class="info-value"><%= escapeJspHtml(companyInfo.companyName) %></span></li>
                     <li><i class="fas fa-hashtag"></i><span class="info-label">Company ID:</span> <span class="info-value"><%= escapeJspHtml(companyInfo.companyIdentifier) %></span></li>
-                    <li><i class="fas fa-at"></i><span class="info-label">Primary Admin Email:</span> <span class="info-value"><%= escapeJspHtml(companyInfo.adminEmail) %></span></li>
-                    <li><i class="fas fa-user-tie"></i><span class="info-label">Primary Admin Name:</span> <span class="info-value"><%= escapeJspHtml(companyInfo.primaryAdminFullName) %></span></li>
                     <li><i class="fas fa-phone-alt"></i><span class="info-label">Company Phone:</span> <span class="info-value"><%= escapeJspHtml(companyInfo.companyPhone) %></span></li>
                 </ul>
             </div>
             <div class="account-section">
-                <h2>Account Management <button type="button" id="editAccountLoginBtn" class="glossy-button text-orange edit-details-btn"><i class="fas fa-user-cog"></i> Edit</button></h2>
+                <h2>Account Management</h2>
                 <ul>
                     <li><i class="fas fa-user-circle"></i><span class="info-label">Your Login Email:</span> <span class="info-value"><%= escapeJspHtml(loggedInUserEmail) %></span></li>
-                    <li><i class="fas fa-envelope-open-text"></i><span class="info-label">Company Admin Login:</span> <span class="info-value"><%= escapeJspHtml(companyInfo.adminEmail) %></span></li>
+                    <li><i class="fas fa-envelope-open-text"></i><span class="info-label">Company Admin Email:</span> <span class="info-value"><%= escapeJspHtml(companyInfo.adminEmail) %></span></li>
                 </ul>
             </div>
-
+            
             <div class="account-section">
-                <h2>
-                    Billing & Subscription
-                    <button type="button" id="manageBillingBtn" class="glossy-button text-orange edit-details-btn">
-                        <i class="fas fa-credit-card"></i> Edit
-                    </button>
-                </h2>
-                <p style="padding-left: 5px; margin-top: -10px; color: #444;">Manage your subscription plan and update your payment method.</p>
+                <h2>Subscription</h2>
+                <p style="padding-left: 5px; margin-top: -10px; color: #444;">Manage your subscription plan, view invoices, and update your payment method via our secure billing portal.</p>
+                <div style="padding-left: 5px; margin-top: 15px;">
+                    <button type="button" id="manageBillingBtn" class="glossy-button text-blue"><i class="fas fa-credit-card"></i> Manage Subscription & Billing</button>
+                    <form id="stripePortalForm" action="StripePortalServlet" method="POST" style="display:none;"></form>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- MODALS -->
-    <div id="verifyAdminPasswordModal" class="modal">
-        <div class="modal-content">
-            <span class="close" data-close-modal>&times;</span>
-            <h2>Verify Administrator Credentials</h2>
-            <p style="font-size:0.9em; color:#555; margin-bottom:15px;">For security, please re-enter the Company Admin password.</p>
-            <form id="verifyAdminPasswordForm">
-                <input type="hidden" id="verificationNextAction" value="">
-                <div class="form-item">
-                    <label for="verifyAdminEmail">Admin Email:</label>
-                    <input type="email" id="verifyAdminEmail" readonly>
-                </div>
-                <div class="form-item">
-                    <label for="verifyAdminCurrentPassword">Password:<span style="color:red;">*</span></label>
-                    <input type="password" id="verifyAdminCurrentPassword" required autofocus>
-                </div>
-                <div class="button-row">
-                    <button type="submit" class="glossy-button text-green">Verify</button>
-                    <button type="button" data-close-modal class="cancel-btn glossy-button text-red">Cancel</button>
-                </div>
-            </form>
-        </div>
-    </div>
-    
-    <div id="billingModal" class="modal">
-        <div class="modal-content" style="max-width: 500px;">
-            <span class="close" data-close-modal>&times;</span>
-            <h2>Billing Information</h2>
-            
-            <div class="gpay-section" style="margin-top: 10px; margin-bottom: 25px; text-align: center;">
-                 <button type="button" id="gpay-button" class="gpay-button">
-                     <img src="https://upload.wikimedia.org/wikipedia/commons/f/f2/Google_Pay_Logo.svg" alt="Google Pay" onerror="this.style.display='none'">
-                 </button>
-            </div>
-
-            <div class="separator"><hr><span>OR</span><hr></div>
-            
-            <p style="text-align:center; color: #555; margin-top: -5px; margin-bottom: 20px;">Enter card details manually below.</p>
-            
-            <form id="billingForm" action="BillingServlet" method="POST">
-                <div class="form-item">
-                    <label for="cardholderName">Name on Card</label>
-                    <input type="text" id="cardholderName" name="cardholderName" required autocomplete="cc-name">
-                </div>
-                <div class="form-item">
-                    <label for="cardNumber">Card Number</label>
-                    <input type="text" id="cardNumber" name="cardNumber" required autocomplete="cc-number" placeholder="•••• •••• •••• 1234" title="Enter a valid card number">
-                </div>
-                <div class="form-row">
-                    <div class="form-item">
-                        <label for="expiryDate">Expiry Date (MM/YY)</label>
-                        <input type="text" id="expiryDate" name="expiryDate" required autocomplete="cc-exp" placeholder="MM/YY" pattern="(0[1-9]|1[0-2])\/?([0-9]{2})">
-                    </div>
-                    <div class="form-item">
-                        <label for="cvc">CVC</label>
-                        <input type="text" id="cvc" name="cvc" required autocomplete="cc-csc" placeholder="•••" pattern="[0-9]{3,4}">
-                    </div>
-                </div>
-                <div class="button-row" style="justify-content: space-between; align-items: center;">
-                    <div class="card-icons">
-                        <img src="https://js.stripe.com/v3/fingerprinted/img/visa-729c05c240c4e15718a3293e10e3d6c1.svg" alt="Visa" onerror="this.style.display='none'"/>
-                        <img src="https://js.stripe.com/v3/fingerprinted/img/mastercard-4d8844094130711885b5e41b28c9848f.svg" alt="Mastercard" onerror="this.style.display='none'"/>
-                        <img src="https://js.stripe.com/v3/fingerprinted/img/amex-a49b82f46c5cd6a96a57925b46378a5a.svg" alt="American Express" onerror="this.style.display='none'"/>
-                    </div>
-                    <button type="submit" class="glossy-button text-green">
-                        <i class="fas fa-save"></i> Save Payment Method
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div id="editCompanyDetailsModal" class="modal">
-        <div class="modal-content" style="max-width: 650px;"> 
-            <span class="close" data-close-modal>&times;</span> 
-            <h2>Edit Company Details</h2> 
-            <form id="updateCompanyDetailsForm"> 
-                <div class="form-item"> <label for="editCompanyNameDisplay">Company Name:</label> <input type="text" id="editCompanyNameDisplay" name="companyNameDisplay" readonly disabled> </div> 
-                <div class="form-item"> <label for="editCompanyIdDisplay">Company ID:</label> <input type="text" id="editCompanyIdDisplay" name="companyIdDisplay" readonly disabled> </div> 
-                <hr> 
-                <div class="form-item"> <label for="editCompanyPhone">Company Phone:</label> <input type="tel" id="editCompanyPhone" name="companyPhone" maxlength="20"> </div> 
-                <div class="form-item"> <label for="editCompanyAddress">Street Address:</label> <input type="text" id="editCompanyAddress" name="companyAddress" maxlength="255"> </div> 
-                <div class="form-row"> 
-                    <div class="form-item"> <label for="editCompanyCity">City:</label> <input type="text" id="editCompanyCity" name="companyCity" maxlength="100"> </div> 
-                    <div class="form-item"> <label for="editCompanyState">State:</label> <select id="editCompanyState" name="companyState"> <option value="">Select State</option> <%@ include file="/WEB-INF/includes/states_options.jspf" %> </select> </div> 
-                </div> 
-                <div class="form-item"> 
-                    <label for="editCompanyZip">Zip Code:</label> 
-                    <input type="text" id="editCompanyZip" name="companyZip" maxlength="10"> 
-                </div> 
-                <div class="button-row"> 
-                    <button type="submit" class="glossy-button text-green"><i class="fas fa-save"></i> Update Details</button> 
-                    <button type="button" data-close-modal class="cancel-btn glossy-button text-red"><i class="fas fa-times"></i> Cancel</button> 
-                </div> 
-            </form> 
-        </div> 
-    </div>
-    
-    <div id="editAccountLoginModal" class="modal">
-        <div class="modal-content" style="max-width: 550px;">
-            <span class="close" data-close-modal>&times;</span>
-            <h2>Edit Account Login Details</h2>
-            <p>Forms for editing account login will be populated here.</p>
-        </div>
-    </div>
-    
+    <%@ include file="/WEB-INF/includes/account-modals.jspf" %>
     <div id="notificationModalGeneral" class="modal">
         <div class="modal-content" style="max-width: 480px;">
             <span class="close" data-close-modal>&times;</span>

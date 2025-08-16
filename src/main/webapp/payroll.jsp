@@ -181,16 +181,16 @@
                 <table id="payrollTable" class="report-table">
                     <thead>
                         <tr>
-                            <th data-sort-type="number">Emp ID</th>
-                            <th data-sort-type="string">First Name</th>
-                            <th data-sort-type="string">Last Name</th>
-                            <th data-sort-type="string">Wage Type</th>
-                            <th data-sort-type="number" style="text-align: right;">Regular Hours</th>
-                            <th data-sort-type="number" style="text-align: right;">Overtime Hours</th>
-                            <th data-sort-type="number" style="text-align: right;">Double Time Hours</th>
-                            <th data-sort-type="number" style="text-align: right;">Total Paid Hours</th>
-                            <th data-sort-type="currency" style="text-align: right;">Wage</th>
-                            <th data-sort-type="currency" style="text-align: right;">Total Pay</th>
+                            <th class="sortable" data-sort-type="number">Emp ID</th>
+                            <th class="sortable" data-sort-type="string">First Name</th>
+                            <th class="sortable" data-sort-type="string">Last Name</th>
+                            <th class="sortable" data-sort-type="string">Wage Type</th>
+                            <th class="sortable" data-sort-type="number" style="text-align: right;">Regular Hours</th>
+                            <th class="sortable" data-sort-type="number" style="text-align: right;">Overtime Hours</th>
+                            <th class="sortable" data-sort-type="number" style="text-align: right;">Double Time Hours</th>
+                            <th class="sortable" data-sort-type="number" style="text-align: right;">Total Paid Hours</th>
+                            <th class="sortable" data-sort-type="currency" style="text-align: right;">Wage</th>
+                            <th class="sortable" data-sort-type="currency" style="text-align: right;">Total Pay</th>
                         </tr>
                     </thead>
                     <tbody><%= payrollTableHtml %></tbody>

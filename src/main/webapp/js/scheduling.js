@@ -1,6 +1,6 @@
-// js/scheduling.js - vFINAL_WIZARD_FIX_2
+// js/scheduling.js
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("[DEBUG] scheduling.js (vFINAL_WIZARD_FIX_2) loaded.");
+    console.log("[DEBUG] scheduling.js Loaded. Ready to work.");
 
     // --- Element Selectors ---
     const addScheduleButton = document.getElementById('addScheduleButton');
@@ -13,23 +13,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const addScheduleModal = document.getElementById('addScheduleModal');
     const addScheduleForm = document.getElementById('addScheduleForm');
     const addScheduleNameInput = document.getElementById('addScheduleName');
-    const closeAddModalBtn = document.getElementById('closeAddModal');
-    const cancelAddScheduleBtn = document.getElementById('cancelAddSchedule');
-
+    
     const editScheduleModal = document.getElementById('editScheduleModal');
-    const closeEditModalBtn = document.getElementById('closeEditModal');
-    const cancelEditScheduleBtn = document.getElementById('cancelEditSchedule');
+    const editScheduleForm = document.getElementById('editScheduleForm');
 
     const deleteReassignModal = document.getElementById('deleteAndReassignSchedModal');
     const deleteReassignSelect = document.getElementById('targetReassignSchedSelect');
     const deleteReassignMessage = document.getElementById('deleteReassignModalMessage');
-    const closeDeleteReassignBtn = document.getElementById('closeDeleteReassignModalBtn');
-    const cancelDeleteReassignBtn = document.getElementById('cancelDeleteReassignBtn');
     const confirmDeleteBtn = document.getElementById('confirmDeleteAndReassignSchedBtn');
 
     const notificationModal = document.getElementById('notificationModalGeneral');
-    const okBtnGeneralNotify = document.getElementById('okButtonNotificationModalGeneral');
-    const closeNotificationModalX = notificationModal ? notificationModal.querySelector('.close') : null;
     
     // Auto-Lunch related inputs
     const addAutoLunchCheckbox = document.getElementById('addAutoLunch');
@@ -45,14 +38,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const wizardText1Element = document.getElementById('wizardGenericModalText1');
     const wizardText2Element = document.getElementById('wizardGenericModalText2');
     const wizardButtonRow = document.getElementById('wizardGenericModalButtonRow');
-    const closeWizardGenericModalBtn = document.getElementById('closeWizardGenericModal');
 
     // --- State Variables ---
     let selectedSchedRow = null;
     let selectedSchedData = null;
     let wizardOpenedAddModal = false; 
-    const appRoot = typeof appRootPath === 'string' ? appRootPath : "";
-    const companyNameToDisplayJS_Sched = (typeof COMPANY_NAME_SIGNUP_JS_SCHED !== 'undefined' && COMPANY_NAME_SIGNUP_JS_SCHED) ? COMPANY_NAME_SIGNUP_JS_SCHED : "your company";
+    const appRoot = typeof window.appRootPath === 'string' ? window.appRootPath : "";
+    const companyNameToDisplayJS_Sched = (typeof window.COMPANY_NAME_SIGNUP_JS_SCHED !== 'undefined' && window.COMPANY_NAME_SIGNUP_JS_SCHED) ? window.COMPANY_NAME_SIGNUP_JS_SCHED : "your company";
 
     // --- Helper Functions ---
     const _showModal = window.showModal || function(modalEl) { if (modalEl) modalEl.style.display = 'flex'; };
@@ -60,7 +52,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const _decodeLocal = window.decodeHtmlEntities || function(text) { const ta = document.createElement('textarea'); ta.innerHTML = text; return ta.value; };
 
     // --- WIZARD HANDLING LOGIC ---
-
     const wizardStages = {
         "schedules_prompt": {
             title: "Setup: Schedules",
@@ -68,7 +59,6 @@ document.addEventListener('DOMContentLoaded', function() {
             text2: "Examples: 'Day Shift 8-5', 'Night Shift', 'Open Shift', etc. You can assign these to employees later.",
             buttons: [
                 { id: "wizardActionAddSchedule", text: "Add a Schedule", class: "text-green", actionKey: "openAddScheduleModalViaWizard" },
-                // **FIX**: Updated button text and action key to point to Accruals.
                 { id: "wizardActionNextToAccruals", text: "Next: Accrual Policy Setup", class: "text-blue", actionKey: "advanceToAccruals" }
             ]
         },
@@ -78,7 +68,6 @@ document.addEventListener('DOMContentLoaded', function() {
             text2: "You can add more schedules now, or proceed to set up time off policies.",
             buttons: [
                 { id: "wizardActionAddAnotherSchedule", text: "Add Another Schedule", class: "text-green", actionKey: "openAddScheduleModalViaWizard" },
-                // **FIX**: Updated button text and action key to point to Accruals.
                 { id: "wizardActionNextAfterAddToAccruals", text: "Next: Accrual Policy Setup", class: "text-blue", actionKey: "advanceToAccruals" }
             ]
         }
@@ -113,12 +102,11 @@ document.addEventListener('DOMContentLoaded', function() {
             _hideModal(wizardGenericModal);
             openAddScheduleModal();
         } else if (actionKey === "advanceToAccruals") {
-            // **FIX**: This now correctly advances to the accruals page.
             advanceWizardToServerAndRedirect("accruals_prompt", "accruals.jsp");
         }
     }
 
-    // **FIX**: Made this function more generic to handle redirection to any page.
+    // *** THIS IS THE CORRECTED FUNCTION ***
     function advanceWizardToServerAndRedirect(serverNextStep, nextPage) {
          fetch(`${appRoot}/WizardStatusServlet`, {
             method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -126,13 +114,19 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => response.ok ? response.json() : Promise.reject('Failed to update wizard step on server.'))
         .then(data => {
-            if (data.success) {
-                const redirectUrl = `${appRoot}/${nextPage}?setup_wizard=true&step=${encodeURIComponent(serverNextStep)}`;
+            if (data.success && data.nextStep) { // Check for success AND the nextStep property from the response
+                // Use the 'nextStep' from the JSON RESPONSE to build the URL
+                const redirectUrl = `${appRoot}/${nextPage}?setup_wizard=true&step=${encodeURIComponent(data.nextStep)}`;
                 window.location.href = redirectUrl;
             }
-            else { window.showPageNotification("Could not proceed: " + (data.error || "Server error"), true, notificationModal, "Setup Error"); }
+            else { 
+                window.showPageNotification("Could not proceed: " + (data.error || "Server error: Invalid response from server."), true, notificationModal, "Setup Error"); 
+            }
         })
-        .catch(error => { console.error("Wizard advancement error:", error); window.showPageNotification("Network error advancing wizard. Please try again.", true, notificationModal, "Network Error"); });
+        .catch(error => { 
+            console.error("Wizard advancement error:", error); 
+            window.showPageNotification("Network error advancing wizard. Please try again.", true, notificationModal, "Network Error"); 
+        });
     }
 
     function _hideAddModalAndHandleWizard() {
@@ -144,8 +138,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // --- Core Page Logic (unchanged) ---
+    // --- Core Page Logic (omitted for brevity, no changes needed here) ---
     function openAddScheduleModal() {
+        console.log("[DEBUG] openAddScheduleModal called.");
         if (addScheduleModal) {
             if (addScheduleForm) addScheduleForm.reset();
             if (addAutoLunchCheckbox) addAutoLunchCheckbox.dispatchEvent(new Event('change'));
@@ -156,32 +151,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function toggleActionButtons() {
         const isRowSelected = selectedSchedRow !== null;
-        let disableActions = !isRowSelected;
-        let titleMessage = isRowSelected ? "" : "Select a schedule to edit or delete.";
-        if (isRowSelected && selectedSchedData && selectedSchedData.name.toLowerCase().startsWith('open')) {
-            disableActions = true;
-            titleMessage = "Default 'Open' schedules cannot be edited or deleted.";
+        let disableEdit = !isRowSelected;
+        let disableDelete = !isRowSelected;
+        
+        if (isRowSelected && selectedSchedData) {
+            const schedNameLower = selectedSchedData.name.trim().toLowerCase();
+            if (schedNameLower === 'open') {
+                disableEdit = true;
+                disableDelete = true;
+            } else if (schedNameLower === 'open w/ auto lunch') {
+                disableEdit = false; 
+                disableDelete = true;
+            }
         }
-        if (editScheduleButton) { editScheduleButton.disabled = disableActions; editScheduleButton.title = titleMessage; }
-        if (deleteScheduleButton) { deleteScheduleButton.disabled = disableActions; deleteScheduleButton.title = titleMessage; }
+        
+        if (editScheduleButton) editScheduleButton.disabled = disableEdit;
+        if (deleteScheduleButton) deleteScheduleButton.disabled = disableDelete;
     }
 
     function selectRow(row) {
-        if (row && row.dataset.name && row.dataset.name.toLowerCase().startsWith('open')) {
-            window.showPageNotification("The default 'Open' schedules cannot be edited or deleted.", false, notificationModal, "System Schedule");
-            if (selectedSchedRow) selectedSchedRow.classList.remove('selected');
-            selectedSchedRow = null;
-            selectedSchedData = null;
-            toggleActionButtons();
-            return;
-        }
-
         if (selectedSchedRow) selectedSchedRow.classList.remove('selected');
         
         if (row && row !== selectedSchedRow) {
             row.classList.add('selected');
             selectedSchedRow = row;
             selectedSchedData = {
+                id: row.dataset.id || null,
                 name: _decodeLocal(row.dataset.name || ''),
                 shiftStart: row.dataset.shiftStart || '',
                 lunchStart: row.dataset.lunchStart || '',
@@ -192,6 +187,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 hoursRequired: row.dataset.hoursRequired || '',
                 lunchLength: row.dataset.lunchLength || ''
             };
+            
+            const schedNameLower = selectedSchedData.name.trim().toLowerCase();
+            if (schedNameLower === 'open') {
+                window.showPageNotification("The default 'Open' schedule cannot be edited or deleted.", false, notificationModal, "System Schedule");
+            } else if (schedNameLower === 'open w/ auto lunch') {
+                window.showPageNotification("This is a default system schedule. Only the 'Hours Required' and 'Lunch Length' fields can be edited.", false, notificationModal, "System Schedule Information");
+            }
+
         } else {
             selectedSchedRow = null;
             selectedSchedData = null;
@@ -203,6 +206,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!editScheduleModal || !selectedSchedData) return;
         const form = editScheduleModal.querySelector('form');
         form.reset();
+        
         form.querySelector('#hiddenEditOriginalName').value = selectedSchedData.name;
         form.querySelector('#editScheduleName').value = selectedSchedData.name;
         form.querySelector('#editShiftStart').value = selectedSchedData.shiftStart;
@@ -220,6 +224,29 @@ document.addEventListener('DOMContentLoaded', function() {
         form.querySelector('#editAutoLunch').checked = selectedSchedData.autoLunch;
         form.querySelector('#editHoursRequired').value = selectedSchedData.hoursRequired;
         form.querySelector('#editLunchLength').value = selectedSchedData.lunchLength;
+        
+        const isAutoLunchSchedule = selectedSchedData.name.trim().toLowerCase() === 'open w/ auto lunch';
+        
+        const fieldsToToggle = [
+            'editScheduleName', 'editShiftStart', 'editLunchStart', 
+            'editLunchEnd', 'editShiftEnd', 'editDaySun', 'editDayMon', 
+            'editDayTue', 'editDayWed', 'editDayThu', 'editDayFri', 'editDaySat',
+            'editAutoLunch'
+        ];
+        
+        fieldsToToggle.forEach(id => {
+            const field = form.querySelector(`#${id}`);
+            if (field) field.disabled = isAutoLunchSchedule;
+        });
+
+        if(editHoursRequiredInput) editHoursRequiredInput.disabled = !editAutoLunchCheckbox.checked;
+        if(editLunchLengthInput) editLunchLengthInput.disabled = !editAutoLunchCheckbox.checked;
+
+        if (isAutoLunchSchedule) {
+             if(editHoursRequiredInput) editHoursRequiredInput.disabled = false;
+             if(editLunchLengthInput) editLunchLengthInput.disabled = false;
+        }
+
         if(editAutoLunchCheckbox) editAutoLunchCheckbox.dispatchEvent(new Event('change'));
         _showModal(editScheduleModal);
     }
@@ -247,45 +274,49 @@ document.addEventListener('DOMContentLoaded', function() {
     function setupAutoLunchToggle(checkbox, hoursInput, lengthInput, setDefaults) {
         if (!checkbox || !hoursInput || !lengthInput) return;
         const toggleInputs = () => {
-            const isEnabled = checkbox.checked;
-            hoursInput.disabled = !isEnabled;
-            lengthInput.disabled = !isEnabled;
-            hoursInput.required = isEnabled;
-            lengthInput.required = isEnabled;
-            if (isEnabled && setDefaults) {
-                if (!hoursInput.value) hoursInput.value = '6';
-                if (!lengthInput.value) lengthInput.value = '30';
-            } else if (!isEnabled) {
-                hoursInput.value = '';
-                lengthInput.value = '';
+            if (!checkbox.disabled) {
+                const isEnabled = checkbox.checked;
+                hoursInput.disabled = !isEnabled;
+                lengthInput.disabled = !isEnabled;
+                hoursInput.required = isEnabled;
+                lengthInput.required = isEnabled;
+                if (isEnabled && setDefaults) {
+                    if (!hoursInput.value) hoursInput.value = '6';
+                    if (!lengthInput.value) lengthInput.value = '30';
+                } else if (!isEnabled) {
+                    hoursInput.value = '';
+                    lengthInput.value = '';
+                }
             }
         };
         checkbox.addEventListener('change', toggleInputs);
-        toggleInputs();
+        toggleInputs(); 
+    }
+
+    function setupTimePairValidation(startInput, endInput) {
+        if (!startInput || !endInput) return;
+        const validate = () => {
+            const startValue = startInput.value;
+            const endValue = endInput.value;
+            if (startValue && !endValue) endInput.required = true; else endInput.required = false;
+            if (endValue && !startValue) startInput.required = true; else startInput.required = false;
+        };
+        startInput.addEventListener('input', validate);
+        endInput.addEventListener('input', validate);
     }
     
-    // --- EVENT LISTENERS (unchanged) ---
+    // --- EVENT LISTENERS ---
     if (tableBody) tableBody.addEventListener('click', (event) => { selectRow(event.target.closest('tr')); });
-    if (addScheduleButton) {
-        addScheduleButton.addEventListener('click', () => {
-            if (window.inWizardMode_Page) {
-                updateWizardModalView('schedules_prompt');
-            } else {
-                openAddScheduleModal();
-            }
-        });
-    }
+    if (addScheduleButton) addScheduleButton.addEventListener('click', () => { if (window.inWizardMode_Page) { updateWizardModalView('schedules_prompt'); } else { openAddScheduleModal(); } });
     if (editScheduleButton) editScheduleButton.addEventListener('click', () => { if (!editScheduleButton.disabled) populateEditModal(); });
     if (deleteScheduleButton) deleteScheduleButton.addEventListener('click', () => { if (!deleteScheduleButton.disabled) populateDeleteModal(); });
-    if (closeAddModalBtn) closeAddModalBtn.addEventListener('click', _hideAddModalAndHandleWizard);
-    if (cancelAddScheduleBtn) cancelAddScheduleBtn.addEventListener('click', _hideAddModalAndHandleWizard);
-    if (closeEditModalBtn) closeEditModalBtn.addEventListener('click', () => _hideModal(editScheduleModal));
-    if (cancelEditScheduleBtn) cancelEditScheduleBtn.addEventListener('click', () => _hideModal(editScheduleModal));
-    if (closeDeleteReassignBtn) closeDeleteReassignBtn.addEventListener('click', () => _hideModal(deleteReassignModal));
-    if (cancelDeleteReassignBtn) cancelDeleteReassignBtn.addEventListener('click', () => _hideModal(deleteReassignModal));
-    if (okBtnGeneralNotify) okBtnGeneralNotify.addEventListener('click', () => _hideModal(notificationModal));
-    if (closeNotificationModalX) closeNotificationModalX.addEventListener('click', () => _hideModal(notificationModal));
-    if (closeWizardGenericModalBtn) closeWizardGenericModalBtn.addEventListener('click', () => _hideModal(wizardGenericModal));
+    document.querySelectorAll('.modal .close, .modal .cancel-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const modalToClose = e.target.closest('.modal');
+            if (modalToClose) { if (modalToClose.id === 'addScheduleModal') { _hideAddModalAndHandleWizard(); } else { _hideModal(modalToClose); } }
+        });
+    });
+    if (notificationModal) notificationModal.querySelector('#okButtonNotificationModalGeneral').addEventListener('click', () => _hideModal(notificationModal));
     if (confirmDeleteBtn) {
         confirmDeleteBtn.addEventListener('click', () => {
             const deleteForm = document.getElementById('deleteScheduleForm');
@@ -295,10 +326,18 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // --- INITIALIZATION ---
     setupAutoLunchToggle(addAutoLunchCheckbox, addHoursRequiredInput, addLunchLengthInput, true);
     setupAutoLunchToggle(editAutoLunchCheckbox, editHoursRequiredInput, editLunchLengthInput, false);
-
-    // --- INITIALIZATION (unchanged) ---
+    if(addScheduleModal) {
+        setupTimePairValidation(document.getElementById('addShiftStart'), document.getElementById('addShiftEnd'));
+        setupTimePairValidation(document.getElementById('addLunchStart'), document.getElementById('addLunchEnd'));
+    }
+    if(editScheduleModal) {
+        setupTimePairValidation(document.getElementById('editShiftStart'), document.getElementById('editShiftEnd'));
+        setupTimePairValidation(document.getElementById('editLunchStart'), document.getElementById('editLunchEnd'));
+    }
     toggleActionButtons();
     if (window.inWizardMode_Page === true) {
         const urlParamsForWizard = new URLSearchParams(window.location.search);
@@ -311,22 +350,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const errorMessage = urlParams.get('error');
         const prevScheduleName = urlParams.get('scheduleName');
         openAddScheduleModal(); 
-        if (addScheduleNameInput && prevScheduleName) {
-            addScheduleNameInput.value = _decodeLocal(prevScheduleName);
-        }
+        if (addScheduleNameInput && prevScheduleName) addScheduleNameInput.value = _decodeLocal(prevScheduleName);
         if (errorMessage) {
             window.showPageNotification(errorMessage, true, notificationModal, "Validation Error");
-            if (okBtnGeneralNotify) {
+            const okBtn = notificationModal.querySelector('#okButtonNotificationModalGeneral');
+            if (okBtn) {
                 const focusOnClose = (e) => {
                     e.stopImmediatePropagation(); 
                     _hideModal(notificationModal);
-                    if (addScheduleNameInput) {
-                        addScheduleNameInput.focus();
-                        addScheduleNameInput.select();
-                    }
-                    okBtnGeneralNotify.removeEventListener('click', focusOnClose); 
+                    if (addScheduleNameInput) { addScheduleNameInput.focus(); addScheduleNameInput.select(); }
+                    okBtn.removeEventListener('click', focusOnClose); 
                 };
-                okBtnGeneralNotify.addEventListener('click', focusOnClose);
+                okBtn.addEventListener('click', focusOnClose);
             }
         }
         if (window.history.replaceState) {

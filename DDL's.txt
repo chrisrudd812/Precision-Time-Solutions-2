@@ -1,0 +1,234 @@
+DDL's
+
+CREATE TABLE `accruals` (
+  `TenantID` int NOT NULL,
+  `NAME` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `VACATION` int DEFAULT '0',
+  `SICK` int DEFAULT '0',
+  `PERSONAL` int DEFAULT '0',
+  PRIMARY KEY (`TenantID`,`NAME`),
+  CONSTRAINT `accruals_ibfk_1` FOREIGN KEY (`TenantID`) REFERENCES `tenants` (`TenantID`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+
+CREATE TABLE `allowed_networks` (
+  `NetworkID` int NOT NULL AUTO_INCREMENT,
+  `TenantID` int NOT NULL,
+  `NetworkName` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `CIDR` varchar(45) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `Description` text COLLATE utf8mb4_general_ci,
+  `IsEnabled` tinyint NOT NULL DEFAULT '1',
+  `CreatedAt` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `UpdatedAt` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`NetworkID`),
+  KEY `idx_allowednet_tenant_name` (`TenantID`,`NetworkName`),
+  CONSTRAINT `fk_allowednet_tenant_id` FOREIGN KEY (`TenantID`) REFERENCES `tenants` (`TenantID`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+
+CREATE TABLE `archived_punches` (
+  `ARCHIVE_ID` int NOT NULL AUTO_INCREMENT,
+  `TenantID` int NOT NULL,
+  `PUNCH_ID` int DEFAULT NULL,
+  `EID` int NOT NULL,
+  `DATE` date NOT NULL,
+  `IN_1` timestamp NULL DEFAULT NULL,
+  `OUT_1` timestamp NULL DEFAULT NULL,
+  `TOTAL` double DEFAULT '0',
+  `OT` double DEFAULT '0',
+  `DT` double DEFAULT '0',
+  `LATE` tinyint(1) DEFAULT '0',
+  `EARLY_OUTS` tinyint(1) DEFAULT '0',
+  `PUNCH_TYPE` varchar(25) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `ARCHIVED_AT` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`ARCHIVE_ID`),
+  KEY `idx_archived_tenant_eid_date` (`TenantID`,`EID`,`DATE`),
+  CONSTRAINT `archived_punches_ibfk_1` FOREIGN KEY (`TenantID`) REFERENCES `tenants` (`TenantID`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=109 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+
+CREATE TABLE `day_time_restrictions` (
+  `TenantID` int NOT NULL,
+  `DayOfWeek` enum('Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday') COLLATE utf8mb4_general_ci NOT NULL,
+  `IsRestricted` tinyint NOT NULL DEFAULT '0',
+  `AllowedStartTime` time DEFAULT NULL,
+  `AllowedEndTime` time DEFAULT NULL,
+  PRIMARY KEY (`TenantID`,`DayOfWeek`),
+  CONSTRAINT `fk_dtr_tenant` FOREIGN KEY (`TenantID`) REFERENCES `tenants` (`TenantID`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+
+CREATE TABLE `departments` (
+  `TenantID` int NOT NULL,
+  `NAME` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `DESCRIPTION` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `SUPERVISOR` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  PRIMARY KEY (`TenantID`,`NAME`),
+  CONSTRAINT `departments_ibfk_1` FOREIGN KEY (`TenantID`) REFERENCES `tenants` (`TenantID`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+
+CREATE TABLE `employee_data` (
+  `TenantID` int NOT NULL,
+  `EID` int NOT NULL AUTO_INCREMENT,
+  `FIRST_NAME` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `LAST_NAME` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `DEPT` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `SCHEDULE` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `SUPERVISOR` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `PERMISSIONS` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `ADDRESS` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `CITY` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `STATE` varchar(2) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `ZIP` varchar(10) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `PHONE` varchar(20) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `EMAIL` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `ACCRUAL_POLICY` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `VACATION_HOURS` decimal(10,2) DEFAULT '0.00',
+  `SICK_HOURS` decimal(10,2) DEFAULT '0.00',
+  `PERSONAL_HOURS` decimal(10,2) DEFAULT '0.00',
+  `HIRE_DATE` date DEFAULT NULL,
+  `WORK_SCHEDULE` varchar(15) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `WAGE_TYPE` varchar(10) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `WAGE` double DEFAULT NULL,
+  `ACTIVE` tinyint DEFAULT '1',
+  `PasswordHash` varchar(60) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `RequiresPasswordChange` tinyint DEFAULT '1',
+  `TenantEmployeeNumber` int DEFAULT NULL,
+  PRIMARY KEY (`EID`),
+  UNIQUE KEY `uq_employee_email_tenant` (`TenantID`,`EMAIL`),
+  UNIQUE KEY `uq_tenant_employee_number` (`TenantID`,`TenantEmployeeNumber`),
+  KEY `TenantID` (`TenantID`,`DEPT`),
+  KEY `TenantID_2` (`TenantID`,`SCHEDULE`),
+  KEY `TenantID_3` (`TenantID`,`ACCRUAL_POLICY`),
+  CONSTRAINT `employee_data_ibfk_1` FOREIGN KEY (`TenantID`, `DEPT`) REFERENCES `departments` (`TenantID`, `NAME`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `employee_data_ibfk_2` FOREIGN KEY (`TenantID`, `SCHEDULE`) REFERENCES `schedules` (`TenantID`, `NAME`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `employee_data_ibfk_3` FOREIGN KEY (`TenantID`, `ACCRUAL_POLICY`) REFERENCES `accruals` (`TenantID`, `NAME`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `employee_data_ibfk_4` FOREIGN KEY (`TenantID`) REFERENCES `tenants` (`TenantID`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=306 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+
+CREATE TABLE `employee_devices` (
+  `DeviceID` int NOT NULL AUTO_INCREMENT,
+  `TenantID` int NOT NULL,
+  `EID` int NOT NULL,
+  `DeviceFingerprintHash` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `DeviceDescription` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `UserAgentAtRegistration` text COLLATE utf8mb4_general_ci,
+  `IPAddressAtRegistration` varchar(45) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `RegisteredDate` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `LastUsedDate` timestamp NULL DEFAULT NULL,
+  `IsEnabled` tinyint DEFAULT '1',
+  `Notes` text COLLATE utf8mb4_general_ci,
+  PRIMARY KEY (`DeviceID`),
+  KEY `idx_emp_dev_tenant_eid` (`TenantID`,`EID`),
+  KEY `idx_emp_dev_fingerprint` (`DeviceFingerprintHash`),
+  KEY `fk_empdev_employee_eid` (`EID`),
+  CONSTRAINT `fk_empdev_employee_eid` FOREIGN KEY (`EID`) REFERENCES `employee_data` (`EID`) ON DELETE CASCADE,
+  CONSTRAINT `fk_empdev_tenant_id` FOREIGN KEY (`TenantID`) REFERENCES `tenants` (`TenantID`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+
+CREATE TABLE `geofence_locations` (
+  `LocationID` int NOT NULL AUTO_INCREMENT,
+  `TenantID` int NOT NULL,
+  `LocationName` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `Latitude` decimal(10,8) NOT NULL,
+  `Longitude` decimal(11,8) NOT NULL,
+  `RadiusMeters` int NOT NULL,
+  `IsEnabled` tinyint NOT NULL DEFAULT '1',
+  PRIMARY KEY (`LocationID`),
+  KEY `idx_geofence_tenant_name` (`TenantID`,`LocationName`),
+  CONSTRAINT `fk_geofence_tenant` FOREIGN KEY (`TenantID`) REFERENCES `tenants` (`TenantID`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+
+CREATE TABLE `payroll_history` (
+  `history_id` int NOT NULL AUTO_INCREMENT,
+  `TenantID` int NOT NULL,
+  `processed_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `period_start_date` date NOT NULL,
+  `period_end_date` date NOT NULL,
+  `grand_total` decimal(12,2) NOT NULL,
+  PRIMARY KEY (`history_id`),
+  KEY `idx_history_tenant_period_end` (`TenantID`,`period_end_date`),
+  CONSTRAINT `payroll_history_ibfk_1` FOREIGN KEY (`TenantID`) REFERENCES `tenants` (`TenantID`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+
+CREATE TABLE `promo_codes` (
+  `PromoCodeID` int NOT NULL AUTO_INCREMENT,
+  `Code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `Description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+  `DiscountType` enum('PERCENT','FIXED_AMOUNT','LIFETIME','TRIAL') COLLATE utf8mb4_general_ci NOT NULL,
+  `DiscountValue` decimal(10,2) DEFAULT NULL,
+  `ExpirationDate` date DEFAULT NULL,
+  `MaxUses` int DEFAULT NULL,
+  `CurrentUses` int NOT NULL DEFAULT '0',
+  `IsEnabled` tinyint DEFAULT '0',
+  `CreatedAt` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`PromoCodeID`),
+  UNIQUE KEY `uq_promo_code` (`Code`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+
+CREATE TABLE `punches` (
+  `PUNCH_ID` int NOT NULL AUTO_INCREMENT,
+  `TenantID` int NOT NULL,
+  `EID` int NOT NULL,
+  `DATE` date NOT NULL,
+  `IN_1` timestamp NULL DEFAULT NULL,
+  `OUT_1` timestamp NULL DEFAULT NULL,
+  `TOTAL` double DEFAULT '0',
+  `OT` double DEFAULT '0',
+  `DT` double DEFAULT '0',
+  `LATE` tinyint DEFAULT '0',
+  `EARLY_OUTS` tinyint DEFAULT '0',
+  `PUNCH_TYPE` varchar(25) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  PRIMARY KEY (`PUNCH_ID`),
+  KEY `EID` (`EID`),
+  KEY `idx_punches_tenant_eid_date` (`TenantID`,`EID`,`DATE`),
+  CONSTRAINT `punches_ibfk_1` FOREIGN KEY (`EID`) REFERENCES `employee_data` (`EID`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `punches_ibfk_2` FOREIGN KEY (`TenantID`) REFERENCES `tenants` (`TenantID`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=130 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+
+CREATE TABLE `schedules` (
+  `TenantID` int NOT NULL,
+  `NAME` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `SHIFT_START` time DEFAULT NULL,
+  `LUNCH_START` time DEFAULT NULL,
+  `LUNCH_END` time DEFAULT NULL,
+  `SHIFT_END` time DEFAULT NULL,
+  `DAYS_WORKED` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `AUTO_LUNCH` tinyint DEFAULT '0',
+  `HRS_REQUIRED` int DEFAULT '0',
+  `LUNCH_LENGTH` int DEFAULT '0',
+  `WORK_SCHEDULE` varchar(20) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  PRIMARY KEY (`TenantID`,`NAME`),
+  CONSTRAINT `schedules_ibfk_1` FOREIGN KEY (`TenantID`) REFERENCES `tenants` (`TenantID`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+
+CREATE TABLE `settings` (
+  `TenantID` int NOT NULL,
+  `setting_key` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `setting_value` text COLLATE utf8mb4_general_ci,
+  PRIMARY KEY (`TenantID`,`setting_key`),
+  CONSTRAINT `settings_ibfk_1` FOREIGN KEY (`TenantID`) REFERENCES `tenants` (`TenantID`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+
+CREATE TABLE `tenants` (
+  `TenantID` int NOT NULL AUTO_INCREMENT,
+  `CompanyName` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `CompanyIdentifier` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `AdminEmail` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `PhoneNumber` varchar(30) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `Address` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `City` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `State` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `ZipCode` varchar(20) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `DefaultTimeZone` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `AdminPasswordHash` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `SignupDate` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `SubscriptionStatus` varchar(50) COLLATE utf8mb4_general_ci DEFAULT 'Active',
+  `CurrentPeriodEnd` timestamp NULL DEFAULT NULL,
+  `StripeCustomerID` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `StripeSubscriptionID` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'Stores the ID of the Stripe Subscription object',
+  `StripePriceID` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `MaxUsers` int DEFAULT '25',
+  `AppliedPromoCodeID` int DEFAULT NULL,
+  PRIMARY KEY (`TenantID`),
+  UNIQUE KEY `idx_company_identifier_tenant` (`CompanyIdentifier`),
+  KEY `fk_tenants_promocode` (`AppliedPromoCodeID`),
+  CONSTRAINT `fk_tenants_promocode` FOREIGN KEY (`AppliedPromoCodeID`) REFERENCES `promo_codes` (`PromoCodeID`)
+) ENGINE=InnoDB AUTO_INCREMENT=253 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+

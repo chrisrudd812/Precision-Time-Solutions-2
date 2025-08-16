@@ -114,7 +114,7 @@ public class ShowEmployees {
                             .append("\" data-pershours=\"").append(displayPers)
                             .append("\" data-hiredate=\"").append(escapeHtml(displayHireDate)) 
                             .append("\" data-iso-date=\"").append(escapeHtml(isoHireDate)).append("\"") // Important: Use data-iso-date for JS
-                            .append("\" data-worksched=\"").append(escapeHtml(workSchedule != null ? workSchedule : "")) 
+                            .append("\" data-workschedule=\"").append(escapeHtml(workSchedule != null ? workSchedule : "")) 
                             .append("\" data-wagetype=\"").append(escapeHtml(wageType != null ? wageType : ""))
                             .append("\" data-wage=\"").append(wage) 
                             .append("\">");

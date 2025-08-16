@@ -45,7 +45,16 @@ public class SignupServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final Logger logger = Logger.getLogger(SignupServlet.class.getName());
 
-    
+	/*
+	 * private static final String STRIPE_SECRET_KEY =
+	 * "sk_test_51RUHnpBtvyYfb2KWU0CYALIEcrRazXpIKjxbPz8tadN41F5yRQ2BVwTtEDV7FA4JHdjFfNmVPyCEpEyMpKSZZ30g00Re9gNKbI";
+	 */
+    private static final String STRIPE_PRICE_ID = "price_1RWNdXBtvyYfb2KWWt6p9F4X";
+
+	/*
+	 * static { Stripe.apiKey = STRIPE_SECRET_KEY;
+	 * logger.info("[SignupServlet] Stripe API Key initialized."); }
+	 */
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -129,7 +138,7 @@ public class SignupServlet extends HttpServlet {
 
                 SubscriptionCreateParams.Builder subParamsBuilder = SubscriptionCreateParams.builder()
                     .setCustomer(customer.getId())
-                    //.addItem(SubscriptionCreateParams.Item.builder().setPrice(STRIPE_PRICE_ID).build())
+                    .addItem(SubscriptionCreateParams.Item.builder().setPrice(STRIPE_PRICE_ID).build())
                     .setPaymentBehavior(SubscriptionCreateParams.PaymentBehavior.DEFAULT_INCOMPLETE)
                     .addAllExpand(List.of("latest_invoice.payment_intent"))
                     .setCollectionMethod(SubscriptionCreateParams.CollectionMethod.CHARGE_AUTOMATICALLY);

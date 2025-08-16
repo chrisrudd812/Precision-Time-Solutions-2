@@ -1,19 +1,99 @@
-package timeclock.accruals; // Ensure this matches your package
+package timeclock.accruals;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement; // Use PreparedStatement
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-// import java.sql.Statement; // No longer needed if using PreparedStatement
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import timeclock.db.DatabaseConnection;
 
 public class ShowAccruals {
-
     private static final Logger logger = Logger.getLogger(ShowAccruals.class.getName());
 
-    // Helper to escape HTML, useful if displaying user-inputted data
+    public static String showAccruals(int tenantId) {
+        StringBuilder html = new StringBuilder();
+        String sql = "SELECT NAME, VACATION, SICK, PERSONAL FROM ACCRUALS WHERE TenantID = ? ORDER BY NAME ASC";
+
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = con.prepareStatement(sql)) {
+
+            pstmt.setInt(1, tenantId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (!rs.isBeforeFirst()) {
+                    html.append("<tr><td colspan='4' class='report-message-row'>No accrual policies found.</td></tr>");
+                } else {
+                    while (rs.next()) {
+                        String name = rs.getString("NAME");
+                        int vacation = rs.getInt("VACATION");
+                        int sick = rs.getInt("SICK");
+                        int personal = rs.getInt("PERSONAL");
+
+                        html.append("<tr data-name='").append(escapeHtml(name)).append("' ")
+                            .append("data-vacation='").append(vacation).append("' ")
+                            .append("data-sick='").append(sick).append("' ")
+                            .append("data-personal='").append(personal).append("'>");
+                        html.append("<td>").append(escapeHtml(name)).append("</td>");
+                        html.append("<td>").append(vacation).append("</td>");
+                        html.append("<td>").append(sick).append("</td>");
+                        html.append("<td>").append(personal).append("</td>");
+                        html.append("</tr>");
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "SQL Error in showAccruals for TenantID: " + tenantId, e);
+            html.append("<tr><td colspan='4' class='report-error-row'>Error loading accrual policies.</td></tr>");
+        }
+        return html.toString();
+    }
+
+    public static List<Map<String, String>> getAccrualPoliciesForTenant(int tenantId) {
+        List<Map<String, String>> policies = new ArrayList<>();
+        String sql = "SELECT NAME FROM ACCRUALS WHERE TenantID = ? ORDER BY NAME ASC";
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = con.prepareStatement(sql)) {
+            pstmt.setInt(1, tenantId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, String> policy = new HashMap<>();
+                    policy.put("name", rs.getString("NAME"));
+                    policies.add(policy);
+                }
+            }
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "SQL Error fetching accrual policies for dropdown for T:" + tenantId, e);
+        }
+        return policies;
+    }
+
+    public static List<Map<String, String>> getEmployeesForTenant(int tenantId, boolean includeInactive) {
+        List<Map<String, String>> employees = new ArrayList<>();
+        String sql = "SELECT EID, FIRST_NAME, LAST_NAME FROM EMPLOYEE_DATA WHERE TenantID = ?" +
+                     (includeInactive ? "" : " AND ACTIVE = TRUE") +
+                     " ORDER BY LAST_NAME ASC, FIRST_NAME ASC";
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = con.prepareStatement(sql)) {
+            pstmt.setInt(1, tenantId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, String> employee = new HashMap<>();
+                    employee.put("id", String.valueOf(rs.getInt("EID")));
+                    employee.put("firstName", rs.getString("FIRST_NAME"));
+                    employee.put("lastName", rs.getString("LAST_NAME"));
+                    employees.add(employee);
+                }
+            }
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "SQL Error fetching employees for dropdown for T:" + tenantId, e);
+        }
+        return employees;
+    }
+
     private static String escapeHtml(String input) {
         if (input == null) return "";
         return input.replace("&", "&amp;")
@@ -22,80 +102,4 @@ public class ShowAccruals {
                     .replace("\"", "&quot;")
                     .replace("'", "&#39;");
     }
-
-    /**
-     * Generates HTML table rows for displaying accrual policies for a SPECIFIC tenant.
-     * @param tenantId The ID of the tenant whose accrual policies to display.
-     * @return String containing HTML table rows (<tr>...</tr>).
-     */
-    public static String showAccruals(int tenantId) { // Added tenantId parameter
-        StringBuilder tableRows = new StringBuilder();
-        final int numberOfColumns = 4; // Policy Name, Vacation, Sick, Personal
-
-        logger.info("[ShowAccruals] Called showAccruals for TenantID: " + tenantId);
-
-        if (tenantId <= 0) {
-            logger.warning("[ShowAccruals] Invalid TenantID: " + tenantId + ". Returning error row.");
-            return "<tr><td colspan='" + numberOfColumns + "' class='report-error-row'>Invalid session or tenant context.</td></tr>";
-        }
-
-        // SQL query now filters by TenantID
-        String sql = "SELECT NAME, VACATION, SICK, PERSONAL FROM ACCRUALS WHERE TenantID = ? ORDER BY NAME ASC";
-        logger.info("[ShowAccruals] SQL Query: " + sql + " with TenantID: " + tenantId);
-
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-
-            ps.setInt(1, tenantId);
-            logger.fine("[ShowAccruals] Executing query for TenantID: " + tenantId);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                boolean found = false;
-                int rowCount = 0;
-                while (rs.next()) {
-                    found = true;
-                    rowCount++;
-                    String name = rs.getString("NAME");
-                    int vacation = rs.getInt("VACATION"); // Assuming these are INT in DB
-                    int sick = rs.getInt("SICK");
-                    int personal = rs.getInt("PERSONAL");
-
-                    logger.fine("[ShowAccruals] Processing DB row " + rowCount + ": Name='" + name + "', Vac='" + vacation + "', Sick='" + sick + "', Pers='" + personal + "'");
-
-                    // Add data-* attributes for JavaScript to use for editing
-                    tableRows.append("<tr data-name=\"").append(escapeHtml(name))
-                             .append("\" data-vacation=\"").append(vacation)
-                             .append("\" data-sick=\"").append(sick)
-                             .append("\" data-personal=\"").append(personal)
-                             .append("\">");
-                    tableRows.append("<td>").append(escapeHtml(name)).append("</td>");
-                    tableRows.append("<td>").append(vacation).append("</td>");
-                    tableRows.append("<td>").append(sick).append("</td>");
-                    tableRows.append("<td>").append(personal).append("</td>");
-                    tableRows.append("</tr>\n");
-                }
-                logger.info("[ShowAccruals] Processed " + rowCount + " accrual policies from DB for TenantID: " + tenantId);
-
-                if (!found) {
-                    logger.info("[ShowAccruals] No accrual policies found in DB for TenantID: " + tenantId);
-                    tableRows.append("<tr><td colspan='").append(numberOfColumns)
-                             .append("' class='report-message-row'>No accrual policies found. Use 'Add Accrual Policy' to create one.</td></tr>");
-                }
-            }
-        } catch (SQLException e) {
-            logger.log(Level.SEVERE, "[ShowAccruals] SQLException retrieving accrual policies for TenantID: " + tenantId, e);
-            tableRows.setLength(0); // Clear any partial results
-            tableRows.append("<tr><td colspan='").append(numberOfColumns)
-                     .append("' class='report-error-row'>Error retrieving accrual policies: ").append(escapeHtml(e.getMessage())).append("</td></tr>");
-        } catch (Exception e) { // Catch any other unexpected errors
-            logger.log(Level.SEVERE, "[ShowAccruals] Unexpected error retrieving accrual policies for TenantID: " + tenantId, e);
-            tableRows.setLength(0);
-            tableRows.append("<tr><td colspan='").append(numberOfColumns)
-                     .append("' class='report-error-row'>An unexpected error occurred.</td></tr>");
-        }
-        logger.fine("[ShowAccruals] Returning HTML for TenantID " + tenantId + ". Length: " + tableRows.length());
-        return tableRows.toString();
-    }
-
-    // Removed static block with Derby driver loading, as DatabaseConnection handles connections.
 }

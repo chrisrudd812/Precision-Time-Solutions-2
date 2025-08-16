@@ -8,5 +8,23 @@
     <listener>
         <listener-class>timeclock.listener.ApplicationListener</listener-class>
     </listener>
+    
+    <!-- 
+  This security constraint allows public access to static resources like
+  CSS, JavaScript, and image files. Place this snippet inside the <web-app>
+  tag in your web.xml file, ideally before any other security constraints.
+-->
+<security-constraint>
+    <web-resource-collection>
+        <web-resource-name>Public Resources</web-resource-name>
+        <description>Allow public access to static resources.</description>
+        <url-pattern>/css/*</url-pattern>
+        <url-pattern>/js/*</url-pattern>
+        <url-pattern>/images/*</url-pattern>
+        <!-- Add any other public folders here -->
+    </web-resource-collection>
+    <!-- No <auth-constraint> tag means access is not restricted -->
+</security-constraint>
+
         
 </web-app>

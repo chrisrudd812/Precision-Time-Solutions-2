@@ -1,6 +1,4 @@
 /* === css/employees.css === */
-/* v23 - Adjusted for Work Schedule removal (but WORK_SCHEDULE IS KEPT as per user) */
-/* This version ensures nowrap for headers and uses specific column widths */
 
 /* Inherits base styles from reports.css */
 
@@ -11,66 +9,39 @@
 }
 
 table#employees {
-    table-layout: auto; /* Can change to fixed if column widths are very problematic */
+    table-layout: auto;
     width: 100%;      
 }
 
-/* General style for all th and td in employees table for consistency */
 table#employees th,
 table#employees td {
-    white-space: normal; /* Default to allow wrapping for data cells */
+    white-space: normal;
     word-break: break-word;
     padding: 9px 10px; 
-    vertical-align: middle; /* Good default */
+    vertical-align: middle;
 }
 
-/* Force headers to not wrap */
 table#employees th {
     white-space: nowrap !important; 
-    text-align: center; /* Centering header text generally looks good */
+    text-align: center;
+    font-weight: bold;
 }
 
-/* Column-specific styling for #employees table for better width distribution */
-/* These percentages and min-widths might need further tuning based on your content */
-table#employees th:nth-child(1), table#employees td:nth-child(1) { /* Emp ID */
-    text-align: center; white-space: nowrap; width: 5%; min-width: 50px;
-}
-table#employees th:nth-child(2), table#employees td:nth-child(2) { /* First Name */
-    width: 9%; min-width: 90px; white-space: nowrap;
-}
-table#employees th:nth-child(3), table#employees td:nth-child(3) { /* Last Name */
-    width: 9%; min-width: 90px; white-space: nowrap;
-}
-table#employees th:nth-child(4), table#employees td:nth-child(4) { /* Department */
-    width: 9%; min-width: 90px;
-}
-table#employees th:nth-child(5), table#employees td:nth-child(5) { /* Schedule */
-    width: 9%; min-width: 90px;
-}
-table#employees th:nth-child(6), table#employees td:nth-child(6) { /* Supervisor */
-    width: 9%; min-width: 100px;
-}
-table#employees th:nth-child(7), table#employees td:nth-child(7) { /* Permissions */
-    text-align: center; white-space: nowrap; width: 8%; min-width: 90px;
-}
-table#employees th:nth-child(8), table#employees td:nth-child(8) { /* E-mail */
-    width: 14%; min-width: 150px; word-break: break-all; /* Allow email to break if very long */
-}
-table#employees th:nth-child(9), table#employees td:nth-child(9) { /* Hire Date */
-    text-align: center; white-space: nowrap; width: 8%; min-width: 90px;
-}
-table#employees th:nth-child(10), table#employees td:nth-child(10) { /* Work Sched */
-    text-align: center; white-space: nowrap; width: 8%; min-width: 90px;
-}
-table#employees th:nth-child(11), table#employees td:nth-child(11) { /* Wage Type */
-    text-align: center; white-space: nowrap; width: 6%; min-width: 70px;
-}
-table#employees th:nth-child(12), table#employees td:nth-child(12) { /* Wage */
-    text-align: right; white-space: nowrap; width: 7%; min-width: 70px;
-}
+/* Column-specific styling */
+table#employees th:nth-child(1), table#employees td:nth-child(1) { text-align: center; white-space: nowrap; width: 5%; min-width: 50px; }
+table#employees th:nth-child(2), table#employees td:nth-child(2) { width: 9%; min-width: 90px; white-space: nowrap; }
+table#employees th:nth-child(3), table#employees td:nth-child(3) { width: 9%; min-width: 90px; white-space: nowrap; }
+table#employees th:nth-child(4), table#employees td:nth-child(4) { width: 9%; min-width: 90px; }
+table#employees th:nth-child(5), table#employees td:nth-child(5) { width: 9%; min-width: 90px; }
+table#employees th:nth-child(6), table#employees td:nth-child(6) { width: 9%; min-width: 100px; }
+table#employees th:nth-child(7), table#employees td:nth-child(7) { text-align: center; white-space: nowrap; width: 8%; min-width: 90px; }
+table#employees th:nth-child(8), table#employees td:nth-child(8) { width: 14%; min-width: 150px; word-break: break-all; }
+table#employees th:nth-child(9), table#employees td:nth-child(9) { text-align: center; white-space: nowrap; width: 8%; min-width: 90px; }
+table#employees th:nth-child(10), table#employees td:nth-child(10) { text-align: center; white-space: nowrap; width: 8%; min-width: 90px; }
+table#employees th:nth-child(11), table#employees td:nth-child(11) { text-align: center; white-space: nowrap; width: 6%; min-width: 70px; }
+table#employees th:nth-child(12), table#employees td:nth-child(12) { text-align: right; white-space: nowrap; width: 7%; min-width: 70px; }
 
-/* --- Employee Details Section (#employeeDetailsSection) --- */
-/* This section remains the same as the one you provided previously */
+/* --- Employee Details Section --- */
 #employeeDetailsSection {
     width: 100%; margin: 30px 0 20px 0; padding: 15px;
     border: 1px solid #ced4da; border-radius: 8px;
@@ -85,16 +56,102 @@ table#employees th:nth-child(12), table#employees td:nth-child(12) { /* Wage */
 .details-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
 .detail-group { padding: 20px; box-sizing: border-box; border: 1px solid #cbd5e0; border-radius: 6px; background-color: #ffffff; display: flex; flex-direction: column; text-align: center; }
 .details-grid > .detail-group:nth-child(1), .details-grid > .detail-group:nth-child(2) { align-self: stretch; }
-.detail-group#accrualInfoGroup { align-self: start; grid-column: span 1; }
+
+.detail-group#accrualInfoGroup { 
+    grid-column: span 1; 
+}
+
 .detail-group h3 { margin-top: 0; margin-bottom: 18px; color: #005A9C; border-bottom: 1px solid #dee2e6; padding-bottom: 10px; font-size: 1.1em; width: 100%; font-weight: 600; text-align:center; }
 .detail-group p { margin: 0 auto 10px auto; font-size: 0.9em; line-height: 1.6; display: grid; grid-template-columns: auto 1fr; text-align: left; gap: 5px 8px; align-items: baseline; width: 95%; max-width: 320px; }
 .detail-group p:last-child { margin-bottom: 0; }
 .detail-group p label { font-weight: 600; color: #495057; text-align: right; padding-right: 5px; white-space: nowrap; }
 .detail-group p span { color: #343a40; word-wrap: break-word; word-break: break-all; text-align: left; }
-#resetPasswordForm { display: inline-block; }
+/* #resetPasswordForm { display: inline-block; } -- This line is no longer needed */
 #btnResetPassword.glossy-button { min-width: 220px; }
 
-/* Modal Styling from reports.css should generally apply */
+/* --- Modal Styling --- */
 #addEmployeeModal .modal-content,
 #editEmployeeModal .modal-content { max-width: 750px; min-width: 600px; }
 .required-asterisk { color: #dc3545; margin-left: 2px; font-weight: bold; }
+
+.modal-content .form-row .form-item.third-width {
+    flex: 1 1 0;
+    min-width: calc(33.333% - 11px);
+}
+
+/* --- ADDED: Styles for Scrollable Table --- */
+.reports-page .parent-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 120px); 
+}
+.report-display-area {
+    flex-grow: 1; 
+    overflow: hidden;
+    display: flex;
+    background: linear-gradient(to bottom, #d0d9e2, #e7f0f7);
+}
+#reportOutput_employees {
+    flex-grow: 1;
+    max-height: 100%;
+    overflow-y: auto;
+}
+#employeesTable thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background-color: #f8f9fa;
+}
+
+/* --- ADDED: Styles for Sortable Table Headers --- */
+.report-table thead th.sortable {
+    cursor: pointer;
+    position: relative;
+    padding-right: 25px; 
+}
+.report-table thead th.sortable::after,
+.report-table thead th.sortable::before {
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    position: absolute;
+    right: 10px;
+    opacity: 0.2;
+    transition: opacity 0.2s ease, color 0.2s ease;
+    line-height: 1;
+}
+.report-table thead th.sortable::before {
+    content: '\f0de'; /* fa-sort-up */
+    bottom: 50%;
+    margin-bottom: 2px;
+}
+.report-table thead th.sortable::after {
+    content: '\f0dd'; /* fa-sort-down */
+    top: 50%;
+    margin-top: 2px;
+}
+.report-table thead th.sortable:hover::before,
+.report-table thead th.sortable:hover::after {
+    opacity: 0.6;
+}
+.report-table thead th.sort-asc::before,
+.report-table thead th.sort-desc::after {
+    opacity: 1;
+    color: #005A9C;
+}
+
+#deactivateConfirmModal .modal-content p {
+    padding: 10px 25px 5px 25px;
+    text-align: center;
+    line-height: 1.6;
+}
+#deactivateConfirmModal .modal-content p.deactivate-note {
+    padding-top: 5px;
+    padding-bottom: 15px;
+    font-size: 0.9em;
+}
+
+/* FIX: Added specific style to push the Reset PIN button to the bottom of its container. */
+#accrualInfoGroup #resetPasswordForm {
+    margin-top: auto;   /* Pushes the form to the bottom */
+    padding-top: 20px;  /* Adds some space above the button */
+}

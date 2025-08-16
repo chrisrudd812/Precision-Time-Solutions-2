@@ -6,13 +6,20 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import timeclock.db.DatabaseConnection;
+
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @WebServlet("/WizardStatusServlet")
 public class WizardStatusServlet extends HttpServlet {
-    private static final long serialVersionUID = 2L; // Version updated
+    private static final long serialVersionUID = 2L;
     private static final Logger logger = Logger.getLogger(WizardStatusServlet.class.getName());
 
     @Override
@@ -37,12 +44,19 @@ public class WizardStatusServlet extends HttpServlet {
                 if (nextStep != null && !nextStep.trim().isEmpty()) {
                     session.setAttribute("wizardStep", nextStep);
                     logger.info("Wizard step updated to: " + nextStep);
-                    // **FIX**: Return the nextStep in the JSON response so the JS knows where to go.
                     out.print("{\"success\": true, \"nextStep\": \"" + nextStep + "\"}");
                 } else {
                     out.print("{\"success\": false, \"error\": \"Next step not provided.\"}");
                 }
             } else if ("endWizard".equals(action)) {
+                // FIX: Before ending the wizard, fetch and set the subscription status
+                Integer tenantId = (Integer) session.getAttribute("TenantID");
+                if (tenantId != null) {
+                    String status = getSubscriptionStatus(tenantId);
+                    session.setAttribute("SubscriptionStatus", status);
+                    logger.info("Set SubscriptionStatus='" + status + "' for TenantID " + tenantId + " at end of wizard.");
+                }
+
                 session.removeAttribute("startSetupWizard");
                 session.removeAttribute("wizardStep");
                 session.removeAttribute("CompanyNameSignup");
@@ -57,5 +71,24 @@ public class WizardStatusServlet extends HttpServlet {
         } finally {
             out.flush();
         }
+    }
+    
+    // FIX: New helper method to get the subscription status from the database.
+    private String getSubscriptionStatus(Integer tenantId) {
+        if (tenantId == null) return null;
+        String status = null;
+        String sql = "SELECT SubscriptionStatus FROM tenants WHERE TenantID = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, tenantId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    status = rs.getString("SubscriptionStatus");
+                }
+            }
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Error fetching subscription status for TenantID: " + tenantId, e);
+        }
+        return status;
     }
 }

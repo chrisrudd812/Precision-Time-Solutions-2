@@ -191,7 +191,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const payPeriodEndDateBlock = document.getElementById('payPeriodEndDateBlock'); 
     
     const gracePeriodSelect = document.getElementById('gracePeriod');
-    const holidayPayRateRadios = document.querySelectorAll('input[type="radio"][name="HolidayPayRate"]');
+    // REMOVED: holidayPayRateRadios constant is no longer needed.
     const punchRestrictionsEnabledCheckbox = document.getElementById('punchRestrictionsEnabled');
 
     const otModeManualRadio = document.getElementById('otModeManual');
@@ -468,7 +468,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (payPeriodStartDateInput) payPeriodStartDateInput.addEventListener('change', function() { saveSetting(this); calculateAndDisplayPayPeriodEndDate(); });
     
     if (gracePeriodSelect) gracePeriodSelect.addEventListener('change', function() { saveSetting(this); });
-    holidayPayRateRadios.forEach(radio => { radio.addEventListener('change', function() { if (this.checked) saveSetting(this); }); });
+    // REMOVED: Event listener for holidayPayRateRadios is no longer needed.
     if (otModeManualRadio) otModeManualRadio.addEventListener('change', function() { if(this.checked) { saveSetting(this); updateOvertimeModeUI(); }});
     if (otModeAutoRadio) otModeAutoRadio.addEventListener('change', function() { if(this.checked) { saveSetting(this); updateOvertimeModeUI(); }});
     if (overtimeStateSelect) {
