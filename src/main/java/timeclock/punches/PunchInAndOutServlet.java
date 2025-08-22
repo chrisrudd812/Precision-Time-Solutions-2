@@ -8,33 +8,25 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import timeclock.Configuration;
 import timeclock.db.DatabaseConnection;
-// import timeclock.util.IPAddressUtil; // Not used in the provided snippet
 
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
-// import java.sql.Date; // No longer needed for java.sql.Date if using LocalDate
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Time; // Needed for java.sql.Time
+import java.sql.Time;
 import java.sql.Timestamp;
-// import java.sql.Types; // Not directly used
 import java.time.Instant;
-import java.time.LocalDate; // For punch date
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-// import java.time.format.DateTimeFormatter; // Not directly used
-// import java.time.format.TextStyle; // Not directly used
-// import java.util.ArrayList; // Not directly used
-// import java.util.HashMap; // Not directly used
-// import java.util.List; // Not directly used
-// import java.util.Locale; // Not directly used
-// import java.util.Map; // Not directly used
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -43,8 +35,6 @@ public class PunchInAndOutServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final Logger logger = Logger.getLogger(PunchInAndOutServlet.class.getName());
 
-    // private static final String GLOBAL_MAX_DEVICES_KEY = "MaxDevicesPerUserGlobal"; // Not used in current logic
-    // private static final String DEFAULT_SYSTEM_MAX_DEVICES = "2"; // Not used in current logic
     private static final String PACIFIC_TIME_FALLBACK_ID = "America/Los_Angeles";
     private static final String DEFAULT_TENANT_FALLBACK_TIMEZONE = "America/Denver";
 
@@ -53,7 +43,101 @@ public class PunchInAndOutServlet extends HttpServlet {
         return s != null && !s.trim().isEmpty() && !"undefined".equalsIgnoreCase(s) && !"null".equalsIgnoreCase(s) && !"Unknown".equalsIgnoreCase(s);
     }
 
-    // calculateDistance not used in this specific logic, can be kept if used elsewhere or removed.
+    /**
+     * [NEW METHOD] Handles device validation and auto-registration if needed.
+     * This must be called within an existing database transaction.
+     * @return A map containing the result: success (boolean) and message (String).
+     */
+    private Map<String, Object> handleDeviceRegistrationAndValidation(Connection con, int tenantId, int eid, String fingerprintHash) throws SQLException {
+        Map<String, Object> result = new HashMap<>();
+        String logPrefix = String.format("[DeviceValidation T:%d E:%d] ", tenantId, eid);
+
+        // 1. Check if device restrictions are even enabled for this tenant
+        boolean restrictionsEnabled = "true".equalsIgnoreCase(Configuration.getProperty(tenantId, "RestrictByDevice"));
+        if (!restrictionsEnabled) {
+            logger.info(logPrefix + "Device restriction is not enabled for this tenant. Skipping check.");
+            result.put("success", true);
+            result.put("message", null); // No message needed for success
+            return result;
+        }
+        logger.info(logPrefix + "Device restriction is ENABLED. Proceeding with validation.");
+
+        // 2. Check if this device is already registered for this employee
+        String checkSql = "SELECT DeviceID, IsEnabled FROM employee_devices WHERE TenantID = ? AND EID = ? AND DeviceFingerprintHash = ?";
+        try (PreparedStatement psCheck = con.prepareStatement(checkSql)) {
+            psCheck.setInt(1, tenantId);
+            psCheck.setInt(2, eid);
+            psCheck.setString(3, fingerprintHash);
+            try (ResultSet rs = psCheck.executeQuery()) {
+                if (rs.next()) { // Device is already registered
+                    boolean isEnabled = rs.getBoolean("IsEnabled");
+                    if (isEnabled) {
+                        logger.info(logPrefix + "Device is already registered and ENABLED.");
+                        result.put("success", true);
+                        return result;
+                    } else {
+                        logger.warning(logPrefix + "Punch BLOCKED. Device is registered but DISABLED.");
+                        result.put("success", false);
+                        result.put("message", "Punch failed: This device has been disabled for punching.");
+                        return result;
+                    }
+                }
+            }
+        }
+
+        // 3. Device is NOT registered. Check if we can add it.
+        logger.info(logPrefix + "Device is not registered. Checking device limits.");
+        int maxDevices = 2; // Default
+        try {
+            String maxDevicesStr = Configuration.getProperty(tenantId, "MaxDevicesPerUserGlobal", "2");
+            maxDevices = Integer.parseInt(maxDevicesStr);
+        } catch (Exception e) {
+            logger.log(Level.WARNING, logPrefix + "Could not parse MaxDevicesPerUserGlobal config.", e);
+        }
+
+        String countSql = "SELECT COUNT(DeviceID) FROM employee_devices WHERE TenantID = ? AND EID = ?";
+        int currentDeviceCount = 0;
+        try (PreparedStatement psCount = con.prepareStatement(countSql)) {
+            psCount.setInt(1, tenantId);
+            psCount.setInt(2, eid);
+            try (ResultSet rsCount = psCount.executeQuery()) {
+                if (rsCount.next()) {
+                    currentDeviceCount = rsCount.getInt(1);
+                }
+            }
+        }
+        logger.info(logPrefix + "Employee has " + currentDeviceCount + " devices registered. The limit is " + maxDevices + ".");
+
+        if (currentDeviceCount >= maxDevices) {
+            logger.warning(logPrefix + "Punch BLOCKED. Max device limit of " + maxDevices + " has been reached.");
+            result.put("success", false);
+            result.put("message", "Punch failed: Your maximum device limit has been reached. Please contact a supervisor to register this new device.");
+            return result;
+        }
+
+        // 4. Limit not reached. Register the new device.
+        logger.info(logPrefix + "Device limit not reached. Auto-registering new device.");
+        String insertSql = "INSERT INTO employee_devices (TenantID, EID, DeviceFingerprintHash, DeviceDescription, RegisteredDate, LastUsedDate, IsEnabled) VALUES (?, ?, ?, ?, ?, ?, TRUE)";
+        try (PreparedStatement psInsert = con.prepareStatement(insertSql)) {
+            Timestamp now = Timestamp.from(Instant.now());
+            psInsert.setInt(1, tenantId);
+            psInsert.setInt(2, eid);
+            psInsert.setString(3, fingerprintHash);
+            psInsert.setString(4, "New Device (Auto-Registered)");
+            psInsert.setTimestamp(5, now);
+            psInsert.setTimestamp(6, now);
+            int rowsAffected = psInsert.executeUpdate();
+            if (rowsAffected > 0) {
+                logger.info(logPrefix + "New device successfully registered.");
+                result.put("success", true);
+                result.put("message", "This new device was successfully registered");
+                return result;
+            } else {
+                throw new SQLException("Failed to insert new device record, no rows affected.");
+            }
+        }
+    }
+
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -63,18 +147,13 @@ public class PunchInAndOutServlet extends HttpServlet {
         String punchAction = request.getParameter("punchAction");
         String eidStr = request.getParameter("punchEID");
         String deviceFingerprintHash = request.getParameter("deviceFingerprintHash");
-        // Location params not directly used in late/early logic but kept for context
-        // String clientLatitudeStr = request.getParameter("clientLatitude");
-        // String clientLongitudeStr = request.getParameter("clientLongitude");
-        // String clientAccuracyStr = request.getParameter("clientLocationAccuracy");
         String browserTimeZoneIdStr = request.getParameter("browserTimeZoneId");
 
         String redirectPage = "timeclock.jsp";
         String messageForRedirect = null;
         boolean isError = false;
         boolean isSuccess = false;
-        String deviceRegistrationMessagePart = null; // Assuming this is handled by restriction checks
-        // boolean accuracyOverrideOccurred_flag = false; // Assuming this is handled by restriction checks
+        String deviceRegistrationMessagePart = null;
 
         Integer tenantIdInteger = null;
         Integer sessionEid = null;
@@ -85,7 +164,6 @@ public class PunchInAndOutServlet extends HttpServlet {
         logger.info(String.format("[PunchServlet] Params: Action=%s, EIDStr=%s, BrowserTZ=%s, FP=%s",
             punchAction, eidStr, browserTimeZoneIdStr,
             (isValid(deviceFingerprintHash) && deviceFingerprintHash.length() > 10 ? deviceFingerprintHash.substring(0,10)+"..." : deviceFingerprintHash)
-            // Removed Lat, Lon, Acc from this specific log line for brevity, they are still available if needed
         ));
 
 
@@ -138,167 +216,140 @@ public class PunchInAndOutServlet extends HttpServlet {
             logger.warning("[PunchServlet] Fingerprint issue for EID " + punchEID + ", T:" + tenantId + ". FP: '" + deviceFingerprintHash + "'");
         }
 
-        ZoneId effectiveZoneIdForScheduleComparison = null; // This will be used for late/early checks
+        ZoneId effectiveZoneIdForScheduleComparison = null;
         if (!isError) {
             String zoneIdToUse = null;
             try {
                 if (isValid(browserTimeZoneIdStr)) {
                     zoneIdToUse = browserTimeZoneIdStr;
-                    logger.info("[PunchServlet][TZ-Logic] Using Browser Timezone for schedule comparison checks: " + zoneIdToUse);
                 } else if (isValid(sessionUserTimeZoneId)) {
                     zoneIdToUse = sessionUserTimeZoneId;
-                    logger.info("[PunchServlet][TZ-Logic] Using Session/Profile Timezone for schedule comparison checks: " + zoneIdToUse);
                 } else {
-                    String tenantDefaultTz = Configuration.getProperty(tenantId, "DefaultTimeZone", DEFAULT_TENANT_FALLBACK_TIMEZONE);
-                    zoneIdToUse = tenantDefaultTz;
-                    logger.info("[PunchServlet][TZ-Logic] Using Tenant DefaultTimeZone (or its fallback '" + DEFAULT_TENANT_FALLBACK_TIMEZONE +"') for schedule comparison checks: " + zoneIdToUse);
+                    zoneIdToUse = Configuration.getProperty(tenantId, "DefaultTimeZone", DEFAULT_TENANT_FALLBACK_TIMEZONE);
                 }
                 effectiveZoneIdForScheduleComparison = ZoneId.of(zoneIdToUse);
             } catch (Exception e) {
                 logger.log(Level.WARNING, "[PunchServlet][TZ-Logic] Invalid timezone ID encountered ('" + zoneIdToUse + "'). Defaulting to " + PACIFIC_TIME_FALLBACK_ID + ".", e);
                 effectiveZoneIdForScheduleComparison = ZoneId.of(PACIFIC_TIME_FALLBACK_ID);
             }
-            logger.info("[PunchServlet][TZ-Logic] Effective ZoneId for schedule comparisons: " + effectiveZoneIdForScheduleComparison.getId());
+        }
+        
+        if (!isError && !("IN".equals(punchAction) || "OUT".equals(punchAction))) {
+             messageForRedirect = "Invalid punch action specified."; isError = true;
         }
 
-        // --- PUNCH RESTRICTION CHECKS ---
-        if (!isError && ("IN".equals(punchAction) || "OUT".equals(punchAction))) {
-            // Placeholder for your detailed restriction checks.
-            // If any restriction check fails:
-            // messageForRedirect = "Punch restricted: <reason>"; isError = true;
-            logger.info("[PunchServlet] Placeholder: Detailed Punch Restriction Checks would be performed here. They need to be re-integrated.");
-        } else if (!isError) {
-            messageForRedirect = "Invalid punch action specified."; isError = true;
-        }
-        // --- END PUNCH RESTRICTION CHECKS ---
 
         if (!isError) {
-            logger.info("[PunchServlet] ALL PRE-CHECKS PASSED. Proceeding with DB punch: " + punchAction + " for EID " + punchEID);
+            logger.info("[PunchServlet] ALL PRE-CHECKS PASSED. Proceeding with DB transaction for: " + punchAction + " for EID " + punchEID);
             Connection con = null;
             try {
                 con = DatabaseConnection.getConnection();
                 con.setAutoCommit(false);
-                Timestamp punchTimestampUtc = Timestamp.from(Instant.now());
-                LocalDate punchDateForDb = punchTimestampUtc.toInstant().atZone(ZoneOffset.UTC).toLocalDate();
 
-                // --- Get Schedule and Grace Period ---
-                Time scheduledStartTime = null;
-                Time scheduledEndTime = null;
-                int gracePeriodMinutes = 5; // Default
-
-                String empDetailsSql = "SELECT s.SHIFT_START, s.SHIFT_END " +
-                                       "FROM EMPLOYEE_DATA e LEFT JOIN SCHEDULES s ON e.TenantID = s.TenantID AND e.SCHEDULE = s.NAME " +
-                                       "WHERE e.EID = ? AND e.TenantID = ?";
-                try (PreparedStatement psEmp = con.prepareStatement(empDetailsSql)) {
-                    psEmp.setInt(1, punchEID);
-                    psEmp.setInt(2, tenantId);
-                    try (ResultSet rsEmp = psEmp.executeQuery()) {
-                        if (rsEmp.next()) {
-                            scheduledStartTime = rsEmp.getTime("SHIFT_START");
-                            scheduledEndTime = rsEmp.getTime("SHIFT_END");
-                        }
-                    }
+                // --- [NEW] DEVICE VALIDATION & REGISTRATION ---
+                Map<String, Object> deviceValidationResult = handleDeviceRegistrationAndValidation(con, tenantId, punchEID, deviceFingerprintHash);
+                boolean deviceCheckSuccess = (boolean) deviceValidationResult.get("success");
+                if (!deviceCheckSuccess) {
+                    messageForRedirect = (String) deviceValidationResult.get("message");
+                    isError = true;
+                } else {
+                    deviceRegistrationMessagePart = (String) deviceValidationResult.get("message");
                 }
-                try {
-                    String graceStr = Configuration.getProperty(tenantId, "GracePeriod", "5");
-                    if (isValid(graceStr)) gracePeriodMinutes = Integer.parseInt(graceStr);
-                } catch (Exception eCfg) {
-                    logger.log(Level.WARNING, "Could not get GracePeriod for T:" + tenantId, eCfg);
-                }
-                logger.info("[PunchServlet] For EID " + punchEID + ": SchedStart=" + scheduledStartTime + ", SchedEnd=" + scheduledEndTime + ", Grace=" + gracePeriodMinutes);
-                // --- End Get Schedule and Grace Period ---
+                // --- END DEVICE VALIDATION ---
 
+                if (!isError) { // Only proceed if device check passed
+                    Timestamp punchTimestampUtc = Timestamp.from(Instant.now());
+                    LocalDate punchDateForDb = punchTimestampUtc.toInstant().atZone(ZoneOffset.UTC).toLocalDate();
 
-                if ("IN".equals(punchAction)) {
-                    // ... (existing check for already punched IN) ...
-                    String statusSql = "SELECT IN_1, OUT_1 FROM PUNCHES WHERE TenantID = ? AND EID = ? AND DATE = ? ORDER BY PUNCH_ID DESC LIMIT 1";
-                    Timestamp lastInUtc = null; Timestamp lastOutUtc = null;
-                    try (PreparedStatement psStatus = con.prepareStatement(statusSql)) {
-                        psStatus.setInt(1, tenantId); psStatus.setInt(2, punchEID);
-                        psStatus.setDate(3, java.sql.Date.valueOf(punchDateForDb));
-                        try (ResultSet rsStatus = psStatus.executeQuery()) {
-                            if (rsStatus.next()) { lastInUtc = rsStatus.getTimestamp("IN_1"); lastOutUtc = rsStatus.getTimestamp("OUT_1"); }
-                        }
-                    }
-                    if (lastInUtc != null && lastOutUtc == null) {
-                        messageForRedirect = "You are already punched IN. Punch OUT first."; isError = true;
-                    } else {
-                        boolean isLate = false;
-                        if (scheduledStartTime != null && effectiveZoneIdForScheduleComparison != null) {
-                            LocalTime actualInLocal = ZonedDateTime.ofInstant(punchTimestampUtc.toInstant(), effectiveZoneIdForScheduleComparison).toLocalTime();
-                            LocalTime scheduledStartLocal = scheduledStartTime.toLocalTime();
-                            if (actualInLocal.isAfter(scheduledStartLocal.plusMinutes(gracePeriodMinutes))) {
-                                isLate = true;
-                            }
-                            logger.info("[PunchServlet] LATE CHECK (IN): EID=" + punchEID + ", ActualInLocal=" + actualInLocal + ", SchedStartLocal=" + scheduledStartLocal + ", Grace=" + gracePeriodMinutes + ", IsLate=" + isLate);
-                        }
-
-                        String insertSql = "INSERT INTO PUNCHES (TenantID, EID, DATE, IN_1, PUNCH_TYPE, LATE) VALUES (?, ?, ?, ?, 'User Initiated', ?)";
-                        try (PreparedStatement psInsert = con.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
-                            psInsert.setInt(1,tenantId);
-                            psInsert.setInt(2,punchEID);
-                            psInsert.setDate(3, java.sql.Date.valueOf(punchDateForDb));
-                            psInsert.setTimestamp(4, punchTimestampUtc);
-                            psInsert.setBoolean(5, isLate); // Set LATE flag
-
-                            int rowsAffected = psInsert.executeUpdate();
-                            if (rowsAffected > 0){
-                                // Optionally get generated PUNCH_ID if needed immediately
-                                messageForRedirect = "Punch IN submitted successfully.";
-                                // if (deviceRegistrationMessagePart != null) messageForRedirect = deviceRegistrationMessagePart + ". " + messageForRedirect; // If device reg logic is added
-                                con.commit();
-                                isSuccess = true;
-                                logger.info("[PunchServlet] Punch IN recorded (Late=" + isLate + ") and committed for EID: " + punchEID);
-                            } else {
-                                messageForRedirect = "Failed to record PUNCH IN."; isError = true; if(con!=null) con.rollback();
+                    Time scheduledStartTime = null; Time scheduledEndTime = null; int gracePeriodMinutes = 5;
+                    String empDetailsSql = "SELECT s.SHIFT_START, s.SHIFT_END FROM EMPLOYEE_DATA e LEFT JOIN SCHEDULES s ON e.TenantID = s.TenantID AND e.SCHEDULE = s.NAME WHERE e.EID = ? AND e.TenantID = ?";
+                    try (PreparedStatement psEmp = con.prepareStatement(empDetailsSql)) {
+                        psEmp.setInt(1, punchEID); psEmp.setInt(2, tenantId);
+                        try (ResultSet rsEmp = psEmp.executeQuery()) {
+                            if (rsEmp.next()) {
+                                scheduledStartTime = rsEmp.getTime("SHIFT_START");
+                                scheduledEndTime = rsEmp.getTime("SHIFT_END");
                             }
                         }
                     }
-                } else if ("OUT".equals(punchAction)) {
-                    String statusSql = "SELECT PUNCH_ID, IN_1 FROM PUNCHES WHERE TenantID = ? AND EID = ? AND OUT_1 IS NULL ORDER BY PUNCH_ID DESC LIMIT 1";
-                    Timestamp lastInForOutUtc = null; long lastPunchIdForOut = -1;
-                    try (PreparedStatement psStatus = con.prepareStatement(statusSql)) {
-                        psStatus.setInt(1, tenantId); psStatus.setInt(2, punchEID);
-                        try (ResultSet rsStatus = psStatus.executeQuery()) {
-                            if (rsStatus.next()) {
-                                lastInForOutUtc = rsStatus.getTimestamp("IN_1");
-                                lastPunchIdForOut = rsStatus.getLong("PUNCH_ID");
-                            }
-                        }
-                    }
-                    if (lastInForOutUtc == null || lastPunchIdForOut == -1) {
-                        messageForRedirect = "No open PUNCH IN record found to PUNCH OUT against."; isError = true;
-                    } else {
-                        boolean isEarlyOut = false;
-                        if (scheduledEndTime != null && effectiveZoneIdForScheduleComparison != null) {
-                            LocalTime actualOutLocal = ZonedDateTime.ofInstant(punchTimestampUtc.toInstant(), effectiveZoneIdForScheduleComparison).toLocalTime();
-                            LocalTime scheduledEndLocal = scheduledEndTime.toLocalTime();
-                            if (actualOutLocal.isBefore(scheduledEndLocal.minusMinutes(gracePeriodMinutes))) {
-                                isEarlyOut = true;
-                            }
-                             logger.info("[PunchServlet] EARLY OUT CHECK: EID=" + punchEID + ", ActualOutLocal=" + actualOutLocal + ", SchedEndLocal=" + scheduledEndLocal + ", Grace=" + gracePeriodMinutes + ", IsEarlyOut=" + isEarlyOut);
-                        }
+                    try {
+                        String graceStr = Configuration.getProperty(tenantId, "GracePeriod", "5");
+                        if (isValid(graceStr)) gracePeriodMinutes = Integer.parseInt(graceStr);
+                    } catch (Exception eCfg) { logger.log(Level.WARNING, "Could not get GracePeriod for T:" + tenantId, eCfg); }
 
-                        String updateSql = "UPDATE PUNCHES SET OUT_1 = ?, EARLY_OUTS = ? WHERE PUNCH_ID = ?";
-                        try (PreparedStatement psUpdate = con.prepareStatement(updateSql)) {
-                            psUpdate.setTimestamp(1, punchTimestampUtc);
-                            psUpdate.setBoolean(2, isEarlyOut); // Set EARLY_OUTS flag
-                            psUpdate.setLong(3, lastPunchIdForOut);
-                            if (psUpdate.executeUpdate() > 0){
-                                messageForRedirect = "Punch OUT submitted successfully.";
-                                ShowPunches.calculateAndUpdatePunchTotal(con, tenantId, punchEID, lastInForOutUtc, punchTimestampUtc, lastPunchIdForOut);
-                                con.commit();
-                                isSuccess = true;
-                                logger.info("[PunchServlet] Punch OUT recorded (EarlyOut=" + isEarlyOut + ") and committed for PUNCH_ID: " + lastPunchIdForOut);
-                            } else {
-                                messageForRedirect = "Failed to record PUNCH OUT."; isError = true; if(con!=null) con.rollback();
+
+                    if ("IN".equals(punchAction)) {
+                        String statusSql = "SELECT IN_1, OUT_1 FROM PUNCHES WHERE TenantID = ? AND EID = ? AND DATE = ? ORDER BY PUNCH_ID DESC LIMIT 1";
+                        Timestamp lastInUtc = null; Timestamp lastOutUtc = null;
+                        try (PreparedStatement psStatus = con.prepareStatement(statusSql)) {
+                            psStatus.setInt(1, tenantId); psStatus.setInt(2, punchEID);
+                            psStatus.setDate(3, java.sql.Date.valueOf(punchDateForDb));
+                            try (ResultSet rsStatus = psStatus.executeQuery()) { if (rsStatus.next()) { lastInUtc = rsStatus.getTimestamp("IN_1"); lastOutUtc = rsStatus.getTimestamp("OUT_1"); } }
+                        }
+                        if (lastInUtc != null && lastOutUtc == null) {
+                            messageForRedirect = "You are already punched IN. Punch OUT first."; isError = true;
+                        } else {
+                            boolean isLate = false;
+                            if (scheduledStartTime != null && effectiveZoneIdForScheduleComparison != null) {
+                                LocalTime actualInLocal = ZonedDateTime.ofInstant(punchTimestampUtc.toInstant(), effectiveZoneIdForScheduleComparison).toLocalTime();
+                                LocalTime scheduledStartLocal = scheduledStartTime.toLocalTime();
+                                if (actualInLocal.isAfter(scheduledStartLocal.plusMinutes(gracePeriodMinutes))) isLate = true;
+                            }
+                            String insertSql = "INSERT INTO PUNCHES (TenantID, EID, DATE, IN_1, PUNCH_TYPE, LATE) VALUES (?, ?, ?, ?, 'User Initiated', ?)";
+                            try (PreparedStatement psInsert = con.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
+                                psInsert.setInt(1,tenantId); psInsert.setInt(2,punchEID);
+                                psInsert.setDate(3, java.sql.Date.valueOf(punchDateForDb));
+                                psInsert.setTimestamp(4, punchTimestampUtc); psInsert.setBoolean(5, isLate);
+                                if (psInsert.executeUpdate() > 0){
+                                    messageForRedirect = "Punch IN submitted successfully."; isSuccess = true;
+                                } else { messageForRedirect = "Failed to record PUNCH IN."; isError = true; }
+                            }
+                        }
+                    } else if ("OUT".equals(punchAction)) {
+                        // [FIX] Query now only looks for open punches on WORK-related punch types
+                        String statusSql = "SELECT PUNCH_ID, IN_1 FROM PUNCHES WHERE TenantID = ? AND EID = ? AND OUT_1 IS NULL " +
+                                           "AND PUNCH_TYPE IN ('User Initiated', 'Supervisor Override', 'Regular', 'Sample Data') " +
+                                           "ORDER BY PUNCH_ID DESC LIMIT 1";
+                        Timestamp lastInForOutUtc = null; long lastPunchIdForOut = -1;
+                        try (PreparedStatement psStatus = con.prepareStatement(statusSql)) {
+                            psStatus.setInt(1, tenantId); psStatus.setInt(2, punchEID);
+                            try (ResultSet rsStatus = psStatus.executeQuery()) {
+                                if (rsStatus.next()) {
+                                    lastInForOutUtc = rsStatus.getTimestamp("IN_1");
+                                    lastPunchIdForOut = rsStatus.getLong("PUNCH_ID");
+                                }
+                            }
+                        }
+                        if (lastInForOutUtc == null || lastPunchIdForOut == -1) {
+                            messageForRedirect = "No open work punch found to clock out against."; isError = true;
+                        } else {
+                            boolean isEarlyOut = false;
+                            if (scheduledEndTime != null && effectiveZoneIdForScheduleComparison != null) {
+                                LocalTime actualOutLocal = ZonedDateTime.ofInstant(punchTimestampUtc.toInstant(), effectiveZoneIdForScheduleComparison).toLocalTime();
+                                LocalTime scheduledEndLocal = scheduledEndTime.toLocalTime();
+                                if (actualOutLocal.isBefore(scheduledEndLocal.minusMinutes(gracePeriodMinutes))) isEarlyOut = true;
+                            }
+                            String updateSql = "UPDATE PUNCHES SET OUT_1 = ?, EARLY_OUTS = ? WHERE PUNCH_ID = ?";
+                            try (PreparedStatement psUpdate = con.prepareStatement(updateSql)) {
+                                psUpdate.setTimestamp(1, punchTimestampUtc);
+                                psUpdate.setBoolean(2, isEarlyOut);
+                                psUpdate.setLong(3, lastPunchIdForOut);
+                                if (psUpdate.executeUpdate() > 0){
+                                    messageForRedirect = "Punch OUT submitted successfully.";
+                                    ShowPunches.calculateAndUpdatePunchTotal(con, tenantId, punchEID, lastInForOutUtc, punchTimestampUtc, lastPunchIdForOut);
+                                    isSuccess = true;
+                                } else { messageForRedirect = "Failed to record PUNCH OUT."; isError = true; }
                             }
                         }
                     }
-                }
-                if (isError && con != null && !con.isClosed() && !con.getAutoCommit()) {
-                     logger.info("[PunchServlet] Rolling back DB transaction due to error during punch operation: " + messageForRedirect);
-                     con.rollback();
+                } // End if(!isError) after device check
+
+                if (isError) {
+                    logger.info("[PunchServlet] Rolling back DB transaction due to error: " + messageForRedirect);
+                    con.rollback();
+                } else {
+                    con.commit();
+                    logger.info("[PunchServlet] Transaction committed successfully for EID " + punchEID);
                 }
             } catch (SQLException e_punch) {
                 logger.log(Level.SEVERE, "DB error during punch for EID " + punchEID + ", T:" + tenantId, e_punch);
@@ -310,48 +361,36 @@ public class PunchInAndOutServlet extends HttpServlet {
         }
 
         StringBuilder redirUrlBuilder = new StringBuilder(request.getContextPath() + "/" + redirectPage);
-        boolean firstQueryParamAddedToUrl = false;
-
+        
         if (isError) {
-            if(messageForRedirect == null) messageForRedirect = "An unspecified error occurred during punch processing.";
+            if(messageForRedirect == null) messageForRedirect = "An unspecified error occurred.";
             redirUrlBuilder.append("?error=").append(URLEncoder.encode(messageForRedirect, StandardCharsets.UTF_8.name()));
-            firstQueryParamAddedToUrl = true;
         } else if (isSuccess) {
             if (messageForRedirect == null) messageForRedirect = "Punch processed successfully.";
-            // if (deviceRegistrationMessagePart != null) { // Assuming handled by restriction check logic
-            //     messageForRedirect = deviceRegistrationMessagePart + ". " + messageForRedirect;
-            // }
+            if (deviceRegistrationMessagePart != null) {
+                messageForRedirect = deviceRegistrationMessagePart + ". " + messageForRedirect;
+            }
             redirUrlBuilder.append("?message=").append(URLEncoder.encode(messageForRedirect, StandardCharsets.UTF_8.name()));
-            firstQueryParamAddedToUrl = true;
             redirUrlBuilder.append("&punchStatus=success");
         } else {
              if(messageForRedirect == null) messageForRedirect = "Punch status unclear. Please check your timecard.";
-             redirUrlBuilder.append(firstQueryParamAddedToUrl ? "&" : "?").append("error=").append(URLEncoder.encode(messageForRedirect, StandardCharsets.UTF_8.name()));
-             firstQueryParamAddedToUrl = true;
+             redirUrlBuilder.append("?error=").append(URLEncoder.encode(messageForRedirect, StandardCharsets.UTF_8.name()));
         }
-
-        // if (accuracyOverrideOccurred_flag) { // Assuming handled by restriction check logic
-        //     redirUrlBuilder.append(firstQueryParamAddedToUrl?"&":"?").append("accuracyOverride=true");
-        //     firstQueryParamAddedToUrl = true;
-        // }
 
         String eidUrlParamVal = request.getParameter("eid");
         if (punchEID > 0 && "Administrator".equalsIgnoreCase(userPermissions)) {
-            // Keep existing EID param if admin was viewing another employee's card and punched for them (if allowed)
-            // Or if admin punched for self but was viewing own card via EID param
             if ((isValid(eidUrlParamVal) && Integer.parseInt(eidUrlParamVal) == punchEID) || punchEID != sessionEid.intValue()) {
-                 redirUrlBuilder.append(firstQueryParamAddedToUrl ? "&" : "?").append("eid=").append(punchEID);
+                 redirUrlBuilder.append("&eid=").append(punchEID);
             }
         } else if (punchEID > 0 && punchEID == sessionEid.intValue() && isValid(eidUrlParamVal) && Integer.parseInt(eidUrlParamVal) == punchEID) {
-            // User punched for self, and was viewing own card via eid param, keep it.
-             redirUrlBuilder.append(firstQueryParamAddedToUrl ? "&" : "?").append("eid=").append(punchEID);
+             redirUrlBuilder.append("&eid=").append(punchEID);
         }
 
         logger.info("[PunchServlet] Final Redirect URL: " + redirUrlBuilder.toString());
         if (!response.isCommitted()) {
             response.sendRedirect(redirUrlBuilder.toString());
         } else {
-            logger.warning("[PunchServlet] Response already committed. Final Intended Message: " + messageForRedirect + " (isError: " + isError + ", isSuccess: " + isSuccess + ")");
+            logger.warning("[PunchServlet] Response already committed. Final Message: " + messageForRedirect + " (isError: " + isError + ")");
         }
     }
 }

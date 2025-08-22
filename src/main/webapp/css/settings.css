@@ -237,3 +237,48 @@ h4.section-heading .fas, h4.section-heading .far { margin-right: 10px; color: #0
 .toast-notification.success { background-color: #28a745; color: white; }
 .toast-notification.error { background-color: #dc3545; color: white; }
 .toast-notification.info { background-color: #17a2b8; color: white; }
+
+/* === Styles for configureTimeDayRestrictions.jsp === */
+
+.master-toggle-container {
+    padding: 15px 20px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    margin-bottom: 25px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 20px;
+}
+
+.master-toggle-container .toggle-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.master-toggle-container .master-time-inputs {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.master-toggle-container .time-input-pair label {
+    font-weight: 500;
+}
+
+.config-container input[type="time"] {
+    font-family: Arial, sans-serif;
+    font-size: 0.9em;
+}
+
+/* --- Modal Content Styling --- */
+.modal .modal-content #notificationModalGeneralMessage,
+.modal .modal-content #confirmModalMessage {
+    padding: 20px 15px;
+    line-height: 1.6;
+    text-align: center;
+    font-size: 1.1em;
+    color: #333;
+}

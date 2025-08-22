@@ -12,10 +12,24 @@
                 <label for="addScheduleName">Schedule Name: <span class="required-asterisk">*</span></label>
                 <input type="text" id="addScheduleName" name="scheduleName" required>
             </div>
-            <div class="form-item"><label for="addShiftStart">Start Shift:</label><input type="time" id="addShiftStart" name="shiftStart"></div>
-            <div class="form-item"><label for="addShiftEnd">End Shift:</label><input type="time" id="addShiftEnd" name="shiftEnd"></div>
-            <div class="form-item"><label for="addLunchStart">Start Lunch:</label><input type="time" id="addLunchStart" name="lunchStart"></div>
-            <div class="form-item"><label for="addLunchEnd">End Lunch:</label><input type="time" id="addLunchEnd" name="lunchEnd"></div>
+            
+            <%-- FIX: Grouped time inputs into fieldsets for better visual separation --%>
+            <fieldset class="time-group">
+                <legend>Shift Times</legend>
+                <div class="form-row">
+                    <div class="form-item"><label for="addShiftStart">Start Shift:</label><input type="time" id="addShiftStart" name="shiftStart"></div>
+                    <div class="form-item"><label for="addShiftEnd">End Shift:</label><input type="time" id="addShiftEnd" name="shiftEnd"></div>
+                </div>
+            </fieldset>
+            
+            <fieldset class="time-group">
+                <legend>Lunch Times</legend>
+                <div class="form-row">
+                    <div class="form-item"><label for="addLunchStart">Start Lunch:</label><input type="time" id="addLunchStart" name="lunchStart"></div>
+                    <div class="form-item"><label for="addLunchEnd">End Lunch:</label><input type="time" id="addLunchEnd" name="lunchEnd"></div>
+                </div>
+            </fieldset>
+
             <div class="form-item">
                 <label>Days Worked:</label>
                 <div class="checkbox-group">
@@ -62,10 +76,24 @@
                 <label for="editScheduleName">Schedule Name:</label>
                 <input type="text" id="editScheduleName" name="scheduleName" required readonly style="background-color: #e9ecef; cursor: not-allowed;" title="Schedule name cannot be changed.">
             </div>
-            <div class="form-item"><label for="editShiftStart">Start Shift:</label><input type="time" id="editShiftStart" name="shiftStart"></div>
-            <div class="form-item"><label for="editShiftEnd">End Shift:</label><input type="time" id="editShiftEnd" name="shiftEnd"></div>
-            <div class="form-item"><label for="editLunchStart">Start Lunch:</label><input type="time" id="editLunchStart" name="lunchStart"></div>
-            <div class="form-item"><label for="editLunchEnd">End Lunch:</label><input type="time" id="editLunchEnd" name="lunchEnd"></div>
+            
+            <%-- FIX: Grouped time inputs into fieldsets for better visual separation --%>
+            <fieldset class="time-group">
+                <legend>Shift Times</legend>
+                <div class="form-row">
+                    <div class="form-item"><label for="editShiftStart">Start Shift:</label><input type="time" id="editShiftStart" name="shiftStart"></div>
+                    <div class="form-item"><label for="editShiftEnd">End Shift:</label><input type="time" id="editShiftEnd" name="shiftEnd"></div>
+                </div>
+            </fieldset>
+            
+            <fieldset class="time-group">
+                <legend>Lunch Times</legend>
+                <div class="form-row">
+                    <div class="form-item"><label for="editLunchStart">Start Lunch:</label><input type="time" id="editLunchStart" name="lunchStart"></div>
+                    <div class="form-item"><label for="editLunchEnd">End Lunch:</label><input type="time" id="editLunchEnd" name="lunchEnd"></div>
+                </div>
+            </fieldset>
+
             <div class="form-item">
                 <label>Days Worked:</label>
                 <div class="checkbox-group">

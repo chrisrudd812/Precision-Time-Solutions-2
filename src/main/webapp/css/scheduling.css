@@ -15,23 +15,29 @@ h4.section-heading .fas, h4.section-heading .far { margin-right: 10px; color: #0
 
 .form-row {
     display: flex;
-    flex-direction: column; 
-    gap: 5px; 
-    margin-bottom: 10px; 
-}
-.form-row:last-child { margin-bottom: 0; }
-
-.form-row.setting-pair-row {
-    flex-direction: row !important; 
     flex-wrap: wrap;
-    align-items: flex-start; 
-    gap: 15px 20px;      
-}
-.form-row.setting-pair-row > .setting-block {
-    flex-basis: calc(50% - 10px); 
-    min-width: 320px; 
+    gap: 15px;
+    margin-bottom: 15px;
 }
 
+.form-row .form-item {
+    flex: 1 1 calc(50% - 8px); /* Two items per row with gap */
+    min-width: 200px;
+}
+
+/* FIX: Added styles for fieldset groups in modals */
+.time-group {
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 10px 15px 15px 15px;
+    margin-bottom: 20px;
+}
+.time-group legend {
+    font-weight: 600;
+    color: #495057;
+    padding: 0 8px;
+    font-size: 0.9em;
+}
 
 .setting-block {
     display: flex;          
@@ -207,14 +213,6 @@ h4.section-heading .fas, h4.section-heading .far { margin-right: 10px; color: #0
     color: #aaa !important; 
 }
 
-/* FIX: This rule was incorrectly styling the state-specific notes as a grey box. It has been removed. */
-/*
-#stateSpecificNotesDisplay {
-    font-size: 0.85em; padding: 8px; background-color: #f0f0f0; 
-    border-radius: 3px; border: 1px solid #ddd; margin-top: 5px; 
-}
-*/
-
 #seventhDayOTDetailsBlock {
     display: flex; 
     flex-direction: column; 
@@ -228,3 +226,73 @@ h4.section-heading .fas, h4.section-heading .far { margin-right: 10px; color: #0
 .page-message .fas { margin-right: 10px; font-size: 1.2em;}
 .page-message.success-message { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
 .page-message.error-message { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+/* FIX: Added styles for the checkbox group in modals */
+.checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 20px; /* row-gap column-gap */
+    padding: 8px 0;
+    justify-content: flex-start;
+}
+
+.styled-checkbox {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    position: relative;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.styled-checkbox input[type="checkbox"] {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+.styled-checkbox label {
+    padding-left: 28px;
+    font-weight: normal;
+    margin-bottom: 0;
+    cursor: pointer;
+}
+
+.styled-checkbox label::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    border: 2px solid #adb5bd;
+    border-radius: 3px;
+    background-color: #fff;
+    transition: all 0.2s ease;
+}
+
+.styled-checkbox label::after {
+    content: '\f00c'; /* Font Awesome check icon */
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    position: absolute;
+    left: 3px;
+    top: 50%;
+    transform: translateY(-50%) scale(0);
+    font-size: 14px;
+    color: white;
+    transition: transform 0.2s ease;
+}
+
+.styled-checkbox input[type="checkbox"]:checked + label::before {
+    background-color: #006400;
+    border-color: #004d00;
+}
+
+.styled-checkbox input[type="checkbox"]:checked + label::after {
+    transform: translateY(-50%) scale(1);
+}

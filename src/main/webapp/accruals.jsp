@@ -157,10 +157,22 @@
         
         <div class="report-display-area">
             <div class="table-container report-table-container">
-                <table class="report-table" id="accrualsTable">
-                    <thead><tr><th class="sortable">Policy Name</th><th>Annual Vacation Days</th><th>Annual Sick Days</th><th>Annual Personal Days</th></tr></thead>
-                     <tbody><%= accrualRowsHtml %></tbody>
-                </table>
+                <table id="accrualsTable"
+       class="report-table sortable"
+       data-initial-sort-column="0"
+       data-initial-sort-direction="asc">
+    <thead>
+        <tr>
+            <th class="sortable" data-sort-type="string">Policy Name</th>
+            <th class="sortable" data-sort-type="number">Annual Vacation Days</th>
+            <th class="sortable" data-sort-type="number">Annual Sick Days</th>
+            <th class="sortable" data-sort-type="number">Annual Personal Days</th>
+        </tr>
+    </thead>
+    <tbody>
+        <%= accrualRowsHtml %>
+    </tbody>
+</table>
             </div>
         </div>
         

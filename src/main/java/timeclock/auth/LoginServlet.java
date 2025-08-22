@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.mindrot.jbcrypt.BCrypt;
 import timeclock.db.DatabaseConnection;
 import timeclock.punches.ShowPunches;
 
@@ -18,21 +19,14 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Map;
+import java.sql.Timestamp;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.mindrot.jbcrypt.BCrypt;
 
 @WebServlet("/LoginServlet")
 public class LoginServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final Logger logger = Logger.getLogger(LoginServlet.class.getName());
-
-    private static final Map<String, Integer> PRICE_ID_TO_MAX_USERS = Map.of(
-        "price_1RttGyBtvyYfb2KWNRui8ev1", 50,  // Example: Business Plan
-        "price_1RttIyBtvyYfb2KW86IvsAvX", 100, // Example: Pro Plan
-        "price_1RWNdXBtvyYfb2KWWt6p9F4X", 25   // Example: Starter Plan
-    );
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -72,7 +66,6 @@ public class LoginServlet extends HttpServlet {
                     return;
                 }
 
-                // Set session attributes immediately after authentication.
                 int eid = rsUser.getInt("EID");
                 String userPermissions = rsUser.getString("PERMISSIONS");
                 session.setAttribute("EID", eid);
@@ -83,30 +76,28 @@ public class LoginServlet extends HttpServlet {
                 session.setAttribute("CompanyIdentifier", companyIdentifier.trim());
                 session.setAttribute("Email", email.trim().toLowerCase());
 
-                // Set session timeout based on role
                 if ("Administrator".equalsIgnoreCase(userPermissions)) {
-                    session.setMaxInactiveInterval(8 * 60 * 60); // 8 hours for admins
-                    logger.info("Admin session timeout set to 8 hours for user EID: " + eid);
+                    session.setMaxInactiveInterval(4 * 60 * 60); // 4 hours for admins
                 } else {
                     session.setMaxInactiveInterval(1 * 60); // 1 minute for users
-                    logger.info("User session timeout set to 1 minute for user EID: " + eid);
                 }
                 
                 String subscriptionStatus = syncSubscriptionStatus(conn, tenantId);
                 session.setAttribute("SubscriptionStatus", subscriptionStatus);
 
-                if ("canceled".equalsIgnoreCase(subscriptionStatus) || "unpaid".equalsIgnoreCase(subscriptionStatus) || "past_due".equalsIgnoreCase(subscriptionStatus)) {
-                    logger.warning("Subscription for TenantID " + tenantId + " is inactive. Redirecting to account page.");
+                if ("Administrator".equalsIgnoreCase(userPermissions) && 
+                   ("canceled".equalsIgnoreCase(subscriptionStatus) || "unpaid".equalsIgnoreCase(subscriptionStatus) || "past_due".equalsIgnoreCase(subscriptionStatus))) {
+                    
                     session.setAttribute("errorMessage", "Your subscription is inactive. Please update your billing information to restore access.");
                     response.sendRedirect("account.jsp");
                     return;
                 }
                 
-                if (rsUser.getBoolean("RequiresPasswordChange")) {
+                // *** FIX IS HERE: Changed getBoolean to getInt for reliability ***
+                if (rsUser.getInt("RequiresPasswordChange") == 1) {
                     session.setAttribute("pinChangeRequired", true);
                     response.sendRedirect("change_password.jsp");
                 } else {
-                    // This is a normal login, so ensure wizard mode is off.
                     session.removeAttribute("startSetupWizard");
                     String targetPage = "Administrator".equalsIgnoreCase(userPermissions) ? "employees.jsp" : "timeclock.jsp";
                     response.sendRedirect(targetPage);
@@ -123,63 +114,67 @@ public class LoginServlet extends HttpServlet {
     }
 
     private String syncSubscriptionStatus(Connection conn, int tenantId) {
-        String sqlInfo = "SELECT StripeSubscriptionID, SubscriptionStatus, StripePriceID, MaxUsers FROM tenants WHERE TenantID = ?";
-        try (PreparedStatement pstmtInfo = conn.prepareStatement(sqlInfo)) {
-            pstmtInfo.setInt(1, tenantId);
-            ResultSet rsTenant = pstmtInfo.executeQuery();
-
-            if (!rsTenant.next()) {
-                logger.warning("Could not find tenant info for TenantID " + tenantId + " during sync.");
-                return "error";
-            }
+        String currentDbStatus = "error";
+        try {
+            String sqlInfo = "SELECT StripeSubscriptionID, SubscriptionStatus, StripePriceID FROM tenants WHERE TenantID = ?";
+            String stripeSubscriptionId = null;
+            String currentDbPriceId = null;
             
-            String stripeSubscriptionId = rsTenant.getString("StripeSubscriptionID");
-            String currentDbStatus = rsTenant.getString("SubscriptionStatus");
-            String currentDbPriceId = rsTenant.getString("StripePriceID");
-            int currentDbMaxUsers = rsTenant.getInt("MaxUsers");
+            try (PreparedStatement pstmtInfo = conn.prepareStatement(sqlInfo)) {
+                pstmtInfo.setInt(1, tenantId);
+                ResultSet rsTenant = pstmtInfo.executeQuery();
+                if (rsTenant.next()) {
+                    stripeSubscriptionId = rsTenant.getString("StripeSubscriptionID");
+                    currentDbStatus = rsTenant.getString("SubscriptionStatus");
+                    currentDbPriceId = rsTenant.getString("StripePriceID");
+                } else {
+                     throw new SQLException("Tenant not found for ID: " + tenantId);
+                }
+            }
 
             if (stripeSubscriptionId == null || stripeSubscriptionId.trim().isEmpty()) {
                 return currentDbStatus;
             }
 
             Subscription stripeSubscription = Subscription.retrieve(stripeSubscriptionId);
-            String newStripeStatusFromApi = stripeSubscription.getStatus();
-            Boolean isPendingCancellation = stripeSubscription.getCancelAtPeriodEnd();
-
-            String effectiveStatus = newStripeStatusFromApi;
-            if ("active".equalsIgnoreCase(newStripeStatusFromApi) && Boolean.TRUE.equals(isPendingCancellation)) {
-                effectiveStatus = "canceled";
-            }
-
+            String newStripeStatus = stripeSubscription.getStatus();
             String newPriceId = stripeSubscription.getItems().getData().get(0).getPrice().getId();
-            Integer newMaxUsers = PRICE_ID_TO_MAX_USERS.getOrDefault(newPriceId, 25);
 
-            boolean needsUpdate = !effectiveStatus.equalsIgnoreCase(currentDbStatus) ||
-                                  (currentDbPriceId != null && !newPriceId.equals(currentDbPriceId)) ||
-                                  newMaxUsers != currentDbMaxUsers;
+            boolean needsUpdate = !newStripeStatus.equalsIgnoreCase(currentDbStatus) || (currentDbPriceId != null && !newPriceId.equals(currentDbPriceId));
 
             if (needsUpdate) {
-                String sqlUpdate = "UPDATE tenants SET SubscriptionStatus = ?, StripePriceID = ?, MaxUsers = ? WHERE TenantID = ?";
+                Timestamp newPeriodEnd = new Timestamp(stripeSubscription.getCurrentPeriodEnd() * 1000L);
+                int newMaxUsers = getMaxUsersForPriceId(conn, newPriceId);
+
+                String sqlUpdate = "UPDATE tenants SET SubscriptionStatus = ?, StripePriceID = ?, CurrentPeriodEnd = ?, MaxUsers = ? WHERE TenantID = ?";
                 try (PreparedStatement pstmtUpdate = conn.prepareStatement(sqlUpdate)) {
-                    pstmtUpdate.setString(1, effectiveStatus);
+                    pstmtUpdate.setString(1, newStripeStatus);
                     pstmtUpdate.setString(2, newPriceId);
-                    pstmtUpdate.setInt(3, newMaxUsers);
-                    pstmtUpdate.setInt(4, tenantId);
+                    pstmtUpdate.setTimestamp(3, newPeriodEnd);
+                    pstmtUpdate.setInt(4, newMaxUsers);
+                    pstmtUpdate.setInt(5, tenantId);
                     pstmtUpdate.executeUpdate();
                 }
-                return effectiveStatus;
+                return newStripeStatus;
             }
             return currentDbStatus;
 
-        } catch (StripeException | SQLException e) {
+        } catch (Exception e) {
             logger.log(Level.SEVERE, "Could not sync subscription status for TenantID " + tenantId, e);
-            try (PreparedStatement pstmt = conn.prepareStatement("SELECT SubscriptionStatus FROM tenants WHERE TenantID = ?")) {
-                 pstmt.setInt(1, tenantId);
-                 ResultSet rs = pstmt.executeQuery();
-                 return rs.next() ? rs.getString("SubscriptionStatus") : "error";
-            } catch (SQLException ex) {
-                return "error";
+            return currentDbStatus;
+        }
+    }
+    
+    private int getMaxUsersForPriceId(Connection conn, String priceId) throws SQLException {
+        String sql = "SELECT maxUsers FROM subscription_plans WHERE stripePriceId = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, priceId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("maxUsers");
+                }
             }
         }
+        return 25; // Fallback default
     }
 }

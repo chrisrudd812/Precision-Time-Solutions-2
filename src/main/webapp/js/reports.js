@@ -2,16 +2,15 @@
  * reports.js
  * Handles fetching and displaying reports dynamically on reports.jsp
  * Uses commonUtils.js for shared functionality.
- * v10: Added makeElementDraggable function and fixed exception report editing
+ * v13: Removed default sort text from descriptions.
  */
 
 // --- Draggable Modal Functionality ---
-// (Copied from payroll.js - consider moving to commonUtils.js for global use)
 function makeElementDraggable(elmnt, handle) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-    const dragHandle = handle || elmnt; // If no specific handle, drag the element itself
+    const dragHandle = handle || elmnt; 
 
-    if (dragHandle && typeof dragHandle.onmousedown !== 'undefined') { // Check if handle is valid
+    if (dragHandle && typeof dragHandle.onmousedown !== 'undefined') {
         dragHandle.onmousedown = dragMouseDown;
         if (dragHandle.style) dragHandle.style.cursor = 'move';
     } else {
@@ -22,14 +21,13 @@ function makeElementDraggable(elmnt, handle) {
     function dragMouseDown(e) {
         e = e || window.event;
         let currentTarget = e.target;
-        // Don't drag if clicking on form elements within the draggable area
         while(currentTarget && currentTarget !== dragHandle) {
             if (['INPUT', 'SELECT', 'BUTTON', 'TEXTAREA', 'A'].includes(currentTarget.tagName)) {
                 return;
             }
             currentTarget = currentTarget.parentNode;
         }
-        e.preventDefault(); // Prevent text selection, etc.
+        e.preventDefault();
         pos3 = e.clientX;
         pos4 = e.clientY;
         document.onmouseup = closeDragElement;
@@ -39,17 +37,15 @@ function makeElementDraggable(elmnt, handle) {
     function elementDrag(e) {
         e = e || window.event;
         e.preventDefault();
-        pos1 = pos3 - e.clientX; // new X - old X
-        pos2 = pos4 - e.clientY; // new Y - old Y
-        pos3 = e.clientX;        // update old X
-        pos4 = e.clientY;        // update old Y
-        // Set the element's new position:
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
         elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
         elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
     }
 
     function closeDragElement() {
-        // Stop moving when mouse button is released:
         document.onmouseup = null;
         document.onmousemove = null;
     }
@@ -58,7 +54,7 @@ function makeElementDraggable(elmnt, handle) {
 
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("Reports JS Loaded - v10 (makeElementDraggable included, Exception Report Editing)");
+    console.log("Reports JS Loaded - v13 (Removed default sort text)");
 
     const reportOutputDiv = document.getElementById('reportOutput');
     const loadingIndicator = document.getElementById('loadingIndicator');
@@ -69,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const fixMissingPunchesBtnReports = document.getElementById('fixMissingPunchesBtnReports');
     const editPunchModalReports = document.getElementById('editPunchModalReports');
-    const editPunchFormReports = document.getElementById('editPunchFormReports'); // Ensure this ID matches your JSP
+    const editPunchFormReports = document.getElementById('editPunchFormReports');
     const closeEditPunchModalReportsBtn = document.getElementById('closeEditPunchModalReports');
     const cancelEditPunchReportsBtn = document.getElementById('reports_cancelEditPunch');
 
@@ -85,9 +81,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (notificationOkButton) notificationOkButton.addEventListener("click", function() { if (typeof hideModal === 'function') hideModal(notificationModal); });
         window.addEventListener("click", function(event) { if (event.target === notificationModal) { if (typeof hideModal === 'function') hideModal(notificationModal); }});
         makeElementDraggable(notificationModal.querySelector('.modal-content'), notificationModal.querySelector('.modal-content > h2'));
-        console.log("Reports.js: Notification modal listeners and drag attached.");
-    } else {
-        console.warn("Reports.js: #notificationModal or its inner structure not found for draggable setup.");
     }
 
     if (editPunchModalReports && editPunchModalReports.querySelector('.modal-content') && editPunchModalReports.querySelector('.modal-content > h2')) {
@@ -95,15 +88,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (cancelEditPunchReportsBtn) cancelEditPunchReportsBtn.addEventListener('click', hideEditPunchModalReports);
         window.addEventListener('click', (event) => { if (event.target === editPunchModalReports) hideEditPunchModalReports(); });
         makeElementDraggable(editPunchModalReports.querySelector('.modal-content'), editPunchModalReports.querySelector('.modal-content > h2'));
-        console.log("Reports.js: Edit Punch Modal (Reports) listeners and drag attached.");
-    } else {
-        console.warn("Reports.js: #editPunchModalReports or its inner structure not found for draggable setup.");
     }
 
     if (editPunchFormReports) {
         editPunchFormReports.addEventListener('submit', handleEditPunchFormSubmitReports);
-    } else {
-        console.warn("Reports.js: #editPunchFormReports not found.");
     }
 
     if (fixMissingPunchesBtnReports) {
@@ -115,25 +103,24 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             prepareAndShowEditPunchModalReports(currentReportExceptionData);
         });
-    } else {
-        console.warn("Reports.js: #fixMissingPunchesBtnReports not found.");
     }
-
+    
+    // --- MODIFIED: Removed "Default sort" text ---
     const reportDescriptions = {
         exception: "Shows punch records with missing OUT times for work-type punches within the current pay period. Click a row to select, then 'Fix Missing Punches'.",
-        tardy: "Summarizes employees marked as tardy or leaving early based on punch data. Default sort: EID.",
-        whosin: "Lists employees who are currently clocked IN based on the latest punch data for today. Default sort: EID.",
-        activeEmployees: "Lists all currently active employees with key contact and assignment information. Default sort: Last Name.",
-        inactiveEmployees: "Lists employees marked as inactive. Click a row to reactivate. Default sort: Last Name.",
-        employeesByDept: "Lists active employees filtered by the selected department. Default sort: Last Name.",
-        employeesBySched: "Lists active employees filtered by the selected schedule. Default sort: Last Name.",
-        employeesBySup: "Lists active employees filtered by the selected supervisor. Default sort: Last Name."
+        tardy: "Summarizes employees marked as tardy or leaving early based on punch data.",
+        whosin: "Lists employees who are currently clocked IN based on the latest punch data for today.",
+        activeEmployees: "Lists all currently active employees with key contact and assignment information.",
+        inactiveEmployees: "Lists employees marked as inactive. Click a row to reactivate.",
+        employeesByDept: "Lists active employees filtered by the selected department.",
+        employeesBySched: "Lists active employees filtered by the selected schedule.",
+        employeesBySup: "Lists active employees filtered by the selected supervisor."
     };
-    const employeeReportHeaders = `<thead><tr><th data-sort-type="number">EID</th><th data-sort-type="string">First Name</th><th data-sort-type="string">Last Name</th><th data-sort-type="string">Department</th><th data-sort-type="string">Schedule</th><th data-sort-type="string">Supervisor</th><th data-sort-type="string">Email</th><th data-sort-type="string">Phone</th></tr></thead>`;
+    const employeeReportHeaders = `<thead><tr><th class="sortable" data-sort-type="number">EID</th><th class="sortable" data-sort-type="string">First Name</th><th class="sortable" data-sort-type="string">Last Name</th><th class="sortable" data-sort-type="string">Department</th><th class="sortable" data-sort-type="string">Schedule</th><th class="sortable" data-sort-type="string">Supervisor</th><th class="sortable" data-sort-type="string">Email</th><th class="sortable" data-sort-type="string">Phone</th></tr></thead>`;
     const reportHeaders = {
-         exception: `<thead><tr><th data-sort-type="number">EID</th><th data-sort-type="string">First Name</th><th data-sort-type="string">Last Name</th><th data-sort-type="date">Date</th><th data-sort-type="string">IN Time</th><th data-sort-type="string">OUT Time</th></tr></thead>`,
-         tardy: `<thead><tr><th data-sort-type="number">EID</th><th data-sort-type="string">First Name</th><th data-sort-type="string">Last Name</th><th data-sort-type="number">Late Count</th><th data-sort-type="number">Early Out Count</th></tr></thead>`,
-         whosin: `<thead><tr><th data-sort-type="number">EID</th><th data-sort-type="string">First Name</th><th data-sort-type="string">Last Name</th><th data-sort-type="string">Department</th><th data-sort-type="string">Schedule</th></tr></thead>`,
+         exception: `<thead><tr><th class="sortable" data-sort-type="number">EID</th><th class="sortable" data-sort-type="string">First Name</th><th class="sortable" data-sort-type="string">Last Name</th><th class="sortable" data-sort-type="date">Date</th><th class="sortable" data-sort-type="string">IN Time</th><th class="sortable" data-sort-type="string">OUT Time</th></tr></thead>`,
+         tardy: `<thead><tr><th class="sortable" data-sort-type="number">EID</th><th class="sortable" data-sort-type="string">First Name</th><th class="sortable" data-sort-type="string">Last Name</th><th class="sortable" data-sort-type="number">Late Count</th><th class="sortable" data-sort-type="number">Early Out Count</th></tr></thead>`,
+         whosin: `<thead><tr><th class="sortable" data-sort-type="number">EID</th><th class="sortable" data-sort-type="string">First Name</th><th class="sortable" data-sort-type="string">Last Name</th><th class="sortable" data-sort-type="string">Department</th><th class="sortable" data-sort-type="string">Schedule</th></tr></thead>`,
          activeEmployees: employeeReportHeaders,
          inactiveEmployees: employeeReportHeaders,
          employeesByDept: employeeReportHeaders,
@@ -141,7 +128,6 @@ document.addEventListener('DOMContentLoaded', function() {
          employeesBySup: employeeReportHeaders
     };
 
-    // Ensure commonUtils functions are available or define fallbacks/stubs
     const hideModal = window.hideModal || function(modalElement) { if(modalElement) modalElement.classList.remove('modal-visible'); console.warn("hideModal from commonUtils not found, using fallback."); };
     const showModal = window.showModal || function(modalElement) { if(modalElement) modalElement.classList.add('modal-visible'); console.warn("showModal from commonUtils not found, using fallback."); };
     const showPageNotification = window.showPageNotification || function(message, isError) { alert((isError ? "Error: " : "Info: ") + message); console.warn("showPageNotification from commonUtils not found, using alert fallback."); };
@@ -202,15 +188,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.success) {
                 if (data.html && data.html !== 'NO_EXCEPTIONS') {
                     const tableHeadersHTML = reportHeaders[reportType] || `<thead><tr><th>Report Data</th></tr></thead>`;
-                    let tableClass = reportType === 'inactiveEmployees' ? 'inactive-employees-table' : '';
-                    if (reportType === 'exception') {
-                        tableClass += ' exception-report-table-interactive'; // Add class for specific listener
-                    }
+                    let tableClass = 'sortable'; 
+                    if (reportType === 'inactiveEmployees') tableClass += ' inactive-employees-table';
+                    if (reportType === 'exception') tableClass += ' exception-report-table-interactive';
 
                     if(reportOutputDiv) {
                         reportOutputDiv.innerHTML = `
                             <div class="table-container report-table-container">
-                                <table class="report-table ${reportType}-report-table ${tableClass}" id="dynamicReportTable">
+                                <table class="report-table ${tableClass}" id="dynamicReportTable">
                                     ${tableHeadersHTML}
                                     <tbody>
                                         ${data.html}
@@ -219,13 +204,13 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>`;
                         const reportTable = reportOutputDiv.querySelector('#dynamicReportTable');
                         if (reportTable) {
-                            let initialSort = { columnIndex: 0, ascending: true }; // Default EID
-                            if (['activeEmployees', 'inactiveEmployees', 'employeesByDept', 'employeesBySched', 'employeesBySup'].includes(reportType)) {
-                                initialSort = { columnIndex: 2, ascending: true }; // Sort by Last Name
+                            const initialSort = { columnIndex: 0, ascending: true }; 
+                            
+                            if (typeof makeTableSortable === 'function') {
+                                makeTableSortable(reportTable, initialSort);
+                            } else {
+                                console.warn("makeTableSortable not found (expected in commonUtils.js)");
                             }
-                            if (typeof makeTableSortable === 'function') makeTableSortable(reportTable, initialSort);
-                            else console.warn("makeTableSortable not found (expected in commonUtils.js)");
-
 
                             if (reportActionsDiv && printReportBtn) {
                                 printReportBtn.style.display = 'inline-flex';
@@ -260,7 +245,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function hideEditPunchModalReports() {
-        if (editPunchModalReports) hideModal(editPunchModalReports); // Uses commonUtils hideModal
+        if (editPunchModalReports) hideModal(editPunchModalReports);
         if (selectedReportExceptionRowElement) {
             selectedReportExceptionRowElement.classList.remove('selected');
             selectedReportExceptionRowElement = null;
@@ -279,7 +264,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const dateField = document.getElementById('reports_editDate');
         const inTimeField = document.getElementById('reports_editInTime');
         const outTimeField = document.getElementById('reports_editOutTime');
-        // const userTimeZoneField = document.getElementById('reports_editUserTimeZone'); // Value set by JSP
 
         if(nameDisplay) nameDisplay.textContent = data.employeeName || `EID: ${data.globalEid}`;
         if(scheduleDisplay) {
@@ -300,7 +284,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if(employeeIdField) employeeIdField.value = data.globalEid || '';
         if(dateField) dateField.value = formattedDate;
         if(inTimeField) inTimeField.value = parseTimeTo24Hour(data.inTime);
-        if(outTimeField) outTimeField.value = ''; // Default empty for missing out
+        if(outTimeField) outTimeField.value = ''; 
 
         setTimeout(()=> { if (outTimeField) outTimeField.focus(); }, 150);
     }
@@ -324,7 +308,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (scheduleData.success) {
                     const finalData = { ...exceptionData, ...scheduleData };
                     populateEditPunchModalReports(finalData);
-                    if(editPunchModalReports) showModal(editPunchModalReports); // Uses commonUtils showModal
+                    if(editPunchModalReports) showModal(editPunchModalReports);
                 } else { throw new Error(scheduleData.message || 'Failed to get schedule data.'); }
             })
             .catch(error => {
@@ -359,7 +343,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.success) {
                 hideEditPunchModalReports();
                 showPageNotification(data.message || "Punch updated successfully!", false);
-                loadReport('exception'); // Reload the exception report
+                loadReport('exception'); 
             } else {
                 showPageNotification("Error saving punch: " + (data.error || "Unknown error."), true);
             }
@@ -418,7 +402,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     } else { console.error("Reports.js: #reportOutputDiv not found for event listeners."); }
 
-    function reactivateEmployee(eid) { /* ... existing from provided ... */
+    function reactivateEmployee(eid) {
         console.log(`Reports.js: Attempting to reactivate employee EID: ${eid}`);
         const params = new URLSearchParams();
         params.append('action', 'reactivateEmployee');
@@ -443,7 +427,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function printCurrentReport() { /* ... existing from provided ... */
+    function printCurrentReport() {
         console.log("Reports.js: printCurrentReport function called.");
         const title = reportTitleElement?.textContent || 'Report';
         const description = reportDescriptionElement?.textContent || '';
@@ -471,7 +455,7 @@ document.addEventListener('DOMContentLoaded', function() {
         loadReport(initialReport, initialFilterValue);
     } else {
          if(reportTitleElement) reportTitleElement.textContent = "Select Report";
-         if(reportDescriptionElement) reportDescriptionElement.textContent = "Choose a report from the navigation bar.";
+         if(reportDescriptionElement) reportDescriptionElement.textContent = "Choose a report from the menu.";
          if (reportOutputDiv && reportOutputDiv.innerHTML.trim() === '') {
             reportOutputDiv.innerHTML = '<p class="report-placeholder">Please select a report from the menu.</p>';
          }

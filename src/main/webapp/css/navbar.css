@@ -1,7 +1,8 @@
-/* --- CSS with Flyout Menu Gap Fixed --- */
+/* === css/navbar.css === */
+/* v7: Corrected flyout menu positioning context for proper vertical centering */
 
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap');
-@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css');
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/all.min.css');
 
 body {
     padding-top: 55px !important;
@@ -23,7 +24,6 @@ body {
     align-items: center;
     padding: 0 15px;
     box-sizing: border-box;
-    overflow: visible !important;
 }
 
 .main-navbar .navbar-brand { flex-shrink: 0; margin-right: 20px; }
@@ -59,124 +59,91 @@ body {
     background-color: rgba(255, 255, 255, 0.1); color: #ffffff;
 }
 
-.main-navbar ul.navbar-links > li:hover > .dropbtn::after {
-    color: #ffffff;
-}
-.main-navbar ul.navbar-links > li:hover > a i.fas,
-.main-navbar ul.navbar-links > li:hover > .dropbtn i.fas {
-    color: #ffffff;
-}
-
-/* First Level Dropdown Box */
-.main-navbar ul.navbar-links > li.dropdown > ul.dropdown-content {
-    display: none;
+/* --- Dropdown Menu Styling --- */
+.dropdown-content {
+    display: block;
     position: absolute;
-    left: 0;
-    top: 100%;
     background-color: #fff;
     min-width: 240px;
-    width: auto;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
     z-index: 1060;
-    border: 1px solid #ddd;
     list-style-type: none;
-    margin: 1px 0 0 0;
-    border-radius: 0 0 4px 4px;
-    padding: 5px 0;
-    overflow: visible !important;
+    padding: 8px 0;
+    margin: 0;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
 }
 
-.main-navbar ul.navbar-links > li.dropdown:hover > ul.dropdown-content {
-    display: block;
-}
-.main-navbar ul.navbar-links > li.dropdown.open > ul.dropdown-content {
-    display: block;
-}
-
-.main-navbar ul.dropdown-content li,
-.main-navbar ul.sub-dropdown-content li {
-    position: relative !important;
-    list-style-type: none;
-    margin:0;
-    padding:0;
-}
-
-.main-navbar ul.dropdown-content li a,
-.main-navbar ul.dropdown-content li span.disabled-link,
-.main-navbar ul.sub-dropdown-content li a,
-.main-navbar ul.sub-dropdown-content li span.disabled-link {
-    padding: 10px 30px 10px 18px;
-    text-decoration: none; display: block;
-    white-space: nowrap; color: #212529; font-size: 0.9em;
-    line-height: 1.5; transition: background-color 0.15s, color 0.15s;
-}
-
-.main-navbar ul.dropdown-content li:hover > a,
-.main-navbar ul.sub-dropdown-content li:hover > a {
-    background-color: #e9ecef; color: #0056b3;
-}
-
-.main-navbar ul.dropdown-content li span.disabled-link,
-.main-navbar ul.sub-dropdown-content li span.disabled-link {
-    color: #aaa; background-color: transparent; cursor: default;
-}
-
-.main-navbar li.sub-dropdown-trigger > a.sub-dropbtn {
-    display: flex; justify-content: space-between; align-items: center;
+/* NEW: Explicitly set the positioning context for sub-menu triggers */
+.dropdown-content .sub-dropdown-trigger {
     position: relative;
 }
-.main-navbar li.sub-dropdown-trigger > a.sub-dropbtn::after {
+
+/* First-level dropdown animation & positioning */
+.main-navbar .dropdown > .dropdown-content {
+    transform: translateY(10px);
+    top: 90%;
+    left: 0;
+}
+.main-navbar .dropdown:hover > .dropdown-content,
+.main-navbar .dropdown.is-open > .dropdown-content {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* Sub-level (flyout) animation combines vertical centering and horizontal movement */
+.sub-dropdown-trigger > .sub-dropdown-content {
+    transform: translate(10px, -50%);
+}
+.sub-dropdown-trigger:hover > .sub-dropdown-content,
+.sub-dropdown-trigger.is-open > .sub-dropdown-content {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(0, -50%);
+}
+
+/* Sub-level (flyout) dropdown position for vertical centering */
+li.sub-dropdown-trigger > .sub-dropdown-content {
+    top: 50%; 
+    left: 100%;
+}
+
+/* Dropdown link styling */
+.dropdown-content li a {
+    padding: 10px 20px;
+    text-decoration: none; 
+    display: block;
+    white-space: nowrap; 
+    color: #343a40; 
+    font-size: 0.95em;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.dropdown-content li:hover > a {
+    background-color: #f8f9fa; 
+    color: #0056b3;
+}
+
+/* Flyout arrow indicator */
+.sub-dropdown-trigger > a.sub-dropbtn {
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+}
+
+.sub-dropdown-trigger > a.sub-dropbtn::after {
     content: '\f054';
     font-family: "Font Awesome 6 Free";
     font-weight: 900;
     font-size: 0.8em;
-    color: #555;
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
+    color: #adb5bd;
     transition: color 0.15s;
 }
-.main-navbar li.sub-dropdown-trigger:hover > a.sub-dropbtn::after {
+
+.sub-dropdown-trigger:hover > a.sub-dropbtn::after {
     color: #0056b3;
-}
-
-.main-navbar ul.dropdown-content li > a:not(.sub-dropbtn)::after,
-.main-navbar ul.sub-dropdown-content li > a:not(.sub-dropbtn)::after {
-    content: none;
-}
-
-
-/* === MODIFIED RULE: Removed margin and adjusted 'top' to eliminate the gap === */
-.main-navbar li.sub-dropdown-trigger > ul.sub-dropdown-content {
-    display: none;
-    position: absolute !important;
-    left: 100% !important;
-    top: -5px !important; /* Aligns menu with its parent list item */
-    width: auto;
-    min-width: 220px;
-    background-color: #fff;
-    border: 1px solid #eee;
-    border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    padding: 5px 0;
-    margin: 0; /* Removed margin that caused the gap */
-    list-style-type: none;
-    z-index: 1070 !important;
-    overflow: visible !important;
-}
-
-.main-navbar li.sub-dropdown-trigger:hover > ul.sub-dropdown-content {
-    display: block !important;
-}
-
-body::before {
-    content: "";
-    position: fixed;
-    text-align: center;
-    z-index: -1;
-    width: 100vw;
-    height: 100vh;
-    background-position: center;
-    background-repeat: no-repeat;
 }

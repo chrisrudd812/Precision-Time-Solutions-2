@@ -1,4 +1,4 @@
-/* css/login.css - v7 */
+/* css/login.css - v10 */
 body {
     font-family: 'Roboto', sans-serif;
     color: #333;
@@ -9,11 +9,31 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background: linear-gradient(to bottom right, #e7f0f7, #d0d9e2);
+    /* --- START: BACKGROUND OPACITY FIX --- */
+    /* The fallback color is now the main background of the body itself */
+    background-color: #e7f0f7;
+    /* The image is moved to the ::before pseudo-element below */
+}
+
+/* This new pseudo-element creates the transparent background layer */
+body::before {
+    content: '';
+    position: fixed; /* Covers the entire viewport */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('../Images/background3.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    opacity: 0.8; /* Set your desired opacity here */
+    z-index: -1;  /* Places the background behind your content */
 }
 
 .login-container {
     background-color: #fff;
+    opacity: 0.95; /* Slightly transparent background */
     padding: 30px 40px 40px 40px;
     border-radius: 8px;
     box-shadow: 0 6px 18px rgba(0,0,0,0.15);
@@ -23,22 +43,18 @@ body {
     text-align: center;
 }
 
-.login-header {
-    margin-bottom: 40px;
+/* --- START: LOGO STYLE FIX --- */
+.login-header .logo-link {
+    display: inline-block; /* Allows margin and centering */
+    text-decoration: none;
 }
 
-.login-header .logo-link {
-    font-size: 2.5em;
-    font-weight: 700;
-    color: #005A9C;
-    text-decoration: none;
-    display: inline-block;
-    margin-bottom: 10px;
+.logo-image {
+    height: 400px; /* Made the logo much larger */
+    width: auto;
+    /* margin-right is no longer needed */
 }
-.login-header .logo-link i {
-    margin-right: 12px;
-    font-size: 0.9em;
-}
+/* --- END: LOGO STYLE FIX --- */
 
 .error-message.login-page-message {
     background-color: #f8d7da;
@@ -95,11 +111,11 @@ body {
 
 .login-submit-button.glossy-button {
     width: 100%;
-    height: 40px; /* Match input height */
+    height: 40px; 
     padding-top: 0;
     padding-bottom: 0;
     font-size: 1.0em;
-    line-height: 40px; /* Vertically center text */
+    line-height: 40px; 
 }
 .login-submit-button.glossy-button i {
     margin-right: 8px;
@@ -118,19 +134,18 @@ body {
     text-decoration: underline;
 }
 
-/* Notification modal on login page specific adjustments */
 #notificationModal .modal-content {
-    max-width: 550px; /* Wider for the signup success message */
-    text-align: left; /* Default text align to left for paragraphs */
+    max-width: 550px;
+    text-align: left;
 }
 #notificationModal .modal-content h2 {
-    text-align: center; /* Center modal title */
+    text-align: center;
 }
-#notificationModal #notificationMessage { /* The div containing paragraphs */
-    padding: 15px 25px; /* Adjust padding */
+#notificationModal #notificationMessage {
+    padding: 15px 25px;
 }
 #notificationModal #notificationMessage p {
-    margin-bottom: 12px; /* Space between paragraphs */
+    margin-bottom: 12px;
     text-align: left;
     line-height: 1.5;
     font-size: 0.95em;
@@ -142,16 +157,14 @@ body {
     color: #005A9C;
     font-weight: 600;
 }
-/* Styling for the button row in notification modal on login page */
-.notification-button-row { /* Class applied in login.jsp */
-    justify-content: space-between !important; /* Space out the two buttons */
-    gap: 15px; /* Space between buttons */
+.notification-button-row {
+    justify-content: space-between !important;
+    gap: 15px;
 }
-.notification-button-row button.glossy-button { /* Target both buttons */
-    flex: 1 1 auto !important; /* Allow buttons to share space */
-    min-width: 150px; /* Ensure they have a decent minimum width */
+.notification-button-row button.glossy-button {
+    flex: 1 1 auto !important;
+    min-width: 150px;
 }
-/* Styles for red asterisks on required labels */
 .required {
     color: #dc3545;
     font-weight: bold;

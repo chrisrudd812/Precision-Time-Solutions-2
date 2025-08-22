@@ -20,7 +20,7 @@ import java.time.format.DateTimeParseException;
 import java.time.format.TextStyle;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
-import java.util.Collections; // Ensure this is present
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -197,7 +197,7 @@ public class ShowPunches {
 
             try (PreparedStatement ps = con.prepareStatement(sql)) {
                 ps.setInt(1, tenantId);
-                String queryForLog = ps.toString(); // Get query string for logging after parameters are set (driver dependent)
+                String queryForLog = ps.toString();
                 logger.fine("[ShowPunches.getActiveEmployeesForDropdown] Executing query: " + queryForLog.substring(queryForLog.indexOf(": ") + 2));
                 try (ResultSet rs = ps.executeQuery()) {
                     int count = 0;
@@ -291,11 +291,9 @@ public class ShowPunches {
                 finalTotalHours = 0.0;
             } else {
                 double exactHours = duration.getSeconds() / 3600.0;
-                finalTotalHours = applyAutoLunch(con, tenantId, eid, exactHours); // applyAutoLunch needs the connection
+                finalTotalHours = applyAutoLunch(con, tenantId, eid, exactHours);
             }
             finalTotalHours = Math.round(finalTotalHours * FINAL_ROUNDING_HOURS) / FINAL_ROUNDING_HOURS;
-            // Note: OT and DT are typically calculated and updated by a separate process (e.g., PayrollServlet.updatePunchOtForPeriod)
-            // This method focuses on setting the correct TOTAL based on IN, OUT, and auto-lunch.
             String updateSql = "UPDATE PUNCHES SET TOTAL = ? WHERE PUNCH_ID = ? AND TenantID = ? AND EID = ?";
             try (PreparedStatement psUpdate = con.prepareStatement(updateSql)) {
                 setOptionalDouble(psUpdate, 1, finalTotalHours); 
@@ -337,13 +335,19 @@ public class ShowPunches {
             displayZoneId = ZoneId.of(ULTIMATE_DISPLAY_FALLBACK_ZONE_ID);
             result.put("error", (result.get("error") == null ? "" : result.get("error") + " ") + "A timezone display error occurred. Times are shown in UTC.");
         }
+        
+        // --- [FIX] Calculate full timestamp range for the query based on the display timezone ---
+        Instant periodStartInstant = payPeriodStartDate.atStartOfDay(displayZoneId).toInstant();
+        Instant periodEndInstant = payPeriodEndDate.plusDays(1).atStartOfDay(displayZoneId).toInstant();
+
         logger.info("[ShowPunches.getTimecardPunchData] Method Start. TenantID: " + tenantId + ", EID: " + globalEID +
-                    ", Period: " + payPeriodStartDate + " to " + payPeriodEndDate +
-                    ", DisplayZoneId: " + displayZoneId.getId());
+                    ", Period (Local): " + payPeriodStartDate + " to " + payPeriodEndDate +
+                    ", DisplayZoneId: " + displayZoneId.getId() + 
+                    ", Query Range (UTC): " + periodStartInstant + " to " + periodEndInstant);
 
         DateTimeFormatter timeFormatterForDisplay = DateTimeFormatter.ofPattern("hh:mm:ss a", Locale.ENGLISH).withZone(displayZoneId);
-        DateTimeFormatter timeFormatterForRaw = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.ENGLISH); // Does not need .withZone if formatting LocalTime
-        DateTimeFormatter dateFormatterForDisplay = DateTimeFormatter.ofPattern("MM/dd/yyyy", Locale.ENGLISH); // Does not need .withZone if formatting LocalDate
+        DateTimeFormatter timeFormatterForRaw = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.ENGLISH);
+        DateTimeFormatter dateFormatterForDisplay = DateTimeFormatter.ofPattern("MM/dd/yyyy", Locale.ENGLISH);
         DateTimeFormatter isoDateFormatterForDataAttr = DateTimeFormatter.ISO_LOCAL_DATE;
 
         int gracePeriodMinutes = 5;
@@ -354,17 +358,24 @@ public class ShowPunches {
         logger.info("[ShowPunches.getTimecardPunchData] For TenantID " + tenantId + ", EID: " + globalEID + ", GracePeriod used: " + gracePeriodMinutes + " minutes.");
 
         String firstDayOfWeekSetting = Configuration.getProperty(tenantId, "FirstDayOfWeek", "SUNDAY").toUpperCase(Locale.ENGLISH);
-        Map<LocalDate, Double> dailyAggregatedWorkHours = new LinkedHashMap<>(); // Keyed by date in displayZoneId
+        Map<LocalDate, Double> dailyAggregatedWorkHours = new LinkedHashMap<>();
         double periodTotalAllDisplayedHours = 0.0;
-
-        // Fetches OT and DT from PUNCHES table if they exist and were pre-calculated (e.g., by PayrollServlet)
-        String sqlGetPunches = "SELECT `PUNCH_ID`, `EID`, `DATE` AS UTC_DB_DATE, `IN_1` AS UTC_IN_TIMESTAMP, `OUT_1` AS UTC_OUT_TIMESTAMP, `TOTAL`, `OT`, `DT`, `PUNCH_TYPE` FROM PUNCHES " +
-                               "WHERE EID = ? AND TenantID = ? AND `DATE` BETWEEN ? AND ? ORDER BY `DATE` ASC, `IN_1` ASC";
+        
+        // --- [FIX] Modified SQL to query by UTC timestamp (IN_1) instead of the UTC DATE column ---
+        // This correctly includes punches made late in the evening in a local timezone.
+        // It also fetches non-work punches (e.g., vacation) that fall within the date range.
+        String sqlGetPunches = "SELECT `PUNCH_ID`, `EID`, `DATE` AS UTC_DB_DATE, `IN_1` AS UTC_IN_TIMESTAMP, `OUT_1` AS UTC_OUT_TIMESTAMP, `TOTAL`, `OT`, `DT`, `PUNCH_TYPE` " +
+                               "FROM PUNCHES WHERE EID = ? AND TenantID = ? AND " +
+                               "((IN_1 >= ? AND IN_1 < ?) OR (IN_1 IS NULL AND `DATE` BETWEEN ? AND ?)) " +
+                               "ORDER BY `DATE` ASC, `IN_1` ASC";
 
         try (Connection con = DatabaseConnection.getConnection(); PreparedStatement psGetPunches = con.prepareStatement(sqlGetPunches)) {
-            psGetPunches.setInt(1, globalEID); psGetPunches.setInt(2, tenantId);
-            psGetPunches.setDate(3, java.sql.Date.valueOf(payPeriodStartDate));
-            psGetPunches.setDate(4, java.sql.Date.valueOf(payPeriodEndDate));
+            psGetPunches.setInt(1, globalEID); 
+            psGetPunches.setInt(2, tenantId);
+            psGetPunches.setTimestamp(3, Timestamp.from(periodStartInstant));
+            psGetPunches.setTimestamp(4, Timestamp.from(periodEndInstant));
+            psGetPunches.setDate(5, java.sql.Date.valueOf(payPeriodStartDate)); // For hours-only types
+            psGetPunches.setDate(6, java.sql.Date.valueOf(payPeriodEndDate));   // For hours-only types
 
             try (ResultSet rsPunches = psGetPunches.executeQuery()) {
                 while (rsPunches.next()) {
@@ -375,14 +386,14 @@ public class ShowPunches {
                     String punchType = rsPunches.getString("PUNCH_TYPE");
                     if (punchType == null) punchType = "N/A";
 
-                    LocalDate displayPunchDate; // Date of the punch in the displayZoneId
+                    LocalDate displayPunchDate;
                     ZonedDateTime zdtIn = null; ZonedDateTime zdtOut = null;
 
                     if (inTimestampUtc != null) {
                         zdtIn = ZonedDateTime.ofInstant(inTimestampUtc.toInstant(), displayZoneId);
                         displayPunchDate = zdtIn.toLocalDate();
                     } else {
-                        Date punchDbDate = rsPunches.getDate("UTC_DB_DATE"); // This is UTC date from DB
+                        Date punchDbDate = rsPunches.getDate("UTC_DB_DATE");
                         displayPunchDate = (punchDbDate != null) ? punchDbDate.toLocalDate() : LocalDate.now(displayZoneId);
                     }
                      if (outTimestampUtc != null) {
@@ -403,44 +414,25 @@ public class ShowPunches {
 
                     Time scheduledStartTimeSql = (Time) employeeInfo.get("shiftStart");
                     Time scheduledEndTimeSql = (Time) employeeInfo.get("shiftEnd");
-                    logger.info("[ShowPunches.getTimecardPunchData] EID " + globalEID + ", PunchID " + currentPunchId +
-                                ": PunchType='" + punchType + "', isWorkPunch=" + isWorkPunchType(punchType) +
-                                ", EmpInfo ScheduledStart=" + scheduledStartTimeSql + ", EmpInfo ScheduledEnd=" + scheduledEndTimeSql);
-
+                    
                     if (isWorkPunchType(punchType) && employeeInfo != null) {
                         if (scheduledStartTimeSql != null && zdtIn != null) {
                             LocalTime actualInLocal = zdtIn.toLocalTime();
                             LocalTime scheduledStartLocal = scheduledStartTimeSql.toLocalTime();
                             LocalTime graceStart = scheduledStartLocal.plusMinutes(gracePeriodMinutes);
-                            logger.info("[ShowPunches.getTimecardPunchData] EID " + globalEID + " PUNCH_ID " + currentPunchId + " LATE CHECK: ActualIn=" + actualInLocal +
-                                        " (DisplayZone), ScheduledStart=" + scheduledStartLocal + ", GracePeriod=" + gracePeriodMinutes + "min, GraceStart=" + graceStart +
-                                        ", IsAfterGrace=" + actualInLocal.isAfter(graceStart));
                             if (actualInLocal.isAfter(graceStart)) {
                                 punchMap.put("inTimeCssClass", "lateOrEarlyOutTag");
                             }
-                        } else if (zdtIn != null) {
-                             logger.info("[ShowPunches.getTimecardPunchData] EID " + globalEID + " PUNCH_ID " + currentPunchId + " LATE CHECK: No scheduledStartTimeSql for comparison. ActualIn=" + zdtIn.toLocalTime());
                         }
-
                         if (scheduledEndTimeSql != null && zdtOut != null) {
                             LocalTime actualOutLocal = zdtOut.toLocalTime();
                             LocalTime scheduledEndLocal = scheduledEndTimeSql.toLocalTime();
                             LocalTime graceEnd = scheduledEndLocal.minusMinutes(gracePeriodMinutes);
-                            logger.info("[ShowPunches.getTimecardPunchData] EID " + globalEID + " PUNCH_ID " + currentPunchId + " EARLY CHECK: ActualOut=" + actualOutLocal +
-                                        " (DisplayZone), ScheduledEnd=" + scheduledEndLocal + ", GracePeriod=" + gracePeriodMinutes + "min, GraceEnd=" + graceEnd +
-                                        ", IsBeforeGrace=" + actualOutLocal.isBefore(graceEnd));
                             if (actualOutLocal.isBefore(graceEnd)) {
                                 punchMap.put("outTimeCssClass", "lateOrEarlyOutTag");
                             }
-                        } else if (zdtOut != null) {
-                             logger.info("[ShowPunches.getTimecardPunchData] EID " + globalEID + " PUNCH_ID " + currentPunchId + " EARLY CHECK: No scheduledEndTimeSql for comparison. ActualOut=" + zdtOut.toLocalTime());
                         }
                     }
-                    // Log the contents of punchMap just before adding to the list
-                    logger.info("[ShowPunches.getTimecardPunchData] EID " + globalEID + " PUNCH_ID " + currentPunchId +
-                                " Final punchMap before adding to list: " +
-                                "inTimeCssClass='" + punchMap.get("inTimeCssClass") + "', " +
-                                "outTimeCssClass='" + punchMap.get("outTimeCssClass") + "'");
 
                     punchMap.put("timeIn", inTimeDisplay);
                     punchMap.put("timeOut", outTimeDisplay);
@@ -476,8 +468,6 @@ public class ShowPunches {
             }
 
             // --- OT Calculation Logic ---
-            // This logic calculates OT/DT based on rules and aggregated work hours for display.
-            // It does not rely on PUNCHES.OT or PUNCHES.DT columns directly for this on-the-fly calculation.
             double calculatedPeriodRegular = 0.0;
             double calculatedPeriodOt = 0.0;
             double calculatedPeriodDt = 0.0;
@@ -511,7 +501,7 @@ public class ShowPunches {
                         todaysDt = todaysReg - doubleTimeThreshold_calc;
                         todaysReg = doubleTimeThreshold_calc;
                     }
-                    if (dailyOtEnabled_calc && todaysReg > dailyOtThreshold_calc) { // Corrected variable name
+                    if (dailyOtEnabled_calc && todaysReg > dailyOtThreshold_calc) {
                         todaysOt = todaysReg - dailyOtThreshold_calc;
                         todaysReg = dailyOtThreshold_calc;
                     }
@@ -538,7 +528,7 @@ public class ShowPunches {
                     }
                     Collections.sort(workDaysThisWeek);
 
-                    if (seventhDayOtEnabled_calc && daysWorkedInWorkWeek >= 7 && !workDaysThisWeek.isEmpty()) { // Corrected variable
+                    if (seventhDayOtEnabled_calc && daysWorkedInWorkWeek >= 7 && !workDaysThisWeek.isEmpty()) {
                          LocalDate seventhDayActual = workDaysThisWeek.get(workDaysThisWeek.size()-1);
                          if (seventhDayActual.equals(weekStart.plusDays(6))) {
                             double hoursOnSeventhDay = dailyHoursNetOfDailyRules.getOrDefault(seventhDayActual, 0.0);

@@ -12,7 +12,7 @@
                     .replace("\n", "\\n")
                     .replace("\r", "\\r")
                     .replace("\t", "\\t")
-                    .replace("/", "\\/"); 
+                    .replace("/", "\\/");
     }
 %>
 <%
@@ -21,7 +21,7 @@
     if (loginSession != null) {
         errorMessage = (String) loginSession.getAttribute("errorMessage");
         if (errorMessage != null) {
-            loginSession.removeAttribute("errorMessage"); 
+            loginSession.removeAttribute("errorMessage");
         }
     }
     if (errorMessage == null) {
@@ -31,7 +31,7 @@
     String successMessageFromRequest = request.getParameter("message");
     String companyIdentifierRepop = request.getParameter("companyIdentifier");
     String adminEmailRepop = request.getParameter("adminEmail");
-    String messageType = request.getParameter("msgType"); 
+    String messageType = request.getParameter("msgType");
     String autoLogoutMessage = request.getParameter("autoLogoutMessage");
 %>
 <!DOCTYPE html>
@@ -39,7 +39,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - YourTimeClock</title>
+    <title>Login - Precision Time Solutions</title>
+    <link rel="icon" type="image/png" href="<%= request.getContextPath() %>/Images/favicon.png">
     <link rel="stylesheet" href="css/reports.css?v=<%= System.currentTimeMillis() %>">
     <link rel="stylesheet" href="css/login.css?v=<%= System.currentTimeMillis() %>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -48,8 +49,10 @@
 <body>
     <div class="login-container">
         <div class="login-header">
-            <a href="index.jsp" class="logo-link"><i class="fas fa-clock"></i> YourTimeClock</a>
-        </div>
+            <a href="index.jsp" class="logo-link">
+                <img src="<%= request.getContextPath() %>/Images/logo.png" alt="Precision Time Solutions Logo" class="logo-image">
+            </a>
+            </div>
 
         <% if (errorMessage != null && !errorMessage.isEmpty()) { %>
             <p class="error-message login-page-message" id="loginErrorMessage"><%= errorMessage.replace("<", "&lt;").replace(">", "&gt;") %></p>
@@ -58,9 +61,8 @@
             <p class="info-message login-page-message" id="autoLogoutInfoMessage"><%= autoLogoutMessage.replace("<", "&lt;").replace(">", "&gt;") %></p>
         <% } %>
 
-
         <form action="LoginServlet" method="POST" id="loginForm" class="login-form">
-            <input type="hidden" id="browserTimeZone" name="browserTimeZone" value="">
+             <input type="hidden" id="browserTimeZone" name="browserTimeZone" value="">
             <div class="form-group">
                 <label for="companyIdentifier">Company ID <span class="required">*</span></label>
                 <input type="text" id="companyIdentifier" name="companyIdentifier"
@@ -70,24 +72,23 @@
             </div>
             <div class="form-group">
                 <label for="email">Email Address <span class="required">*</span></label>
-                 <input type="email" id="email" name="email"
+                  <input type="email" id="email" name="email"
                        value="<%= (adminEmailRepop != null ? adminEmailRepop.replace("\"", "&quot;") : "") %>"
                        autocomplete="email" required>
             </div>
             <div class="form-group">
-                 <label for="password">PIN <span class="required">*</span></label>
+                  <label for="password">PIN <span class="required">*</span></label>
                 <input type="password" id="password" name="password" autocomplete="current-password" required>
             </div>
             <div class="form-actions">
                 <button type="submit" class="glossy-button text-blue login-submit-button">
-                    <i class="fas fa-sign-in-alt"></i> Log In
+                     <i class="fas fa-sign-in-alt"></i> Log In
                 </button>
             </div>
         </form>
         <p class="signup-redirect">Don't have a company account? <a href="signup_company_info.jsp">Sign Up Here</a></p>
     </div>
 
-    <%-- This modal is used for the post-signup success message --%>
     <div id="notificationModal" class="modal">
         <div class="modal-content">
             <span class="close" id="closeNotificationModal">&times;</span>
@@ -98,7 +99,7 @@
             <div class="button-row notification-button-row" style="justify-content: space-around; padding-top: 15px; padding-bottom: 20px;">
                 <button type="button" id="copyCompanyIdButton" class="glossy-button text-blue" style="display:none; flex-grow:1; margin: 0 5px;">
                     <i class="fas fa-copy"></i> Copy Company ID
-                </button>
+                 </button>
                 <button type="button" id="okButtonNotificationModal" class="glossy-button text-green" style="flex-grow:1; margin: 0 5px;">OK</button>
             </div>
         </div>

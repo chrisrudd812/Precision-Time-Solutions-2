@@ -186,16 +186,59 @@ table#historyTable tbody tr:last-child td {
     border-bottom: none;
 }
 
-/* Sort Indicators */
-table.report-table thead th.sortable, table#departments thead th.sortable, table#accruals thead th.sortable, table#schedules thead th.sortable, table#employees thead th.sortable, table#historyTable thead th.sortable { cursor: pointer; position: relative; padding-right: 28px !important; }
-table.report-table thead th.sortable:hover, table#departments thead th.sortable:hover, table#accruals thead th.sortable:hover, table#schedules thead th.sortable:hover, table#employees thead th.sortable:hover, table#historyTable thead th.sortable:hover { background: linear-gradient(to bottom, #dceaff, #c6d9f0); } /* Hover matches new gradient */
-table.report-table thead th.sortable::before, table.report-table thead th.sortable::after, table#departments thead th.sortable::before, table#departments thead th.sortable::after, table#accruals thead th.sortable::before, table#accruals thead th.sortable::after, table#schedules thead th.sortable::before, table#schedules thead th.sortable::after, table#employees thead th.sortable::before, table#employees thead th.sortable::after, table#historyTable thead th.sortable::before, table#historyTable thead th.sortable::after { content: ""; position: absolute; right: 10px; border: 6px solid transparent; opacity: 0.4; }
-table.report-table thead th.sortable::before, table#departments thead th.sortable::before, table#accruals thead th.sortable::before, table#schedules thead th.sortable::before, table#employees thead th.sortable::before, table#historyTable thead th.sortable::before { top: calc(50% - 14px); border-bottom-color: #336A9E; } /* Arrow color matches text */
-table.report-table thead th.sortable::after, table#departments thead th.sortable::after, table#accruals thead th.sortable::after, table#schedules thead th.sortable::after, table#employees thead th.sortable::after, table#historyTable thead th.sortable::after { top: calc(50% - 2px); border-top-color: #336A9E; } /* Arrow color matches text */
-table.report-table thead th.sort-asc::before, table#departments thead th.sort-asc::before, table#accruals thead th.sort-asc::before, table#schedules thead th.sort-asc::before, table#employees thead th.sort-asc::before, table#historyTable thead th.sort-asc::before { border-bottom-color: #004a7c !important; opacity: 1 !important; }
-table.report-table thead th.sort-desc::after, table#departments thead th.sort-desc::after, table#accruals thead th.sort-desc::after, table#schedules thead th.sort-desc::after, table#employees thead th.sort-desc::after, table#historyTable thead th.sort-desc::after { border-top-color: #004a7c !important; opacity: 1 !important; }
-table.report-table thead th.sort-asc::after, table#departments thead th.sort-asc::after, table#accruals thead th.sort-asc::after, table#schedules thead th.sort-asc::after, table#employees thead th.sort-asc::after, table#historyTable thead th.sort-asc::after { opacity: 0.15 !important; }
-table.report-table thead th.sort-desc::before, table#departments thead th.sort-desc::before, table#accruals thead th.sort-desc::before, table#schedules thead th.sort-desc::before, table#employees thead th.sort-desc::before, table#historyTable thead th.sort-desc::before { opacity: 0.15 !important; }
+/* === REVISED SORT INDICATORS SECTION === */
+table.report-table thead th.sortable, table#departments thead th.sortable, table#accruals thead th.sortable, table#schedules thead th.sortable, table#employees thead th.sortable, table#historyTable thead th.sortable { 
+    cursor: pointer; 
+    position: relative; 
+    padding-right: 28px !important; 
+}
+table.report-table thead th.sortable:hover, table#departments thead th.sortable:hover, table#accruals thead th.sortable:hover, table#schedules thead th.sortable:hover, table#employees thead th.sortable:hover, table#historyTable thead th.sortable:hover { 
+    background: linear-gradient(to bottom, #dceaff, #c6d9f0); 
+}
+/* Generic arrow containers */
+table.report-table thead th.sortable::before, table.report-table thead th.sortable::after, table#departments thead th.sortable::before, table#departments thead th.sortable::after, table#accruals thead th.sortable::before, table#accruals thead th.sortable::after, table#schedules thead th.sortable::before, table#schedules thead th.sortable::after, table#employees thead th.sortable::before, table#employees thead th.sortable::after, table#historyTable thead th.sortable::before, table#historyTable thead th.sortable::after { 
+    content: ""; 
+    position: absolute; 
+    right: 10px; 
+    border: 5px solid transparent; 
+    opacity: 0.4; 
+}
+/* Up Arrow (::before) - Positioned above the center */
+table.report-table thead th.sortable::before, table#departments thead th.sortable::before, table#accruals thead th.sortable::before, table#schedules thead th.sortable::before, table#employees thead th.sortable::before, table#historyTable thead th.sortable::before { 
+    bottom: 50%;
+    margin-bottom: 2px;
+    border-bottom-color: #336A9E; 
+}
+/* Down Arrow (::after) - Positioned below the center */
+table.report-table thead th.sortable::after, table#departments thead th.sortable::after, table#accruals thead th.sortable::after, table#schedules thead th.sortable::after, table#employees thead th.sortable::after, table#historyTable thead th.sortable::after { 
+    top: 50%;
+    margin-top: 2px;
+    border-top-color: #336A9E; 
+}
+/* Active Up Arrow */
+table.report-table thead th.sort-asc::before, table#departments thead th.sort-asc::before, table#accruals thead th.sort-asc::before, table#schedules thead th.sort-asc::before, table#employees thead th.sort-asc::before, table#historyTable thead th.sort-asc::before { 
+    border-bottom-color: #004a7c !important; 
+    opacity: 1 !important; 
+}
+/* Active Down Arrow */
+table.report-table thead th.sort-desc::after, table#departments thead th.sort-desc::after, table#accruals thead th.sort-desc::after, table#schedules thead th.sort-desc::after, table#employees thead th.sort-desc::after, table#historyTable thead th.sort-desc::after { 
+    border-top-color: #004a7c !important; 
+    opacity: 1 !important; 
+}
+/* Hide inactive arrows when one is active */
+table.report-table thead th.sort-asc::after, table#departments thead th.sort-asc::after, table#accruals thead th.sort-asc::after, table#schedules thead th.sort-asc::after, table#employees thead th.sort-asc::after, table#historyTable thead th.sort-asc::after { 
+    opacity: 0.15 !important; 
+}
+table.report-table thead th.sort-desc::before, table#departments thead th.sort-desc::before, table#accruals thead th.sort-desc::before, table#schedules thead th.sort-desc::before, table#employees thead th.sort-desc::before, table#historyTable thead th.sort-desc::before { 
+    opacity: 0.15 !important; 
+}
+/* [FIX] Style for the active sorted column header - MORE NOTICEABLE */
+table.report-table thead th.sort-asc,
+table.report-table thead th.sort-desc {
+    background-color: #cce5ff; /* A more noticeable blue */
+    background-image: linear-gradient(to bottom, #d4e8ff, #b8d7f7);
+    color: #004085; /* Darker text for contrast */
+}
 
 table.report-table tbody tr, table#departments tbody tr, table#accruals tbody tr, table#schedules tbody tr, table#employees tbody tr, table#historyTable tbody tr { transition: background-color 0.15s ease-in-out; }
 table.report-table tbody tr:nth-child(even), table#departments tbody tr:nth-child(even), table#accruals tbody tr:nth-child(even), table#schedules tbody tr:nth-child(even), table#employees tbody tr:nth-child(even), table#historyTable tbody tr:nth-child(even) { background-color: #f8f9fa; }

@@ -1,10 +1,48 @@
 // js/employees.js
+
+/**
+ * FIX: Copied utility functions from commonUtils.js to resolve script loading order issues.
+ * This ensures these functions are available when this script runs, without modifying shared files.
+ */
+function decodeHtmlEntities(encodedString) {
+    if (encodedString === null || typeof encodedString === 'undefined' || String(encodedString).toLowerCase() === 'null') { return ''; }
+    try {
+        const textarea = document.createElement('textarea');
+        textarea.innerHTML = String(encodedString); 
+        return textarea.value;
+    } catch (e) {
+        return String(encodedString); 
+    }
+}
+
+function showModal(modalElement) {
+    if (modalElement && typeof modalElement.classList !== 'undefined') {
+        modalElement.style.display = 'flex';
+        modalElement.classList.add('modal-visible');
+    }
+}
+
+function showPageNotification(message, isError = false, modalInstance = null, titleText = "Notification") { 
+    const modalToUse = modalInstance || document.getElementById("notificationModalGeneral");
+    const msgElem = modalToUse ? modalToUse.querySelector('#notificationModalGeneralMessage') : null;
+    const modalTitleElem = modalToUse ? modalToUse.querySelector('#notificationModalGeneralTitle') : null;
+
+    if (!modalToUse || !msgElem) {
+        alert((isError ? "Error: " : "Notification: ") + message);
+        return;
+    }
+    if(modalTitleElem) modalTitleElem.textContent = titleText;
+    msgElem.innerHTML = message;
+    showModal(modalToUse); 
+}
+
+
 document.addEventListener('DOMContentLoaded', function() {
 
     // --- Global variables and references to DOM elements ---
     const _showModal = window.showModal;
     const _hideModal = window.hideModal;
-    const _decode = window.decodeHtmlEntities;
+    const _decode = decodeHtmlEntities;
     const appRoot = window.appRootPath || "";
 
     const addBtn = document.getElementById('addEmployeeButton');
@@ -21,7 +59,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const reactivateModal = document.getElementById('reactivateEmployeeModal');
     const notificationModal = document.getElementById('notificationModalGeneral');
     
-    // FIX: Added a specific reference to the notification modal's OK button
     const okBtnGeneralNotify = document.getElementById('okButtonNotificationModalGeneral');
 
     const detailsPanel = document.getElementById('employeeDetailsSection');
@@ -86,7 +123,7 @@ document.addEventListener('DOMContentLoaded', function() {
             button.addEventListener('click', () => handleWizardAction(btn.action));
             wizardButtons.appendChild(button);
         });
-        _showModal(wizardModal);
+        showModal(wizardModal);
     }
 
     async function handleWizardAction(action) {
@@ -200,7 +237,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        _showModal(addModal);
+        showModal(addModal);
         
         setTimeout(() => {
             addForm.querySelector('#addFirstName').focus();
@@ -246,7 +283,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         adminVerifyStepInput.value = isAdminVerification ? 'true' : 'false';
 
-        _showModal(editModal);
+        showModal(editModal);
 
         if (isAdminVerification) {
             setTimeout(() => {
@@ -317,7 +354,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!selectedEmployeeData) return;
         const employeeName = `${_decode(selectedRow.dataset.firstname)} ${_decode(selectedRow.dataset.lastname)}`;
         deactivateModal.querySelector('#deactivateEmployeeName').textContent = employeeName;
-        _showModal(deactivateModal);
+        showModal(deactivateModal);
         const confirmBtn = deactivateModal.querySelector('#confirmDeactivateBtn');
         const cancelBtn = deactivateModal.querySelector('.cancel-btn');
         const confirmHandler = () => {
@@ -525,7 +562,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // FIX: Added a specific event listener for the general notification modal's OK button
     if (okBtnGeneralNotify) {
         okBtnGeneralNotify.addEventListener('click', () => _hideModal(notificationModal));
     }
@@ -549,12 +585,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const successMsg = urlParams.get('message');
             const errorMsg = urlParams.get('error');
             
+            // FIX: Changed window.showPageNotification to the local showPageNotification function
             if (errorMsg) {
-                window.showPageNotification(errorMsg, true, notificationModal, 'Error');
+                showPageNotification(errorMsg, true, notificationModal, 'Error');
             }
             if (successMsg) {
-                window.showPageNotification(successMsg, false, notificationModal, 'Success');
-                // FIX: Target the correct OK button and set focus
+                showPageNotification(successMsg, false, notificationModal, 'Success');
                 if (okBtnGeneralNotify) {
                     setTimeout(() => okBtnGeneralNotify.focus(), 150); 
                 }
@@ -563,7 +599,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const eid = urlParams.get('eid');
                 const email = urlParams.get('email');
                 reactivateModal.querySelector('#reactivateEmail').textContent = email;
-                _showModal(reactivateModal);
+                showModal(reactivateModal);
                 reactivateModal.querySelector('#confirmReactivateBtn').onclick = () => handleReactivation(eid);
                 reactivateModal.querySelector('.cancel-btn').onclick = () => _hideModal(reactivateModal);
             }
@@ -581,51 +617,4 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    function makeTableSortable(table) {
-        const headers = table.querySelectorAll('th.sortable');
-        headers.forEach((header, index) => {
-            header.addEventListener('click', () => {
-                sortTableByColumn(table, index);
-            });
-        });
-    }
-
-    function sortTableByColumn(table, columnIndex) {
-        const tBody = table.tBodies[0];
-        const rows = Array.from(tBody.querySelectorAll("tr"));
-        const header = table.querySelectorAll('th.sortable')[columnIndex];
-        
-        const currentDirection = header.dataset.sortDirection || 'none';
-        let nextDirection = (currentDirection === 'asc') ? 'desc' : 'asc';
-        
-        const isNumeric = !isNaN(rows[0]?.cells[columnIndex]?.textContent.trim().replace(/[$,]/g, ''));
-
-        const sortedRows = rows.sort((a, b) => {
-            const aCellText = a.cells[columnIndex]?.textContent.trim() || '';
-            const bCellText = b.cells[columnIndex]?.textContent.trim() || '';
-            
-            if (isNumeric) {
-                const aVal = parseFloat(aCellText.replace(/[$,]/g, '')) || 0;
-                const bVal = parseFloat(bCellText.replace(/[$,]/g, '')) || 0;
-                return nextDirection === 'asc' ? aVal - bVal : bVal - aVal;
-            } else {
-                return nextDirection === 'asc' 
-                    ? aCellText.localeCompare(bCellText) 
-                    : bCellText.localeCompare(aCellText);
-            }
-        });
-
-        tBody.append(...sortedRows);
-
-        table.querySelectorAll('th.sortable').forEach(th => {
-            th.dataset.sortDirection = 'none';
-            th.classList.remove('sort-asc', 'sort-desc');
-        });
-        header.dataset.sortDirection = nextDirection;
-        header.classList.add(nextDirection === 'asc' ? 'sort-asc' : 'sort-desc');
-    }
-
-    if (employeesTable) {
-        makeTableSortable(employeesTable);
-    }
 });

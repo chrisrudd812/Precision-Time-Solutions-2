@@ -8,7 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import timeclock.Configuration;
 import java.io.IOException;
-import java.sql.SQLException; // Make sure SQLException is imported
+import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -17,7 +17,7 @@ import java.util.logging.Logger;
  * from the settings.jsp page.
  * ** UPDATED for Enhanced Error Handling **
  */
-@WebServlet("/saveSetting")
+@WebServlet("/SettingsServlet")
 public class SettingsServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final Logger logger = Logger.getLogger(SettingsServlet.class.getName());

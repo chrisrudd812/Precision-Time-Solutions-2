@@ -17,105 +17,115 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Map;
+import java.sql.Timestamp;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @WebServlet("/SubscriptionStatusServlet")
 public class SubscriptionStatusServlet extends HttpServlet {
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 2L; // Version update
     private static final Logger logger = Logger.getLogger(SubscriptionStatusServlet.class.getName());
 
-    // In a real app, this mapping might come from a database or config file.
-    private static final Map<String, Integer> PRICE_ID_TO_MAX_USERS = Map.of(
-        "price_1RttGyBtvyYfb2KWNRui8ev1", 50,  // Example: Business Plan
-        "price_1RttIyBtvyYfb2KW86IvsAvX", 100, // Example: Pro Plan
-        "price_1RWNdXBtvyYfb2KWWt6p9F4X", 25   // Example: Starter Plan
-    );
-
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) 
-            throws ServletException, IOException {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
         JSONObject jsonResponse = new JSONObject();
         HttpSession session = request.getSession(false);
 
         if (session == null || session.getAttribute("TenantID") == null) {
-            jsonResponse.put("success", false).put("error", "Session expired.");
+            jsonResponse.put("success", false).put("error", "Session expired. Please log in again.");
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().print(jsonResponse.toString());
+            try (PrintWriter out = response.getWriter()) {
+                out.print(jsonResponse.toString());
+            }
             return;
         }
 
         Integer tenantId = (Integer) session.getAttribute("TenantID");
-        String[] dbInfo = getSubscriptionInfoFromDb(tenantId);
-        String stripeSubscriptionId = dbInfo[0];
-        String currentDbStatus = dbInfo[1];
+        
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            String stripeSubscriptionId = getStripeSubscriptionId(conn, tenantId);
 
-        if (stripeSubscriptionId == null) {
-            jsonResponse.put("success", false).put("error", "No subscription ID found for this account.");
-            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            response.getWriter().print(jsonResponse.toString());
-            return;
-        }
-
-        try {
-            Subscription stripeSubscription = Subscription.retrieve(stripeSubscriptionId);
-            String newStripeStatus = stripeSubscription.getStatus(); // "active", "trialing", "canceled", etc.
-            String newPriceId = stripeSubscription.getItems().getData().get(0).getPrice().getId();
-            
-            // Determine new max users based on the price ID
-            Integer newMaxUsers = PRICE_ID_TO_MAX_USERS.getOrDefault(newPriceId, 25); // Default to 25 if price ID is unknown
-
-            // Only update if something has actually changed
-            if (!newStripeStatus.equalsIgnoreCase(currentDbStatus) || !newPriceId.equals(dbInfo[2]) || !newMaxUsers.equals(Integer.valueOf(dbInfo[3]))) {
-                updateTenantSubscription(tenantId, newStripeStatus, newPriceId, newMaxUsers);
-                jsonResponse.put("success", true).put("message", "Your subscription has been updated successfully!");
-                logger.info("Subscription for TenantID " + tenantId + " was updated. New status: " + newStripeStatus);
-            } else {
-                jsonResponse.put("success", true).put("message", "Your subscription is already up to date.");
-                logger.info("Subscription for TenantID " + tenantId + " checked, no changes found.");
+            if (stripeSubscriptionId == null) {
+                throw new Exception("No Subscription ID found for this account.");
             }
 
-        } catch (StripeException | SQLException e) {
-            logger.log(Level.SEVERE, "Error checking subscription status for TenantID: " + tenantId, e);
-            jsonResponse.put("success", false).put("error", "An error occurred while syncing your subscription.");
+            Subscription stripeSubscription = Subscription.retrieve(stripeSubscriptionId);
+
+            String newStatus = stripeSubscription.getStatus();
+            String newPriceId = stripeSubscription.getItems().getData().get(0).getPrice().getId();
+            Timestamp newPeriodEnd = new Timestamp(stripeSubscription.getCurrentPeriodEnd() * 1000L);
+
+            // IMPROVEMENT: Get MaxUsers dynamically from your subscription_plans table
+            int newMaxUsers = getMaxUsersForPriceId(conn, newPriceId);
+
+            updateTenantSubscription(conn, tenantId, newStatus, newPriceId, newPeriodEnd, newMaxUsers);
+            jsonResponse.put("success", true).put("message", "Subscription details successfully synced!");
+
+        } catch (StripeException e) {
+            logger.log(Level.SEVERE, "Stripe API error syncing subscription for TenantID: " + tenantId, e);
+            jsonResponse.put("success", false).put("error", "Could not connect to the billing service to sync your plan.");
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Database error syncing subscription for TenantID: " + tenantId, e);
+            jsonResponse.put("success", false).put("error", "A database error occurred while syncing your plan.");
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "General error syncing subscription for TenantID: " + tenantId, e);
+            jsonResponse.put("success", false).put("error", e.getMessage());
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         }
 
-        response.getWriter().print(jsonResponse.toString());
+        try (PrintWriter out = response.getWriter()) {
+            out.print(jsonResponse.toString());
+        }
     }
 
-    private String[] getSubscriptionInfoFromDb(int tenantId) {
-        String[] info = new String[4]; // [SubscriptionID, Status, PriceID, MaxUsers]
-        String sql = "SELECT StripeSubscriptionID, SubscriptionStatus, StripePriceID, MaxUsers FROM tenants WHERE TenantID = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+    private String getStripeSubscriptionId(Connection conn, int tenantId) throws SQLException {
+        String sql = "SELECT StripeSubscriptionID FROM tenants WHERE TenantID = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, tenantId);
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
-                    info[0] = rs.getString("StripeSubscriptionID");
-                    info[1] = rs.getString("SubscriptionStatus");
-                    info[2] = rs.getString("StripePriceID");
-                    info[3] = String.valueOf(rs.getInt("MaxUsers"));
+                    return rs.getString("StripeSubscriptionID");
                 }
             }
-        } catch (SQLException e) {
-            logger.log(Level.SEVERE, "Error fetching subscription info from DB for TenantID: " + tenantId, e);
         }
-        return info;
+        return null;
     }
 
-    private void updateTenantSubscription(int tenantId, String newStatus, String newPriceId, int newMaxUsers) throws SQLException {
-        String sql = "UPDATE tenants SET SubscriptionStatus = ?, StripePriceID = ?, MaxUsers = ? WHERE TenantID = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, newStatus);
-            pstmt.setString(2, newPriceId);
-            pstmt.setInt(3, newMaxUsers);
-            pstmt.setInt(4, tenantId);
-            pstmt.executeUpdate();
+    private int getMaxUsersForPriceId(Connection conn, String priceId) throws SQLException, Exception {
+        String sql = "SELECT maxUsers FROM subscription_plans WHERE stripePriceId = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, priceId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("maxUsers");
+                } else {
+                    // This is a safeguard in case a plan exists in Stripe but not your DB
+                    logger.log(Level.WARNING, "Plan details for Price ID {0} not found in local DB. Defaulting to 25 users.", priceId);
+                    return 25; 
+                }
+            }
+        }
+    }
+
+    private void updateTenantSubscription(Connection conn, int tenantId, String status, String priceId, Timestamp periodEnd, int maxUsers) throws SQLException {
+        String sql = "UPDATE tenants SET SubscriptionStatus = ?, StripePriceID = ?, CurrentPeriodEnd = ?, MaxUsers = ? WHERE TenantID = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, status);
+            pstmt.setString(2, priceId);
+            pstmt.setTimestamp(3, periodEnd);
+            pstmt.setInt(4, maxUsers);
+            pstmt.setInt(5, tenantId);
+            
+            int rowsAffected = pstmt.executeUpdate();
+            if (rowsAffected > 0) {
+                logger.log(Level.INFO, "Tenant {0} subscription updated. Status: {1}, PriceID: {2}, MaxUsers: {3}", new Object[]{tenantId, status, priceId, maxUsers});
+            } else {
+                 logger.log(Level.WARNING, "Failed to update subscription for TenantID {0}, tenant not found.", tenantId);
+            }
         }
     }
 }

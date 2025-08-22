@@ -2,44 +2,38 @@
 
 /* Inherits base styles from reports.css */
 
+/* [FIX] Added background gradient for the table container area on this page */
+.report-display-area {
+    background: linear-gradient(to bottom, #d0d9e2, #e7f0f7);
+}
+
 #button-container.main-action-buttons button.glossy-button {
     flex: 1 1 auto; 
     min-width: 160px; 
     max-width: 32%;   
 }
 
-table#employees {
-    table-layout: auto;
-    width: 100%;      
+#employeesTable thead th {
+    white-space: nowrap;
 }
 
-table#employees th,
-table#employees td {
-    white-space: normal;
-    word-break: break-word;
-    padding: 9px 10px; 
-    vertical-align: middle;
-}
+/* Re-instated column-specific widths to prevent wrapping */
+#employeesTable th:nth-child(1), #employeesTable td:nth-child(1) { min-width: 60px; text-align: center; }
+#employeesTable th:nth-child(2), #employeesTable td:nth-child(2) { min-width: 120px; }
+#employeesTable th:nth-child(3), #employeesTable td:nth-child(3) { min-width: 120px; }
+#employeesTable th:nth-child(4), #employeesTable td:nth-child(4) { min-width: 130px; }
+#employeesTable th:nth-child(5), #employeesTable td:nth-child(5) { min-width: 150px; }
+#employeesTable th:nth-child(6), #employeesTable td:nth-child(6) { min-width: 130px; }
+#employeesTable th:nth-child(7), #employeesTable td:nth-child(7) { min-width: 120px; text-align: center; }
+#employeesTable th:nth-child(8), #employeesTable td:nth-child(8) { min-width: 220px; }
+#employeesTable th:nth-child(9), #employeesTable td:nth-child(9) { min-width: 120px; text-align: center; }
+#employeesTable th:nth-child(10), #employeesTable td:nth-child(10) { min-width: 120px; text-align: center; }
 
-table#employees th {
-    white-space: nowrap !important; 
-    text-align: center;
-    font-weight: bold;
+/* [FIX] Hide the last two columns (Wage Type and Wage) */
+#employeesTable th:nth-child(11), #employeesTable td:nth-child(11),
+#employeesTable th:nth-child(12), #employeesTable td:nth-child(12) {
+    display: none;
 }
-
-/* Column-specific styling */
-table#employees th:nth-child(1), table#employees td:nth-child(1) { text-align: center; white-space: nowrap; width: 5%; min-width: 50px; }
-table#employees th:nth-child(2), table#employees td:nth-child(2) { width: 9%; min-width: 90px; white-space: nowrap; }
-table#employees th:nth-child(3), table#employees td:nth-child(3) { width: 9%; min-width: 90px; white-space: nowrap; }
-table#employees th:nth-child(4), table#employees td:nth-child(4) { width: 9%; min-width: 90px; }
-table#employees th:nth-child(5), table#employees td:nth-child(5) { width: 9%; min-width: 90px; }
-table#employees th:nth-child(6), table#employees td:nth-child(6) { width: 9%; min-width: 100px; }
-table#employees th:nth-child(7), table#employees td:nth-child(7) { text-align: center; white-space: nowrap; width: 8%; min-width: 90px; }
-table#employees th:nth-child(8), table#employees td:nth-child(8) { width: 14%; min-width: 150px; word-break: break-all; }
-table#employees th:nth-child(9), table#employees td:nth-child(9) { text-align: center; white-space: nowrap; width: 8%; min-width: 90px; }
-table#employees th:nth-child(10), table#employees td:nth-child(10) { text-align: center; white-space: nowrap; width: 8%; min-width: 90px; }
-table#employees th:nth-child(11), table#employees td:nth-child(11) { text-align: center; white-space: nowrap; width: 6%; min-width: 70px; }
-table#employees th:nth-child(12), table#employees td:nth-child(12) { text-align: right; white-space: nowrap; width: 7%; min-width: 70px; }
 
 /* --- Employee Details Section --- */
 #employeeDetailsSection {
@@ -66,77 +60,14 @@ table#employees th:nth-child(12), table#employees td:nth-child(12) { text-align:
 .detail-group p:last-child { margin-bottom: 0; }
 .detail-group p label { font-weight: 600; color: #495057; text-align: right; padding-right: 5px; white-space: nowrap; }
 .detail-group p span { color: #343a40; word-wrap: break-word; word-break: break-all; text-align: left; }
-/* #resetPasswordForm { display: inline-block; } -- This line is no longer needed */
 #btnResetPassword.glossy-button { min-width: 220px; }
 
 /* --- Modal Styling --- */
-#addEmployeeModal .modal-content,
-#editEmployeeModal .modal-content { max-width: 750px; min-width: 600px; }
 .required-asterisk { color: #dc3545; margin-left: 2px; font-weight: bold; }
 
 .modal-content .form-row .form-item.third-width {
     flex: 1 1 0;
     min-width: calc(33.333% - 11px);
-}
-
-/* --- ADDED: Styles for Scrollable Table --- */
-.reports-page .parent-container {
-    display: flex;
-    flex-direction: column;
-    height: calc(100vh - 120px); 
-}
-.report-display-area {
-    flex-grow: 1; 
-    overflow: hidden;
-    display: flex;
-    background: linear-gradient(to bottom, #d0d9e2, #e7f0f7);
-}
-#reportOutput_employees {
-    flex-grow: 1;
-    max-height: 100%;
-    overflow-y: auto;
-}
-#employeesTable thead th {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    background-color: #f8f9fa;
-}
-
-/* --- ADDED: Styles for Sortable Table Headers --- */
-.report-table thead th.sortable {
-    cursor: pointer;
-    position: relative;
-    padding-right: 25px; 
-}
-.report-table thead th.sortable::after,
-.report-table thead th.sortable::before {
-    font-family: "Font Awesome 6 Free";
-    font-weight: 900;
-    position: absolute;
-    right: 10px;
-    opacity: 0.2;
-    transition: opacity 0.2s ease, color 0.2s ease;
-    line-height: 1;
-}
-.report-table thead th.sortable::before {
-    content: '\f0de'; /* fa-sort-up */
-    bottom: 50%;
-    margin-bottom: 2px;
-}
-.report-table thead th.sortable::after {
-    content: '\f0dd'; /* fa-sort-down */
-    top: 50%;
-    margin-top: 2px;
-}
-.report-table thead th.sortable:hover::before,
-.report-table thead th.sortable:hover::after {
-    opacity: 0.6;
-}
-.report-table thead th.sort-asc::before,
-.report-table thead th.sort-desc::after {
-    opacity: 1;
-    color: #005A9C;
 }
 
 #deactivateConfirmModal .modal-content p {

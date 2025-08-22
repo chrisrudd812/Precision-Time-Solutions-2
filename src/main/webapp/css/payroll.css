@@ -190,3 +190,10 @@ table#payrollTable td:nth-child(9), table#payrollTable td:nth-child(10) { text-a
     padding: 9px 18px;
 }
 /* End Custom Confirmation Modal Styling */
+
+/* Makes the table container scrollable if it's too tall */
+#payroll-table-container {
+    max-height: 50vh; /* 50% of the viewport/browser window height */
+    overflow-y: auto;   /* Adds a vertical scrollbar only when needed */
+}
+

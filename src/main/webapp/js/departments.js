@@ -1,10 +1,56 @@
 // js/departments.js
+
+/**
+ * FIX: Copied utility functions from commonUtils.js to resolve script loading order issues.
+ * This ensures these functions are available when this script runs, without modifying shared files.
+ */
+function decodeHtmlEntities(encodedString) {
+    if (encodedString === null || typeof encodedString === 'undefined' || String(encodedString).toLowerCase() === 'null') { return ''; }
+    try {
+        const textarea = document.createElement('textarea');
+        textarea.innerHTML = String(encodedString); 
+        return textarea.value;
+    } catch (e) {
+        return String(encodedString); 
+    }
+}
+
+function showModal(modalElement) {
+    if (modalElement && typeof modalElement.classList !== 'undefined') {
+        modalElement.style.display = 'flex';
+        modalElement.classList.add('modal-visible');
+    }
+}
+
+function hideModal(modalElement) {
+    if (modalElement && typeof modalElement.classList !== 'undefined') {
+        modalElement.style.display = 'none';
+        modalElement.classList.remove('modal-visible');
+    }
+}
+
+function showPageNotification(message, isError = false, modalInstance = null, titleText = "Notification") { 
+    const modalToUse = modalInstance || document.getElementById("notificationModalGeneral");
+    const msgElem = modalToUse ? modalToUse.querySelector('#notificationModalGeneralMessage') : null;
+    const modalTitleElem = modalToUse ? modalToUse.querySelector('#notificationModalGeneralTitle') : null;
+
+    if (!modalToUse || !msgElem) {
+        alert((isError ? "Error: " : "Notification: ") + message);
+        return;
+    }
+    if(modalTitleElem) modalTitleElem.textContent = titleText;
+    msgElem.innerHTML = message;
+    showModal(modalToUse); 
+}
+
+
 document.addEventListener('DOMContentLoaded', function() {
     
     // --- Helper Functions & Global Access ---
-    const _showModal = window.showModal;
-    const _hideModal = window.hideModal;
-    const _decode = window.decodeHtmlEntities;
+    // FIX: Pointing these constants to the local functions defined above.
+    const _showModal = showModal;
+    const _hideModal = hideModal;
+    const _decode = decodeHtmlEntities;
     const appRoot = window.appRootPath || "";
 
     // --- Element Selectors ---
@@ -96,10 +142,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.success) {
                 window.location.href = `${appRoot}/${nextPage}?setup_wizard=true&step=${encodeURIComponent(serverNextStep)}`;
             } else {
-                window.showPageNotification(data.error || 'Could not proceed.', true, notificationModal);
+                showPageNotification(data.error || 'Could not proceed.', true, notificationModal);
             }
         })
-        .catch(err => window.showPageNotification('Network error. Please try again.', true, notificationModal));
+        .catch(err => showPageNotification('Network error. Please try again.', true, notificationModal));
     }
     
     function hideAddModalAndHandleWizard() {
@@ -114,7 +160,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- Core Page Logic ---
     function selectRow(row) {
         if (row && row.dataset.name.toLowerCase() === 'none') {
-            window.showPageNotification("'None' is a system default and cannot be edited or deleted.", false, notificationModal);
+            showPageNotification("'None' is a system default and cannot be edited or deleted.", false, notificationModal);
             if (selectedRow) selectedRow.classList.remove('selected');
             selectedRow = null;
         } else {
@@ -208,26 +254,22 @@ document.addEventListener('DOMContentLoaded', function() {
         deleteForm.submit();
     });
     
-    // ADDED: Event listener to check for duplicate department names before submitting.
     addForm.addEventListener('submit', function(event) {
-        event.preventDefault(); // Stop the form from submitting immediately.
+        event.preventDefault(); 
 
         const newDeptNameInput = addForm.querySelector('#addDeptName');
         if (!newDeptNameInput) {
-            addForm.submit(); // Submit if the input isn't found for some reason.
+            addForm.submit(); 
             return;
         }
         
         const newDeptName = newDeptNameInput.value.trim().toLowerCase();
         
-        // Check if a department with the same name already exists.
         const isDuplicate = window.allAvailableDepartmentsForReassign.some(dept => dept.name.trim().toLowerCase() === newDeptName);
 
         if (isDuplicate) {
-            // If it's a duplicate, show a notification and don't submit.
-            window.showPageNotification(`A department named "${newDeptNameInput.value.trim()}" already exists. Please choose a different name.`, true, notificationModal);
+            showPageNotification(`A department named "${newDeptNameInput.value.trim()}" already exists. Please choose a different name.`, true, notificationModal);
         } else {
-            // If it's not a duplicate, submit the form.
             addForm.submit();
         }
     });

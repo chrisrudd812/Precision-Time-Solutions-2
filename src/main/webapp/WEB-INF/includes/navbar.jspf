@@ -27,6 +27,7 @@
         userPermissionsForNav_jspf = (String) navSession_jspf.getAttribute("Permissions");
         userFirstNameForNav_jspf = (String) navSession_jspf.getAttribute("UserFirstName");
         subscriptionStatus_jspf = (String) navSession_jspf.getAttribute("SubscriptionStatus");
+    
         
         // --- DEBUG LOGGING ---
         navbarLogger.info("[Navbar] Loading for session: " + navSession_jspf.getId());
@@ -39,7 +40,6 @@
     boolean isLoggedIn_jspf = (navSession_jspf != null && navSession_jspf.getAttribute("EID") != null && tenantIdForNav_jspf != null);
     boolean isAdminForNav_jspf = "Administrator".equalsIgnoreCase(userPermissionsForNav_jspf);
     boolean isSubscriptionActive_jspf = "active".equalsIgnoreCase(subscriptionStatus_jspf) || "trialing".equalsIgnoreCase(subscriptionStatus_jspf);
-    
     if (isLoggedIn_jspf && !isAdminForNav_jspf) {
         isSubscriptionActive_jspf = true; // Non-admin users are not affected by subscription status for navigation
     }
@@ -55,6 +55,7 @@
     <div class="navbar-links-container">
         <ul class="navbar-links">
             <% if (isLoggedIn_jspf) { %>
+            
                 <%
                     String timeClockLinkNav = "timeclock.jsp";
                     if ("User".equalsIgnoreCase(userPermissionsForNav_jspf) &&
@@ -67,6 +68,7 @@
 
                 <% if (isAdminForNav_jspf) { %>
                     <%-- This block of admin links is now conditional on an active subscription --%>
+        
                     <% if (isSubscriptionActive_jspf) { %>
                         <li class="dropdown">
                             <a href="javascript:void(0);" class="dropbtn"><i class="fas fa-edit"></i> Punch Management</a>
@@ -110,6 +112,78 @@
                                     <a href="javascript:void(0);" class="sub-dropbtn">Time Card Reports</a>
                                     <ul class="dropdown-content sub-dropdown-content">
                                         <li><a href="${pageContext.request.contextPath}/timeclock.jsp?reportMode=true&eid=0">View Individual Timecard</a></li>
+                                        
+                                        <%-- ======================= UPDATED TIME CARD REPORT LINKS START HERE ======================= --%>
+                                        <li><a href="${pageContext.request.contextPath}/PrintTimecardsServlet?filterType=all" target="_blank">All Time Cards (Print View)</a></li>
+
+                                        <%-- Filter by Department --%>
+                                        <li class="sub-dropdown-trigger">
+                                            <a href="javascript:void(0);" class="sub-dropbtn">By Department (Print View)</a>
+                                            <ul class="dropdown-content sub-dropdown-content">
+                                                <%
+                                                    if (tenantIdForNav_jspf != null && tenantIdForNav_jspf > 0) {
+                                                        List<Map<String, String>> depts = ShowReports.getDepartmentsForTenant(tenantIdForNav_jspf);
+                                                        if (depts != null && !depts.isEmpty()) {
+                                                            for (Map<String, String> dept : depts) {
+                                                                String name = dept.get("name");
+                                                                if (name != null && !name.trim().isEmpty()) {
+                                                                    String encodedName = URLEncoder.encode(name, StandardCharsets.UTF_8.name());
+                                                %>
+                                                                    <li><a href="${pageContext.request.contextPath}/PrintTimecardsServlet?filterType=department&filterValue=<%= encodedName %>" target="_blank"><%= escapeNavbarHtml(name) %></a></li>
+                                                <%
+                                                                }
+                                                            }
+                                                        } else { %> <li><a href="#">No Departments</a></li> <% }
+                                                    }
+                                                %>
+                                            </ul>
+                                        </li>
+                                        
+                                        <%-- Filter by Schedule --%>
+                                        <li class="sub-dropdown-trigger">
+                                            <a href="javascript:void(0);" class="sub-dropbtn">By Schedule (Print View)</a>
+                                            <ul class="dropdown-content sub-dropdown-content">
+                                                <%
+                                                    if (tenantIdForNav_jspf != null && tenantIdForNav_jspf > 0) {
+                                                        List<Map<String, String>> scheds = ShowReports.getSchedulesForTenant(tenantIdForNav_jspf);
+                                                        if (scheds != null && !scheds.isEmpty()) {
+                                                            for (Map<String, String> sched : scheds) {
+                                                                String name = sched.get("name");
+                                                                if (name != null && !name.trim().isEmpty()) {
+                                                                    String encodedName = URLEncoder.encode(name, StandardCharsets.UTF_8.name());
+                                                %>
+                                                                    <li><a href="${pageContext.request.contextPath}/PrintTimecardsServlet?filterType=schedule&filterValue=<%= encodedName %>" target="_blank"><%= escapeNavbarHtml(name) %></a></li>
+                                                <%
+                                                                }
+                                                            }
+                                                        } else { %> <li><a href="#">No Schedules</a></li> <% }
+                                                    }
+                                                %>
+                                            </ul>
+                                        </li>
+                                        
+                                        <%-- Filter by Supervisor --%>
+                                        <li class="sub-dropdown-trigger">
+                                            <a href="javascript:void(0);" class="sub-dropbtn">By Supervisor (Print View)</a>
+                                            <ul class="dropdown-content sub-dropdown-content">
+                                                <%
+                                                    if (tenantIdForNav_jspf != null && tenantIdForNav_jspf > 0) {
+                                                        List<String> sups = ShowReports.getSupervisorsForTenant(tenantIdForNav_jspf);
+                                                        if (sups != null && !sups.isEmpty()) {
+                                                            for (String supName : sups) {
+                                                                if (supName != null && !supName.trim().isEmpty()) {
+                                                                    String encodedName = URLEncoder.encode(supName, StandardCharsets.UTF_8.name());
+                                                %>
+                                                                    <li><a href="${pageContext.request.contextPath}/PrintTimecardsServlet?filterType=supervisor&filterValue=<%= encodedName %>" target="_blank"><%= escapeNavbarHtml(supName) %></a></li>
+                                                <%
+                                                                }
+                                                            }
+                                                        } else { %> <li><a href="#">No Supervisors</a></li> <% }
+                                                    }
+                                                %>
+                                            </ul>
+                                        </li>
+                                        <%-- ======================== UPDATED TIME CARD REPORT LINKS END HERE ======================== --%>
                                     </ul>
                                 </li>
                                 <li class="sub-dropdown-trigger">
@@ -117,6 +191,74 @@
                                     <ul class="dropdown-content sub-dropdown-content">
                                         <li><a href="${pageContext.request.contextPath}/reports.jsp?report=activeEmployees">Active Employees</a></li>
                                         <li><a href="${pageContext.request.contextPath}/reports.jsp?report=inactiveEmployees">Inactive Employees</a></li>
+                                        
+                                        <%-- Filter by Department --%>
+                                        <li class="sub-dropdown-trigger">
+                                            <a href="javascript:void(0);" class="sub-dropbtn">By Department</a>
+                                            <ul class="dropdown-content sub-dropdown-content">
+                                                <%
+                                                    if (tenantIdForNav_jspf != null && tenantIdForNav_jspf > 0) {
+                                                        List<Map<String, String>> depts = ShowReports.getDepartmentsForTenant(tenantIdForNav_jspf);
+                                                        if (depts != null && !depts.isEmpty()) {
+                                                            for (Map<String, String> dept : depts) {
+                                                                String name = dept.get("name");
+                                                                if (name != null && !name.trim().isEmpty()) {
+                                                                    String encodedName = URLEncoder.encode(name, StandardCharsets.UTF_8.name());
+                                                %>
+                                                                    <li><a href="${pageContext.request.contextPath}/reports.jsp?report=employeesByDept&filterValue=<%= encodedName %>"><%= escapeNavbarHtml(name) %></a></li>
+                                                <%
+                                                                }
+                                                            }
+                                                        } else { %> <li><a href="#">No Departments</a></li> <% }
+                                                    }
+                                                %>
+                                            </ul>
+                                        </li>
+                                        
+                                        <%-- Filter by Schedule --%>
+                                        <li class="sub-dropdown-trigger">
+                                            <a href="javascript:void(0);" class="sub-dropbtn">By Schedule</a>
+                                            <ul class="dropdown-content sub-dropdown-content">
+                                                <%
+                                                    if (tenantIdForNav_jspf != null && tenantIdForNav_jspf > 0) {
+                                                        List<Map<String, String>> scheds = ShowReports.getSchedulesForTenant(tenantIdForNav_jspf);
+                                                        if (scheds != null && !scheds.isEmpty()) {
+                                                            for (Map<String, String> sched : scheds) {
+                                                                String name = sched.get("name");
+                                                                if (name != null && !name.trim().isEmpty()) {
+                                                                    String encodedName = URLEncoder.encode(name, StandardCharsets.UTF_8.name());
+                                                %>
+                                                                    <li><a href="${pageContext.request.contextPath}/reports.jsp?report=employeesBySched&filterValue=<%= encodedName %>"><%= escapeNavbarHtml(name) %></a></li>
+                                                <%
+                                                                }
+                                                            }
+                                                        } else { %> <li><a href="#">No Schedules</a></li> <% }
+                                                    }
+                                                %>
+                                            </ul>
+                                        </li>
+                                        
+                                        <%-- Filter by Supervisor --%>
+                                        <li class="sub-dropdown-trigger">
+                                            <a href="javascript:void(0);" class="sub-dropbtn">By Supervisor</a>
+                                            <ul class="dropdown-content sub-dropdown-content">
+                                                <%
+                                                    if (tenantIdForNav_jspf != null && tenantIdForNav_jspf > 0) {
+                                                        List<String> sups = ShowReports.getSupervisorsForTenant(tenantIdForNav_jspf);
+                                                        if (sups != null && !sups.isEmpty()) {
+                                                            for (String supName : sups) {
+                                                                if (supName != null && !supName.trim().isEmpty()) {
+                                                                    String encodedName = URLEncoder.encode(supName, StandardCharsets.UTF_8.name());
+                                                %>
+                                                                    <li><a href="${pageContext.request.contextPath}/reports.jsp?report=employeesBySup&filterValue=<%= encodedName %>"><%= escapeNavbarHtml(supName) %></a></li>
+                                                <%
+                                                                }
+                                                            }
+                                                        } else { %> <li><a href="#">No Supervisors</a></li> <% }
+                                                    }
+                                                %>
+                                            </ul>
+                                        </li>
                                     </ul>
                                 </li>
                                 <li><a href="${pageContext.request.contextPath}/archived_punches.jsp">Archived Punches</a></li>

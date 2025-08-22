@@ -54,7 +54,7 @@
                             <li><i class="fas fa-check"></i> Comprehensive Reporting</li>
                             <li><i class="fas fa-check"></i> Secure Data Storage</li>
                         </ul>
-                        <a href="signup_company_info.jsp?priceId=price_123abc_starter" class="btn btn-primary btn-block">Sign Up Now</a>
+                        <a href="signup_company_info.jsp?priceId=price_1RWNdXBtvyYfb2KWWt6p9F4X" class="btn btn-primary btn-block">Sign Up Now</a>
                     </div>
                     <div class="pricing-box">
                         <h3>Business Plan</h3>
@@ -66,7 +66,7 @@
                             <li><i class="fas fa-check"></i> Comprehensive Reporting</li>
                             <li><i class="fas fa-check"></i> Secure Data Storage</li>
                         </ul>
-                        <a href="signup_company_info.jsp?priceId=price_123abc_business" class="btn btn-primary btn-block">Sign Up Now</a>
+                        <a href="signup_company_info.jsp?priceId=price_1RttGyBtvyYfb2KWNRui8ev1" class="btn btn-primary btn-block">Sign Up Now</a>
                     </div>
                     <div class="pricing-box">
                         <h3>Pro Plan</h3>
@@ -78,7 +78,7 @@
                             <li><i class="fas fa-check"></i> Comprehensive Reporting</li>
                             <li><i class="fas fa-check"></i> Secure Data Storage</li>
                         </ul>
-                        <a href="signup_company_info.jsp?priceId=price_123abc_pro" class="btn btn-primary btn-block">Sign Up Now</a>
+                        <a href="signup_company_info.jsp?priceId=price_1RttIyBtvyYfb2KW86IvsAvX" class="btn btn-primary btn-block">Sign Up Now</a>
                     </div>
                 </div>
                 <p style="text-align:center; margin-top:10px; font-size:0.8em;">Note: Replace the `priceId` in the links above with your actual Price IDs from your Stripe Dashboard.</p>

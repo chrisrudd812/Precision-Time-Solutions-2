@@ -19,7 +19,7 @@
                 int keyCount = 0;
                 for (Map.Entry<String, String> entry : item.entrySet()) {
                     json.append("\"").append(escapeForJavaScriptString(entry.getKey())).append("\":\"").append(escapeForJavaScriptString(entry.getValue())).append("\"");
-                    if (++keyCount < item.size()) json.append(",");
+                     if (++keyCount < item.size()) json.append(",");
                 }
                 json.append("}");
                 if (i < dataList.size() - 1) json.append(",");
@@ -48,8 +48,6 @@
 
         if (Boolean.TRUE.equals(currentSession.getAttribute("startSetupWizard"))) {
             inSetupWizardMode_JSP = true;
-            
-            // FIX: Corrected the session attribute name to 'wizardAdminEid' (camelCase).
             adminEid = (Integer) currentSession.getAttribute("wizardAdminEid");
 
             String sessionWizardStep = (String) currentSession.getAttribute("wizardStep");
@@ -110,15 +108,31 @@
         <h4 style="text-align: left; color: #6c757d; margin-bottom: 10px; font-size: 0.9em;">To Edit or Delete: First select a row from the table below.</h4>
 
         <div class="report-display-area" style="padding-top: 10px;">
-            <div id="reportOutput_employees" class="table-container report-table-container">
-                <table class="report-table" id="employeesTable">
-                    <thead><tr><th class="sortable">ID</th><th class="sortable">First Name</th><th class="sortable">Last Name</th><th class="sortable">Department</th><th class="sortable">Schedule</th><th class="sortable">Supervisor</th><th class="sortable">Permissions</th><th class="sortable">Email</th><th class="sortable">Hire Date</th><th class="sortable">Work Sched.</th><th class="sortable">Wage Type</th><th class="sortable">Wage</th></tr></thead>
+            <div id="reportOutput_employees" class="table-container report-table-container" style="background-color: #fff;">
+                <table class="report-table sortable" id="employeesTable"
+                       data-initial-sort-column="2"
+                       data-initial-sort-direction="asc">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-sort-type="number">ID</th>
+                            <th class="sortable" data-sort-type="string">First Name</th>
+                            <th class="sortable" data-sort-type="string">Last Name</th>
+                            <th class="sortable" data-sort-type="string">Department</th>
+                            <th class="sortable" data-sort-type="string">Schedule</th>
+                            <th class="sortable" data-sort-type="string">Supervisor</th>
+                            <th class="sortable" data-sort-type="string">Permissions</th>
+                            <th class="sortable" data-sort-type="string">Email</th>
+                            <th class="sortable" data-sort-type="date">Hire Date</th>
+                            <th class="sortable" data-sort-type="string">Work Sched.</th>
+                        </tr>
+                    </thead>
                     <tbody><%= employeeRowsHtml %></tbody>
                 </table>
             </div>
         </div>
 
         <div id="employeeDetailsSection" style="display: none;">
+            <h2>Selected Employee Details</h2>
             <div class="details-grid">
                 <div class="detail-group">
                     <h3>Personal Information</h3>

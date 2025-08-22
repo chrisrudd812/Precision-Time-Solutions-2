@@ -20,7 +20,7 @@ import org.mindrot.jbcrypt.BCrypt;
 
 @WebServlet("/CompanyAccountServlet")
 public class CompanyAccountServlet extends HttpServlet {
-    private static final long serialVersionUID = 4L; // Version update
+    private static final long serialVersionUID = 6L; // Version update
     private static final Logger logger = Logger.getLogger(CompanyAccountServlet.class.getName());
 
     private Integer getTenantId(HttpServletRequest request) {
@@ -79,7 +79,6 @@ public class CompanyAccountServlet extends HttpServlet {
         } else if ("updateCompanyDetails".equals(action)) {
             updateCompanyDetails(request, tenantId, jsonResponse);
         }
-        // Add other POST actions like updateAdminLoginDetails here
         else {
             jsonResponse.put("success", false).put("error", "Invalid POST action.");
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -88,8 +87,6 @@ public class CompanyAccountServlet extends HttpServlet {
     }
 
     private void getBillingDetails(HttpServletRequest request, int tenantId, JSONObject jsonResponse) {
-        // CORRECTED: Do not query the database for sensitive billing info that isn't there.
-        // Return a success response so the modal opens with empty fields, ready for input.
         JSONObject details = new JSONObject();
         details.put("cardholderName", "");
         details.put("cardLastFour", "");

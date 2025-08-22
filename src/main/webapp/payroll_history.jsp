@@ -99,15 +99,18 @@
         <% if (pageError == null) { %>
             <div class="report-display-area" style="padding-top:10px;">
                 <div class="table-container report-table-container">
-                    <table class="report-table" id="historyTable">
-                        <thead>
-                            <tr>
-                                <th data-sort-type="date">Processed Date/Time</th>
-                                <th data-sort-type="date">Period Start Date</th>
-                                <th data-sort-type="date">Period End Date</th>
-                                <th style="text-align: right;" data-sort-type="currency">Grand Total</th>
-                            </tr>
-                        </thead>
+                    <table id="historyTable" 
+       class="report-table sortable" 
+       data-initial-sort-column="0" 
+       data-initial-sort-direction="desc">
+    <thead>
+        <tr>
+            <th class="sortable" data-sort-type="date">Processed Date/Time</th>
+            <th class="sortable" data-sort-type="date">Period Start Date</th>
+            <th class="sortable" data-sort-type="date">Period End Date</th>
+            <th class="sortable" data-sort-type="currency">Grand Total</th>
+        </tr>
+    </thead>
                         <tbody id="historyTableBody">
                             <% if (historyData.isEmpty()) { %>
                                 <tr><td colspan="4" class="report-message-row">No payroll history records found for your company.</td></tr>

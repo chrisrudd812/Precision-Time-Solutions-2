@@ -132,14 +132,27 @@
         <div class="report-display-area">
             <div id="reportOutput_schedules" class="report-output">
                 <div class="table-container report-table-container">
-                    <table class="report-table" id="schedulesTable">
-                        <thead>
-                            <tr>
-                                <th class="sortable">Schedule Name</th><th class="sortable">Start Shift</th><th class="sortable">Start Lunch</th><th class="sortable">End Lunch</th><th class="sortable">End Shift</th><th class="sortable">Days Scheduled</th><th class="sortable">Auto Lunch</th><th class="sortable">Hrs Req.</th><th class="sortable">Lunch (min)</th>
-                            </tr>
-                        </thead>
-                        <tbody><%=scheduleRowsHtml%></tbody>
-                    </table>
+                    <table id="schedulesTable"
+       class="report-table sortable"
+       data-initial-sort-column="0"
+       data-initial-sort-direction="asc">
+    <thead>
+        <tr>
+            <th class="sortable" data-sort-type="string">Schedule Name</th>
+            <th class="sortable" data-sort-type="string">Start Shift</th>
+            <th class="sortable" data-sort-type="string">Start Lunch</th>
+            <th class="sortable" data-sort-type="string">End Lunch</th>
+            <th class="sortable" data-sort-type="string">End Shift</th>
+            <th class="sortable" data-sort-type="string">Days Scheduled</th>
+            <th class="sortable" data-sort-type="string">Auto Lunch</th>
+            <th class="sortable" data-sort-type="number">Hrs Req.</th>
+            <th class="sortable" data-sort-type="number">Lunch (min)</th>
+        </tr>
+    </thead>
+    <tbody>
+        <%=scheduleRowsHtml%>
+    </tbody>
+</table>
                 </div>
             </div>
         </div>

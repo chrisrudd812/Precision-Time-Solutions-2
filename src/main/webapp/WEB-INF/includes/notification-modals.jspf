@@ -5,7 +5,8 @@
     <div class="modal-content">
         <span class="close" data-close-modal-id="notificationModalGeneral">&times;</span>
         <h2 id="notificationModalGeneralTitle">Notification</h2>
-        <p id="notificationModalGeneralMessage"></p>
+        <%-- FIX: Added padding and line-height for better readability --%>
+        <p id="notificationModalGeneralMessage" style="padding: 15px 25px; line-height: 1.6;"></p>
         <div class="button-row">
             <button type="button" id="okButtonNotificationModalGeneral" data-close-modal-id="notificationModalGeneral" class="glossy-button text-blue">OK</button>
         </div>
@@ -16,7 +17,6 @@
     <div class="modal-content">
          <span class="close" id="closeWizardGenericModal" data-close-modal-id="wizardGenericModal">&times;</span>
         <h2 id="wizardGenericModalTitle"></h2>
-        <%-- *** FIX: Added padding to these paragraphs to fix the layout *** --%>
         <p id="wizardGenericModalText1" style="padding: 10px 15px; font-size: 1.1em;"></p>
         <p id="wizardGenericModalText2" style="padding: 0px 15px 15px; font-size: 1em; color: #555;"></p>
         <div class="button-row" id="wizardGenericModalButtonRow" style="justify-content: center; padding-top: 15px; border-top: 1px solid #eee;">

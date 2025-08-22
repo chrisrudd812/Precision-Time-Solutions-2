@@ -1,10 +1,9 @@
-// js/payroll_history.js - v2 (Uses commonUtils.js, adds table sorting)
+// js/payroll_history.js - v3 (Sorting is now handled by commonUtils.js)
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("payroll_history.js v2 loaded");
+    console.log("payroll_history.js v3 loaded");
 
     const tableBody = document.getElementById('historyTableBody');
-    const historyTable = document.getElementById('historyTable'); // Get the table itself
     const btnViewDetails = document.getElementById('btnViewDetails');
     const btnPrintHistory = document.getElementById('btnPrintHistory');
 
@@ -12,14 +11,14 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedStartDate = null;
     let selectedEndDate = null;
 
-    // Initialize Notification Modal Elements (used by showPageNotification from commonUtils)
+    // Initialize Notification Modal Elements
     const notificationModal = document.getElementById("notificationModal");
     const notificationCloseButton = document.getElementById("closeNotificationModal");
     const notificationOkButton = document.getElementById("okButton");
 
     if (notificationModal) {
-        if (notificationCloseButton) notificationCloseButton.addEventListener("click", function() { hideModal(notificationModal); }); // from commonUtils.js
-        if (notificationOkButton) notificationOkButton.addEventListener("click", function() { hideModal(notificationModal); });     // from commonUtils.js
+        if (notificationCloseButton) notificationCloseButton.addEventListener("click", function() { hideModal(notificationModal); });
+        if (notificationOkButton) notificationOkButton.addEventListener("click", function() { hideModal(notificationModal); });
         window.addEventListener("click", function(event) { if (event.target === notificationModal) { hideModal(notificationModal); }});
     } else {
         console.warn("Payroll_history.js: #notificationModal not found.");
@@ -41,13 +40,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 selectedStartDate = selectedRow.getAttribute('data-start-date');
                 selectedEndDate = selectedRow.getAttribute('data-end-date');
                 if (btnViewDetails) btnViewDetails.disabled = !(selectedStartDate && selectedEndDate);
-                console.log('Row selected. Start:', selectedStartDate, 'End:', selectedEndDate);
             } else {
                 selectedRow = null;
                 selectedStartDate = null;
                 selectedEndDate = null;
                 if (btnViewDetails) btnViewDetails.disabled = true;
-                console.log('Row deselected');
             }
         });
     } else { console.error('History table body (#historyTableBody) not found.'); }
@@ -60,10 +57,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 else alert('Please select a payroll period row first.');
                 return;
             }
-            // Ensure commonUtils.js is loaded for encodeURIComponent if not native
             const contextPath = (typeof appRootPath !== 'undefined' && appRootPath !== null) ? appRootPath : (window.location.pathname.substring(0, window.location.pathname.indexOf("/",2)) || "");
             const url = `${contextPath}/archived_punches.jsp?startDate=${encodeURIComponent(selectedStartDate)}&endDate=${encodeURIComponent(selectedEndDate)}`;
-            console.log('Navigating to:', url);
             window.location.href = url;
         });
     } else { console.error('View Details button (#btnViewDetails) not found.'); }
@@ -72,8 +67,8 @@ document.addEventListener('DOMContentLoaded', function() {
      if (btnPrintHistory) {
          btnPrintHistory.addEventListener('click', () => {
              const tableToPrint = document.getElementById('historyTable');
-             const pageTitle = document.title || "Payroll History"; // Use document title
-             const mainHeader = document.querySelector('.parent-container.reports-container > h1'); // Get the H1
+             const pageTitle = document.title || "Payroll History";
+             const mainHeader = document.querySelector('.parent-container.reports-container > h1');
 
              if (!tableToPrint) {
                  if(typeof showPageNotification === 'function') showPageNotification("Error: History table element not found.", true);
@@ -81,12 +76,12 @@ document.addEventListener('DOMContentLoaded', function() {
                  return;
              }
 
-             let reportsCSSHref = "css/reports.css"; // Default
+             let reportsCSSHref = "css/reports.css";
              const reportsCSSLinkElem = document.querySelector('link[href^="css/reports.css"]');
              if (reportsCSSLinkElem) reportsCSSHref = reportsCSSLinkElem.getAttribute('href');
 
              let printHTML = `<!DOCTYPE html><html lang="en"><head><title>Print - ${pageTitle}</title>`;
-             printHTML += `<link rel="stylesheet" href="${reportsCSSHref}">`; // Use dynamic href
+             printHTML += `<link rel="stylesheet" href="${reportsCSSHref}">`;
              printHTML += `<style>
                              body { margin: 20px; background-color: #fff !important; font-size: 9pt; }
                              .main-navbar, #button-container, .modal, .page-message, .reports-page .parent-container.reports-container > h4 { display: none !important; }
@@ -103,7 +98,7 @@ document.addEventListener('DOMContentLoaded', function() {
              const tableContainerClone = tableToPrint.closest('.report-table-container');
              if (tableContainerClone) {
                  printHTML += tableContainerClone.outerHTML;
-             } else { // Fallback to just table if container not found (should not happen)
+             } else {
                  printHTML += tableToPrint.outerHTML;
              }
              printHTML += `</body></html>`;
@@ -122,22 +117,6 @@ document.addEventListener('DOMContentLoaded', function() {
              }, 750);
          });
      } else { console.error('Print History button (#btnPrintHistory) not found.'); }
-
-    // Make the history table sortable
-    if (historyTable && typeof makeTableSortable === 'function') {
-        // data-sort-type attributes are already set in the JSP <th> elements
-        makeTableSortable(historyTable, { columnIndex: 0, ascending: false }); // Default sort by Processed Date descending
-        console.log("Payroll history table sorting initialized.");
-    } else {
-        if(!historyTable) console.warn("Payroll history table #historyTable not found for sorting.");
-        if(typeof makeTableSortable !== 'function') console.warn("makeTableSortable from commonUtils.js not found. Payroll history table sorting disabled.");
-    }
-
-    // Clear URL parameters if they were for messages
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('message') || urlParams.has('error')) {
-        if (typeof clearUrlParams === 'function') clearUrlParams(['message', 'error']);
-    }
 
     // Initial button state
     if (btnViewDetails) btnViewDetails.disabled = true;

@@ -16,13 +16,7 @@ public class IPAddressUtil {
     );
 
     public static String getClientIpAddr(HttpServletRequest request) {
-        // ***** START TEMPORARY TEST CODE *****
-        String testIp = "10.0.0.114";
-        logger.info("IPAddressUtil.getClientIpAddr is returning HARDCODED IP: " + testIp + " FOR TESTING");
-        return testIp;
-        // ***** END TEMPORARY TEST CODE *****
-
-        /* --- ORIGINAL PRODUCTION LOGIC ---
+        // --- FIX: Removed hardcoded IP and restored production logic ---
         if (request == null) { return "unknown"; }
         String ipAddress = request.getHeader("X-Forwarded-For");
         if (ipAddress != null && !ipAddress.isEmpty() && !"unknown".equalsIgnoreCase(ipAddress)) {
@@ -43,7 +37,6 @@ public class IPAddressUtil {
         ipAddress = request.getHeader("HTTP_CLIENT_IP");
         if (ipAddress != null && !ipAddress.isEmpty() && !"unknown".equalsIgnoreCase(ipAddress)) { return ipAddress.trim(); }
         return request.getRemoteAddr();
-        --- END ORIGINAL PRODUCTION LOGIC --- */
     }
 
     public static boolean isValidCIDROrIP(String cidrOrIp) {
@@ -60,7 +53,7 @@ public class IPAddressUtil {
     }
 
     public static boolean isIpInCidr(String clientIpStr, String cidrRuleStr) {
-        logger.info("isIpInCidr: Checking client IP '" + clientIpStr + "' against rule '" + cidrRuleStr + "'");
+        logger.finer("isIpInCidr: Checking client IP '" + clientIpStr + "' against rule '" + cidrRuleStr + "'");
         if (clientIpStr == null || cidrRuleStr == null) {
             logger.warning("isIpInCidr: Null input provided. ClientIP: " + clientIpStr + ", Rule: " + cidrRuleStr);
             return false;
@@ -93,13 +86,13 @@ public class IPAddressUtil {
             InetAddress cidrNetworkInetAddress = InetAddress.getByName(cidrNetworkAddressStr);
 
             if (clientInetAddress.getAddress().length != 4 || cidrNetworkInetAddress.getAddress().length != 4) {
-                logger.info("isIpInCidr: IPv4 check only. Client: " + clientIpStr + " or Rule: " + normalizedCidrRule + " is not IPv4.");
+                logger.finer("isIpInCidr: IPv4 check only. Client: " + clientIpStr + " or Rule: " + normalizedCidrRule + " is not IPv4.");
                 return false;
             }
 
             if (prefixLength == 32) {
                 boolean match = clientInetAddress.equals(cidrNetworkInetAddress);
-                logger.info("isIpInCidr (/32): Result for '" + clientIpStr + "' in '" + normalizedCidrRule + "': " + match);
+                logger.finer("isIpInCidr (/32): Result for '" + clientIpStr + "' in '" + normalizedCidrRule + "': " + match);
                 return match;
             }
 
@@ -108,7 +101,7 @@ public class IPAddressUtil {
             long mask = (-1L) << (32 - prefixLength);
 
             boolean match = (clientIpLong & mask) == (networkAddressLong & mask);
-            logger.info("isIpInCidr (/" + prefixLength + "): Result for '" + clientIpStr + "' in '" + normalizedCidrRule + "': " + match +
+            logger.finer("isIpInCidr (/" + prefixLength + "): Result for '" + clientIpStr + "' in '" + normalizedCidrRule + "': " + match +
                          " (ClientLong&Mask: " + (clientIpLong & mask) + ", NetAddrLong&Mask: " + (networkAddressLong & mask) + ")");
             return match;
 

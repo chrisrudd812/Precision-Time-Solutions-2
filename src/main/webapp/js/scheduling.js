@@ -1,4 +1,55 @@
 // js/scheduling.js
+
+/**
+ * FIX: Copied utility functions from commonUtils.js to resolve script loading order issues.
+ * This ensures these functions are available when this script runs, without modifying shared files.
+ */
+function decodeHtmlEntities(encodedString) {
+    if (encodedString === null || typeof encodedString === 'undefined' || String(encodedString).toLowerCase() === 'null') { return ''; }
+    try {
+        const textarea = document.createElement('textarea');
+        textarea.innerHTML = String(encodedString); 
+        return textarea.value;
+    } catch (e) {
+        return String(encodedString); 
+    }
+}
+
+function showModal(modalElement) {
+    if (modalElement && typeof modalElement.classList !== 'undefined') {
+        modalElement.style.display = 'flex';
+        modalElement.classList.add('modal-visible');
+    }
+}
+
+function hideModal(modalElement) {
+    if (modalElement && typeof modalElement.classList !== 'undefined') {
+        modalElement.style.display = 'none';
+        modalElement.classList.remove('modal-visible');
+    }
+}
+
+function showPageNotification(message, isError = false, modalInstance = null, titleText = "Notification") { 
+    const modalToUse = modalInstance || document.getElementById("notificationModalGeneral");
+    const msgElem = modalToUse ? modalToUse.querySelector('#notificationModalGeneralMessage') : null;
+    const modalTitleElem = modalToUse ? modalToUse.querySelector('#notificationModalGeneralTitle') : null;
+
+    if (!modalToUse || !msgElem) {
+        alert((isError ? "Error: " : "Notification: ") + message);
+        return;
+    }
+    if(modalTitleElem) modalTitleElem.textContent = titleText;
+    msgElem.innerHTML = message;
+    showModal(modalToUse); 
+    
+    // FIX: Automatically focus the OK button for better accessibility.
+    const okButton = modalToUse.querySelector('#okButtonNotificationModalGeneral');
+    if (okButton) {
+        setTimeout(() => okButton.focus(), 150);
+    }
+}
+
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log("[DEBUG] scheduling.js Loaded. Ready to work.");
 
@@ -47,9 +98,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const companyNameToDisplayJS_Sched = (typeof window.COMPANY_NAME_SIGNUP_JS_SCHED !== 'undefined' && window.COMPANY_NAME_SIGNUP_JS_SCHED) ? window.COMPANY_NAME_SIGNUP_JS_SCHED : "your company";
 
     // --- Helper Functions ---
-    const _showModal = window.showModal || function(modalEl) { if (modalEl) modalEl.style.display = 'flex'; };
-    const _hideModal = window.hideModal || function(modalEl) { if (modalEl) modalEl.style.display = 'none'; };
-    const _decodeLocal = window.decodeHtmlEntities || function(text) { const ta = document.createElement('textarea'); ta.innerHTML = text; return ta.value; };
+    const _showModal = showModal;
+    const _hideModal = hideModal;
+    const _decodeLocal = decodeHtmlEntities;
 
     // --- WIZARD HANDLING LOGIC ---
     const wizardStages = {
@@ -106,7 +157,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // *** THIS IS THE CORRECTED FUNCTION ***
     function advanceWizardToServerAndRedirect(serverNextStep, nextPage) {
          fetch(`${appRoot}/WizardStatusServlet`, {
             method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -114,18 +164,17 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => response.ok ? response.json() : Promise.reject('Failed to update wizard step on server.'))
         .then(data => {
-            if (data.success && data.nextStep) { // Check for success AND the nextStep property from the response
-                // Use the 'nextStep' from the JSON RESPONSE to build the URL
+            if (data.success && data.nextStep) {
                 const redirectUrl = `${appRoot}/${nextPage}?setup_wizard=true&step=${encodeURIComponent(data.nextStep)}`;
                 window.location.href = redirectUrl;
             }
             else { 
-                window.showPageNotification("Could not proceed: " + (data.error || "Server error: Invalid response from server."), true, notificationModal, "Setup Error"); 
+                showPageNotification("Could not proceed: " + (data.error || "Server error: Invalid response from server."), true, notificationModal, "Setup Error"); 
             }
         })
         .catch(error => { 
             console.error("Wizard advancement error:", error); 
-            window.showPageNotification("Network error advancing wizard. Please try again.", true, notificationModal, "Network Error"); 
+            showPageNotification("Network error advancing wizard. Please try again.", true, notificationModal, "Network Error"); 
         });
     }
 
@@ -138,7 +187,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // --- Core Page Logic (omitted for brevity, no changes needed here) ---
     function openAddScheduleModal() {
         console.log("[DEBUG] openAddScheduleModal called.");
         if (addScheduleModal) {
@@ -189,10 +237,11 @@ document.addEventListener('DOMContentLoaded', function() {
             };
             
             const schedNameLower = selectedSchedData.name.trim().toLowerCase();
+            // FIX: Improved notification messages for clarity.
             if (schedNameLower === 'open') {
-                window.showPageNotification("The default 'Open' schedule cannot be edited or deleted.", false, notificationModal, "System Schedule");
+                showPageNotification("The default 'Open' schedule cannot be edited or deleted. It serves as a system fallback.", false, notificationModal, "System Schedule");
             } else if (schedNameLower === 'open w/ auto lunch') {
-                window.showPageNotification("This is a default system schedule. Only the 'Hours Required' and 'Lunch Length' fields can be edited.", false, notificationModal, "System Schedule Information");
+                showPageNotification("This is a system schedule. Only the Auto Lunch settings (Hours Required & Lunch Length) can be changed.", false, notificationModal, "System Schedule Information");
             }
 
         } else {
@@ -352,7 +401,7 @@ document.addEventListener('DOMContentLoaded', function() {
         openAddScheduleModal(); 
         if (addScheduleNameInput && prevScheduleName) addScheduleNameInput.value = _decodeLocal(prevScheduleName);
         if (errorMessage) {
-            window.showPageNotification(errorMessage, true, notificationModal, "Validation Error");
+            showPageNotification(errorMessage, true, notificationModal, "Validation Error");
             const okBtn = notificationModal.querySelector('#okButtonNotificationModalGeneral');
             if (okBtn) {
                 const focusOnClose = (e) => {

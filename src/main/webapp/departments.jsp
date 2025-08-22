@@ -124,10 +124,21 @@
         </div>
         <h4 style="text-align: left; color: #6c757d; margin-bottom: 10px; font-size: 0.9em;">To Edit or Delete: Select a row from the table.</h4>
         <div class="table-container report-table-container department-table-container">
-            <table id="departmentsTable" class="report-table">
-                <thead><tr><th class="sortable">Name</th><th class="sortable">Description</th><th class="sortable">Supervisor</th></tr></thead>
-                <tbody><%= departmentRowsHtml %></tbody>
-            </table>
+            <table id="departmentsTable"
+       class="report-table sortable"
+       data-initial-sort-column="0"
+       data-initial-sort-direction="asc">
+    <thead>
+        <tr>
+            <th class="sortable" data-sort-type="string">Name</th>
+            <th class="sortable" data-sort-type="string">Description</th>
+            <th class="sortable" data-sort-type="string">Supervisor</th>
+        </tr>
+    </thead>
+    <tbody>
+        <%= departmentRowsHtml %>
+    </tbody>
+</table>
         </div>
     </div>
 

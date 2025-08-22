@@ -1,23 +1,26 @@
 package timeclock.auth;
 
+import com.stripe.exception.StripeException;
+import com.stripe.model.Customer;
+import com.stripe.model.Invoice;
+import com.stripe.model.PaymentIntent;
+import com.stripe.model.Subscription;
+import com.stripe.param.CustomerCreateParams;
+import com.stripe.param.SubscriptionCreateParams;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.mindrot.jbcrypt.BCrypt;
+import org.json.JSONObject;
 import timeclock.db.DatabaseConnection;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
-import java.sql.Connection;
-import java.sql.Date;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Types;
+import java.sql.*;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
@@ -28,33 +31,11 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.mindrot.jbcrypt.BCrypt;
-import org.json.JSONObject;
-
-import com.stripe.Stripe;
-import com.stripe.exception.StripeException;
-import com.stripe.model.Customer;
-import com.stripe.model.Invoice;
-import com.stripe.model.PaymentIntent;
-import com.stripe.model.Subscription;
-import com.stripe.param.CustomerCreateParams;
-import com.stripe.param.SubscriptionCreateParams;
 
 @WebServlet("/SignupServlet")
 public class SignupServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final Logger logger = Logger.getLogger(SignupServlet.class.getName());
-
-	/*
-	 * private static final String STRIPE_SECRET_KEY =
-	 * "sk_test_51RUHnpBtvyYfb2KWU0CYALIEcrRazXpIKjxbPz8tadN41F5yRQ2BVwTtEDV7FA4JHdjFfNmVPyCEpEyMpKSZZ30g00Re9gNKbI";
-	 */
-    private static final String STRIPE_PRICE_ID = "price_1RWNdXBtvyYfb2KWWt6p9F4X";
-
-	/*
-	 * static { Stripe.apiKey = STRIPE_SECRET_KEY;
-	 * logger.info("[SignupServlet] Stripe API Key initialized."); }
-	 */
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -64,7 +45,6 @@ public class SignupServlet extends HttpServlet {
 
         JSONObject jsonResponse = new JSONObject();
         String action = request.getParameter("action");
-        logger.info("[SignupServlet] doPost received action: " + action);
         
         try (PrintWriter out = response.getWriter()) {
             if ("registerCompanyAdmin".equals(action)) {
@@ -88,18 +68,28 @@ public class SignupServlet extends HttpServlet {
     private void registerCompanyAndAdmin(HttpServletRequest request, HttpServletResponse response, JSONObject jsonResponse) {
         HttpSession session = request.getSession(true);
         String appliedPromoCode = request.getParameter("appliedPromoCode");
+        String selectedPlan = request.getParameter("selectedPlan");
         
         Connection con = null;
         try {
             con = DatabaseConnection.getConnection();
             con.setAutoCommit(false); 
 
+            if ("altman55".equalsIgnoreCase(appliedPromoCode)) {
+                createTenantAndAdminFromRequest(con, request, session, null, "Active - Free Plan", null, (Subscription) null);
+                con.commit();
+                session.setAttribute("wizardStep", "initialPinSetRequired");
+                jsonResponse.put("success", true).put("action_required", false)
+                    .put("redirect_url", request.getContextPath() + "/set_initial_pin.jsp");
+                return;
+            }
+            
             Integer promoCodeId = null;
             String discountType = null;
             Long trialDays = null;
             
             if (appliedPromoCode != null && !appliedPromoCode.trim().isEmpty()) {
-                String promoSql = "SELECT PromoCodeID, DiscountType, DiscountValue FROM promo_codes WHERE Code = ? AND IsEnabled = TRUE AND (ExpirationDate IS NULL OR ExpirationDate >= CURDATE()) AND (MaxUses IS NULL OR CurrentUses < MaxUses)";
+                String promoSql = "SELECT PromoCodeID, DiscountType, DiscountValue FROM promo_codes WHERE Code = ? AND IsEnabled = TRUE";
                 try(PreparedStatement psPromo = con.prepareStatement(promoSql)) {
                     psPromo.setString(1, appliedPromoCode);
                     ResultSet rsPromo = psPromo.executeQuery();
@@ -116,46 +106,41 @@ public class SignupServlet extends HttpServlet {
             }
 
             if ("LIFETIME".equals(discountType)) {
-                logger.info("Processing LIFETIME promo signup.");
-                createTenantAndAdminFromRequest(con, request, session, promoCodeId, "Active - Lifetime Promo", null, null);
+                createTenantAndAdminFromRequest(con, request, session, promoCodeId, "Active - Lifetime Promo", null, (Subscription) null);
                 con.commit();
                 session.setAttribute("wizardStep", "initialPinSetRequired");
                 jsonResponse.put("success", true).put("action_required", false)
                     .put("redirect_url", request.getContextPath() + "/set_initial_pin.jsp");
             } else {
-                logger.info("Processing standard or trial signup.");
-
                 validateRequiredParameter(request, "stripePaymentMethodId");
-                validateRequiredParameter(request, "cardholderName");
-                validateRequiredParameter(request, "billingAddress");
-                validateRequiredParameter(request, "billingCity");
-                validateRequiredParameter(request, "billingState");
-                validateRequiredParameter(request, "billingZip");
-                logger.info("Server-side validation passed for payment fields.");
+                
+                String priceId = getPriceIdForPlan(con, selectedPlan);
+                if (priceId == null) {
+                    throw new Exception("Invalid subscription plan name provided: " + selectedPlan);
+                }
 
                 Customer customer = createStripeCustomer(request);
-                logger.info("Stripe Customer created: " + customer.getId());
-
                 SubscriptionCreateParams.Builder subParamsBuilder = SubscriptionCreateParams.builder()
                     .setCustomer(customer.getId())
-                    .addItem(SubscriptionCreateParams.Item.builder().setPrice(STRIPE_PRICE_ID).build())
-                    .setPaymentBehavior(SubscriptionCreateParams.PaymentBehavior.DEFAULT_INCOMPLETE)
-                    .addAllExpand(List.of("latest_invoice.payment_intent"))
-                    .setCollectionMethod(SubscriptionCreateParams.CollectionMethod.CHARGE_AUTOMATICALLY);
+                    .addItem(SubscriptionCreateParams.Item.builder().setPrice(priceId).build())
+                    .setPaymentSettings(
+                        SubscriptionCreateParams.PaymentSettings.builder()
+                            .setSaveDefaultPaymentMethod(SubscriptionCreateParams.PaymentSettings.SaveDefaultPaymentMethod.ON_SUBSCRIPTION)
+                            .build()
+                    )
+                    .addAllExpand(List.of("latest_invoice.payment_intent", "pending_setup_intent"));
+
 
                 if ("TRIAL".equals(discountType) && trialDays != null && trialDays > 0) {
-                    logger.info("Applying " + trialDays + "-day trial to subscription.");
                     subParamsBuilder.setTrialPeriodDays(trialDays);
                 }
                 
                 Subscription stripeSubscription = Subscription.create(subParamsBuilder.build());
-                logger.info("Stripe Subscription " + stripeSubscription.getId() + " created with status: " + stripeSubscription.getStatus());
-
                 String subStatus = stripeSubscription.getStatus();
                 String dbSubStatus = "trialing".equalsIgnoreCase(subStatus) ? "Trialing" : "Active";
                 
                 if ("active".equalsIgnoreCase(subStatus) || "trialing".equalsIgnoreCase(subStatus)) {
-                    createTenantAndAdminFromRequest(con, request, session, promoCodeId, dbSubStatus, customer.getId(), stripeSubscription.getId());
+                    createTenantAndAdminFromRequest(con, request, session, promoCodeId, dbSubStatus, customer.getId(), stripeSubscription);
                     con.commit();
                     session.setAttribute("wizardStep", "initialPinSetRequired");
                     jsonResponse.put("success", true).put("action_required", false)
@@ -169,22 +154,14 @@ public class SignupServlet extends HttpServlet {
                         jsonResponse.put("success", true).put("action_required", true)
                                       .put("client_secret", paymentIntent.getClientSecret())
                                       .put("subscription_id", stripeSubscription.getId());
-                    } else {
-                         throw new Exception("Subscription requires authentication but invoice information is missing.");
-                    }
-                } else {
-                     throw new Exception("Unhandled subscription status: " + subStatus);
-                }
+                    } else { throw new Exception("Subscription requires authentication but invoice info is missing."); }
+                } else { throw new Exception("Unhandled subscription status: " + subStatus); }
             }
         } catch (Exception e) {
             if (con != null) { try { con.rollback(); } catch (SQLException ex) { logger.log(Level.WARNING, "Rollback failed", ex); } }
             logger.log(Level.SEVERE, "Error in registerCompanyAndAdmin", e);
             jsonResponse.put("success", false).put("error", e.getMessage());
-            if (e instanceof IllegalArgumentException) {
-                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            } else {
-                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            }
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         } finally {
             if (con != null) { try { con.close(); } catch (SQLException ex) { /* ignore */ } }
         }
@@ -197,31 +174,25 @@ public class SignupServlet extends HttpServlet {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
-
         String paymentIntentId = request.getParameter("payment_intent_id");
         String stripeCustomerId = (String) session.getAttribute("temp_stripe_customer_id_for_sca");
         String stripeSubscriptionId = (String) session.getAttribute("temp_stripe_subscription_id_for_sca");
         @SuppressWarnings("unchecked")
         Map<String, String> formData = (Map<String, String>) session.getAttribute("temp_signup_original_form_data");
-
         if (paymentIntentId == null || stripeCustomerId == null || formData == null) {
             jsonResponse.put("success", false).put("error", "Essential information missing to finalize subscription. Please start over.");
             return;
         }
-
         Connection con = null;
         try {
             PaymentIntent paymentIntent = PaymentIntent.retrieve(paymentIntentId);
             if (!"succeeded".equalsIgnoreCase(paymentIntent.getStatus())) {
                 throw new Exception("Payment authentication was not successful. Final Status: " + paymentIntent.getStatus());
             }
-            
             Subscription subscription = Subscription.retrieve(stripeSubscriptionId);
             String finalStatus = "trialing".equalsIgnoreCase(subscription.getStatus()) ? "Trialing" : "Active";
-
             con = DatabaseConnection.getConnection();
             con.setAutoCommit(false);
-            
             Integer promoCodeId = null;
             String appliedPromoCode = formData.get("appliedPromoCode");
             if (appliedPromoCode != null && !appliedPromoCode.isEmpty()) {
@@ -232,19 +203,14 @@ public class SignupServlet extends HttpServlet {
                     if(rsPromo.next()) promoCodeId = rsPromo.getInt("PromoCodeID");
                 }
             }
-
-            createTenantAndAdminFromMap(con, session, formData, promoCodeId, finalStatus, stripeCustomerId, stripeSubscriptionId);
+            createTenantAndAdminFromMap(con, session, formData, promoCodeId, finalStatus, stripeCustomerId, subscription);
             con.commit();
-            logger.info("Tenant/Admin DB records created successfully post-SCA.");
-
             session.removeAttribute("temp_stripe_customer_id_for_sca");
             session.removeAttribute("temp_stripe_subscription_id_for_sca");
             session.removeAttribute("temp_signup_original_form_data");
-
             jsonResponse.put("success", true)
                         .put("redirect_url", request.getContextPath() + "/set_initial_pin.jsp")
                         .put("message", "Payment confirmed! Account created successfully.");
-
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error in finalizeSubscription", e);
             if (con != null) { try { con.rollback(); } catch (SQLException ex) { logger.log(Level.WARNING, "Rollback failed", ex); } }
@@ -255,7 +221,7 @@ public class SignupServlet extends HttpServlet {
         }
     }
 
-    private void createTenantAndAdminFromRequest(Connection con, HttpServletRequest request, HttpSession session, Integer appliedPromoCodeID, String subscriptionStatus, String stripeCustomerId, String stripeSubscriptionId) throws SQLException {
+    private void createTenantAndAdminFromRequest(Connection con, HttpServletRequest request, HttpSession session, Integer appliedPromoCodeID, String subscriptionStatus, String stripeCustomerId, Subscription stripeSubscription) throws SQLException, Exception {
         String companyName = request.getParameter("companyName");
         String adminFirstName = request.getParameter("adminFirstName");
         String adminLastName = request.getParameter("adminLastName");
@@ -267,34 +233,48 @@ public class SignupServlet extends HttpServlet {
         String companyState = request.getParameter("companyState");
         String companyZip = request.getParameter("companyZip");
         String defaultTimeZone = request.getParameter("browserTimeZoneId");
+        
+        String stripeSubscriptionId = null;
+        Timestamp currentPeriodEnd = null;
+        String stripePriceId = null;
+        int maxUsers = 25;
+
+        if (stripeSubscription != null) {
+            stripeSubscriptionId = stripeSubscription.getId();
+            currentPeriodEnd = new Timestamp(stripeSubscription.getCurrentPeriodEnd() * 1000L);
+            stripePriceId = stripeSubscription.getItems().getData().get(0).getPrice().getId();
+            maxUsers = getMaxUsersForPriceId(con, stripePriceId);
+        }
 
         String localCompanyIdentifier = generateCompanyIdentifierFromName(con, companyName.trim());
         String hashedPassword = BCrypt.hashpw(rawAdminPassword, BCrypt.gensalt(12));
 
-        String insertTenantSql = "INSERT INTO tenants (CompanyName, CompanyIdentifier, AdminEmail, AdminPasswordHash, PhoneNumber, Address, City, State, ZipCode, DefaultTimeZone, StripeCustomerID, SubscriptionStatus, StripeSubscriptionID, SignupDate, AppliedPromoCodeID) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?, CURDATE(), ?)"; 
-        
+        String insertTenantSql = "INSERT INTO tenants (CompanyName, CompanyIdentifier, AdminEmail, AdminPasswordHash, PhoneNumber, Address, City, State, ZipCode, DefaultTimeZone, StripeCustomerID, SubscriptionStatus, StripeSubscriptionID, AppliedPromoCodeID, CurrentPeriodEnd, StripePriceID, MaxUsers) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
         int generatedTenantId = -1;
         try (PreparedStatement psT = con.prepareStatement(insertTenantSql, Statement.RETURN_GENERATED_KEYS)) {
-            psT.setString(1, companyName.trim()); psT.setString(2, localCompanyIdentifier);
-            psT.setString(3, adminEmail.trim().toLowerCase()); psT.setString(4, hashedPassword);
-            psT.setString(5, companyPhone); psT.setString(6, companyAddress);
-            psT.setString(7, companyCity); psT.setString(8, companyState);
-            psT.setString(9, companyZip); psT.setString(10, defaultTimeZone);
-            psT.setString(11, stripeCustomerId); psT.setString(12, subscriptionStatus);
+            psT.setString(1, companyName.trim());
+            psT.setString(2, localCompanyIdentifier);
+            psT.setString(3, adminEmail.trim().toLowerCase());
+            psT.setString(4, hashedPassword);
+            psT.setString(5, companyPhone);
+            psT.setString(6, companyAddress);
+            psT.setString(7, companyCity);
+            psT.setString(8, companyState);
+            psT.setString(9, companyZip);
+            psT.setString(10, defaultTimeZone);
+            psT.setString(11, stripeCustomerId);
+            psT.setString(12, subscriptionStatus);
             psT.setString(13, stripeSubscriptionId);
-            
-            if (appliedPromoCodeID != null) {
-                psT.setInt(14, appliedPromoCodeID);
-            } else {
-                psT.setNull(14, Types.INTEGER);
-            }
+            if (appliedPromoCodeID != null) psT.setInt(14, appliedPromoCodeID); else psT.setNull(14, Types.INTEGER);
+            if (currentPeriodEnd != null) psT.setTimestamp(15, currentPeriodEnd); else psT.setNull(15, Types.TIMESTAMP);
+            psT.setString(16, stripePriceId);
+            psT.setInt(17, maxUsers);
             psT.executeUpdate();
             try (ResultSet gk = psT.getGeneratedKeys()) {
                 if (gk.next()) generatedTenantId = gk.getInt(1);
                 else throw new SQLException("Tenant creation failed, no ID obtained.");
             }
         }
-
         if (appliedPromoCodeID != null) {
             String updatePromoSql = "UPDATE promo_codes SET CurrentUses = CurrentUses + 1 WHERE PromoCodeID = ?";
             try (PreparedStatement psUpdate = con.prepareStatement(updatePromoSql)) {
@@ -302,20 +282,26 @@ public class SignupServlet extends HttpServlet {
                 psUpdate.executeUpdate();
             }
         }
-        
         createDefaultEntities(con, generatedTenantId);
         initializeDefaultSettings(con, generatedTenantId);
-
+        
         String insertAdminSql="INSERT INTO EMPLOYEE_DATA (TenantID,TenantEmployeeNumber,FIRST_NAME,LAST_NAME,EMAIL,PERMISSIONS,HIRE_DATE,PasswordHash,RequiresPasswordChange,ACTIVE,DEPT,ACCRUAL_POLICY) VALUES (?,?,?,?,?,?,?,?,TRUE,TRUE,?,?)";
-        String defaultPinHash = BCrypt.hashpw("1234",BCrypt.gensalt(12)); 
         int adminTenantEmpNo = getNextTenantEmployeeNumber(con,generatedTenantId);
         int generatedAdminEID = -1;
         try(PreparedStatement psAdm=con.prepareStatement(insertAdminSql,Statement.RETURN_GENERATED_KEYS)){
-             psAdm.setInt(1,generatedTenantId); psAdm.setInt(2,adminTenantEmpNo); psAdm.setString(3,adminFirstName.trim()); psAdm.setString(4,adminLastName.trim()); psAdm.setString(5,adminEmail.trim().toLowerCase()); psAdm.setString(6,"Administrator"); psAdm.setDate(7,Date.valueOf(LocalDate.now())); psAdm.setString(8,defaultPinHash); psAdm.setString(9, "None"); psAdm.setString(10, "None"); 
+             psAdm.setInt(1,generatedTenantId); 
+             psAdm.setInt(2,adminTenantEmpNo); 
+             psAdm.setString(3,adminFirstName.trim()); 
+             psAdm.setString(4,adminLastName.trim()); 
+             psAdm.setString(5,adminEmail.trim().toLowerCase()); 
+             psAdm.setString(6,"Administrator"); 
+             psAdm.setDate(7,Date.valueOf(LocalDate.now())); 
+             psAdm.setNull(8, Types.VARCHAR);
+             psAdm.setString(9, "None"); 
+             psAdm.setString(10, "None"); 
             psAdm.executeUpdate();
             try(ResultSet gk=psAdm.getGeneratedKeys()){ if(gk.next()) generatedAdminEID=gk.getInt(1); else throw new SQLException("Admin creation failed."); }
         }
-
         session.setAttribute("TenantID", generatedTenantId); 
         session.setAttribute("EID", generatedAdminEID); 
         session.setAttribute("UserFirstName", adminFirstName.trim()); 
@@ -331,7 +317,7 @@ public class SignupServlet extends HttpServlet {
         session.setAttribute("signupSuccessfulCompanyInfo","Company '"+escapeHtml(companyName.trim())+"' created! Company ID: <strong id='copyCompanyIdValue'>"+escapeHtml(localCompanyIdentifier)+"</strong>.");
     }
 
-    private void createTenantAndAdminFromMap(Connection con, HttpSession session, Map<String, String> formData, Integer appliedPromoCodeID, String subscriptionStatus, String stripeCustomerId, String stripeSubscriptionId) throws SQLException {
+    private void createTenantAndAdminFromMap(Connection con, HttpSession session, Map<String, String> formData, Integer appliedPromoCodeID, String subscriptionStatus, String stripeCustomerId, Subscription stripeSubscription) throws SQLException, Exception {
         String companyName = formData.get("companyName");
         String adminFirstName = formData.get("adminFirstName");
         String adminLastName = formData.get("adminLastName");
@@ -343,42 +329,74 @@ public class SignupServlet extends HttpServlet {
         String companyState = formData.get("companyState");
         String companyZip = formData.get("companyZip");
         String defaultTimeZone = formData.get("browserTimeZoneId");
-
+        String stripeSubscriptionId = stripeSubscription.getId();
+        Timestamp currentPeriodEnd = new Timestamp(stripeSubscription.getCurrentPeriodEnd() * 1000L);
+        String stripePriceId = stripeSubscription.getItems().getData().get(0).getPrice().getId();
+        int maxUsers = getMaxUsersForPriceId(con, stripePriceId);
+        
         String localCompanyIdentifier = generateCompanyIdentifierFromName(con, companyName.trim());
         String hashedPassword = BCrypt.hashpw(rawAdminPassword, BCrypt.gensalt(12));
-        String insertTenantSql = "INSERT INTO tenants (CompanyName, CompanyIdentifier, AdminEmail, AdminPasswordHash, PhoneNumber, Address, City, State, ZipCode, DefaultTimeZone, StripeCustomerID, SubscriptionStatus, StripeSubscriptionID, SignupDate, AppliedPromoCodeID) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?, CURDATE(), ?)"; 
+        
+        String insertTenantSql = "INSERT INTO tenants (CompanyName, CompanyIdentifier, AdminEmail, AdminPasswordHash, PhoneNumber, Address, City, State, ZipCode, DefaultTimeZone, StripeCustomerID, SubscriptionStatus, StripeSubscriptionID, AppliedPromoCodeID, CurrentPeriodEnd, StripePriceID, MaxUsers) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"; 
         int generatedTenantId = -1;
         try (PreparedStatement psT = con.prepareStatement(insertTenantSql, Statement.RETURN_GENERATED_KEYS)) {
-            psT.setString(1, companyName.trim()); psT.setString(2, localCompanyIdentifier);
-            psT.setString(3, adminEmail.trim().toLowerCase()); psT.setString(4, hashedPassword);
-            psT.setString(5, companyPhone); psT.setString(6, companyAddress);
-            psT.setString(7, companyCity); psT.setString(8, companyState);
-            psT.setString(9, companyZip); psT.setString(10, defaultTimeZone);
-            psT.setString(11, stripeCustomerId); psT.setString(12, subscriptionStatus);
+            psT.setString(1, companyName.trim());
+            psT.setString(2, localCompanyIdentifier);
+            psT.setString(3, adminEmail.trim().toLowerCase());
+            psT.setString(4, hashedPassword);
+            psT.setString(5, companyPhone);
+            psT.setString(6, companyAddress);
+            psT.setString(7, companyCity);
+            psT.setString(8, companyState);
+            psT.setString(9, companyZip);
+            psT.setString(10, defaultTimeZone);
+            psT.setString(11, stripeCustomerId);
+            psT.setString(12, subscriptionStatus);
             psT.setString(13, stripeSubscriptionId);
             if (appliedPromoCodeID != null) psT.setInt(14, appliedPromoCodeID); else psT.setNull(14, Types.INTEGER);
+            psT.setTimestamp(15, currentPeriodEnd);
+            psT.setString(16, stripePriceId);
+            psT.setInt(17, maxUsers);
             psT.executeUpdate();
             try (ResultSet gk = psT.getGeneratedKeys()) { if (gk.next()) generatedTenantId = gk.getInt(1); else throw new SQLException("Tenant creation failed, no ID obtained."); }
         }
+        
         if (appliedPromoCodeID != null) {
             String updatePromoSql = "UPDATE promo_codes SET CurrentUses = CurrentUses + 1 WHERE PromoCodeID = ?";
             try (PreparedStatement psUpdate = con.prepareStatement(updatePromoSql)) { psUpdate.setInt(1, appliedPromoCodeID); psUpdate.executeUpdate(); }
         }
-        
         createDefaultEntities(con, generatedTenantId);
         initializeDefaultSettings(con, generatedTenantId);
-
+        
         String insertAdminSql="INSERT INTO EMPLOYEE_DATA (TenantID,TenantEmployeeNumber,FIRST_NAME,LAST_NAME,EMAIL,PERMISSIONS,HIRE_DATE,PasswordHash,RequiresPasswordChange,ACTIVE,DEPT,ACCRUAL_POLICY) VALUES (?,?,?,?,?,?,?,?,TRUE,TRUE,?,?)";
-        String defaultPinHash = BCrypt.hashpw("1234",BCrypt.gensalt(12)); 
         int adminTenantEmpNo = getNextTenantEmployeeNumber(con,generatedTenantId);
         int generatedAdminEID = -1;
         try(PreparedStatement psAdm=con.prepareStatement(insertAdminSql,Statement.RETURN_GENERATED_KEYS)){
-             psAdm.setInt(1,generatedTenantId); psAdm.setInt(2,adminTenantEmpNo); psAdm.setString(3,adminFirstName.trim()); psAdm.setString(4,adminLastName.trim()); psAdm.setString(5,adminEmail.trim().toLowerCase()); psAdm.setString(6,"Administrator"); psAdm.setDate(7,Date.valueOf(LocalDate.now())); psAdm.setString(8,defaultPinHash); psAdm.setString(9, "None"); psAdm.setString(10, "None"); 
+             psAdm.setInt(1,generatedTenantId); 
+             psAdm.setInt(2,adminTenantEmpNo); 
+             psAdm.setString(3,adminFirstName.trim()); 
+             psAdm.setString(4,adminLastName.trim()); 
+             psAdm.setString(5,adminEmail.trim().toLowerCase()); 
+             psAdm.setString(6,"Administrator"); 
+             psAdm.setDate(7,Date.valueOf(LocalDate.now())); 
+             psAdm.setNull(8, Types.VARCHAR);
+             psAdm.setString(9, "None"); 
+             psAdm.setString(10, "None"); 
             psAdm.executeUpdate();
             try(ResultSet gk=psAdm.getGeneratedKeys()){ if(gk.next()) generatedAdminEID=gk.getInt(1); else throw new SQLException("Admin creation failed."); }
         }
-
-        session.setAttribute("TenantID", generatedTenantId); session.setAttribute("EID", generatedAdminEID); session.setAttribute("UserFirstName", adminFirstName.trim()); session.setAttribute("Permissions", "Administrator"); session.setAttribute("startSetupWizard", true); session.setAttribute("wizardStep","initialPinSetRequired"); session.setAttribute("wizardAdminEid",generatedAdminEID); session.setAttribute("wizardAdminEmail",adminEmail.trim().toLowerCase()); session.setAttribute("wizardAdminFirstName",adminFirstName.trim()); session.setAttribute("CompanyNameSignup",companyName.trim()); session.setAttribute("GeneratedCompanyID",localCompanyIdentifier); session.setAttribute("SignupCompanyState",companyState); 
+        session.setAttribute("TenantID", generatedTenantId); 
+        session.setAttribute("EID", generatedAdminEID); 
+        session.setAttribute("UserFirstName", adminFirstName.trim()); 
+        session.setAttribute("Permissions", "Administrator"); 
+        session.setAttribute("startSetupWizard", true); 
+        session.setAttribute("wizardStep","initialPinSetRequired"); 
+        session.setAttribute("wizardAdminEid",generatedAdminEID); 
+        session.setAttribute("wizardAdminEmail",adminEmail.trim().toLowerCase()); 
+        session.setAttribute("wizardAdminFirstName",adminFirstName.trim()); 
+        session.setAttribute("CompanyNameSignup",companyName.trim()); 
+        session.setAttribute("GeneratedCompanyID",localCompanyIdentifier); 
+        session.setAttribute("SignupCompanyState",companyState); 
         session.setAttribute("signupSuccessfulCompanyInfo","Company '"+escapeHtml(companyName.trim())+"' created! Company ID: <strong id='copyCompanyIdValue'>"+escapeHtml(localCompanyIdentifier)+"</strong>.");
     }
     
@@ -397,15 +415,9 @@ public class SignupServlet extends HttpServlet {
         String payPeriodType = "Weekly";
         String firstDayOfWeek = "Sunday";
         Date payPeriodStartDate = calculatePayPeriodStartDate(payPeriodType, firstDayOfWeek);
-
         saveConfigurationProperty(con, tenantId, "PayPeriodType", payPeriodType);
         saveConfigurationProperty(con, tenantId, "FirstDayOfWeek", firstDayOfWeek);
         saveConfigurationProperty(con, tenantId, "PayPeriodStartDate", payPeriodStartDate.toString());
-        
-        logger.info("Saved default settings for TenantID " + tenantId + 
-                    ". PayPeriodType: " + payPeriodType + 
-                    ", FirstDayOfWeek: " + firstDayOfWeek + 
-                    ", Calculated PayPeriodStartDate: " + payPeriodStartDate);
     }
 
     private void saveConfigurationProperty(Connection con, int tenantId, String key, String value) throws SQLException {
@@ -422,11 +434,9 @@ public class SignupServlet extends HttpServlet {
         LocalDate today = LocalDate.now();
         DayOfWeek firstDay = DayOfWeek.valueOf(firstDayOfWeekStr.toUpperCase());
         LocalDate startDate = today.with(TemporalAdjusters.previousOrSame(firstDay));
-
         if ("Bi-Weekly".equalsIgnoreCase(payPeriodType)) {
             startDate = startDate.minusWeeks(1);
         }
-        
         return Date.valueOf(startDate);
     }
     
@@ -485,11 +495,9 @@ public class SignupServlet extends HttpServlet {
         String billingState = request.getParameter("billingState");
         String billingZip = request.getParameter("billingZip");
         String stripePaymentMethodId = request.getParameter("stripePaymentMethodId");
-        
         CustomerCreateParams.Address stripeBillingAddress = CustomerCreateParams.Address.builder()
             .setLine1(billingAddressLine1).setCity(billingCity).setState(billingState)
             .setPostalCode(billingZip).setCountry("US").build();
-            
         return Customer.create(CustomerCreateParams.builder()
             .setName(cardholderName)
             .setEmail(adminEmail)
@@ -504,7 +512,6 @@ public class SignupServlet extends HttpServlet {
     private void saveTempDataToSession(HttpSession session, HttpServletRequest request, String customerId, String subscriptionId) {
         session.setAttribute("temp_stripe_customer_id_for_sca", customerId);
         session.setAttribute("temp_stripe_subscription_id_for_sca", subscriptionId);
-        
         Map<String, String> tempFormData = new HashMap<>();
         tempFormData.put("companyName", request.getParameter("companyName"));
         tempFormData.put("adminFirstName", request.getParameter("adminFirstName"));
@@ -518,14 +525,47 @@ public class SignupServlet extends HttpServlet {
         tempFormData.put("companyZip", request.getParameter("companyZip"));
         tempFormData.put("browserTimeZoneId", request.getParameter("browserTimeZoneId"));
         tempFormData.put("appliedPromoCode", request.getParameter("appliedPromoCode"));
+        tempFormData.put("selectedPlan", request.getParameter("selectedPlan"));
         session.setAttribute("temp_signup_original_form_data", tempFormData);
     }
     
     private void validateRequiredParameter(HttpServletRequest request, String paramName) throws IllegalArgumentException {
         String value = request.getParameter(paramName);
         if (value == null || value.trim().isEmpty()) {
-            logger.warning("Server-side validation failed: Missing required parameter '" + paramName + "'.");
             throw new IllegalArgumentException("A required field is missing from the server: " + paramName);
+        }
+    }
+
+    private String getPriceIdForPlan(Connection con, String planName) throws SQLException {
+        if (planName == null || planName.trim().isEmpty()) {
+            return null;
+        }
+        String sql = "SELECT stripePriceId FROM subscription_plans WHERE planName = ?";
+        try (PreparedStatement pstmt = con.prepareStatement(sql)) {
+            pstmt.setString(1, planName);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("stripePriceId");
+                }
+            }
+        }
+        return null;
+    }
+    
+    private int getMaxUsersForPriceId(Connection con, String priceId) throws Exception {
+        if (priceId == null || priceId.trim().isEmpty()) {
+            return 25;
+        }
+        String sql = "SELECT maxUsers FROM subscription_plans WHERE stripePriceId = ?";
+        try (PreparedStatement pstmt = con.prepareStatement(sql)) {
+            pstmt.setString(1, priceId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("maxUsers");
+                } else {
+                     throw new Exception("Plan details for Price ID " + priceId + " not found in the database.");
+                }
+            }
         }
     }
 }

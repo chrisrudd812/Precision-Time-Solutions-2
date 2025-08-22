@@ -49,7 +49,6 @@
     <div class="print-controls">
         <div class="report-context-message"><%= escapeJspHtml(pageTitle) %></div>
         <button onclick="window.print();" class="print-action-btn">Print All Time Cards</button>
-        <button onclick="window.location.href='${pageContext.request.contextPath}/reports.jsp';" class="close-btn">Close Preview</button>
     </div>
 
     <div class="print-view-main-content">

@@ -18,8 +18,6 @@
 <%@ page import="java.util.ArrayList" %>
 
 <%!
-    private static final Logger jspLogger = Logger.getLogger("payroll_jsp_v_modal_fix_tz_printall");
-
     private String escapeJspHtml(String input) {
         if (input == null) return "";
         return input.replace("&", "&amp;")
@@ -32,122 +30,45 @@
 <%
     HttpSession currentSession = request.getSession(false);
     Integer tenantId = null;
-    String userPermissions = "User"; 
-    Integer sessionEidForLog = null; 
-    String pageError = null; 
-
-    final String PACIFIC_TIME_FALLBACK = "America/Los_Angeles";
-    final String DEFAULT_TENANT_FALLBACK_TIMEZONE = "America/Denver";
-    String userTimeZoneId = null; 
-
     if (currentSession != null) {
-        Object tenantIdObj = currentSession.getAttribute("TenantID");
-        if (tenantIdObj instanceof Integer) { tenantId = (Integer) tenantIdObj; }
-        Object permObj = currentSession.getAttribute("Permissions"); 
-        if (permObj instanceof String && !((String)permObj).isEmpty()) { userPermissions = (String) permObj; }
-        Object eidObj = currentSession.getAttribute("EID");
-        if (eidObj instanceof Integer) { sessionEidForLog = (Integer) eidObj; }
-        Object userTimeZoneIdObj = currentSession.getAttribute("userTimeZoneId");
-        if (userTimeZoneIdObj instanceof String && ShowPunches.isValid((String)userTimeZoneIdObj)) {
-            userTimeZoneId = (String) userTimeZoneIdObj;
-            jspLogger.info("[PAYROLL_JSP_TZ] Using userTimeZoneId from session: " + userTimeZoneId + " for EID: " + sessionEidForLog);
-        }
+        tenantId = (Integer) currentSession.getAttribute("TenantID");
     }
 
-    if (tenantId == null || tenantId <= 0) {
-        if(currentSession != null) currentSession.invalidate();
-        response.sendRedirect(request.getContextPath() + "/login.jsp?error=" + URLEncoder.encode("Session expired or invalid tenant. Please log in.", StandardCharsets.UTF_8.name()));
+    if (tenantId == null) {
+        response.sendRedirect(request.getContextPath() + "/login.jsp?error=" + URLEncoder.encode("Session expired.", StandardCharsets.UTF_8.name()));
         return;
     }
 
-    if (!ShowPunches.isValid(userTimeZoneId)) {
-        String tenantDefaultTz = Configuration.getProperty(tenantId, "DefaultTimeZone"); 
-        if (ShowPunches.isValid(tenantDefaultTz)) {
-            userTimeZoneId = tenantDefaultTz;
-            jspLogger.info("[PAYROLL_JSP_TZ] Using Tenant DefaultTimeZone from SETTINGS: " + userTimeZoneId + " for Tenant: " + tenantId);
-        } else {
-            userTimeZoneId = DEFAULT_TENANT_FALLBACK_TIMEZONE;
-            jspLogger.info("[PAYROLL_JSP_TZ] Tenant DefaultTimeZone not set/invalid. Using application default: " + userTimeZoneId + " for Tenant: " + tenantId);
-        }
-    }
-
-    if (!ShowPunches.isValid(userTimeZoneId)) {
-        userTimeZoneId = PACIFIC_TIME_FALLBACK;
-        jspLogger.warning("[PAYROLL_JSP_TZ] User/Tenant timezone not determined. Defaulting to system fallback (Pacific Time): " + userTimeZoneId + " for Tenant: " + tenantId);
-    }
-
-    try {
-        ZoneId.of(userTimeZoneId); 
-    } catch (Exception e) {
-        jspLogger.log(Level.SEVERE, "[PAYROLL_JSP_TZ] CRITICAL: Invalid userTimeZoneId resolved: '" + userTimeZoneId + "'. Falling back to UTC. Tenant: " + tenantId, e);
-        userTimeZoneId = "UTC";
-        String tzErrorMsg = "A critical error occurred with timezone configuration. Please contact support.";
-        pageError = (pageError == null) ? tzErrorMsg : pageError + " " + tzErrorMsg;
-    }
-    jspLogger.info("[PAYROLL_JSP_TZ] Payroll.jsp final effective userTimeZoneId: " + userTimeZoneId + " for Tenant: " + tenantId);
-
+    String userTimeZoneId = Configuration.getProperty(tenantId, "DefaultTimeZone", "America/Denver");
+    String pageError = null;
     boolean dataReady = false;
-    String payrollTableHtml = "<tr><td colspan='10' class='report-message-row'>Payroll data not loaded. Check pay period settings or refresh.</td></tr>";
+    String payrollTableHtml = "";
     String formattedGrandTotal = "$0.00";
     String payPeriodMessage = "Pay Period Not Set";
     LocalDate periodStartDate = null;
     LocalDate periodEndDate = null;
-
     DateTimeFormatter longDateFormatter = DateTimeFormatter.ofPattern("EEEE, MMMM d, uuuu", Locale.ENGLISH);
-    NumberFormat currencyFormatter = NumberFormat.getCurrencyInstance(Locale.US);
 
-    if (pageError == null) {
-        try {
-            String startDateStr = Configuration.getProperty(tenantId, "PayPeriodStartDate");
-            String endDateStr = Configuration.getProperty(tenantId, "PayPeriodEndDate");
-            if (ShowPunches.isValid(startDateStr) && ShowPunches.isValid(endDateStr)) {
-                try {
-                    periodStartDate = LocalDate.parse(startDateStr.trim());
-                    periodEndDate = LocalDate.parse(endDateStr.trim());
-                    payPeriodMessage = periodStartDate.format(longDateFormatter) + " to " + periodEndDate.format(longDateFormatter);
-                } catch (DateTimeParseException e) { pageError = "Invalid Date Format in Settings. Please check Settings page."; }
-            } else { pageError = "Pay period start/end dates not found in settings. Please set them on the Settings page."; }
-        } catch (Exception e) {
-            pageError = "Error retrieving pay period settings.";
-            jspLogger.log(Level.SEVERE, "Tenant " + tenantId + ": " + pageError, e);
-        }
-    }
+    try {
+        String startDateStr = Configuration.getProperty(tenantId, "PayPeriodStartDate");
+        String endDateStr = Configuration.getProperty(tenantId, "PayPeriodEndDate");
+        if (startDateStr != null && endDateStr != null) {
+            periodStartDate = LocalDate.parse(startDateStr.trim());
+            periodEndDate = LocalDate.parse(endDateStr.trim());
+            payPeriodMessage = periodStartDate.format(longDateFormatter) + " to " + periodEndDate.format(longDateFormatter);
 
-    if (periodStartDate != null && periodEndDate != null && pageError == null) {
-        try {
             List<Map<String, Object>> calculatedData = ShowPayroll.calculatePayrollData(tenantId, periodStartDate, periodEndDate);
-            if (calculatedData != null && !calculatedData.isEmpty()) { // Ensure calculatedData is not empty
-                Map<String, Object> displayData = ShowPayroll.showPayroll(calculatedData);
-                payrollTableHtml = (String) displayData.getOrDefault("payrollHtml", "<tr><td colspan='10' class='report-error-row'>Error formatting payroll data.</td></tr>");
-                double grandTotalValue = (Double) displayData.getOrDefault("grandTotal", 0.0);
-                formattedGrandTotal = currencyFormatter.format(grandTotalValue);
-                if (!payrollTableHtml.contains("report-error-row") && !payrollTableHtml.contains("No payroll data")) {
-                    dataReady = true;
-                } else if (!payrollTableHtml.contains("report-error-row") && calculatedData.isEmpty()) {
-                    payrollTableHtml = "<tr><td colspan='10' class='report-message-row'>No payroll data for active employees in this period.</td></tr>";
-                    dataReady = true; // Still ready, but no data to process for actions perhaps
-                }
-            } else { 
-                pageError = ((pageError == null ? "" : pageError + " ") + "Payroll calculation returned no data or empty data.").trim(); 
-                payrollTableHtml = "<tr><td colspan='10' class='report-message-row'>No payroll data available for this period.</td></tr>";
-                // dataReady might still be true if we want to allow some actions like opening settings
-                // For now, if no data, actions that depend on it will be implicitly disabled by JS or server logic
-            }
-        } catch (Exception e) {
-            pageError = ((pageError == null ? "" : pageError + " ") + "Error calculating or displaying payroll: " + e.getMessage()).trim();
-            jspLogger.log(Level.SEVERE, "Tenant " + tenantId + ": Error calculating/displaying payroll.", e);
-            payrollTableHtml = "<tr><td colspan='10' class='report-error-row'>Error processing payroll. Check server logs.</td></tr>";
+            Map<String, Object> displayData = ShowPayroll.showPayroll(calculatedData);
+            payrollTableHtml = (String) displayData.get("payrollHtml");
+            double grandTotalValue = (Double) displayData.get("grandTotal");
+            formattedGrandTotal = NumberFormat.getCurrencyInstance(Locale.US).format(grandTotalValue);
+            dataReady = true;
+        } else {
+            pageError = "Pay period start/end dates not found in settings.";
         }
-    } else if (pageError == null) { 
-        pageError = "Pay period dates are not correctly set. Please visit the Settings page.";
-    }
-
-    String successMessageFromRedirect = request.getParameter("message");
-    String errorMessageFromRedirect = request.getParameter("error");
-    if (errorMessageFromRedirect != null && !errorMessageFromRedirect.isEmpty()) {
-        pageError = (pageError != null ? pageError + " <br/>Servlet Error: " : "Servlet Error: ") + escapeJspHtml(errorMessageFromRedirect);
-        successMessageFromRedirect = null;
-        dataReady = false; 
+    } catch (Exception e) {
+        pageError = "Error calculating payroll: " + e.getMessage();
+        Logger.getLogger("payroll.jsp").log(Level.SEVERE, "Error on payroll.jsp for TenantID " + tenantId, e);
     }
 %>
 
@@ -162,45 +83,48 @@
     <link rel="stylesheet" href="css/payroll.css?v=<%= System.currentTimeMillis() %>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
-<body class="reports-page">
+<body class="reports-page payroll-page">
     <%@ include file="/WEB-INF/includes/navbar.jspf" %>
 
     <div class="parent-container reports-container">
         <h1>Payroll Processing</h1>
-        <h2 style="text-align:center; font-weight:bold; margin-bottom:20px;">Pay Period: <%= escapeJspHtml(payPeriodMessage) %></h2>
+        <h2><%= escapeJspHtml(payPeriodMessage) %></h2>
 
-        <% if (successMessageFromRedirect != null && !successMessageFromRedirect.isEmpty()) { %>
-            <div class="page-message success-message" id="pageNotification"><%= escapeJspHtml(successMessageFromRedirect) %></div>
-        <% } else if (pageError != null && !pageError.isEmpty()) { %>
-            <div class="page-message error-message" id="pageNotification"><%= pageError %></div>
+        <% if (pageError != null) { %>
+            <div class="page-message error-message"><%= escapeJspHtml(pageError) %></div>
         <% } %>
 
         <% if(dataReady) { %>
             <p class="instructions"> Review payroll details below. Run the 'Exception Report' to check for missing punches before closing the pay period. </p>
             <div id="payroll-table-container" class="table-container report-table-container">
-                <table id="payrollTable" class="report-table">
-                    <thead>
-                        <tr>
-                            <th class="sortable" data-sort-type="number">Emp ID</th>
-                            <th class="sortable" data-sort-type="string">First Name</th>
-                            <th class="sortable" data-sort-type="string">Last Name</th>
-                            <th class="sortable" data-sort-type="string">Wage Type</th>
-                            <th class="sortable" data-sort-type="number" style="text-align: right;">Regular Hours</th>
-                            <th class="sortable" data-sort-type="number" style="text-align: right;">Overtime Hours</th>
-                            <th class="sortable" data-sort-type="number" style="text-align: right;">Double Time Hours</th>
-                            <th class="sortable" data-sort-type="number" style="text-align: right;">Total Paid Hours</th>
-                            <th class="sortable" data-sort-type="currency" style="text-align: right;">Wage</th>
-                            <th class="sortable" data-sort-type="currency" style="text-align: right;">Total Pay</th>
-                        </tr>
-                    </thead>
-                    <tbody><%= payrollTableHtml %></tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="9" style="text-align: right; font-weight: bold;">Payroll Grand Total:</td>
-                            <td style="text-align: right; font-weight: bold;"><%= formattedGrandTotal %></td>
-                        </tr>
-                    </tfoot>
-                </table>
+                <table id="payrollTable" 
+       class="report-table sortable" 
+       data-initial-sort-column="0" 
+       data-initial-sort-direction="asc">
+    <thead>
+        <tr>
+            <th class="sortable" data-sort-type="number">Emp ID</th>
+            <th class="sortable" data-sort-type="string">First Name</th>
+            <th class="sortable" data-sort-type="string">Last Name</th>
+            <th class="sortable" data-sort-type="string">Wage Type</th>
+            <th class="sortable" data-sort-type="number">Regular Hours</th>
+            <th class="sortable" data-sort-type="number">Overtime Hours</th>
+            <th class="sortable" data-sort-type="number">Double Time Hours</th>
+            <th class="sortable" data-sort-type="number">Total Paid Hours</th>
+            <th class="sortable" data-sort-type="string">Wage</th>
+            <th class="sortable" data-sort-type="string">Total Pay</th>
+        </tr>
+    </thead>
+    <tbody>
+        <%= payrollTableHtml %>
+    </tbody>
+    <tfoot>
+        <tr>
+            <td colspan="9" style="text-align: right; font-weight: bold;">Payroll Grand Total:</td>
+            <td style="text-align: right; font-weight: bold;"><%= formattedGrandTotal %></td>
+        </tr>
+    </tfoot>
+</table>
             </div>
 
             <div id="payroll-actions-container">
@@ -216,7 +140,6 @@
                 <button id="btnPrintPayroll" type="button" class="glossy-button text-blue full-width-button">
                     <i class="fas fa-print"></i> Print Payroll Summary
                 </button>
-                <%-- New Button to Print All Time Cards --%>
                 <button id="btnPrintAllTimeCards" type="button" class="glossy-button text-info full-width-button">
                     <i class="fas fa-print"></i> Print All Time Cards
                 </button>
@@ -227,25 +150,21 @@
                     </button>
                 </form>
             </div>
-        <% } else if (pageError != null && !pageError.isEmpty()) { // Ensure pageError is not empty before displaying this block %>
-            <p style="text-align: center; margin-top: 30px; font-weight:bold; color: #721c24;">
-                Payroll cannot be processed: <%= escapeJspHtml(pageError) %>
-            </p>
         <% } %>
     </div>
 
-    <%-- Notification Modal --%>
-    <div id="notificationModal" class="modal">
+    <%-- General Notification Modal --%>
+    <div id="notificationModalGeneral" class="modal"> 
         <div class="modal-content">
-            <span class="close" id="closeNotificationModal">&times;</span>
-            <h2 id="notificationModalTitle">Notification</h2>
-            <p id="notificationMessage"></p>
+            <span class="close" data-close-modal-id="notificationModalGeneral">&times;</span>
+            <h2 id="notificationModalGeneralTitle">Notification</h2> 
+            <p id="notificationModalGeneralMessage"></p> 
             <div class="button-row" style="justify-content: center;">
-                <button type="button" id="okButton" class="glossy-button text-blue">OK</button>
+                <button type="button" data-close-modal-id="notificationModalGeneral" class="glossy-button text-blue">OK</button>
             </div>
         </div>
     </div>
-
+    
     <%-- Exception Report Modal --%>
     <div id="exceptionReportModal" class="report-modal modal">
         <div class="modal-content report-modal-content">
@@ -294,9 +213,9 @@
     <%-- Custom Confirmation Modal for Closing Pay Period --%>
     <div id="closePeriodConfirmModal" class="modal">
         <div class="modal-content">
-            <span class.close" id="closeConfirmModalSpanBtn">&times;</span>
+            <span class="close" id="closeConfirmModalSpanBtn">&times;</span>
             <h2 id="confirmModalTitle">Confirm Action</h2>
-            <p id="confirmModalMessage"></p>
+            <p id="confirmModalMessage" style="white-space: pre-wrap; text-align: left; max-height: 450px; overflow-y: auto;"></p>
             <div class="button-row" style="justify-content: flex-end; gap: 10px;">
                 <button type="button" id="confirmModalCancelBtn" class="glossy-button text-blue">Cancel</button>
                 <button type="button" id="confirmModalOkBtn" class="glossy-button text-red">Confirm</button>
@@ -307,7 +226,8 @@
     <script type="text/javascript">
         const payPeriodEndDateJs = "<%= periodEndDate != null ? periodEndDate.toString() : "" %>";
         const effectiveTimeZoneIdJs = "<%= escapeJspHtml(userTimeZoneId) %>";
-        const currentTenantIdJs = <%= tenantId != null ? tenantId : 0 %>; // Pass tenantId to JS
+        const currentTenantIdJs = <%= tenantId != null ? tenantId : 0 %>;
+        const appRootPath = "<%= request.getContextPath() %>";
     </script>
     <%@ include file="/WEB-INF/includes/common-scripts.jspf" %>
     <script src="js/payroll.js?v=<%= System.currentTimeMillis() %>"></script>

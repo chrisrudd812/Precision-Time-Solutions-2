@@ -1,83 +1,63 @@
-// js/navbar.js - v28.05.24 (Accrual Modal Logic Removed)
+// js/navbar.js - v3
+// Correctly handles both top-level dropdowns and nested flyout menus.
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("navbar.js file loaded START (Accrual Modal Logic from navbar.jspf removed)");
+    // Select all items that can contain a dropdown, both top-level and nested
+    const allDropdownTriggers = document.querySelectorAll('.main-navbar .dropdown, .main-navbar .sub-dropdown-trigger');
 
-    // --- General Navbar Interactivity (e.g., dropdowns, mobile menu toggle) ---
-    const dropdowns = document.querySelectorAll('.main-navbar .dropdown');
-    dropdowns.forEach(dropdown => {
-        const button = dropdown.querySelector('.dropbtn');
-        const content = dropdown.querySelector('.dropdown-content');
-        if (button && content) {
-            // Desktop hover
-            dropdown.addEventListener('mouseenter', () => {
-                if (window.innerWidth > 768) { // Example breakpoint for hover behavior
-                    content.style.display = 'block';
-                }
-            });
-            dropdown.addEventListener('mouseleave', () => {
-                 if (window.innerWidth > 768) {
-                    content.style.display = 'none';
-                }
-            });
-            // Click for touch or smaller screens (can be combined with hover for robust behavior)
-            button.addEventListener('click', (event) => {
-                if (button.getAttribute('href') === 'javascript:void(0);') {
-                    event.preventDefault();
-                }
-                let isVisible = content.style.display === 'block';
-                // Hide other open main dropdowns before showing this one
-                document.querySelectorAll('.main-navbar > .navbar-links-container > .navbar-links > li > .dropdown-content').forEach(dc => {
-                    if (dc !== content) dc.style.display = 'none';
-                });
-                content.style.display = isVisible ? 'none' : 'block';
-                event.stopPropagation(); 
-            });
-        }
-        
-        // Handle sub-dropdowns
-        const subDropdowns = dropdown.querySelectorAll('.sub-dropdown-trigger');
-        subDropdowns.forEach(sub => {
-            const subBtn = sub.querySelector('.sub-dropbtn');
-            const subContent = sub.querySelector('.sub-dropdown-content');
-            if (subBtn && subContent) {
-                 sub.addEventListener('mouseenter', () => {
-                    if (window.innerWidth > 768) {
-                        subContent.style.display = 'block';
-                    }
-                });
-                sub.addEventListener('mouseleave', () => {
-                    if (window.innerWidth > 768) {
-                       subContent.style.display = 'none';
-                    }
-                });
-                subBtn.addEventListener('click', (event) => {
-                     if (subBtn.getAttribute('href') === 'javascript:void(0);') {
-                        event.preventDefault();
-                    }
-                    let isSubVisible = subContent.style.display === 'block';
-                    // Hide other open sub-dropdowns within the SAME parent dropdown
-                    sub.closest('.dropdown-content').querySelectorAll('.sub-dropdown-content').forEach(sdc => {
-                        if (sdc !== subContent) sdc.style.display = 'none';
-                    });
-                    subContent.style.display = isSubVisible ? 'none' : 'block';
-                    event.stopPropagation();
-                });
+    allDropdownTriggers.forEach(trigger => {
+        // --- Desktop Hover Logic ---
+        trigger.addEventListener('mouseenter', function() {
+            if (window.innerWidth > 992) {
+                this.classList.add('is-open');
             }
         });
-    });
 
-    // Hide all dropdowns if clicked outside
-    document.addEventListener('click', function (event) {
-        let clickedInsideNavbar = event.target.closest('.main-navbar');
-        if (!clickedInsideNavbar) {
-            document.querySelectorAll('.main-navbar .dropdown-content').forEach(content => {
-                content.style.display = 'none';
+        trigger.addEventListener('mouseleave', function() {
+            if (window.innerWidth > 992) {
+                this.classList.remove('is-open');
+            }
+        });
+
+        // --- Mobile/Tablet Click Logic ---
+        const button = trigger.querySelector('.dropbtn, .sub-dropbtn');
+        if (button) {
+            button.addEventListener('click', function(event) {
+                if (window.innerWidth <= 992) {
+                    if (this.getAttribute('href') === 'javascript:void(0);') {
+                        event.preventDefault();
+                    }
+                    event.stopPropagation();
+
+                    const parentLi = this.parentElement;
+                    const wasOpen = parentLi.classList.contains('is-open');
+
+                    // Close all other dropdowns at the same level as the one being opened
+                    const parentUl = parentLi.parentElement;
+                    parentUl.querySelectorAll('.is-open').forEach(sibling => {
+                        if (sibling !== parentLi) {
+                           sibling.classList.remove('is-open');
+                        }
+                    });
+                    
+                    // Toggle the current dropdown
+                    if (!wasOpen) {
+                        parentLi.classList.add('is-open');
+                    } else {
+                        parentLi.classList.remove('is-open');
+                    }
+                }
             });
         }
     });
-    // --- End General Navbar Interactivity ---
 
-    console.log("NAVBAR.JS: Old accrual modal specific logic has been removed as the modal is no longer part of navbar.jspf.");
-    console.log("--- Navbar.js DOMContentLoaded END ---");
+    // --- Global Click Listener to Close All Menus ---
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.main-navbar')) {
+            document.querySelectorAll('.main-navbar .is-open').forEach(openDropdown => {
+                openDropdown.classList.remove('is-open');
+            });
+        }
+    });
+
 });

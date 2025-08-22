@@ -145,13 +145,15 @@
                     <li><i class="fas fa-phone-alt"></i><span class="info-label">Company Phone:</span> <span class="info-value"><%= escapeJspHtml(companyInfo.companyPhone) %></span></li>
                 </ul>
             </div>
+            
             <div class="account-section">
-                <h2>Account Management</h2>
-                <ul>
-                    <li><i class="fas fa-user-circle"></i><span class="info-label">Your Login Email:</span> <span class="info-value"><%= escapeJspHtml(loggedInUserEmail) %></span></li>
-                    <li><i class="fas fa-envelope-open-text"></i><span class="info-label">Company Admin Email:</span> <span class="info-value"><%= escapeJspHtml(companyInfo.adminEmail) %></span></li>
-                </ul>
-            </div>
+    <h2>Account Management</h2>
+    <ul>
+        <%-- FIX: If the specific logged-in user email isn't in the session, it falls back to the main company admin email. --%>
+        <li><i class="fas fa-user-circle"></i><span class="info-label">Your Login Email:</span> <span class="info-value"><%= escapeJspHtml((loggedInUserEmail != null && !loggedInUserEmail.isEmpty()) ? loggedInUserEmail : companyInfo.adminEmail) %></span></li>
+        <li><i class="fas fa-envelope-open-text"></i><span class="info-label">Company Admin Email:</span> <span class="info-value"><%= escapeJspHtml(companyInfo.adminEmail) %></span></li>
+    </ul>
+</div>
             
             <div class="account-section">
                 <h2>Subscription</h2>
