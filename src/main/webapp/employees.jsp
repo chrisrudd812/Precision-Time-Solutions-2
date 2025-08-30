@@ -65,8 +65,7 @@
 
     List<Map<String, String>> departments = (tenantId != null) ? ShowReports.getDepartmentsForTenant(tenantId) : new ArrayList<>();
     List<Map<String, String>> schedules = (tenantId != null) ? ShowReports.getSchedulesForTenant(tenantId) : new ArrayList<>();
-    List<Map<String, String>> accrualPolicies = (tenantId != null) ?
-    ShowReports.getAccrualPoliciesForTenant(tenantId) : new ArrayList<>();
+    List<Map<String, String>> accrualPolicies = (tenantId != null) ? ShowReports.getAccrualPoliciesForTenant(tenantId) : new ArrayList<>();
     String employeeRowsHtml = (tenantId != null) ? ShowEmployees.showEmployees(tenantId) : "<tr><td colspan='12' class='report-error-row'>Invalid session.</td></tr>";
     String departmentsJson = buildJsonArray(departments);
     String schedulesJson = buildJsonArray(schedules);
@@ -85,6 +84,11 @@
     <style>
         .wizard-header { background-color: #004080; color: white; padding: 15px 20px; text-align: center; margin-bottom:20px; }
         .modal-content h2 { cursor: move; user-select: none; }
+        
+        <%-- [FIX] This CSS rule ensures the text inside the wizard modal has consistent padding. --%>
+        #wizardGenericModal .modal-content p {
+            padding: 10px 25px !important;
+        }
     </style>
 </head>
 <body class="reports-page">
@@ -100,6 +104,10 @@
     <div class="parent-container reports-container">
         <h1>Employee Management <% if(inSetupWizardMode_JSP) { %><span style="font-size: 0.8em; color: #555;">(Setup)</span><% } %></h1>
         
+        <%-- MODIFIED: Added standard message divs for JS to pick up --%>
+        <% if (pageLevelSuccess != null && !pageLevelSuccess.isEmpty()) { %><div id="pageNotificationDiv_Success_Emp" class="page-message success-message"><%= escapeJspHtml(pageLevelSuccess) %></div><% } %>
+         <% if (pageLevelError != null && !pageLevelError.isEmpty()) { %><div id="pageNotificationDiv_Error_Emp" class="page-message error-message"><%= escapeJspHtml(pageLevelError) %></div><% } %>
+        
         <div id="button-container" class="main-action-buttons">
             <button type="button" id="addEmployeeButton" class="glossy-button text-green"><i class="fas fa-user-plus"></i> Add Employee</button>
             <button type="button" id="editEmployeeButton" class="glossy-button text-orange" disabled><i class="fas fa-user-edit"></i> Edit Employee</button>
@@ -114,18 +122,18 @@
                        data-initial-sort-direction="asc">
                     <thead>
                         <tr>
-                            <th class="sortable" data-sort-type="number">ID</th>
-                            <th class="sortable" data-sort-type="string">First Name</th>
+                             <th class="sortable" data-sort-type="number">ID</th>
+                             <th class="sortable" data-sort-type="string">First Name</th>
                             <th class="sortable" data-sort-type="string">Last Name</th>
-                            <th class="sortable" data-sort-type="string">Department</th>
-                            <th class="sortable" data-sort-type="string">Schedule</th>
+                             <th class="sortable" data-sort-type="string">Department</th>
+                             <th class="sortable" data-sort-type="string">Schedule</th>
                             <th class="sortable" data-sort-type="string">Supervisor</th>
-                            <th class="sortable" data-sort-type="string">Permissions</th>
+                             <th class="sortable" data-sort-type="string">Permissions</th>
                             <th class="sortable" data-sort-type="string">Email</th>
-                            <th class="sortable" data-sort-type="date">Hire Date</th>
+                             <th class="sortable" data-sort-type="date">Hire Date</th>
                             <th class="sortable" data-sort-type="string">Work Sched.</th>
                         </tr>
-                    </thead>
+                     </thead>
                     <tbody><%= employeeRowsHtml %></tbody>
                 </table>
             </div>
@@ -136,37 +144,37 @@
             <div class="details-grid">
                 <div class="detail-group">
                     <h3>Personal Information</h3>
-                    <p><label>Employee ID:</label><span id="detailEID">--</span></p>
+                     <p><label>Employee ID:</label><span id="detailEID">--</span></p>
                     <p><label>First Name:</label><span id="detailFirstName">--</span></p>
-                    <p><label>Last Name:</label><span id="detailLastName">--</span></p>
+                     <p><label>Last Name:</label><span id="detailLastName">--</span></p>
                     <p><label>Address:</label><span id="detailAddress">--</span></p>
                     <p><label>City:</label><span id="detailCity">--</span></p>
-                    <p><label>State:</label><span id="detailState">--</span></p>
+                     <p><label>State:</label><span id="detailState">--</span></p>
                     <p><label>Zip:</label><span id="detailZip">--</span></p>
-                    <p><label>Phone:</label><span id="detailPhone">--</span></p>
+                     <p><label>Phone:</label><span id="detailPhone">--</span></p>
                     <p><label>E-mail:</label><span id="detailEmail">--</span></p>
                 </div>
-                <div class="detail-group">
+                 <div class="detail-group">
                     <h3>Company Information</h3>
-                    <p><label>Department:</label><span id="detailDept">--</span></p>
+                     <p><label>Department:</label><span id="detailDept">--</span></p>
                     <p><label>Schedule:</label><span id="detailSchedule">--</span></p>
                     <p><label>Supervisor:</label><span id="detailSupervisor">--</span></p>
-                    <p><label>Permissions:</label><span id="detailPermissions">--</span></p>
+                     <p><label>Permissions:</label><span id="detailPermissions">--</span></p>
                     <p><label>Hire Date:</label><span id="detailHireDate">--</span></p>
-                    <p><label>Work Schedule:</label><span id="detailWorkSched">--</span></p>
+                     <p><label>Work Schedule:</label><span id="detailWorkSched">--</span></p>
                     <p><label>Wage Type:</label><span id="detailWageType">--</span></p>
                     <p><label>Wage:</label><span id="detailWage">--</span></p>
                 </div>
                 <div class="detail-group" id="accrualInfoGroup">
-                    <h3>Accrual Info</h3>
+                     <h3>Accrual Info</h3>
                     <p><label>Accrual Policy:</label><span id="detailAccrualPolicy">--</span></p>
                     <p><label>Vacation Hours:</label><span id="detailVacHours">--</span></p>
-                    <p><label>Sick Hours:</label><span id="detailSickHours">--</span></p>
-                    <p><label>Personal Hours:</label><span id="detailPersHours">--</span></p>
+                     <p><label>Sick Hours:</label><span id="detailSickHours">--</span></p>
+                     <p><label>Personal Hours:</label><span id="detailPersHours">--</span></p>
                     <form action="<%=request.getContextPath()%>/EmployeeInfoServlet" method="get" id="resetPasswordForm">
                         <input type="hidden" name="action" value="resetPassword">
-                        <input type="hidden" name="eid" id="resetFormEid" value="">
-                        <button type="submit" id="btnResetPassword" class="glossy-button text-orange" disabled><i class="fas fa-key"></i> Reset PIN</button>
+                         <input type="hidden" name="eid" id="resetFormEid" value="">
+                         <button type="submit" id="btnResetPassword" class="glossy-button text-blue" disabled><i class="fas fa-key"></i> Reset PIN</button>
                     </form>
                 </div>
             </div>
@@ -177,11 +185,11 @@
     <%@ include file="/WEB-INF/includes/notification-modals.jspf" %>
 
     <div id="deactivateConfirmModal" class="modal">
-        <div class="modal-content" style="max-width: 500px;">
+         <div class="modal-content" style="max-width: 500px;">
             <span class="close">&times;</span>
             <h2>Confirm Deactivation</h2>
             <p>Are you sure you want to deactivate <strong id="deactivateEmployeeName"></strong>?</p>
-            <p class="deactivate-note">This employee can be reactivated via Reports &gt; Employee Reports &gt; Inactive Employees.</p>
+             <p class="deactivate-note">This employee can be reactivated via Reports &gt; Employee Reports &gt; Inactive Employees.</p>
             <div class="button-row">
                 <button type="button" id="confirmDeactivateBtn" class="glossy-button text-red">Deactivate</button>
                 <button type="button" class="cancel-btn glossy-button text-grey">Cancel</button>
@@ -191,12 +199,12 @@
 
     <div id="reactivateEmployeeModal" class="modal">
         <div class="modal-content" style="max-width: 500px;">
-            <span class="close">&times;</span>
+              <span class="close">&times;</span>
             <h2>Employee Exists</h2>
             <p style="text-align: center;padding-left: 20px;padding-right: 20px; ">An inactive employee with the email <strong id="reactivateEmail"></strong> already exists.</p>
             <p style="text-align: center;">Would you like to reactivate this employee's account?</p>
             <div class="button-row">
-                <button type="button" id="confirmReactivateBtn" class="glossy-button text-green">Reactivate Employee</button>
+                 <button type="button" id="confirmReactivateBtn" class="glossy-button text-green">Reactivate Employee</button>
                 <button type="button" class="cancel-btn glossy-button text-grey">Cancel</button>
             </div>
         </div>

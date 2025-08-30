@@ -27,6 +27,7 @@
                     .replace("'", "&#39;");
     }
      private String escapeForJavaScriptString(String input) {
+ 
         if (input == null) return "";
         return input.replace("\\", "\\\\")
                     .replace("\"", "\\\"")
@@ -41,7 +42,7 @@
     HttpSession punchesSession = request.getSession(false);
     Integer tenantId = null;
     String userPermissions = null;
-    Integer adminEidForLog = null; // Used for logging, equivalent to sessionEid_timeclock
+    Integer adminEidForLog = null; 
 
     if (punchesSession != null) {
         Object tenantIdObj = punchesSession.getAttribute("TenantID");
@@ -60,7 +61,7 @@
     }
 
     String pageMessage = request.getParameter("message");
-    String pageError = request.getParameter("error"); // Keep existing pageError handling
+    String pageError = request.getParameter("error");
 
     int eidToLoad = 0;
     String eidParam = request.getParameter("eid");
@@ -84,12 +85,9 @@
         jspPunchesLogger.severe("Critical: TenantID was null or zero after permission check. TenantID: " + tenantId + ", AdminEID: " + adminEidForLog);
     }
 
-    // --- Timezone Logic for Punches Page (Aligned with timeclock.jsp) ---
-    final String PACIFIC_TIME_FALLBACK = "America/Los_Angeles"; // Consistent name
-    final String DEFAULT_TENANT_FALLBACK_TIMEZONE = "America/Denver"; // Consistent name
-    String userTimeZoneId = null; // Consistent variable name
-
-    // 1. Attempt to get user-specific timezone from session (set at login)
+    final String PACIFIC_TIME_FALLBACK = "America/Los_Angeles";
+    final String DEFAULT_TENANT_FALLBACK_TIMEZONE = "America/Denver";
+    String userTimeZoneId = null;
     if (punchesSession != null) {
         Object userTimeZoneIdObj = punchesSession.getAttribute("userTimeZoneId");
         if (userTimeZoneIdObj instanceof String && ShowPunches.isValid((String)userTimeZoneIdObj)) {
@@ -98,38 +96,32 @@
         }
     }
 
-    // 2. If not in session (or invalid), try Tenant's DefaultTimeZone, then app's tenant fallback
     if (!ShowPunches.isValid(userTimeZoneId) && tenantId != null && tenantId > 0) {
-        String tenantDefaultTz = Configuration.getProperty(tenantId, "DefaultTimeZone"); // Get without internal fallback first
+        String tenantDefaultTz = Configuration.getProperty(tenantId, "DefaultTimeZone");
         if (ShowPunches.isValid(tenantDefaultTz)) {
             userTimeZoneId = tenantDefaultTz;
             jspPunchesLogger.info("[PUNCHES_JSP_TZ] Using Tenant DefaultTimeZone from SETTINGS: " + userTimeZoneId + " for Admin EID: " + adminEidForLog + ", Tenant: " + tenantId);
         } else {
-            // If tenant default is not set in DB or was invalid, use the application's defined default for tenants
             userTimeZoneId = DEFAULT_TENANT_FALLBACK_TIMEZONE;
             jspPunchesLogger.info("[PUNCHES_JSP_TZ] Tenant DefaultTimeZone not set/invalid in DB. Using application default for tenant: " + userTimeZoneId + " for Admin EID: " + adminEidForLog + ", Tenant: " + tenantId);
         }
     }
 
-    // 3. If still not found or invalid, use the ultimate Pacific Time fallback
     if (!ShowPunches.isValid(userTimeZoneId)) {
         userTimeZoneId = PACIFIC_TIME_FALLBACK;
         jspPunchesLogger.warning("[PUNCHES_JSP_TZ] User/Tenant timezone not determined or invalid. Defaulting to system fallback (Pacific Time): " + userTimeZoneId + " for Admin EID: " + adminEidForLog);
     }
 
-    // 4. Validate the determined ZoneId to prevent errors in formatting downstream
     try {
-        ZoneId.of(userTimeZoneId); // Validate the final determined ZoneId
+        ZoneId.of(userTimeZoneId);
     } catch (Exception e) {
         jspPunchesLogger.log(Level.SEVERE, "[PUNCHES_JSP_TZ] CRITICAL: Invalid userTimeZoneId resolved: '" + userTimeZoneId + "'. Falling back to UTC. Admin EID: " + adminEidForLog, e);
         userTimeZoneId = "UTC";
         String tzErrorMsg = "A critical error occurred with timezone configuration. Displaying times in UTC. Please contact support.";
-        // Consistent error appending
         pageError = (pageError == null || pageError.isEmpty()) ? tzErrorMsg : pageError + " " + tzErrorMsg;
     }
     jspPunchesLogger.info("[PUNCHES_JSP_TZ] Punches.jsp final effective userTimeZoneId for display: " + userTimeZoneId + " for Admin EID: " + adminEidForLog);
-    // --- End Timezone Logic ---
-
+    
     StringBuilder punchTableHtmlBuilder = new StringBuilder();
     String employeeNameForDisplay = "N/A";
     double periodTotalHoursForDisplay = 0.0;
@@ -140,7 +132,6 @@
     LocalDate currentPayPeriodStartDate = null;
     LocalDate currentPayPeriodEndDate = null;
     DateTimeFormatter friendlyDateFormatter = DateTimeFormatter.ofPattern("MM/dd/yyyy");
-    DateTimeFormatter isoDateFormatter = DateTimeFormatter.ISO_LOCAL_DATE;
 
     String scheduleNameForDisplay = "N/A";
     Boolean autoLunchStatus = null;
@@ -148,8 +139,7 @@
     Double hrsRequiredForLunchTrigger = null;
     Map<String, Object> employeeInfo = null;
 
-
-    if ((pageError == null || pageError.isEmpty()) && tenantId > 0) { // Check pageError before DB calls
+    if ((pageError == null || pageError.isEmpty()) && tenantId > 0) { 
         try {
             Map<String, LocalDate> currentPeriod = ShowPunches.getCurrentPayPeriodInfo(tenantId);
             if (currentPeriod != null && currentPeriod.get("startDate") != null && currentPeriod.get("endDate") != null) {
@@ -169,17 +159,21 @@
 
     if (eidToLoad > 0 && currentPayPeriodStartDate != null && currentPayPeriodEndDate != null && (pageError == null || pageError.isEmpty())) {
         employeeInfo = ShowPunches.getEmployeeTimecardInfo(tenantId, eidToLoad);
-
         if (employeeInfo != null) {
             employeeNameForDisplay = escapeHtml((String) employeeInfo.getOrDefault("employeeName", "N/A"));
             scheduleNameForDisplay = escapeHtml((String) employeeInfo.getOrDefault("scheduleName", "N/A"));
             if (employeeInfo.get("autoLunch") != null) autoLunchStatus = (Boolean) employeeInfo.get("autoLunch");
             if (employeeInfo.get("lunchLength") != null) lunchLengthForDisplay = (Integer) employeeInfo.get("lunchLength");
-            if (employeeInfo.get("hoursRequired") != null) hrsRequiredForLunchTrigger = (Double) employeeInfo.get("hoursRequired");
 
-            // Use the updated userTimeZoneId
+            // *** BUG FIX: Safely cast the 'hoursRequired' value to a Double ***
+            if (employeeInfo.get("hoursRequired") != null) {
+                Object hrsReqObj = employeeInfo.get("hoursRequired");
+                if (hrsReqObj instanceof Number) {
+                    hrsRequiredForLunchTrigger = ((Number) hrsReqObj).doubleValue();
+                }
+            }
+
             Map<String, Object> timecardData = ShowPunches.getTimecardPunchData(tenantId, eidToLoad, currentPayPeriodStartDate, currentPayPeriodEndDate, employeeInfo, userTimeZoneId);
-
             if (timecardData != null) {
                 String dataError = (String) timecardData.get("error");
                 if (dataError != null) {
@@ -190,27 +184,12 @@
                     List<Map<String, String>> punchesList = (List<Map<String, String>>) timecardData.get("punches");
                     if (punchesList != null && !punchesList.isEmpty()) {
                         for (Map<String, String> punch : punchesList) {
-                            punchTableHtmlBuilder.append("<tr data-punch-id=\"").append(escapeHtml(punch.get("punchId"))).append("\" ")
-                                .append("data-date=\"").append(escapeHtml(punch.get("punchDate"))).append("\" ")
-                                .append("data-timein=\"").append(escapeHtml(punch.get("timeInRaw"))).append("\" ") // Assuming timeInRaw and timeOutRaw are for JS data attributes
-                                .append("data-timeout=\"").append(escapeHtml(punch.get("timeOutRaw"))).append("\" ")
-                                .append("data-totalhours=\"").append(escapeHtml(punch.get("totalHours"))).append("\" ")
-                                .append("data-type=\"").append(escapeHtml(punch.get("punchType"))).append("\" ")
-                                .append("data-eid=\"").append(eidToLoad).append("\">");
+                            punchTableHtmlBuilder.append("<tr data-punch-id=\"").append(escapeHtml(punch.get("punchId"))).append("\" data-date=\"").append(escapeHtml(punch.get("punchDate"))).append("\" data-timein=\"").append(escapeHtml(punch.get("timeInRaw"))).append("\" data-timeout=\"").append(escapeHtml(punch.get("timeOutRaw"))).append("\" data-totalhours=\"").append(escapeHtml(punch.get("totalHours"))).append("\" data-type=\"").append(escapeHtml(punch.get("punchType"))).append("\" data-eid=\"").append(eidToLoad).append("\">");
                             punchTableHtmlBuilder.append("<td>").append(escapeHtml(punch.get("friendlyPunchDate"))).append("</td>");
                             punchTableHtmlBuilder.append("<td>").append(escapeHtml(punch.get("dayOfWeek"))).append("</td>");
-                            String timeIn = punch.get("timeIn"); String inTimeCssClass = punch.get("inTimeCssClass");
-                            punchTableHtmlBuilder.append("<td>");
-                            if (inTimeCssClass != null && !inTimeCssClass.isEmpty()) punchTableHtmlBuilder.append("<span class=\"").append(escapeHtml(inTimeCssClass)).append("\">");
-                            punchTableHtmlBuilder.append(escapeHtml(timeIn));
-                            if (inTimeCssClass != null && !inTimeCssClass.isEmpty()) punchTableHtmlBuilder.append("</span>");
-                            punchTableHtmlBuilder.append("</td>");
-                            String timeOut = punch.get("timeOut"); String outTimeCssClass = punch.get("outTimeCssClass");
-                            punchTableHtmlBuilder.append("<td>");
-                            if (outTimeCssClass != null && !outTimeCssClass.isEmpty()) punchTableHtmlBuilder.append("<span class=\"").append(escapeHtml(outTimeCssClass)).append("\">");
-                            punchTableHtmlBuilder.append(escapeHtml(timeOut));
-                            if (outTimeCssClass != null && !outTimeCssClass.isEmpty()) punchTableHtmlBuilder.append("</span>");
-                            punchTableHtmlBuilder.append("</td>");
+                            // The timeIn and timeOut values now come pre-wrapped with HTML from ShowPunches.java
+                            punchTableHtmlBuilder.append("<td>").append(punch.get("timeIn")).append("</td>");
+                            punchTableHtmlBuilder.append("<td>").append(punch.get("timeOut")).append("</td>");
                             punchTableHtmlBuilder.append("<td style=\"text-align:right;\">").append(escapeHtml(punch.get("totalHours"))).append("</td>");
                             punchTableHtmlBuilder.append("<td>").append(escapeHtml(punch.get("punchType"))).append("</td>");
                             punchTableHtmlBuilder.append("</tr>\n");
@@ -224,23 +203,16 @@
                     periodTotalHoursForDisplay = Math.round((totalRegularHoursForDisplay + totalOvertimeHoursForDisplay + totalDoubleTimeHoursForDisplay) * 100.0) / 100.0;
                 }
             } else {
-                String tcDataErrorMsg = "Error retrieving timecard data.";
-                pageError = (pageError == null || pageError.isEmpty()) ? tcDataErrorMsg : pageError + " " + tcDataErrorMsg;
-                punchTableHtmlBuilder.append("<tr><td colspan='6' class='report-error-row'>").append(escapeHtml(tcDataErrorMsg)).append("</td></tr>");
+                pageError = "Error retrieving timecard data.";
+                punchTableHtmlBuilder.append("<tr><td colspan='6' class='report-error-row'>Error retrieving timecard data.</td></tr>");
             }
         } else {
-             String empNotFoundMsg = "Employee (EID: " + eidToLoad + ") not found.";
-             pageError = (pageError == null || pageError.isEmpty()) ? empNotFoundMsg : pageError + " " + empNotFoundMsg;
-            punchTableHtmlBuilder.append("<tr><td colspan='6' class='report-error-row'>").append(escapeHtml(empNotFoundMsg)).append("</td></tr>");
+             pageError = "Employee (EID: " + eidToLoad + ") not found.";
+             punchTableHtmlBuilder.append("<tr><td colspan='6' class='report-error-row'>Employee not found.</td></tr>");
             employeeNameForDisplay = "Employee Not Found";
         }
     } else if (eidToLoad <= 0 && (pageError == null || pageError.isEmpty())) {
         punchTableHtmlBuilder.append("<tr><td colspan='6' class='report-message-row'>Please select an employee to view their punches.</td></tr>");
-    }
-
-    if (pageError != null && !pageError.isEmpty() && punchTableHtmlBuilder.indexOf("report-error-row") == -1 && punchTableHtmlBuilder.indexOf("report-message-row") == -1 ){
-        punchTableHtmlBuilder.setLength(0);
-        punchTableHtmlBuilder.append("<tr><td colspan='6' class='report-error-row'>").append(escapeHtml(pageError)).append("</td></tr>");
     }
 %>
 <!DOCTYPE html>
@@ -254,38 +226,34 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/punches.css?v=<%= System.currentTimeMillis() %>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
-<body>
+<body class="reports-page">
     <%@ include file="/WEB-INF/includes/navbar.jspf" %>
 
-    <div class="parent-container">
+    <div class="parent-container reports-container">
         <h1><i class="fas fa-user-clock"></i> Edit Employee Punches</h1>
 
-         <%-- Display pageError if it exists and is not empty --%>
-        <% if (pageError != null && !pageError.isEmpty()) { %>
-            <div id="notification-bar-punches" class="error-message" style="margin-bottom: 15px; display:block;"><%= escapeHtml(pageError) %></div>
-        <% } else if (pageMessage != null && !pageMessage.isEmpty()) { %>
-            <div id="notification-bar-punches" class="success-message" style="margin-bottom: 15px; display:block;"><%= escapeHtml(pageMessage) %></div>
-        <% } %>
-
+        <% if (pageError != null) { %><div id="pageNotificationDiv_Error_Punches" class="page-message error-message"><%= escapeHtml(pageError) %></div><% } %>
+        <% if (pageMessage != null) { %><div id="pageNotificationDiv_Success_Punches" class="page-message success-message"><%= escapeHtml(pageMessage) %></div><% } %>
 
         <form method="GET" action="punches.jsp" id="filterPunchesForm" class="filter-form-punches">
             <div class="form-item">
                 <label for="employeeSelectPunches">Employee:</label>
                 <select name="eid" id="employeeSelectPunches" required onchange="this.form.submit()">
-                    <option value="0">-- Select Employee --</option>
-                    <% if (employeeList != null) { for (Map<String, Object> emp : employeeList) { %>
+                    <option value="">-- Select Employee --</option>
+                    <% for (Map<String, Object> emp : employeeList) { %>
                         <option value="<%= emp.get("eid") %>" <%= ((Integer)emp.get("eid")).intValue() == eidToLoad ? "selected" : "" %>>
                             <%= escapeHtml((String)emp.get("displayName")) %>
                         </option>
-                    <% }} %>
+                    <% } %>
                 </select>
             </div>
             <div class="pay-period-display">Pay Period: <%= escapeHtml(payPeriodDisplay) %></div>
         </form>
 
-        <% if (eidToLoad > 0 && employeeInfo != null && (pageError == null || pageError.isEmpty())) { %>
+        <% if (eidToLoad > 0 && employeeInfo != null) { %>
             <div class="employee-schedule-info-bar">
-                <span>Schedule: <strong><%= escapeHtml(scheduleNameForDisplay == null || scheduleNameForDisplay.trim().isEmpty() ? "Default/None" : scheduleNameForDisplay) %></strong></span>
+                <span>Wage Type: <strong><%= escapeHtml((String) employeeInfo.getOrDefault("wageType", "N/A")) %></strong></span>
+                <span>Schedule: <strong><%= scheduleNameForDisplay %></strong></span>
                 <% if (autoLunchStatus != null) { %>
                     <span>Auto-Lunch: <strong class="<%= autoLunchStatus ? "text-success-dark" : "text-danger-dark" %>"><%= autoLunchStatus ? "Enabled" : "Disabled" %></strong></span>
                     <% if (autoLunchStatus && lunchLengthForDisplay != null && lunchLengthForDisplay > 0) { %>
@@ -294,179 +262,146 @@
                     <% if (autoLunchStatus && hrsRequiredForLunchTrigger != null && hrsRequiredForLunchTrigger > 0) { %>
                          <span>(Threshold: <strong><%= String.format(Locale.US, "%.2f", hrsRequiredForLunchTrigger) %> hrs</strong>)</span>
                     <% } %>
-                <% } else if (scheduleNameForDisplay != null && !scheduleNameForDisplay.equals("N/A") && !scheduleNameForDisplay.trim().isEmpty()){ %>
-                     <span>Auto-Lunch: <em>Not Configured for this Schedule</em></span>
                 <% } %>
             </div>
         <% } %>
 
-        <% if (eidToLoad > 0 && (pageError == null || pageError.isEmpty()) && currentPayPeriodStartDate != null) { %>
-            <h3 class="employee-punches-title">Punches for: <%= escapeHtml(employeeNameForDisplay) %></h3>
-        <% } else if (eidToLoad > 0 && pageError != null && !pageError.isEmpty()) { %>
-            <h3 class="employee-punches-title" style="color: #721c24;">Error loading punches for: <%= escapeHtml(employeeNameForDisplay) %></h3>
-        <% } %>
-
-        <div class="table-container report-table-container">
-            <table id="punchesTable" class="report-table">
-                <thead>
-                    <tr>
-                        <th>Date</th><th>Day</th><th>Time In</th><th>Time Out</th><th>Total Hours</th><th>Type</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <%= punchTableHtmlBuilder.toString() %>
-                </tbody>
-                <% if (eidToLoad > 0 && currentPayPeriodStartDate != null && (pageError == null || pageError.isEmpty()) &&
-                       punchTableHtmlBuilder.indexOf("report-error-row") == -1 &&
-                       punchTableHtmlBuilder.indexOf("report-message-row") == -1 &&
-                       periodTotalHoursForDisplay > 0.001) { // Check for small positive value %>
-                <tfoot>
-                    <tr>
-                        <td colspan="4" style="text-align:right; font-weight:bold;" class="period-total-label">Period Total:</td>
-                        <td style="text-align:right; font-weight:bold;" class="period-total-value"><%= String.format(Locale.US, "%.2f", periodTotalHoursForDisplay) %></td>
-                        <td class="period-total-spacer"></td>
-                    </tr>
-                    <% if(employeeInfo != null && "Hourly".equalsIgnoreCase((String)employeeInfo.getOrDefault("wageType",""))) { %>
-                    <tr class="hours-breakdown-row">
-                        <td colspan="6" style="text-align:right; font-size:0.9em;">
-                            (Reg: <%= String.format(Locale.US, "%.2f", totalRegularHoursForDisplay) %>,
-                             OT: <%= String.format(Locale.US, "%.2f", totalOvertimeHoursForDisplay) %>
-                             <% if(totalDoubleTimeHoursForDisplay > 0.001) { %>
-                                , DT: <%= String.format(Locale.US, "%.2f", totalDoubleTimeHoursForDisplay) %>
-                             <% } %>)
-                        </td>
-                    </tr>
+        <h3 class="employee-punches-title">Punches for: <%= employeeNameForDisplay %></h3>
+        
+        <div class="report-display-area">
+            <div class="table-container report-table-container punches-table-container">
+                <table id="punchesTable" class="report-table">
+                    <thead>
+                        <tr>
+                            <th class="sortable">Date</th>
+                            <th class="sortable">Day</th>
+                            <th class="sortable">Time In</th>
+                            <th class="sortable">Time Out</th>
+                            <th class="sortable">Total Hours</th>
+                            <th class="sortable">Type</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <%= punchTableHtmlBuilder.toString() %>
+                    </tbody>
+                    <% if (eidToLoad > 0 && periodTotalHoursForDisplay > 0.001) { %>
+                    <tfoot>
+                        <tr class="footer-summary-row">
+                            <td colspan="4" class="period-total-label">Period Total:</td>
+                            <td colspan="2" class="period-total-value">
+                                <%= String.format(Locale.US, "%.2f", periodTotalHoursForDisplay) %>
+                                <% if(employeeInfo != null && "Hourly".equalsIgnoreCase((String)employeeInfo.getOrDefault("wageType",""))) { %>
+                                    <span class="hours-breakdown-span">
+                                         (Reg: <%= String.format(Locale.US, "%.2f", totalRegularHoursForDisplay) %>,
+                                         OT: <%= String.format(Locale.US, "%.2f", totalOvertimeHoursForDisplay) %>
+                                         <% if(totalDoubleTimeHoursForDisplay > 0.001) { %>
+                                         , DT: <%= String.format(Locale.US, "%.2f", totalDoubleTimeHoursForDisplay) %>
+                                         <% } %>)
+                                    </span>
+                                <% } %>
+                            </td>
+                        </tr>
+                    </tfoot>
                     <% } %>
-                </tfoot>
-                <% } %>
-            </table>
+                </table>
+            </div>
         </div>
 
-        <% if (eidToLoad > 0 && (pageError == null || pageError.isEmpty()) && currentPayPeriodStartDate != null) { %>
-            <div class="action-buttons-bottom">
-                <button type="button" id="addHoursBtn" class="glossy-button text-green">
-                    <i class="fas fa-plus-circle"></i> Add Hours
-                </button>
-                <button type="button" id="addTimedPunchBtn" class="glossy-button text-blue">
-                    <i class="fas fa-clock"></i> Add Timed Punch
-                </button>
-                <button type="button" id="editRowBtn" class="glossy-button text-yellow" disabled>
-                    <i class="fas fa-edit"></i> Edit Row
-                </button>
-                <button type="button" id="deleteRowBtn" class="glossy-button text-red-punch" disabled>
-                    <i class="fas fa-trash-alt"></i> Delete Row
-                </button>
+        <% if (eidToLoad > 0) { %>
+            <div id="button-container" class="main-action-buttons">
+                <button type="button" id="addHoursBtn" class="glossy-button text-green"><i class="fas fa-plus-circle"></i> Add Hours</button>
+                <button type="button" id="addTimedPunchBtn" class="glossy-button text-blue"><i class="fas fa-clock"></i> Add Timed Punch</button>
+                <button type="button" id="editRowBtn" class="glossy-button text-orange" disabled><i class="fas fa-edit"></i> Edit Row</button>
+                <button type="button" id="deleteRowBtn" class="glossy-button text-red" disabled><i class="fas fa-trash-alt"></i> Delete Row</button>
             </div>
         <% } %>
     </div>
 
-    <%-- Add Hours Modal --%>
     <div id="addHoursModal" class="modal">
         <div class="modal-content">
-            <span class="close">&times;</span>
+            <span class="close close-modal-btn">&times;</span>
             <h2 id="addHoursModalTitle">Add Entry</h2>
             <form id="addHoursForm" action="AddEditAndDeletePunchesServlet" method="POST">
-                <input type="hidden" name="action" value="addHours" id="addHours_actionInput">
-                <input type="hidden" name="eid" id="addHours_eidInput" value="<%= eidToLoad > 0 ? eidToLoad : "" %>">
-                <input type="hidden" name="currentPayPeriodStart" value="<%= currentPayPeriodStartDate != null ? currentPayPeriodStartDate.format(isoDateFormatter) : "" %>">
-                <input type="hidden" name="currentPayPeriodEnd" value="<%= currentPayPeriodEndDate != null ? currentPayPeriodEndDate.format(isoDateFormatter) : "" %>">
-                <input type="hidden" name="userTimeZone" id="addHours_userTimeZone" value="<%= escapeHtml(userTimeZoneId) %>">
-                <div class="form-item">
-                    <label for="addHours_dateInput">Date:<span class="required-asterisk">*</span></label>
-                    <input type="date" id="addHours_dateInput" name="punchDate" required autofocus>
-                </div>
-                <div class="form-item" id="addHours_punchTypeContainer">
-                    <label for="addHours_typeSelect">Type:<span class="required-asterisk">*</span></label>
-                    <select id="addHours_typeSelect" name="punchType" required>
-                        <option value="Supervisor Override">Supervisor Override</option>
-                        <option value="Vacation">Vacation</option>
-                        <option value="Sick">Sick</option>
-                        <option value="Personal">Personal</option>
-                        <option value="Holiday">Holiday</option>
-                        <option value="Bereavement">Bereavement</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </div>
-                <div class="form-row" id="addHours_timeFieldsRowDiv" style="display:none;">
-                    <div class="form-item">
-                        <label for="addHours_timeInInput">Time In:<span class="required-asterisk">*</span></label>
-                        <input type="time" id="addHours_timeInInput" name="timeIn" step="1">
+                <input type="hidden" name="action" value="addHours">
+                <input type="hidden" name="eid" id="addHours_eidInput" value="<%= eidToLoad %>">
+                <input type="hidden" name="userTimeZone" value="<%= escapeHtml(userTimeZoneId) %>">
+                <fieldset class="form-section">
+                    <legend>Date <span class="required-asterisk">*</span></legend>
+                    <input type="date" name="punchDate" id="addHours_dateInput" required>
+                </fieldset>
+                <fieldset class="form-section" id="addHours_punchTypeContainer">
+                    <legend>Type <span class="required-asterisk">*</span></legend>
+                    <select name="punchType" id="addHours_typeSelect" required></select>
+                </fieldset>
+                <fieldset class="form-section" id="addHours_timeFieldsRowDiv" style="display:none;">
+                    <div class="form-row" style="margin: 0;">
+                        <div class="form-item"><label>Time In <span class="required-asterisk">*</span></label><input type="time" name="timeIn" id="addHours_timeInInput" step="1"></div>
+                        <div class="form-item"><label>Time Out</label><input type="time" name="timeOut" id="addHours_timeOutInput" step="1"></div>
                     </div>
-                    <div class="form-item">
-                        <label for="addHours_timeOutInput">Time Out:</label>
-                        <input type="time" id="addHours_timeOutInput" name="timeOut" step="1">
-                    </div>
-                </div>
-                <div class="form-item" id="addHours_totalHoursDiv" style="display:none;">
-                    <label for="addHours_totalHoursInput">Total Hours:<span class="required-asterisk">*</span></label>
-                    <input type="number" id="addHours_totalHoursInput" name="totalHoursManual" step="0.01" min="0.01" max="24" placeholder="e.g., 8.00">
-                </div>
+                </fieldset>
+                <fieldset class="form-section" id="addHours_totalHoursDiv" style="display:none;">
+                    <legend>Total Hours <span class="required-asterisk">*</span></legend>
+                    <input type="number" name="totalHoursManual" id="addHours_totalHoursInput" step="0.01" min="0.01" max="24">
+                </fieldset>
                 <div class="button-row">
-                    <button type="button" class="glossy-button text-red close-modal-btn">
-                        <i class="fas fa-times"></i> Cancel
-                    </button>
-                    <button type="submit" class="glossy-button text-green">
-                        <i class="fas fa-save"></i> <span id="addHoursSubmitBtnText">Save</span>
-                    </button>
+                    <button type="button" class="glossy-button text-red close-modal-btn">Cancel</button>
+                    <button type="submit" class="glossy-button text-green"><span>Save</span></button>
                 </div>
             </form>
         </div>
     </div>
 
-    <%-- Edit Punch Modal --%>
     <div id="editPunchModal" class="modal">
         <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2 id="editPunchModalTitleElem">Edit Punch Record</h2>
+            <span class="close close-modal-btn">&times;</span>
+            <h2>Edit Punch Record</h2>
             <form id="editPunchForm" action="AddEditAndDeletePunchesServlet" method="POST">
                 <input type="hidden" name="action" value="editPunch">
                 <input type="hidden" name="punchId" id="editPunch_idInput">
-                <input type="hidden" name="editEmployeeId" id="editPunch_eidInput" value="<%= eidToLoad > 0 ? eidToLoad : "" %>">
-                <input type="hidden" name="currentPayPeriodStart" value="<%= currentPayPeriodStartDate != null ? currentPayPeriodStartDate.format(isoDateFormatter) : "" %>">
-                <input type="hidden" name="currentPayPeriodEnd" value="<%= currentPayPeriodEndDate != null ? currentPayPeriodEndDate.format(isoDateFormatter) : "" %>">
-                <input type="hidden" name="userTimeZone" id="editPunch_userTimeZone" value="<%= escapeHtml(userTimeZoneId) %>">
-
-                <div class="form-item">
-                    <label for="editPunch_dateInput">Date:<span class="required-asterisk">*</span></label>
-                    <input type="date" id="editPunch_dateInput" name="editDate" required>
-                </div>
-                <div class="form-row" id="editPunch_timeFieldsRowDiv">
-                    <div class="form-item">
-                        <label for="editPunch_timeInInput">Time In:</label>
-                        <input type="time" id="editPunch_timeInInput" name="editInTime" step="1">
+                <input type="hidden" name="editEmployeeId" id="editPunch_eidInput" value="<%= eidToLoad %>">
+                <input type="hidden" name="userTimeZone" value="<%= escapeHtml(userTimeZoneId) %>">
+                <fieldset class="form-section">
+                    <legend>Date <span class="required-asterisk">*</span></legend>
+                    <input type="date" name="editDate" id="editPunch_dateInput" required>
+                </fieldset>
+                <fieldset class="form-section" id="editPunch_timeFieldsRowDiv">
+                    <div class="form-row" style="margin: 0;">
+                        <div class="form-item"><label>Time In</label><input type="time" name="editInTime" id="editPunch_timeInInput" step="1"></div>
+                        <div class="form-item"><label>Time Out</label><input type="time" name="editOutTime" id="editPunch_timeOutInput" step="1"></div>
                     </div>
-                    <div class="form-item">
-                        <label for="editPunch_timeOutInput">Time Out:</label>
-                        <input type="time" id="editPunch_timeOutInput" name="editOutTime" step="1">
-                    </div>
-                </div>
-                <div class="form-item" id="editPunch_totalHoursDiv" style="display:none;">
-                    <label for="editPunch_totalHoursInput">Total Hours (Accrued):<span class="required-asterisk">*</span></label>
-                    <input type="number" id="editPunch_totalHoursInput" name="totalHoursManual" step="0.01" min="0.01" max="24" placeholder="e.g., 8.00">
-                </div>
-                <div class="form-item" id="editPunch_punchTypeContainer">
-                    <label for="editPunch_typeSelect">Punch Type:</label>
-                    <select id="editPunch_typeSelect" name="editPunchType" required></select>
-                </div>
+                </fieldset>
+                <fieldset class="form-section" id="editPunch_totalHoursDiv" style="display:none;">
+                    <legend>Total Hours <span class="required-asterisk">*</span></legend>
+                    <input type="number" name="totalHoursManual" id="editPunch_totalHoursInput" step="0.01" min="0.01" max="24">
+                </fieldset>
+                <fieldset class="form-section" id="editPunch_punchTypeContainer">
+                    <legend>Punch Type</legend>
+                    <select name="editPunchType" id="editPunch_typeSelect" required></select>
+                </fieldset>
                 <div class="button-row">
-                    <button type="button" class="glossy-button text-red close-modal-btn">
-                        <i class="fas fa-times"></i> Cancel
-                    </button>
-                    <button type="submit" class="glossy-button text-blue">
-                        <i class="fas fa-save"></i> Save Changes
-                    </button>
+                    <button type="button" class="glossy-button text-red close-modal-btn">Cancel</button>
+                    <button type="submit" class="glossy-button text-blue">Save Changes</button>
                 </div>
             </form>
+        </div>
+    </div>
+    
+    <div id="confirmationModal" class="modal">
+        <div class="modal-content">
+            <h2 id="confirmationModalTitle">Confirm Action</h2>
+            <p id="confirmationModalMessage" style="padding: 20px 25px; text-align: center; line-height: 1.5; margin: 0;"></p>
+            <div class="button-row">
+                <button type="button" id="cancelDeleteBtn" class="glossy-button text-grey">Cancel</button>
+                <button type="button" id="confirmDeleteBtn" class="glossy-button text-red">Confirm</button>
+            </div>
         </div>
     </div>
 
     <%@ include file="/WEB-INF/includes/common-scripts.jspf" %>
+    <%@ include file="/WEB-INF/includes/notification-modals.jspf" %>
     <script>
         window.SELECTED_EID_ON_LOAD = <%= eidToLoad %>;
-        // The JavaScript variable name is kept for compatibility with punches.js,
-        // but it's now populated by the consistently named 'userTimeZoneId' from JSP scriptlet.
         window.EFFECTIVE_TIME_ZONE_ID = "<%= escapeForJavaScriptString(userTimeZoneId) %>";
-        console.log("[Punches.jsp] Effective TimeZoneId for JS: " + window.EFFECTIVE_TIME_ZONE_ID);
     </script>
     <script src="${pageContext.request.contextPath}/js/punches.js?v=<%= System.currentTimeMillis() %>"></script>
 </body>

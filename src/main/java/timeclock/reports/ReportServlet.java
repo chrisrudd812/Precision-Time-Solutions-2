@@ -146,7 +146,6 @@ public class ReportServlet extends HttpServlet {
                         try {
                             String startDateStr = Configuration.getProperty(tenantId, "PayPeriodStartDate");
                             String endDateStr = Configuration.getProperty(tenantId, "PayPeriodEndDate");
-                            // Use ShowPunches.isValid for consistency
                             if (ShowPunches.isValid(startDateStr) && ShowPunches.isValid(endDateStr)) {
                                 periodStartDate = LocalDate.parse(startDateStr.trim());
                                 periodEndDate = LocalDate.parse(endDateStr.trim());
@@ -172,7 +171,6 @@ public class ReportServlet extends HttpServlet {
                         }
 
                         if (periodStartDate != null && periodEndDate != null) {
-                            // *** Pass userTimeZoneId to showExceptionReport ***
                             reportHtml = ShowReports.showExceptionReport(tenantId, periodStartDate, periodEndDate, userTimeZoneId);
                             if ("NO_EXCEPTIONS".equals(reportHtml)) { message = "No exceptions found for the current pay period."; reportHtml = null; success = true;}
                             else if (reportHtml != null && reportHtml.contains("report-error-row")) { message = "Error generating exception report."; statusCode = HttpServletResponse.SC_INTERNAL_SERVER_ERROR; success = false; }
@@ -226,6 +224,19 @@ public class ReportServlet extends HttpServlet {
                         if (reportHtml != null && reportHtml.contains("report-error-row")) { message = "Error report for supervisor: " + filterValue; reportHtml = null; statusCode = HttpServletResponse.SC_INTERNAL_SERVER_ERROR; }
                         else if (reportHtml != null && reportHtml.contains("report-message-row")) { message = "No employees for supervisor: " + filterValue; reportHtml = null; success = true;}
                         else if (reportHtml != null) { success = true; message = "Report for supervisor '" + filterValue + "' loaded.";}
+                        break;
+                    // --- NEW CASES ---
+                    case "accrualBalance":
+                        reportHtml = ShowReports.showAccrualBalanceReport(tenantId);
+                        if (reportHtml != null && reportHtml.contains("report-error-row")) { message = "Error generating Accrual Balance report."; reportHtml = null; statusCode = HttpServletResponse.SC_INTERNAL_SERVER_ERROR; }
+                        else if (reportHtml != null && reportHtml.contains("report-message-row")) { message = "No employees found for accrual report."; reportHtml = null; success = true;}
+                        else if (reportHtml != null) { success = true; message = "Accrual Balance report loaded.";}
+                        break;
+                    case "systemAccess":
+                        reportHtml = ShowReports.showSystemAccessReport(tenantId);
+                        if (reportHtml != null && reportHtml.contains("report-error-row")) { message = "Error generating System Access report."; reportHtml = null; statusCode = HttpServletResponse.SC_INTERNAL_SERVER_ERROR; }
+                        else if (reportHtml != null && reportHtml.contains("report-message-row")) { message = "No administrators found."; reportHtml = null; success = true;}
+                        else if (reportHtml != null) { success = true; message = "System Access report loaded.";}
                         break;
                     default:
                         message = "Error: Unknown reportType specified: " + reportType;

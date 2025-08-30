@@ -2,10 +2,17 @@
 
 /* Inherits base styles from reports.css */
 
-/* [FIX] Added background gradient for the table container area on this page */
-.report-display-area {
-    background: linear-gradient(to bottom, #d0d9e2, #e7f0f7);
+/* Make the main container conform to the table height */
+.report-display-area:has(#employeesTable) {
+    min-height: 0;
+    flex-grow: 0;
 }
+
+
+#reportOutput_employees.report-table-container {
+    max-height: 28vh;
+}
+
 
 #button-container.main-action-buttons button.glossy-button {
     flex: 1 1 auto; 
@@ -29,7 +36,7 @@
 #employeesTable th:nth-child(9), #employeesTable td:nth-child(9) { min-width: 120px; text-align: center; }
 #employeesTable th:nth-child(10), #employeesTable td:nth-child(10) { min-width: 120px; text-align: center; }
 
-/* [FIX] Hide the last two columns (Wage Type and Wage) */
+/* Hide the last two columns (Wage Type and Wage) */
 #employeesTable th:nth-child(11), #employeesTable td:nth-child(11),
 #employeesTable th:nth-child(12), #employeesTable td:nth-child(12) {
     display: none;
@@ -38,33 +45,41 @@
 /* --- Employee Details Section --- */
 #employeeDetailsSection {
     width: 100%; margin: 30px 0 20px 0; padding: 15px;
-    border: 1px solid #ced4da; border-radius: 8px;
-    background: linear-gradient(to bottom, #e7f0f7, #d0d9e2); 
-    box-sizing: border-box; box-shadow: 0 2px 4px rgba(0,0,0,0.07);
+    border: 1px solid #e2e8f0; /* MODIFIED: Softer border */
+    border-radius: 8px;
+    background: linear-gradient(to bottom, #f8fafc, #f0fdfa); /* MODIFIED: New theme gradient */
+    box-sizing: border-box; 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.07);
 }
 #employeeDetailsSection h2 {
-    text-align: center; margin-top: 0; margin-bottom: 25px; color: #2c3e50;
-    border-bottom: 1px solid #b8c6d5; padding-bottom: 15px;
-    font-size: 1.5em; font-weight: 600; text-shadow: 0 1px 1px rgba(255,255,255,0.6);
+    text-align: center; margin-top: 0; margin-bottom: 25px; 
+    color: #1e293b; /* MODIFIED: Dark charcoal */
+    border-bottom: 1px solid #99f6e4; /* MODIFIED: Light Teal accent */
+    padding-bottom: 15px;
+    font-size: 1.5em; font-weight: 600; 
+    text-shadow: none;
 }
 .details-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-.detail-group { padding: 20px; box-sizing: border-box; border: 1px solid #cbd5e0; border-radius: 6px; background-color: #ffffff; display: flex; flex-direction: column; text-align: center; }
+.detail-group { padding: 20px; box-sizing: border-box; border: 1px solid #e2e8f0; border-radius: 6px; background-color: #ffffff; display: flex; flex-direction: column; text-align: center; }
 .details-grid > .detail-group:nth-child(1), .details-grid > .detail-group:nth-child(2) { align-self: stretch; }
 
 .detail-group#accrualInfoGroup { 
     grid-column: span 1; 
 }
 
-.detail-group h3 { margin-top: 0; margin-bottom: 18px; color: #005A9C; border-bottom: 1px solid #dee2e6; padding-bottom: 10px; font-size: 1.1em; width: 100%; font-weight: 600; text-align:center; }
+.detail-group h3 { margin-top: 0; margin-bottom: 18px; color: #0f766e; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; font-size: 1.1em; width: 100%; font-weight: 600; text-align:center; } /* MODIFIED: Dark Teal header */
 .detail-group p { margin: 0 auto 10px auto; font-size: 0.9em; line-height: 1.6; display: grid; grid-template-columns: auto 1fr; text-align: left; gap: 5px 8px; align-items: baseline; width: 95%; max-width: 320px; }
 .detail-group p:last-child { margin-bottom: 0; }
-.detail-group p label { font-weight: 600; color: #495057; text-align: right; padding-right: 5px; white-space: nowrap; }
-.detail-group p span { color: #343a40; word-wrap: break-word; word-break: break-all; text-align: left; }
+.detail-group p label { font-weight: 600; color: #475569; text-align: right; padding-right: 5px; white-space: nowrap; } /* MODIFIED: Medium Gray */
+.detail-group p span { color: #1e293b; word-wrap: break-word; word-break: break-all; text-align: left; } /* MODIFIED: Dark Charcoal */
 #btnResetPassword.glossy-button { min-width: 220px; }
 
-/* --- Modal Styling --- */
-.required-asterisk { color: #dc3545; margin-left: 2px; font-weight: bold; }
+#accrualInfoGroup #resetPasswordForm {
+    margin-top: auto;   /* Pushes the form to the bottom */
+    padding-top: 20px;  /* Adds some space above the button */
+}
 
+/* --- Modal Styling --- */
 .modal-content .form-row .form-item.third-width {
     flex: 1 1 0;
     min-width: calc(33.333% - 11px);
@@ -81,8 +96,36 @@
     font-size: 0.9em;
 }
 
-/* FIX: Added specific style to push the Reset PIN button to the bottom of its container. */
-#accrualInfoGroup #resetPasswordForm {
-    margin-top: auto;   /* Pushes the form to the bottom */
-    padding-top: 20px;  /* Adds some space above the button */
+.modal-content input[type="date"] {
+    font-family: inherit;
+    font-size: 0.95em;
+    color: #343a40;
+}
+
+/* Form validation styles */
+.modal-content input.is-valid,
+.modal-content select.is-valid {
+    border: 1px solid #22c55e !important; /* MODIFIED: Brighter Green */
+}
+.modal-content input.is-invalid,
+.modal-content select.is-invalid {
+    border: 2px solid #ef4444 !important; /* MODIFIED: Brighter Red */
+}
+
+/* Focus "glow" styles that don't cover the validation borders */
+.modal-content input:focus,
+.modal-content select:focus {
+    outline: none;
+    border-color: #3b82f6; /* MODIFIED: Brighter Blue */
+    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+}
+.modal-content input.is-invalid:focus,
+.modal-content select.is-invalid:focus {
+    border-color: #ef4444; /* MODIFIED: Brighter Red */
+    box-shadow: 0 0 0 0.2rem rgba(239, 68, 68, 0.25);
+}
+.modal-content input.is-valid:focus,
+.modal-content select.is-valid:focus {
+    border-color: #22c55e; /* MODIFIED: Brighter Green */
+    box-shadow: 0 0 0 0.2rem rgba(34, 197, 94, 0.25);
 }

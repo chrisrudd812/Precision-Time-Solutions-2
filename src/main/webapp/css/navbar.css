@@ -24,14 +24,34 @@ body {
     align-items: center;
     padding: 0 15px;
     box-sizing: border-box;
+    flex-wrap: wrap; /* [FIX #1] Allow items inside the navbar (brand, links, user) to wrap to the next line if needed. */
 }
 
 .main-navbar .navbar-brand { flex-shrink: 0; margin-right: 20px; }
 .main-navbar .navbar-brand a { color: #ffffff; text-decoration: none; font-size: 1.3em; font-weight: 600; display: flex; align-items: center; height: 100%; padding: 0 5px; }
 .main-navbar .navbar-brand a:hover { opacity: 0.85; }
 .main-navbar .navbar-brand a i.fas { margin-right: 8px; font-size: 1.1em; }
-.main-navbar .navbar-links-container { flex-grow: 1; display: flex; justify-content: center; height: 100%; }
-.main-navbar ul.navbar-links { list-style-type: none; margin: 0; padding: 0; display: flex; align-items: center; height: 100%; }
+
+/* The container for all the links */
+.main-navbar .navbar-links-container {
+    flex-grow: 1;
+    display: flex;
+    justify-content: space-between; /* [FIX #2] Pushes user/account links to the right and main links toward the center/left. */
+    align-items: center;
+    height: 100%;
+    flex-wrap: wrap; /* [FIX #3] Allow the link groups themselves to wrap. */
+}
+
+.main-navbar ul.navbar-links {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    height: 100%;
+    flex-wrap: inherit; /* Inherit the wrap behavior from the parent container */
+}
+
 .main-navbar ul.navbar-links > li { position: relative; display: flex; align-items: stretch; }
 
 .main-navbar ul.navbar-links > li > a,

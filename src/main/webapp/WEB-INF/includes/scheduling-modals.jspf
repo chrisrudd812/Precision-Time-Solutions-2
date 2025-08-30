@@ -8,13 +8,16 @@
         <h2>Add New Schedule</h2>
         <form id="addScheduleForm" action="<%=request.getContextPath()%>/AddEditAndDeleteSchedulesServlet" method="post">
             <input type="hidden" name="action" value="add">
-            <div class="form-item">
-                <label for="addScheduleName">Schedule Name: <span class="required-asterisk">*</span></label>
-                <input type="text" id="addScheduleName" name="scheduleName" required>
-            </div>
             
-            <%-- FIX: Grouped time inputs into fieldsets for better visual separation --%>
-            <fieldset class="time-group">
+            <%-- MODIFIED: Wrapped Schedule Name in a fieldset for consistent styling --%>
+            <fieldset class="form-section">
+                <div class="form-item">
+                    <label for="addScheduleName">Schedule Name: <span class="required-asterisk">*</span></label>
+                    <input type="text" id="addScheduleName" name="scheduleName" required>
+                </div>
+            </fieldset>
+            
+            <fieldset class="time-group form-section">
                 <legend>Shift Times</legend>
                 <div class="form-row">
                     <div class="form-item"><label for="addShiftStart">Start Shift:</label><input type="time" id="addShiftStart" name="shiftStart"></div>
@@ -22,16 +25,16 @@
                 </div>
             </fieldset>
             
-            <fieldset class="time-group">
-                <legend>Lunch Times</legend>
+            <fieldset class="time-group form-section">
+                <legend>Lunch Times (optional)</legend>
                 <div class="form-row">
                     <div class="form-item"><label for="addLunchStart">Start Lunch:</label><input type="time" id="addLunchStart" name="lunchStart"></div>
                     <div class="form-item"><label for="addLunchEnd">End Lunch:</label><input type="time" id="addLunchEnd" name="lunchEnd"></div>
                 </div>
             </fieldset>
 
-            <div class="form-item">
-                <label>Days Worked:</label>
+            <fieldset class="form-section">
+                <legend>Days Worked</legend>
                 <div class="checkbox-group">
                     <span class="styled-checkbox"><input type="checkbox" id="addDaySun" name="days" value="Sun"><label for="addDaySun">Sun</label></span>
                     <span class="styled-checkbox"><input type="checkbox" id="addDayMon" name="days" value="Mon"><label for="addDayMon">Mon</label></span>
@@ -41,20 +44,25 @@
                     <span class="styled-checkbox"><input type="checkbox" id="addDayFri" name="days" value="Fri"><label for="addDayFri">Fri</label></span>
                     <span class="styled-checkbox"><input type="checkbox" id="addDaySat" name="days" value="Sat"><label for="addDaySat">Sat</label></span>
                 </div>
-            </div>
-            <div class="form-item">
-                <span class="styled-checkbox"><input type="checkbox" id="addAutoLunch" name="autoLunch" value="true"><label for="addAutoLunch">Enable Auto Lunch Deduction</label></span>
-            </div>
-            <div class="form-row">
+            </fieldset>
+
+            <fieldset class="form-section auto-lunch-group">
+                <legend>Auto-Lunch Settings</legend>
                 <div class="form-item">
-                    <label for="addHoursRequired">Hours Required:</label>
-                    <input type="number" id="addHoursRequired" name="hoursRequired" min="0" max="24" step="0.01" disabled>
+                    <span class="styled-checkbox"><input type="checkbox" id="addAutoLunch" name="autoLunch" value="true"><label for="addAutoLunch">Enable Auto Lunch Deduction</label></span>
                 </div>
-                <div class="form-item">
-                    <label for="addLunchLength">Lunch Length (min):</label>
-                    <input type="number" id="addLunchLength" name="lunchLength" min="0" max="120" step="1" disabled>
+                <div class="form-row">
+                    <div class="form-item">
+                        <label for="addHoursRequired">Hours Required:</label>
+                        <input type="number" id="addHoursRequired" name="hoursRequired" min="0" max="24" step="0.01" disabled>
+                    </div>
+                    <div class="form-item">
+                        <label for="addLunchLength">Lunch Length (min):</label>
+                        <input type="number" id="addLunchLength" name="lunchLength" min="0" max="120" step="1" disabled>
+                    </div>
                 </div>
-            </div>
+            </fieldset>
+
              <div class="button-row">
                 <button type="submit" class="glossy-button text-green">Create Schedule</button>
                 <button type="button" class="cancel-btn glossy-button text-red">Cancel</button>
@@ -72,13 +80,16 @@
         <form id="editScheduleForm" action="<%=request.getContextPath()%>/AddEditAndDeleteSchedulesServlet" method="post">
             <input type="hidden" name="action" value="edit">
             <input type="hidden" id="hiddenEditOriginalName" name="originalScheduleName">
-            <div class="form-item">
-                <label for="editScheduleName">Schedule Name:</label>
-                <input type="text" id="editScheduleName" name="scheduleName" required readonly style="background-color: #e9ecef; cursor: not-allowed;" title="Schedule name cannot be changed.">
-            </div>
+
+            <%-- MODIFIED: Wrapped Schedule Name in a fieldset for consistent styling --%>
+            <fieldset class="form-section">
+                <div class="form-item">
+                    <label for="editScheduleName">Schedule Name:</label>
+                    <input type="text" id="editScheduleName" name="scheduleName" required readonly style="background-color: #e9ecef; cursor: not-allowed;" title="Schedule name cannot be changed.">
+                </div>
+            </fieldset>
             
-            <%-- FIX: Grouped time inputs into fieldsets for better visual separation --%>
-            <fieldset class="time-group">
+            <fieldset class="time-group form-section">
                 <legend>Shift Times</legend>
                 <div class="form-row">
                     <div class="form-item"><label for="editShiftStart">Start Shift:</label><input type="time" id="editShiftStart" name="shiftStart"></div>
@@ -86,16 +97,16 @@
                 </div>
             </fieldset>
             
-            <fieldset class="time-group">
-                <legend>Lunch Times</legend>
+            <fieldset class="time-group form-section">
+                <legend>Lunch Times (optional)</legend>
                 <div class="form-row">
                     <div class="form-item"><label for="editLunchStart">Start Lunch:</label><input type="time" id="editLunchStart" name="lunchStart"></div>
                     <div class="form-item"><label for="editLunchEnd">End Lunch:</label><input type="time" id="editLunchEnd" name="lunchEnd"></div>
                 </div>
             </fieldset>
 
-            <div class="form-item">
-                <label>Days Worked:</label>
+            <fieldset class="form-section">
+                <legend>Days Worked</legend>
                 <div class="checkbox-group">
                     <span class="styled-checkbox"><input type="checkbox" id="editDaySun" name="days" value="Sun"><label for="editDaySun">Sun</label></span>
                     <span class="styled-checkbox"><input type="checkbox" id="editDayMon" name="days" value="Mon"><label for="editDayMon">Mon</label></span>
@@ -105,20 +116,25 @@
                     <span class="styled-checkbox"><input type="checkbox" id="editDayFri" name="days" value="Fri"><label for="editDayFri">Fri</label></span>
                     <span class="styled-checkbox"><input type="checkbox" id="editDaySat" name="days" value="Sat"><label for="editDaySat">Sat</label></span>
                 </div>
-            </div>
-            <div class="form-item">
-                <span class="styled-checkbox"><input type="checkbox" id="editAutoLunch" name="autoLunch" value="true"><label for="editAutoLunch">Enable Auto Lunch Deduction</label></span>
-            </div>
-             <div class="form-row">
-                <div class="form-item">
-                    <label for="editHoursRequired">Hours Required:</label>
-                    <input type="number" id="editHoursRequired" name="hoursRequired" min="0" max="24" step="0.01" disabled>
-                </div>
+            </fieldset>
+
+            <fieldset class="form-section auto-lunch-group">
+                <legend>Auto-Lunch Settings</legend>
                  <div class="form-item">
-                    <label for="editLunchLength">Lunch Length (min):</label>
-                    <input type="number" id="editLunchLength" name="lunchLength" min="0" max="120" step="1" disabled>
+                    <span class="styled-checkbox"><input type="checkbox" id="editAutoLunch" name="autoLunch" value="true"><label for="editAutoLunch">Enable Auto Lunch Deduction</label></span>
                 </div>
-            </div>
+                 <div class="form-row">
+                    <div class="form-item">
+                        <label for="editHoursRequired">Hours Required:</label>
+                        <input type="number" id="editHoursRequired" name="hoursRequired" min="0" max="24" step="0.01" disabled>
+                    </div>
+                     <div class="form-item">
+                        <label for="editLunchLength">Lunch Length (min):</label>
+                        <input type="number" id="editLunchLength" name="lunchLength" min="0" max="120" step="1" disabled>
+                    </div>
+                </div>
+            </fieldset>
+
             <div class="button-row"><button type="submit" class="glossy-button text-green">Save Changes</button><button type="button" id="cancelEditSchedule" class="cancel-btn glossy-button text-red">Cancel</button></div>
         </form>
     </div>

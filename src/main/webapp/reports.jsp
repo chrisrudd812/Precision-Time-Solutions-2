@@ -1,10 +1,10 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" session="true" %>
 <%@ page import="jakarta.servlet.http.HttpSession" %>
 <%@ page import="timeclock.Configuration" %>
-<%@ page import="timeclock.punches.ShowPunches" %> <%-- Added for isValid --%>
-<%@ page import="java.time.ZoneId" %> <%-- Added for Timezone --%>
+<%@ page import="timeclock.punches.ShowPunches" %>
+<%@ page import="java.time.ZoneId" %>
 <%@ page import="java.util.logging.Logger" %>
-<%@ page import="java.util.logging.Level" %> <%-- Added for Logging Level --%>
+<%@ page import="java.util.logging.Level" %>
 <%@ page import="java.net.URLEncoder" %>
 <%@ page import="java.nio.charset.StandardCharsets" %>
 
@@ -27,12 +27,11 @@
     HttpSession currentSession = request.getSession(false);
     Integer tenantId = null;
     Integer sessionEidForLog = null;
-    String pageError = null; // For capturing errors
+    String pageError = null;
 
-    // --- Standardized Timezone Logic (Aligned with timeclock.jsp) ---
     final String PACIFIC_TIME_FALLBACK = "America/Los_Angeles";
     final String DEFAULT_TENANT_FALLBACK_TIMEZONE = "America/Denver";
-    String userTimeZoneId = null; // Start with null
+    String userTimeZoneId = null;
 
     if (currentSession != null) {
         Object tenantIdObj = currentSession.getAttribute("TenantID");
@@ -40,42 +39,33 @@
         Object eidObj = currentSession.getAttribute("EID");
         if (eidObj instanceof Integer) { sessionEidForLog = (Integer) eidObj; }
 
-        // 1. Attempt to get user-specific timezone from session
         Object userTimeZoneIdObj = currentSession.getAttribute("userTimeZoneId");
         if (userTimeZoneIdObj instanceof String && ShowPunches.isValid((String)userTimeZoneIdObj)) {
             userTimeZoneId = (String) userTimeZoneIdObj;
-            reportsJspLogger.info("[REPORTS_JSP_TZ] Using userTimeZoneId from session: " + userTimeZoneId + " for EID: " + sessionEidForLog);
         }
     }
 
-    // Check TenantID *before* proceeding
     if (tenantId == null || tenantId <= 0) {
         if(currentSession != null) currentSession.invalidate();
         response.sendRedirect(request.getContextPath() + "/login.jsp?error=" + URLEncoder.encode("Session expired or invalid. Please log in.", StandardCharsets.UTF_8.name()));
         return;
     }
 
-    // 2. If not in session (or invalid), try Tenant's DefaultTimeZone, then app's tenant fallback
     if (!ShowPunches.isValid(userTimeZoneId)) {
-        String tenantDefaultTz = Configuration.getProperty(tenantId, "DefaultTimeZone"); // Get without internal fallback
+        String tenantDefaultTz = Configuration.getProperty(tenantId, "DefaultTimeZone");
         if (ShowPunches.isValid(tenantDefaultTz)) {
             userTimeZoneId = tenantDefaultTz;
-            reportsJspLogger.info("[REPORTS_JSP_TZ] Using Tenant DefaultTimeZone from SETTINGS: " + userTimeZoneId + " for Tenant: " + tenantId);
         } else {
             userTimeZoneId = DEFAULT_TENANT_FALLBACK_TIMEZONE;
-            reportsJspLogger.info("[REPORTS_JSP_TZ] Tenant DefaultTimeZone not set/invalid. Using application default: " + userTimeZoneId + " for Tenant: " + tenantId);
         }
     }
 
-    // 3. If still not found or invalid, use the ultimate Pacific Time fallback
     if (!ShowPunches.isValid(userTimeZoneId)) {
         userTimeZoneId = PACIFIC_TIME_FALLBACK;
-        reportsJspLogger.warning("[REPORTS_JSP_TZ] User/Tenant timezone not determined. Defaulting to system fallback (Pacific Time): " + userTimeZoneId + " for Tenant: " + tenantId);
     }
 
-    // 4. Validate the determined ZoneId
     try {
-        ZoneId.of(userTimeZoneId); // Validate the final ZoneId
+        ZoneId.of(userTimeZoneId);
     } catch (Exception e) {
         reportsJspLogger.log(Level.SEVERE, "[REPORTS_JSP_TZ] CRITICAL: Invalid userTimeZoneId resolved: '" + userTimeZoneId + "'. Falling back to UTC. Tenant: " + tenantId, e);
         userTimeZoneId = "UTC";
@@ -83,7 +73,6 @@
         pageError = (pageError == null) ? tzErrorMsg : pageError + " " + tzErrorMsg;
     }
     reportsJspLogger.info("[REPORTS_JSP_TZ] Reports.jsp final effective userTimeZoneId: " + userTimeZoneId + " for Tenant: " + tenantId);
-    // --- End Standardized Timezone Logic ---
 %>
 <!DOCTYPE html>
 <html lang="en">
@@ -101,7 +90,6 @@
     <div class="parent-container reports-container">
         <h1>Reports</h1>
 
-        <%-- Display any page-level errors (like timezone issues) --%>
         <% if (pageError != null) { %>
             <div class="page-message error-message" id="pageErrorNotification"><%= escapeJspHtml(pageError) %></div>
         <% } %>
@@ -118,7 +106,8 @@
                 <button id="fixMissingPunchesBtnReports" class="glossy-button text-orange" style="display: none;" disabled>
                     <i class="fas fa-edit"></i> Fix Missing Punches
                 </button>
-                <button id="printReportBtn" class="glossy-button">
+                <%-- MODIFICATION: Added text-blue class --%>
+                <button id="printReportBtn" class="glossy-button text-blue">
                     <i class="fas fa-print"></i> Print Report
                 </button>
             </div>
@@ -149,7 +138,6 @@
                 <input type="hidden" id="reports_editPunchIdField" name="editPunchId">
                 <input type="hidden" name="action" value="editPunch">
                 <input type="hidden" id="reports_editEmployeeIdField" name="editEmployeeId">
-                <%-- Use the correctly determined userTimeZoneId --%>
                 <input type="hidden" id="reports_editUserTimeZone" name="userTimeZone" value="<%= escapeJspHtml(userTimeZoneId) %>">
                 <input type="hidden" name="editPunchType" value="Supervisor Override">
 
@@ -190,7 +178,6 @@
     </div>
 
     <script type="text/javascript">
-        // Pass the determined timezone to JS for AJAX calls etc.
         const effectiveUserTimeZoneId = "<%= escapeJspHtml(userTimeZoneId) %>";
         const initialReport = "<%= initialReportType != null ? escapeJspHtml(initialReportType) : "" %>";
     </script>

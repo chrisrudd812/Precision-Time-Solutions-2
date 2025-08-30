@@ -1,4 +1,4 @@
-// js/timeclock.js - v22 (Final Robust Modal Fix)
+// js/timeclock.js
 
 async function getDeviceFingerprint() {
     if (window.FingerprintJS) {
@@ -46,6 +46,22 @@ function getClientGeolocation() {
     });
 }
 
+/**
+ * Gets a simple device type.
+ * @returns {string} "Mobile Device" or "Desktop Device"
+ */
+function getDeviceType() {
+    const ua = navigator.userAgent;
+    if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) {
+        return "Tablet Device";
+    }
+    if (/Mobile|iP(hone|od)|Android|BlackBerry|IEMobile|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/.test(ua)) {
+        return "Mobile Device";
+    }
+    return "Desktop Device";
+}
+
+
 function navigateToEmployee(selectedEid, isCurrentlyReportMode) {
     let baseUrl = 'timeclock.jsp';
     const params = new URLSearchParams();
@@ -85,7 +101,6 @@ function showTimeclockNotificationModal(message, isError) {
         modal.classList.remove('modal-visible');
     };
 
-    // 🔑 Attach listeners once (no cloning)
     okBtn.onclick = hide;
     closeBtn.onclick = hide;
 
@@ -116,10 +131,10 @@ function printTimecard() {
 
 let inactivityTimer;
 let quickLogoutTimer;
-function performLogoutRedirectWithMessage(messageKey, isAutoLogoutFromPunch = false) {
+function performLogoutRedirectWithMessage(messageKey) {
     const contextPath = (typeof app_contextPath !== 'undefined') ? app_contextPath : '';
     let logoutReasonParam = "Auto-logout initiated.";
-    if (messageKey === 'punchSuccess') logoutReasonParam = 'Punch successful. Auto-logout initiated.';
+    if (messageKey === 'punchSuccess') logoutReasonParam = 'Punch successful. Logging out...';
     else if (messageKey === 'sessionTimeout') logoutReasonParam = 'Session timed out due to inactivity.';
     window.location.href = contextPath + '/LogoutServlet?autoLogout=true&reason=' + encodeURIComponent(logoutReasonParam);
 }
@@ -141,6 +156,10 @@ function setupInactivityDetection() {
     }
 }
 
+/**
+ * [FIX] This entire function has been rewritten to be smarter about
+ * when it asks for the user's location.
+ */
 async function handlePunchSubmit(event) {
     event.preventDefault();
     const form = event.target;
@@ -150,32 +169,63 @@ async function handlePunchSubmit(event) {
         submitButton.disabled = true;
         submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
     }
-    
-    try {
-        const fingerprint = await getDeviceFingerprint();
-        document.getElementById(form.id === "punchInForm" ? 'deviceFingerprintHash_IN' : 'deviceFingerprintHash_OUT').value = fingerprint;
-    } catch (fpError) {
-        console.error("FP Err:", fpError);
-    }
-    
-    try {
-        const locationData = await getClientGeolocation();
-        if (locationData) {
-            document.getElementById(form.id === "punchInForm" ? 'clientLatitude_IN' : 'clientLatitude_OUT').value = locationData.latitude;
-            document.getElementById(form.id === "punchInForm" ? 'clientLongitude_IN' : 'clientLongitude_OUT').value = locationData.longitude;
-            document.getElementById(form.id === "punchInForm" ? 'clientLocationAccuracy_IN' : 'clientLocationAccuracy_OUT').value = locationData.accuracy;
+
+    const restoreButton = () => {
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.innerHTML = form.id === "punchInForm" ? 'PUNCH IN' : 'PUNCH OUT';
         }
-    } catch (locError) {
-        console.error("Geo Err:", locError);
+    };
+
+    // This is the core function to gather all data and submit the form
+    const executePunch = async (latitude, longitude) => {
+        try {
+            // Get fingerprint
+            const fingerprint = await getDeviceFingerprint();
+            document.getElementById(form.id === "punchInForm" ? 'deviceFingerprintHash_IN' : 'deviceFingerprintHash_OUT').value = fingerprint;
+
+            // Set location data (which may be empty)
+            document.getElementById(form.id === "punchInForm" ? 'latitude_IN' : 'latitude_OUT').value = latitude;
+            document.getElementById(form.id === "punchInForm" ? 'longitude_IN' : 'longitude_OUT').value = longitude;
+
+            // Set timezone and device type
+            const tzInput = document.getElementById(form.id === "punchInForm" ? 'browserTimeZoneId_IN' : 'browserTimeZoneId_OUT');
+            if (tzInput) tzInput.value = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            
+            const deviceTypeInput = document.getElementById(form.id === "punchInForm" ? 'deviceType_IN' : 'deviceType_OUT');
+            if (deviceTypeInput) deviceTypeInput.value = getDeviceType();
+
+            // All data is gathered, submit the form to the servlet
+            form.submit();
+
+        } catch (error) {
+            console.error("Data gathering error:", error);
+            showTimeclockNotificationModal("Could not gather all required data before punching: " + error.message, true);
+            restoreButton();
+        }
+    };
+
+    // Use the variable from timeclock.jsp to decide the logic path
+    if (typeof IS_LOCATION_RESTRICTION_ENABLED !== 'undefined' && IS_LOCATION_RESTRICTION_ENABLED) {
+        // --- BEHAVIOR IF RESTRICTION IS ON ---
+        // Location is required, so we must try to get it.
+        try {
+            const locationData = await getClientGeolocation();
+            // If we get here, location was successful. Proceed with the punch.
+            executePunch(locationData.latitude, locationData.longitude);
+        } catch (locError) {
+            // If it fails, show an error and STOP.
+            console.error("Geo Err:", locError);
+            showTimeclockNotificationModal(locError.message, true);
+            restoreButton();
+        }
+    } else {
+        // --- BEHAVIOR IF RESTRICTION IS OFF ---
+        // Skip the location check entirely and submit the punch immediately with empty coordinates.
+        executePunch("", "");
     }
-    
-    try {
-        const tzInput = document.getElementById(form.id === "punchInForm" ? 'browserTimeZoneId_IN' : 'browserTimeZoneId_OUT');
-        if (tzInput) tzInput.value = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    } catch (e) { console.warn("Could not get browser timezone.", e); }
-    
-    form.submit();
 }
+
 
 function applyRowBandingByDay() {
     const tableBody = document.querySelector('#punches tbody');
@@ -221,7 +271,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (window.history.replaceState) { window.history.replaceState(null, '', currentUrlForRedirect); }
         if (punchStatus === 'success' && typeof currentUserPermissions_tc !== 'undefined' && currentUserPermissions_tc === 'User') {
             clearTimeout(inactivityTimer);
-            quickLogoutTimer = setTimeout(() => { performLogoutRedirectWithMessage('punchSuccess', true); }, 1500);
+            quickLogoutTimer = setTimeout(() => { performLogoutRedirectWithMessage('punchSuccess'); }, 12000);
         }
     } else if (errorParam) {
         showTimeclockNotificationModal(decodeURIComponent(errorParam), true);

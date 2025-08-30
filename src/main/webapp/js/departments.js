@@ -1,53 +1,9 @@
 // js/departments.js
 
-/**
- * FIX: Copied utility functions from commonUtils.js to resolve script loading order issues.
- * This ensures these functions are available when this script runs, without modifying shared files.
- */
-function decodeHtmlEntities(encodedString) {
-    if (encodedString === null || typeof encodedString === 'undefined' || String(encodedString).toLowerCase() === 'null') { return ''; }
-    try {
-        const textarea = document.createElement('textarea');
-        textarea.innerHTML = String(encodedString); 
-        return textarea.value;
-    } catch (e) {
-        return String(encodedString); 
-    }
-}
-
-function showModal(modalElement) {
-    if (modalElement && typeof modalElement.classList !== 'undefined') {
-        modalElement.style.display = 'flex';
-        modalElement.classList.add('modal-visible');
-    }
-}
-
-function hideModal(modalElement) {
-    if (modalElement && typeof modalElement.classList !== 'undefined') {
-        modalElement.style.display = 'none';
-        modalElement.classList.remove('modal-visible');
-    }
-}
-
-function showPageNotification(message, isError = false, modalInstance = null, titleText = "Notification") { 
-    const modalToUse = modalInstance || document.getElementById("notificationModalGeneral");
-    const msgElem = modalToUse ? modalToUse.querySelector('#notificationModalGeneralMessage') : null;
-    const modalTitleElem = modalToUse ? modalToUse.querySelector('#notificationModalGeneralTitle') : null;
-
-    if (!modalToUse || !msgElem) {
-        alert((isError ? "Error: " : "Notification: ") + message);
-        return;
-    }
-    if(modalTitleElem) modalTitleElem.textContent = titleText;
-    msgElem.innerHTML = message;
-    showModal(modalToUse); 
-}
-
-
 document.addEventListener('DOMContentLoaded', function() {
     
     // --- Helper Functions & Global Access ---
-    // FIX: Pointing these constants to the local functions defined above.
+    // These now correctly reference the functions from commonUtils.js
     const _showModal = showModal;
     const _hideModal = hideModal;
     const _decode = decodeHtmlEntities;
@@ -216,7 +172,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function openDeleteModal() {
         if (!selectedRow) return;
         const deptName = selectedRow.dataset.name;
-        deleteModal.querySelector('#deleteReassignModalMessage').innerHTML = `Delete department: <strong>${_decode(deptName)}</strong>. Reassign employees to:`;
+        deleteModal.querySelector('#deleteReassignModalMessage').innerHTML = `Delete department: <strong>${_decode(deptName)}</strong>.`;
         const select = deleteModal.querySelector('#targetReassignDeptSelect');
         select.innerHTML = '';
         window.allAvailableDepartmentsForReassign.forEach(d => {
@@ -278,5 +234,13 @@ document.addEventListener('DOMContentLoaded', function() {
     if (window.inWizardMode_Page) {
         const stage = window.itemJustAdded_Page ? 'departments_after_add' : 'departments_initial';
         updateWizardView(stage);
+    }
+
+    // MODIFIED: This logic now checks if the wizard is active before showing the notification
+    const successNotificationDiv = document.querySelector('.page-message.success-message');
+    if (successNotificationDiv && successNotificationDiv.textContent.trim() && !window.inWizardMode_Page) {
+        const message = successNotificationDiv.innerHTML;
+        successNotificationDiv.style.display = 'none'; // Hide the original div
+        showPageNotification(message, false, notificationModal, "Success");
     }
 });

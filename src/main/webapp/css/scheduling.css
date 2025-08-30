@@ -1,298 +1,85 @@
-@charset "UTF-8";
+/* Styles for scheduling.jsp */
 
-/* === General Styles === */
-body { font-family: Arial, sans-serif; margin: 0; padding: 0; min-height: 100vh; background-color: #f4f4f4; }
-.parent-container { background-color: white; padding: 30px 40px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); width: 90%; max-width: 900px; margin: 3% auto 5% auto; box-sizing: border-box; }
-h1 { text-align: center; color: #006400; margin-bottom: 30px; font-size: 1.8em; display: flex; align-items: center; justify-content: center; padding-bottom: 10px; border-bottom: 1px solid #eee;}
-h1 .fas { color: #006400; margin-right: 10px;}
+/* Sizing overrides for the main display area and table container */
+.report-display-area:has(#reportOutput_schedules) {
+    min-height: 0;
+    flex-grow: 0;
+}
 
-/* === Settings Form Styles === */
-#settingsForm { margin-top: 20px; }
-.setting-item { margin-bottom: 25px; padding-bottom: 25px; border-bottom: 1px solid #eee; }
-.setting-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 10px; }
-h4.section-heading { font-size: 1.3em; font-weight: 600; color: #006400; margin-top: 10px; margin-bottom: 20px; padding-bottom: 5px; display: flex; align-items: center; }
-h4.section-heading .fas, h4.section-heading .far { margin-right: 10px; color: #006400; font-size: 1em; }
+#reportOutput_schedules .report-table-container {
+    max-height: none;
+}
 
-.form-row {
+/* Original styles for checkbox groups (unchanged) */
+.checkbox-group {
     display: flex;
     flex-wrap: wrap;
-    gap: 15px;
+    gap: 10px 20px;
+    padding: 8px 0;
+    justify-content: flex-start;
+}
+.styled-checkbox { display: inline-flex; align-items: center; cursor: pointer; position: relative; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
+.styled-checkbox input[type="checkbox"] { opacity: 0; width: 0; height: 0; position: absolute; }
+.styled-checkbox label { padding-left: 28px; font-weight: normal; margin-bottom: 0; cursor: pointer; }
+.styled-checkbox label::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; border: 2px solid #adb5bd; border-radius: 3px; background-color: #fff; transition: all 0.2s ease; }
+.styled-checkbox label::after { content: '\f00c'; font-family: "Font Awesome 6 Free"; font-weight: 900; position: absolute; left: 3px; top: 50%; transform: translateY(-50%) scale(0); font-size: 14px; color: white; transition: transform 0.2s ease; }
+.styled-checkbox input[type="checkbox"]:checked + label::before { background-color: #006400; border-color: #004d00; }
+.styled-checkbox input[type="checkbox"]:checked + label::after { transform: translateY(-50%) scale(1); }
+
+
+/* --- REVISED: Modal Styling Enhancements --- */
+
+/* 1. Set consistent styling for all form sections (fieldsets) */
+.modal-content form .form-section {
     margin-bottom: 15px;
-}
-
-.form-row .form-item {
-    flex: 1 1 calc(50% - 8px); /* Two items per row with gap */
-    min-width: 200px;
-}
-
-/* FIX: Added styles for fieldset groups in modals */
-.time-group {
     border: 1px solid #dee2e6;
     border-radius: 6px;
-    padding: 10px 15px 15px 15px;
-    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f0f4f8; 
 }
-.time-group legend {
+
+/* 2. Style the legends for all our fieldsets */
+.modal-content form .form-section legend {
     font-weight: 600;
     color: #495057;
     padding: 0 8px;
     font-size: 0.9em;
+    background-color: #f0f4f8; 
 }
 
-.setting-block {
-    display: flex;          
-    align-items: center;    
-    gap: 15px;              
-    padding: 6px 0; 
-    box-sizing: border-box;
-    width: 100%;            
+/* 3. Make the time sections shorter */
+.modal-content .time-group {
+    padding-top: 10px;
+    padding-bottom: 0; 
+}
+.modal-content .time-group .form-row {
+    margin-bottom: 0;
+}
+.modal-content .time-group .form-item {
+    min-width: calc(50% - 10px);
 }
 
-.setting-block .setting-label-fixed { 
-    flex-basis: 230px;  
-    flex-shrink: 0;    
-    font-weight: bold;
-    text-align: left;   
-    white-space: nowrap; 
-    margin-bottom: 0;   
-    color: #333;
-    font-size: 0.95em;
+/* 4. Adjust padding inside other sections */
+.modal-content .form-section .checkbox-group {
+    padding: 0;
+    margin-top: -5px;
+}
+.modal-content .auto-lunch-group {
+    padding-bottom: 5px;
+}
+.modal-content .auto-lunch-group .form-item {
+     margin-bottom: 12px;
 }
 
-.setting-block .setting-controls-wrapper { 
-    display: flex;        
-    align-items: center; 
-    flex-grow: 1;         
-    gap: 10px;            
-    justify-content: flex-start; 
-    flex-wrap: nowrap;    
-}
-
-#settingsForm select,
-#settingsForm input[type="number"],
-#settingsForm input[type="date"] {
-    padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px;
-    box-sizing: border-box; font-size: 0.95em; font-family: inherit; height: 38px; 
-    margin-top: 0; 
-    width: auto; 
-    min-width: 180px; /* Default min-width for these controls */
-}
-#payPeriodType, #firstDayOfWeek, #payPeriodStartDate {
-    min-width: 180px; /* Consistent width for pay period inputs/selects */
-}
-.calculated-date-display { 
-    font-weight: bold;
-    padding: 8px 10px;
-    height: 38px; 
-    line-height: 20px; /* Approx center for 38px height */
-    display: inline-block;
-    min-width: 180px; /* Match other inputs in that row */
-    background-color: #e9ecef; 
-    color: #495057;
+/* Style time inputs to match all other inputs */
+.modal-content input[type="time"] {
+    width: 100%;
+    padding: 9px 12px;
     border: 1px solid #ced4da;
     border-radius: 4px;
     box-sizing: border-box;
-    vertical-align: middle; 
-    text-align: left; 
-}
-
-
-.setting-block .setting-controls-wrapper select,
-.setting-block .setting-controls-wrapper input[type="number"],
-.setting-block .setting-controls-wrapper input[type="date"] {
-    flex-grow: 0; 
-}
-.setting-block .setting-controls-wrapper input[type="number"].short-input {
-    width: 80px !important; 
-    max-width: 80px !important;
-    min-width: 80px !important; /* Ensure it doesn't shrink further */
-    padding: 8px 5px; 
-}
-.setting-block .setting-controls-wrapper .radio-group {
-    display: flex; flex-wrap: nowrap; align-items: center; gap: 15px; 
-}
-.setting-block .setting-controls-wrapper .switch { margin-left: 0; }
-.setting-block .setting-controls-wrapper .fixed-setting-note { margin-left: 5px; white-space: nowrap;}
-.setting-block .setting-controls-wrapper .save-status { margin-left: 10px; flex-shrink:0; }
-
-.save-status { display: inline-block; margin-left: 10px; margin-top: 0; vertical-align: middle; font-size: 0.85em; font-style: italic; color: green; opacity: 0; transition: opacity 0.5s ease-in-out, color 0.3s ease; min-height: 1em; }
-.save-status.error { color: red; }
-.save-status.info { color: #0056b3; }
-.save-status.visible { opacity: 1; }
-.save-status.radio-group-status { display: inline-block; margin-left: 15px; }
-.save-status.checkbox-status { display: inline-block; margin-left: 10px; }
-
-.setting-warning, .setting-info { font-size: 0.9em; font-style: normal; padding: 10px 15px; margin-top: 10px; margin-bottom: 15px; border-radius: 4px; line-height: 1.5; clear: both; width: auto; box-sizing: border-box;}
-.setting-warning { color: #856404; background-color: #fff3cd; border: 1px solid #ffeeba; border-left: 4px solid #ffc107; }
-.setting-info { color: #0c5460; background-color: #d1ecf1; border: 1px solid #bee5eb; border-left: 4px solid #17a2b8; }
-.setting-info a .fas { font-size: 0.8em; margin-left: 3px; }
-.setting-warning strong, .setting-info strong { font-weight: bold; color: inherit; }
-.fixed-setting-note { font-size: 0.85em; color: #6c757d; display: inline-block; margin-left: 8px; vertical-align: middle; font-style: italic; white-space: nowrap;}
-
-.switch { position: relative; display: inline-block; width: 50px; height: 24px; vertical-align: middle; margin-left: 0; flex-shrink: 0; }
-.switch input[type="checkbox"] { opacity: 0; width: 0; height: 0; }
-.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px;}
-.slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
-.switch input[type="checkbox"]:checked + .slider { background-color: #006400; }
-.switch input[type="checkbox"]:focus + .slider { box-shadow: 0 0 2px #006400; }
-.switch input[type="checkbox"]:checked + .slider:before { transform: translateX(26px); }
-.switch input[type="checkbox"]:disabled + .slider { background-color: #e0e0e0; cursor: not-allowed; opacity: 0.7;}
-.switch input[type="checkbox"]:disabled + .slider:before { background-color: #bdbdbd; }
-.switch input[type="checkbox"]:checked:disabled + .slider { background-color: #006400; opacity: 0.5; cursor: not-allowed; }
-.switch input[type="checkbox"]:checked:disabled + .slider:before { background-color: #b2dfdb; opacity: 0.7;}
-
-.slider-label { 
-    font-weight: normal; color: #333; margin-right: 8px; display: flex; align-items: center; cursor: default; 
-}
-.setting-block > .slider-label, .form-item-inline > .slider-label { font-weight: bold; }
-.slider-label.disabled-text { color: #999; cursor: not-allowed; }
-.slider-label.disabled-text .fas, .slider-label.disabled-text .far { color: #bbb !important; }
-
-.radio-group { display: flex; flex-wrap: nowrap; gap: 10px; align-items: center; }
-.styled-radio { 
-    display: inline-flex; align-items: center; vertical-align: middle; 
-    cursor: pointer; position: relative; 
-    padding-left: 30px; height: 24px; line-height: 24px; 
-}
-.styled-radio input[type="radio"] { position: absolute; opacity: 0; cursor: pointer; height: 100%; width: 100%; left: 0; top: 0; z-index: 1; margin: 0; }
-.styled-radio label { margin-left: 0; margin-bottom: 0; font-weight: normal; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; color: #333; }
-.styled-radio label::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; border: 2px solid #999; border-radius: 50%; background-color: white; transition: all 0.2s ease; z-index: 0; }
-.styled-radio input[type="radio"]:checked + label::before { background-color: #006400; border-color: #004d00; box-shadow: inset 0 0 0 5px white; }
-.styled-radio input[type="radio"]:focus + label::before { border-color: #004d00; box-shadow: 0 0 0 3px rgba(0,100,0,.25), inset 0 0 0 5px white; }
-
-#settingsForm input[type="radio"]:disabled + label { color: #aaa !important; cursor: not-allowed !important; opacity: 0.7 !important; }
-#settingsForm input[type="radio"]:disabled + label::before { background-color: #f0f0f0 !important; border-color: #ddd !important; cursor: not-allowed !important; box-shadow: none !important; opacity: 0.7 !important; }
-#settingsForm input[type="radio"]:checked:disabled + label::before {
-    background-color: #a9d1a9 !important; 
-    border-color: #8cb08c !important;    
-    box-shadow: inset 0 0 0 5px #e0e0e0 !important; 
-}
-
-.punch-restriction-item { display: flex; align-items: center; margin-bottom: 12px; padding: 6px 0; min-height: 30px;}
-.punch-restriction-item .switch { margin-right: 12px; margin-left: 0; flex-shrink: 0;}
-.punch-restriction-item .slider-label { font-weight: normal; color: #333; cursor: default; display: flex; align-items: center; margin-bottom: 0; margin-right: 0; }
-.punch-restriction-item .slider-label .fas, 
-.punch-restriction-item .slider-label .far { margin-right: 8px; color: #006400; width: 18px; text-align: center; font-size: 0.95em;}
-.punch-restriction-item .spacer { flex-grow: 1; }
-.punch-restriction-item .save-status.checkbox-status { min-width: 60px; text-align: left; margin-left: 10px; margin-right: 10px; flex-shrink: 0;}
-.configure-button { 
-    padding: 7px 15px; font-size: 0.9em; background-color: #006400; color: white;
-    border: none; border-radius: 5px; cursor: pointer; min-width: 125px; text-align: center;
-    transition: background-color 0.2s ease-in-out, transform 0.1s ease;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: inline-flex; align-items: center; justify-content: center;
-    flex-shrink: 0; 
-}
-.configure-button .fas { margin-right: 6px; }
-.configure-button:hover { background-color: #004d00; transform: translateY(-1px); }
-.configure-button:active { transform: translateY(0px); box-shadow: inset 0 1px 2px rgba(0,0,0,0.2); }
-.configure-button:disabled { background-color: #adb5bd; color: #6c757d; cursor: not-allowed; opacity: 0.65; transform: none; box-shadow: none;}
-.sub-settings-group { padding-left: 15px; margin-top: 15px; margin-left: 0; border-left: 2px solid #e9ecef; }
-
-#settingsForm input:disabled:not([type="checkbox"]):not([type="radio"]),
-#settingsForm select:disabled {
-     background-color: #e9ecef !important; color: #6c757d !important;
-     cursor: not-allowed !important; border-color: #ced4da !important;
-     opacity: 0.7 !important; 
-}
-#seventhDayOTDetailsBlock input[type="number"]:disabled {
-     background-color: #e9ecef !important; color: #6c757d !important;
-     cursor: not-allowed !important; border-color: #ced4da !important;
-     opacity: 0.7 !important;
-}
-
-.required-asterisk { color: #007bff; font-size: 1em; font-weight: bold; margin-right: 3px; }
-.punch-restriction-item .slider-label .required-asterisk {
-    font-size: 1em; vertical-align: super; line-height: 1; margin-left: 3px;
-}
-
-#manualOvertimeSettings.auto-mode-fields-disabled .setting-label-fixed,
-#manualOvertimeSettings.auto-mode-fields-disabled .styled-radio label {
-    color: #6c757d; 
-}
-#manualOvertimeSettings.auto-mode-fields-disabled .styled-radio input[type="radio"]:disabled + label {
-    color: #aaa !important; 
-}
-
-#seventhDayOTDetailsBlock {
-    display: flex; 
-    flex-direction: column; 
-    gap: 5px;
-    padding-left: 20px; 
-    margin-top: 10px;
-}
-
-/* Page Messages (from JSP - if uncommented) */
-.page-message { margin-bottom: 20px !important; display: flex; align-items: center; padding: 10px 15px; border-radius: 4px; }
-.page-message .fas { margin-right: 10px; font-size: 1.2em;}
-.page-message.success-message { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-.page-message.error-message { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-
-/* FIX: Added styles for the checkbox group in modals */
-.checkbox-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px 20px; /* row-gap column-gap */
-    padding: 8px 0;
-    justify-content: flex-start;
-}
-
-.styled-checkbox {
-    display: inline-flex;
-    align-items: center;
-    cursor: pointer;
-    position: relative;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-}
-
-.styled-checkbox input[type="checkbox"] {
-    opacity: 0;
-    width: 0;
-    height: 0;
-    position: absolute;
-}
-
-.styled-checkbox label {
-    padding-left: 28px;
-    font-weight: normal;
-    margin-bottom: 0;
-    cursor: pointer;
-}
-
-.styled-checkbox label::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 18px;
-    height: 18px;
-    border: 2px solid #adb5bd;
-    border-radius: 3px;
+    font-size: 0.95em;
+    height: 40px;
     background-color: #fff;
-    transition: all 0.2s ease;
-}
-
-.styled-checkbox label::after {
-    content: '\f00c'; /* Font Awesome check icon */
-    font-family: "Font Awesome 6 Free";
-    font-weight: 900;
-    position: absolute;
-    left: 3px;
-    top: 50%;
-    transform: translateY(-50%) scale(0);
-    font-size: 14px;
-    color: white;
-    transition: transform 0.2s ease;
-}
-
-.styled-checkbox input[type="checkbox"]:checked + label::before {
-    background-color: #006400;
-    border-color: #004d00;
-}
-
-.styled-checkbox input[type="checkbox"]:checked + label::after {
-    transform: translateY(-50%) scale(1);
+    font-family: inherit;
 }

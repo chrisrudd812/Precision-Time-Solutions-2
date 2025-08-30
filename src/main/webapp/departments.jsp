@@ -61,7 +61,6 @@
         if(tenantIdObj instanceof Integer) tenantId = (Integer) tenantIdObj;
         
         userPermissions = (String) currentSession.getAttribute("Permissions");
-
         if (Boolean.TRUE.equals(currentSession.getAttribute("startSetupWizard"))) {
             inSetupWizardMode_JSP = true;
             String sessionWizardStep = (String) currentSession.getAttribute("wizardStep");
@@ -87,7 +86,8 @@
     }
 
     // --- DATA FETCHING ---
-    List<Map<String, String>> allDeptsForReassignDropdown = (tenantId != null) ? ShowReports.getDepartmentsForTenant(tenantId) : new ArrayList<>();
+    List<Map<String, String>> allDeptsForReassignDropdown = (tenantId != null) ?
+        ShowReports.getDepartmentsForTenant(tenantId) : new ArrayList<>();
     String departmentRowsHtml = (tenantId != null) ? ShowDepartments.showDepartments(tenantId) : "<tr><td colspan='3' class='report-error-row'>Invalid session.</td></tr>";
 %>
 <!DOCTYPE html>
@@ -122,23 +122,28 @@
             <button type="button" id="editDepartmentButton" class="glossy-button text-orange" disabled><i class="fas fa-edit"></i> Edit Department</button>
             <button type="button" id="deleteDepartmentButton" class="glossy-button text-red" disabled><i class="fas fa-trash-alt"></i> Delete Department</button>
         </div>
+
+        <%-- MODIFIED: Moved the h4 tag outside and above the report-display-area div --%>
         <h4 style="text-align: left; color: #6c757d; margin-bottom: 10px; font-size: 0.9em;">To Edit or Delete: Select a row from the table.</h4>
-        <div class="table-container report-table-container department-table-container">
-            <table id="departmentsTable"
-       class="report-table sortable"
-       data-initial-sort-column="0"
-       data-initial-sort-direction="asc">
-    <thead>
-        <tr>
-            <th class="sortable" data-sort-type="string">Name</th>
-            <th class="sortable" data-sort-type="string">Description</th>
-            <th class="sortable" data-sort-type="string">Supervisor</th>
-        </tr>
-    </thead>
-    <tbody>
-        <%= departmentRowsHtml %>
-    </tbody>
-</table>
+
+        <div class="report-display-area">
+            <div class="table-container report-table-container department-table-container">
+                <table id="departmentsTable"
+                   class="report-table sortable"
+                   data-initial-sort-column="0"
+                   data-initial-sort-direction="asc">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-sort-type="string">Name</th>
+                            <th class="sortable" data-sort-type="string">Description</th>
+                            <th class="sortable" data-sort-type="string">Supervisor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <%= departmentRowsHtml %>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 

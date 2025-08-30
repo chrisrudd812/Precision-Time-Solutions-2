@@ -1,11 +1,8 @@
-// settings.js - vFINAL_FIX_WITH_LOGGING_v3
-// This version includes robust logging, a forceful initialization for the wizard,
-// removal of the "Restrict by Network" functionality, restored configure button click handlers,
-// AND adds the missing event listener for the Grace Period setting.
+// settings.js
 
 // --- START: State Overtime Rules Data ---
 const FLSA_DEFAULTS = { key: "FLSA", dailyOTEnabled: false, dailyOTThreshold: 8.0, doubleTimeEnabled: false, doubleTimeThreshold: 12.0, standardOTRate: "1.5", weeklyOTThreshold: 40, seventhDayOTEnabled: false, seventhDayOTThreshold: 8.0, seventhDayDTThreshold: 8.0, notes: "Follows Federal FLSA: Overtime at 1.5x pay after 40 hours in a workweek. No daily or 7th day overtime requirement under FLSA." };
-const stateOvertimeRules = { "FLSA": FLSA_DEFAULTS, "CA": { key: "CA", dailyOTEnabled: true, dailyOTThreshold: 8.0, doubleTimeEnabled: true, doubleTimeThreshold: 12.0, standardOTRate: "1.5", weeklyOTThreshold: 40, seventhDayOTEnabled: true, seventhDayOTThreshold: 8.0, seventhDayDTThreshold: 8.0, notes: "CA: Daily OT > 8h (1.5x), >12h (2x). 7th Consecutive Day of workweek: First 8h (1.5x), hours > 8 (2x). Weekly OT > 40h (1.5x) (non-duplicative). Many exceptions apply." }, "AK": { key: "AK", dailyOTEnabled: true, dailyOTThreshold: 8.0, doubleTimeEnabled: false, doubleTimeThreshold: null, standardOTRate: "1.5", weeklyOTThreshold: 40, seventhDayOTEnabled: true, seventhDayOTThreshold: 0, seventhDayDTThreshold: null, notes: "AK: Daily OT > 8h or Weekly > 40h at 1.5x. All hours worked on the 7th consecutive day of the workweek are OT. Check AK DOL." }, "NV": { key: "NV", dailyOTEnabled: true, dailyOTThreshold: 8.0, doubleTimeEnabled: false, doubleTimeThreshold: null, standardOTRate: "1.5", weeklyOTThreshold: 40, seventhDayOTEnabled: false, seventhDayOTThreshold: 8.0, seventhDayDTThreshold: 8.0, notes: "NV: Daily OT > 8h (in 24hr) OR > 40h/wk at 1.5x, IF employee earns < 1.5x state min wage. Check NV DOL." }, "NY": { key: "NY", dailyOTEnabled: false, dailyOTThreshold: 8.0, doubleTimeEnabled: false, doubleTimeThreshold: null, standardOTRate: "1.5", weeklyOTThreshold: 40, seventhDayOTEnabled: false, seventhDayOTThreshold: 8.0, seventhDayDTThreshold: 8.0, notes: "NY: Generally FLSA. Industry-specific wage orders may differ." }, "CO": { key: "CO", dailyOTEnabled: true, dailyOTThreshold: 12.0, doubleTimeEnabled: false, doubleTimeThreshold: null, standardOTRate: "1.5", weeklyOTThreshold: 40, seventhDayOTEnabled: false, seventhDayOTThreshold: 8.0, seventhDayDTThreshold: 8.0, notes: "CO: OT after 12h/day, 40h/wk, or 12 consecutive hrs." }, "OR": { key: "OR", dailyOTEnabled: true, dailyOTThreshold: 10.0, doubleTimeEnabled: false, doubleTimeThreshold: null, standardOTRate: "1.5", weeklyOTThreshold: 40, seventhDayOTEnabled: false, seventhDayOTThreshold: 8.0, seventhDayDTThreshold: 8.0, notes: "OR: OT > 40h/wk. Daily OT (>10h) for some manufacturing/canneries." }, "WA": { key: "WA", dailyOTEnabled: false, dailyOTThreshold: 8.0, doubleTimeEnabled: false, doubleTimeThreshold: null, standardOTRate: "1.5", weeklyOTThreshold: 40, seventhDayOTEnabled: false, seventhDayOTThreshold: 8.0, seventhDayDTThreshold: 8.0, notes: "WA: Generally FLSA. High salary thresholds for OT exemption." }, "TX": { ...FLSA_DEFAULTS, key: "TX", notes: FLSA_DEFAULTS.notes.replace("FLSA", "TX follows FLSA") }, "AL": { ...FLSA_DEFAULTS, key: "AL", notes: FLSA_DEFAULTS.notes.replace("FLSA", "AL follows FLSA") }};
+const stateOvertimeRules = { "FLSA": FLSA_DEFAULTS, "CA": { key: "CA", dailyOTEnabled: true, dailyOTThreshold: 8.0, doubleTimeEnabled: true, doubleTimeThreshold: 12.0, standardOTRate: "1.5", weeklyOTThreshold: 40, seventhDayOTEnabled: true, seventhDayOTThreshold: 8.0, seventhDayDTThreshold: 8.0, notes: "CA: Daily OT > 8h (1.5x), >12h (2x). 7th Consecutive Day of workweek: First 8h (1.5x), hours > 8 (2x). Weekly OT > 40h (1.5x) (non-duplicative). Many exceptions apply." }, "AK": { key: "AK", dailyOTEnabled: true, dailyOTThreshold: 8.0, doubleTimeEnabled: false, doubleTimeThreshold: null, standardOTRate: "1.5", weeklyOTThreshold: 40, seventhDayOTEnabled: true, seventhDayOTThreshold: 0, seventhDayDTThreshold: null, notes: "AK: Daily OT > 8h or Weekly > 40h at 1.5x. All hours worked on the 7th consecutive day of the workweek are OT. Check AK DOL." }, "NV": { key: "NV", dailyOTEnabled: true, dailyOTThreshold: 8.0, doubleTimeEnabled: false, doubleTimeThreshold: null, standardOTRate: "1.5", weeklyOTThreshold: 40, seventhDayOTEnabled: false, seventhDayOTThreshold: 8.0, seventhDayDTThreshold: 8.0, notes: "NV: Daily OT > 8h (in 24hr) OR > 40h/wk at 1.5x, IF employee earns < 1.5x state min wage. Check NV DOL." }, "NY": { key: "NY", dailyOTEnabled: false, dailyOTThreshold: 8.0, doubleTimeEnabled: false, doubleTimeThreshold: null, standardOTRate: "1.5", weeklyOTThreshold: 40, seventhDayOTEnabled: false, seventhDayOTThreshold: 8.0, seventhDayDTThreshold: 8.0, notes: "NY: Generally FLSA. Industry-specific wage orders may differ." }, "CO": { key: "CO", dailyOTEnabled: true, dailyOTThreshold: 12.0, doubleTimeEnabled: false, doubleTimeThreshold: null, standardOTRate: "1.5", weeklyOTThreshold: 40, seventhDayOTEnabled: false, seventhDayOTThreshold: 8.0, seventhDayDTThreshold: 8.0, notes: "CO: OT after 40h/wk, or 12 consecutive hrs." }, "OR": { key: "OR", dailyOTEnabled: true, dailyOTThreshold: 10.0, doubleTimeEnabled: false, doubleTimeThreshold: null, standardOTRate: "1.5", weeklyOTThreshold: 40, seventhDayOTEnabled: false, seventhDayOTThreshold: 8.0, seventhDayDTThreshold: 8.0, notes: "OR: OT > 40h/wk. Daily OT (>10h) for some manufacturing/canneries." }, "WA": { key: "WA", dailyOTEnabled: false, dailyOTThreshold: 8.0, doubleTimeEnabled: false, doubleTimeThreshold: null, standardOTRate: "1.5", weeklyOTThreshold: 40, seventhDayOTEnabled: false, seventhDayOTThreshold: 8.0, seventhDayDTThreshold: 8.0, notes: "WA: Generally FLSA. High salary thresholds for OT exemption." }, "TX": { ...FLSA_DEFAULTS, key: "TX", notes: FLSA_DEFAULTS.notes.replace("FLSA", "TX follows FLSA") }, "AL": { ...FLSA_DEFAULTS, key: "AL", notes: FLSA_DEFAULTS.notes.replace("FLSA", "AL follows FLSA") }};
 const usStates = [ { name: 'Federal (FLSA Default)', code: 'FLSA', ruleKey: 'FLSA' }, { name: 'Alabama', code: 'AL', ruleKey: 'AL' }, { name: 'Alaska', code: 'AK', ruleKey: 'AK' }, { name: 'Arizona', code: 'AZ', ruleKey: 'AZ' }, { name: 'Arkansas', code: 'AR', ruleKey: 'AR' }, { name: 'California', code: 'CA', ruleKey: 'CA' }, { name: 'Colorado', code: 'CO', ruleKey: 'CO' }, { name: 'Connecticut', code: 'CT', ruleKey: 'CT' }, { name: 'Delaware', code: 'DE', ruleKey: 'DE' }, { name: 'District of Columbia', code: 'DC', ruleKey: 'DC' }, { name: 'Florida', code: 'FL', ruleKey: 'FL' }, { name: 'Georgia', code: 'GA', ruleKey: 'GA' }, { name: 'Hawaii', code: 'HI', ruleKey: 'HI' }, { name: 'Idaho', code: 'ID', ruleKey: 'ID' }, { name: 'Illinois', code: 'IL', ruleKey: 'IL' }, { name: 'Indiana', code: 'IN', ruleKey: 'IN' }, { name: 'Iowa', code: 'IA', ruleKey: 'IA' }, { name: 'Kansas', code: 'KS', ruleKey: 'KS' }, { name: 'Kentucky', code: 'KY', ruleKey: 'KY' }, { name: 'Louisiana', code: 'LA', ruleKey: 'LA' }, { name: 'Maine', code: 'ME', ruleKey: 'ME' }, { name: 'Maryland', code: 'MD', ruleKey: 'MD' }, { name: 'Massachusetts', code: 'MA', ruleKey: 'MA' }, { name: 'Michigan', code: 'MI', ruleKey: 'MI' }, { name: 'Minnesota', code: 'MN', ruleKey: 'MN' }, { name: 'Mississippi', code: 'MS', ruleKey: 'MS' }, { name: 'Missouri', code: 'MO', ruleKey: 'MO' }, { name: 'Montana', code: 'MT', ruleKey: 'MT' }, { name: 'Nebraska', code: 'NE', ruleKey: 'NE' }, { name: 'Nevada', code: 'NV', ruleKey: 'NV' }, { name: 'New Hampshire', code: 'NH', ruleKey: 'NH' }, { name: 'New Jersey', code: 'NJ', ruleKey: 'NJ' }, { name: 'New Mexico', code: 'NM', ruleKey: 'NM' }, { name: 'New York', code: 'NY', ruleKey: 'NY' }, { name: 'North Carolina', code: 'NC', ruleKey: 'NC' }, { name: 'North Dakota', code: 'ND', ruleKey: 'ND' }, { name: 'Ohio', code: 'OH', ruleKey: 'OH' }, { name: 'Oklahoma', code: 'OK', ruleKey: 'OK' }, { name: 'Oregon', code: 'OR', ruleKey: 'OR' }, { name: 'Pennsylvania', code: 'PA', ruleKey: 'PA' }, { name: 'Rhode Island', code: 'RI', ruleKey: 'RI' }, { name: 'South Carolina', code: 'SC', ruleKey: 'SC' }, { name: 'South Dakota', code: 'SD', ruleKey: 'SD' }, { name: 'Tennessee', code: 'TN', ruleKey: 'TN' }, { name: 'Texas', code: 'TX', ruleKey: 'TX' }, { name: 'Utah', code: 'UT', ruleKey: 'UT' }, { name: 'Vermont', code: 'VT', ruleKey: 'VT' }, { name: 'Virginia', code: 'VA', ruleKey: 'VA' }, { name: 'Washington', code: 'WA', ruleKey: 'WA' }, { name: 'West Virginia', code: 'WV', ruleKey: 'WV' }, { name: 'Wisconsin', code: 'WI', ruleKey: 'WI' }, { name: 'Wyoming', code: 'WY', ruleKey: 'WY' } ];
 // --- END: State Overtime Rules Data ---
 
@@ -48,8 +45,7 @@ function saveSetting(element, valueToSave) {
     const formData = new URLSearchParams();
     formData.append('settingKey', key);
     formData.append('settingValue', value);
-    console.log(`[SAVE DEBUG] Sending Key: "${key}", Value: "${value}"`);
-
+    
     fetch(`${window.appRootPath}/SettingsServlet`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -108,32 +104,18 @@ function toggleThresholdInput(enableCheckbox, thresholdInputId, detailsBlockId =
     }
 }
 
-function toggleSpecificPunchRestrictions(mainToggleIsOn) {
-    const restrictionItems = [ 'restrictByTimeDay', 'restrictByLocation', 'restrictByDevice' ];
-    const groupDiv = document.getElementById('specificPunchRestrictionsGroup');
-    restrictionItems.forEach(id => {
-        const checkboxElement = document.getElementById(id);
-        const buttonElement = document.getElementById(id.replace('restrictBy', 'configure') + 'Btn');
-        const labelElement = document.querySelector(`label[for="${id}"].slider-label`);
-        if (checkboxElement) checkboxElement.disabled = !mainToggleIsOn;
-        if (labelElement) labelElement.classList.toggle('disabled-text', !mainToggleIsOn);
-        if (buttonElement) buttonElement.disabled = !(mainToggleIsOn && checkboxElement && checkboxElement.checked);
-    });
-    if (groupDiv) groupDiv.style.opacity = mainToggleIsOn ? 1 : 0.6;
-}
-
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("Settings Page DOMContentLoaded -- FINAL FIX VERSION");
+    console.log("Settings Page DOMContentLoaded");
 
     // --- Element References ---
     const payPeriodTypeSelect = document.getElementById('payPeriodType'), firstDayOfWeekSelect = document.getElementById('firstDayOfWeek'), payPeriodStartDateInput = document.getElementById('payPeriodStartDate'), payPeriodEndDateDisplaySpan = document.getElementById('payPeriodEndDateDisplay');
     const firstDayOfWeekBlock = document.getElementById('firstDayOfWeekBlock'), payPeriodStartDateBlock = document.getElementById('payPeriodStartDateBlock'), payPeriodEndDateBlock = document.getElementById('payPeriodEndDateBlock'); 
-    const gracePeriodSelect = document.getElementById('gracePeriod'); // Reference for Grace Period
+    const firstDayOfWeekNote = document.getElementById('firstDayOfWeekNote');
+    const gracePeriodSelect = document.getElementById('gracePeriod');
     const otModeManualRadio = document.getElementById('otModeManual'), otModeAutoRadio = document.getElementById('otModeAuto'), autoStateOvertimeSection = document.getElementById('autoStateOvertimeSection'), overtimeStateSelect = document.getElementById('overtimeStateSelect'), manualOvertimeSettingsDiv = document.getElementById('manualOvertimeSettings'), stateSpecificNotesDisplay = document.getElementById('stateSpecificNotesDisplay');
     const overtimeRateRadios = document.querySelectorAll('input[type="radio"][name="OvertimeRate"]'), overtimeDailyCheckbox = document.getElementById('overtimeDaily'), overtimeDailyThresholdInput = document.getElementById('overtimeDailyThreshold'), overtimeDoubleTimeEnabledCheckbox = document.getElementById('overtimeDoubleTimeEnabled'), overtimeDoubleTimeThresholdInput = document.getElementById('overtimeDoubleTimeThreshold');
     const overtimeSeventhDayEnabledCheckbox = document.getElementById('overtimeSeventhDayEnabled'), seventhDayOTDetailsBlock = document.getElementById('seventhDayOTDetailsBlock'), overtimeSeventhDayOTThresholdInput = document.getElementById('overtimeSeventhDayOTThreshold'), overtimeSeventhDayDTThresholdInput = document.getElementById('overtimeSeventhDayDTThreshold');
-    const punchRestrictionsEnabledCheckbox = document.getElementById('punchRestrictionsEnabled');
-
+    
     // --- Populate State Dropdown ---
     if (overtimeStateSelect) {
         usStates.forEach(state => {
@@ -143,57 +125,94 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function calculateAndDisplayPayPeriodEndDate() {
-        if (!payPeriodTypeSelect || !payPeriodStartDateInput || !payPeriodEndDateDisplaySpan || !firstDayOfWeekSelect) return;
-        const periodType = payPeriodTypeSelect.value;
-        let startDateStr = payPeriodStartDateInput.value;
-        const today = new Date(); today.setHours(0,0,0,0);
+	function calculateAndDisplayPayPeriodEndDate() {
+	    if (!payPeriodTypeSelect || !payPeriodStartDateInput || !payPeriodEndDateDisplaySpan || !firstDayOfWeekSelect) return;
+	    
+	    const periodType = payPeriodTypeSelect.value;
+	    const today = new Date();
+	    today.setHours(0, 0, 0, 0);
+	    let startDate, endDate;
+	    let newStartDateSet = false;
 
-        if (periodType === "Daily") {
-            [firstDayOfWeekBlock, payPeriodStartDateBlock, payPeriodEndDateBlock].forEach(el => el.style.display = 'none');
-            const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-            if (payPeriodStartDateInput.value !== todayISO) {
-                payPeriodStartDateInput.value = todayISO;
-                saveSetting(payPeriodStartDateInput); 
-            }
-            saveSetting({name: "PayPeriodEndDate", type:"hidden"}, todayISO); 
-            if (payPeriodEndDateDisplaySpan) payPeriodEndDateDisplaySpan.textContent = today.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
-            return; 
-        } else {
-            [firstDayOfWeekBlock, payPeriodStartDateBlock, payPeriodEndDateBlock].forEach(el => el.style.display = 'flex');
-        }
+        // --- MODIFIED: This function now correctly uses UTC getters to prevent timezone errors ---
+	    const toISODateString = (date) => {
+            // Using getUTC methods ensures the date is formatted based on its UTC value,
+            // which matches how it was created with new Date(Date.UTC(...)). This prevents off-by-one day errors.
+	        return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+	    };
 
-        if (!startDateStr) { payPeriodEndDateDisplaySpan.textContent = "Set Start Date"; return; }
+	    if (periodType === "Daily") {
+	        firstDayOfWeekBlock.style.display = 'none';
+	        firstDayOfWeekNote.style.display = 'none';
+	        payPeriodStartDateBlock.style.display = 'flex';
+	        payPeriodEndDateBlock.style.display = 'flex';
+	        const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+	        payPeriodStartDateInput.value = todayISO;
+	        payPeriodEndDateDisplaySpan.textContent = today.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
+	        saveSetting(payPeriodStartDateInput);
+	        saveSetting({ name: "PayPeriodEndDate", type: "hidden" }, todayISO);
+	        return; 
+	    } else {
+	        firstDayOfWeekBlock.style.display = 'flex';
+	        firstDayOfWeekNote.style.display = 'block';
+	        payPeriodStartDateBlock.style.display = 'flex';
+	        payPeriodEndDateBlock.style.display = 'flex';
+	    }
 
-        try {
-            let [year, month, day] = startDateStr.split('-').map(Number);
-            let startDate = new Date(year, month - 1, day); 
-            if (isNaN(startDate.getTime())) { payPeriodEndDateDisplaySpan.textContent = "Invalid Start"; return; }
-            let endDate = new Date(startDate);
+	    let startDateStr = payPeriodStartDateInput.value;
 
-            switch (periodType) {
-                case "Weekly": endDate.setDate(startDate.getDate() + 6); break;
-                case "Bi-Weekly": endDate.setDate(startDate.getDate() + 13); break;
-                case "Semi-Monthly":
-                    if (startDate.getDate() === 1) endDate.setDate(15);
-                    else if (startDate.getDate() === 16) endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
-                    else { payPeriodEndDateDisplaySpan.textContent = "Start 1st/16th"; return; }
-                    break;
-                case "Monthly": endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0); break;
-                default: payPeriodEndDateDisplaySpan.textContent = "N/A"; return;
-            }
-            
-            payPeriodEndDateDisplaySpan.textContent = endDate.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC' });
-            const endDateToSave = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2,'0')}-${String(endDate.getDate()).padStart(2,'0')}`;
-            saveSetting({name: "PayPeriodEndDate", type:"hidden"}, endDateToSave); 
-        } catch (e) {
-            console.error("Error calculating pay period end date:", e);
-            payPeriodEndDateDisplaySpan.textContent = "Calc Error";
-        }
-    }
+	    switch (periodType) {
+	        case "Semi-Monthly":
+	            const currentDay = today.getDate();
+	            if (currentDay <= 15) {
+	                startDate = new Date(Date.UTC(today.getFullYear(), today.getMonth(), 1));
+	                endDate = new Date(Date.UTC(today.getFullYear(), today.getMonth(), 15));
+	            } else {
+	                startDate = new Date(Date.UTC(today.getFullYear(), today.getMonth(), 16));
+                    // The '0' day of the next month gives the last day of the current month
+	                endDate = new Date(Date.UTC(today.getFullYear(), today.getMonth() + 1, 0));
+	            }
+	            payPeriodStartDateInput.value = toISODateString(startDate);
+	            newStartDateSet = true;
+	            break;
+	        
+	        case "Monthly":
+	            startDate = new Date(Date.UTC(today.getFullYear(), today.getMonth(), 1));
+	            endDate = new Date(Date.UTC(today.getFullYear(), today.getMonth() + 1, 0));
+	            payPeriodStartDateInput.value = toISODateString(startDate);
+	            newStartDateSet = true;
+	            break;
+
+	        default: // Weekly, Bi-Weekly
+	            if (!startDateStr) {
+	                payPeriodEndDateDisplaySpan.textContent = "Set Start Date";
+	                return;
+	            }
+	            let [year, month, day] = startDateStr.split('-').map(Number);
+	            startDate = new Date(Date.UTC(year, month - 1, day));
+	            if (isNaN(startDate.getTime())) {
+	                payPeriodEndDateDisplaySpan.textContent = "Invalid Start";
+	                return;
+	            }
+	            endDate = new Date(startDate.getTime()); // Use getTime() to clone correctly
+	            if (periodType === "Weekly") {
+	                endDate.setUTCDate(startDate.getUTCDate() + 6);
+	            } else if (periodType === "Bi-Weekly") {
+	                endDate.setUTCDate(startDate.getUTCDate() + 13);
+	            }
+	            break;
+	    }
+
+	    if (newStartDateSet) {
+	        saveSetting(payPeriodStartDateInput);
+	    }
+
+	    payPeriodEndDateDisplaySpan.textContent = endDate.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC' });
+	    const endDateToSave = toISODateString(endDate);
+	    saveSetting({ name: "PayPeriodEndDate", type: "hidden" }, endDateToSave);
+	}
     
     function updateManualFieldsFromState(stateCode, saveDerivedSettings = false) {
-        console.log(`[WIZARD DEBUG] Applying rules for state: "${stateCode}". Auto-saving: ${saveDerivedSettings}`);
         const stateDetails = usStates.find(s => s.code === stateCode) || usStates.find(s => s.code === 'FLSA');
         const rules = stateOvertimeRules[stateDetails.ruleKey] || stateOvertimeRules["FLSA"];
         
@@ -227,7 +246,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateOvertimeModeUI() {
         const isManualMode = otModeManualRadio && otModeManualRadio.checked;
-        console.log("[WIZARD DEBUG] Updating OT UI. Is Manual Mode? " + isManualMode);
         if (autoStateOvertimeSection) autoStateOvertimeSection.style.display = isManualMode ? 'none' : 'block';
         if (manualOvertimeSettingsDiv) manualOvertimeSettingsDiv.style.opacity = isManualMode ? 1 : 0.6;
         
@@ -246,11 +264,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function initializePage() {
-        console.group("[WIZARD DEBUG] Initializing Settings Page");
-        console.log("Is Wizard Mode Active:", window.inWizardMode_Page);
-        console.log("Settings received from JSP:", window.settingsConfig);
-        console.groupEnd();
-        
         if(payPeriodTypeSelect) payPeriodTypeSelect.value = window.settingsConfig.payPeriodType;
         if(firstDayOfWeekSelect) firstDayOfWeekSelect.value = window.settingsConfig.firstDayOfWeek;
         if(payPeriodStartDateInput) payPeriodStartDateInput.value = window.settingsConfig.payPeriodStartDate;
@@ -267,15 +280,10 @@ document.addEventListener('DOMContentLoaded', function() {
         updateOvertimeModeUI(); 
         
         if (window.inWizardMode_Page && otModeAutoRadio && otModeAutoRadio.checked) {
-            console.log("[WIZARD DEBUG] Wizard Auto-Mode detected. Force applying state rules...");
             updateManualFieldsFromState(overtimeStateSelect.value, true); 
         }
         
         calculateAndDisplayPayPeriodEndDate();
-        if (punchRestrictionsEnabledCheckbox) {
-            punchRestrictionsEnabledCheckbox.checked = String(window.settingsConfig.punchRestrictionsEnabled).toLowerCase() === 'true';
-            toggleSpecificPunchRestrictions(punchRestrictionsEnabledCheckbox.checked);
-        }
     }
 
     // --- Initialize and Attach Listeners ---
@@ -285,7 +293,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if(el) el.addEventListener('change', () => { saveSetting(el); calculateAndDisplayPayPeriodEndDate(); });
     });
     
-    // FIX: Add event listener for Grace Period
     if (gracePeriodSelect) {
         gracePeriodSelect.addEventListener('change', function() {
             saveSetting(this);
@@ -316,22 +323,19 @@ document.addEventListener('DOMContentLoaded', function() {
         { checkboxId: 'restrictByLocation', buttonId: 'configureLocationBtn', url: 'LocationRestrictionServlet' },
         { checkboxId: 'restrictByDevice',   buttonId: 'configureDeviceBtn',   url: 'DeviceRestrictionServlet' }
     ];
-
-    if (punchRestrictionsEnabledCheckbox) {
-        punchRestrictionsEnabledCheckbox.addEventListener('change', function() { 
-            saveSetting(this); 
-            toggleSpecificPunchRestrictions(this.checked);
-        });
-    }
     
     restrictionItemsConfig.forEach(itemConfig => {
         const checkbox = document.getElementById(itemConfig.checkboxId);
         const button = document.getElementById(itemConfig.buttonId);
-        if (checkbox && button) {
+        if (checkbox) {
             checkbox.addEventListener('change', function() {
-                if(punchRestrictionsEnabledCheckbox && punchRestrictionsEnabledCheckbox.checked) saveSetting(this);
-                button.disabled = !this.checked;
+                saveSetting(this);
+                if (button) {
+                    button.disabled = !this.checked;
+                }
             });
+        }
+        if (button) {
             button.addEventListener('click', function() {
                 if (this.disabled) return;
                 let destinationUrl = `${window.appRootPath}/${itemConfig.url}`;
@@ -359,13 +363,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (data.success && data.nextStep) {
                         window.location.href = `${window.appRootPath}/departments.jsp?setup_wizard=true&step=${data.nextStep}`;
                     } else {
-                        console.error("[WIZARD DEBUG] Server responded with an error:", data.error || "Unknown error");
                         this.disabled = false;
                         this.innerHTML = 'Next: Departments Setup <i class="fas fa-arrow-right"></i>';
                     }
                 })
                 .catch(error => {
-                    console.error("[WIZARD DEBUG] A network or fetch error occurred:", error);
                     this.disabled = false;
                     this.innerHTML = 'Next: Departments Setup <i class="fas fa-arrow-right"></i>';
                 });

@@ -95,7 +95,7 @@ table#payrollTable td:nth-child(9), table#payrollTable td:nth-child(10) { text-a
 }
 
 /* === Edit Punch Modal specific styles (from payroll.jsp context) === */
-#editPunchModal .edit-punch-info { /* More specific selector */
+#editPunchModal .edit-punch-info { 
     background-color: #f8f9fa; padding: 15px; margin-bottom: 20px;
     border: 1px solid #dee2e6; border-radius: 4px; font-size: 0.95em;
 }
@@ -111,51 +111,7 @@ table#payrollTable td:nth-child(9), table#payrollTable td:nth-child(10) { text-a
     flex-grow: 1; word-break: break-word;
 }
 
-/* === Custom Confirmation Modal Styling (Close Pay Period) === */
-#closePeriodConfirmModal .modal-content {
-    max-width: 550px; /* Adjusted width for confirmation */
-    min-width: 400px;
-}
-
-#closePeriodConfirmModal #confirmModalTitle {
-    /* Uses default .modal-content > h2 from reports.css which has a gradient */
-    /* If you want it simpler for confirmation: */
-    /* background: #f8f9fa; */
-    /* color: #343a40; */
-    /* text-shadow: none; */
-    /* border-bottom: 1px solid #dee2e6; */
-    font-size: 1.2em; /* Slightly smaller than generic modal title if needed */
-    padding: 15px 20px;
-}
-
-#closePeriodConfirmModal #confirmModalMessage {
-    padding: 15px 25px 20px 25px; /* Adjusted padding */
-    font-size: 0.95em; /* Standard readable size */
-    line-height: 1.6;
-    color: #333;
-    /* white-space: pre-wrap; text-align: left; max-height: 300px; overflow-y: auto; are from inline style in JSP */
-    margin-bottom: 15px; /* Space before button row */
-}
-
-#closePeriodConfirmModal .button-row {
-    /* Uses default .modal-content .button-row from reports.css (gradient, border-top) */
-    /* justify-content: flex-end; gap: 10px; are from inline style in JSP */
-    padding: 15px 25px; /* Ensure consistent padding */
-}
-
-#closePeriodConfirmModal #confirmModalOkBtn,
-#closePeriodConfirmModal #confirmModalCancelBtn {
-    min-width: 110px; /* Slightly more width for better text fit */
-    font-weight: 500; /* Standard button weight */
-    padding: 9px 18px; /* Adjust padding if needed */
-}
-/* End Custom Confirmation Modal Styling */
-
-
-.required-asterisk { color: #dc3545; margin-left: 2px; font-weight: bold; }
-.empty-cell { /* Used by Java to mark cells, styled specifically for exception report */ }
-
-/* === Custom Confirmation Modal Styling (Close Pay Period) === */
+/* === [FIX] Custom Confirmation Modal Styling (Close Pay Period) === */
 #closePeriodConfirmModal .modal-content {
     max-width: 550px;
     min-width: 400px;
@@ -166,21 +122,30 @@ table#payrollTable td:nth-child(9), table#payrollTable td:nth-child(10) { text-a
     font-size: 1.2em;
 }
 
+/* Generic message styling */
 #closePeriodConfirmModal #confirmModalMessage {
-    padding: 15px 25px 20px 25px;
+    padding: 20px 25px;
     font-size: 0.95em;
     line-height: 1.6;
     color: #333;
-    white-space: pre-wrap;  /* For newline characters \n */
-    text-align: left;       /* For better readability of multi-line messages */
-    max-height: 450px;      /* Increased max-height */
-    overflow-y: auto;       /* Add scroll if content exceeds max-height */
-    margin-bottom: 15px;
+    max-height: 450px;
+    overflow-y: auto;
+    margin: 0; /* Reset margin */
+}
+
+/* Specific class for centered text */
+#closePeriodConfirmModal .confirm-message-centered {
+    text-align: center;
+}
+
+/* Specific class for left-aligned lists */
+#closePeriodConfirmModal .confirm-message-list {
+    text-align: left;
+    white-space: pre-wrap; /* Only apply this for lists */
 }
 
 #closePeriodConfirmModal .button-row {
     padding: 15px 25px;
-    /* justify-content and gap are handled by inline style in JSP */
 }
 
 #closePeriodConfirmModal #confirmModalOkBtn,
@@ -191,9 +156,25 @@ table#payrollTable td:nth-child(9), table#payrollTable td:nth-child(10) { text-a
 }
 /* End Custom Confirmation Modal Styling */
 
-/* Makes the table container scrollable if it's too tall */
-#payroll-table-container {
-    max-height: 50vh; /* 50% of the viewport/browser window height */
-    overflow-y: auto;   /* Adds a vertical scrollbar only when needed */
+.required-asterisk { color: #dc3545; margin-left: 2px; font-weight: bold; }
+.empty-cell { /* Used by Java to mark cells, styled specifically for exception report */ }
+
+/* [FIX] Ensure the general notification modal always appears on top */
+#notificationModalGeneral {
+    z-index: 10090; /* Higher than the default modal z-index of 10080 */
 }
 
+/* --- NEW: Sticky Footer Styles --- */
+#payrollTable tfoot {
+    position: sticky;
+    bottom: -1px; /* Sticks to the bottom of the container, -1px hides the row border above it */
+    z-index: 20;  /* Same z-index as the sticky header to ensure it's on top */
+}
+
+/* This overrides the old blue gradient footer style to match the teal header */
+#payrollTable tfoot td {
+    background: #f1f5f9 !important; /* Match header background */
+    color: #0f766e !important;       /* Match header text color */
+    border-top: 2px solid #14b8a6 !important; /* Match header border */
+    text-shadow: none !important;      /* Remove old text shadow */
+}

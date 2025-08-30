@@ -1,42 +1,5 @@
 // js/employees.js
 
-/**
- * FIX: Copied utility functions from commonUtils.js to resolve script loading order issues.
- * This ensures these functions are available when this script runs, without modifying shared files.
- */
-function decodeHtmlEntities(encodedString) {
-    if (encodedString === null || typeof encodedString === 'undefined' || String(encodedString).toLowerCase() === 'null') { return ''; }
-    try {
-        const textarea = document.createElement('textarea');
-        textarea.innerHTML = String(encodedString); 
-        return textarea.value;
-    } catch (e) {
-        return String(encodedString); 
-    }
-}
-
-function showModal(modalElement) {
-    if (modalElement && typeof modalElement.classList !== 'undefined') {
-        modalElement.style.display = 'flex';
-        modalElement.classList.add('modal-visible');
-    }
-}
-
-function showPageNotification(message, isError = false, modalInstance = null, titleText = "Notification") { 
-    const modalToUse = modalInstance || document.getElementById("notificationModalGeneral");
-    const msgElem = modalToUse ? modalToUse.querySelector('#notificationModalGeneralMessage') : null;
-    const modalTitleElem = modalToUse ? modalToUse.querySelector('#notificationModalGeneralTitle') : null;
-
-    if (!modalToUse || !msgElem) {
-        alert((isError ? "Error: " : "Notification: ") + message);
-        return;
-    }
-    if(modalTitleElem) modalTitleElem.textContent = titleText;
-    msgElem.innerHTML = message;
-    showModal(modalToUse); 
-}
-
-
 document.addEventListener('DOMContentLoaded', function() {
 
     // --- Global variables and references to DOM elements ---
@@ -125,47 +88,57 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         showModal(wizardModal);
     }
-
-    async function handleWizardAction(action) {
-        _hideModal(wizardModal);
-        if (action === 'confirm_admin') {
-            const adminEid = window.wizardAdminEid;
-            if (!adminEid) {
-                alert("Error: Admin EID not found for wizard flow.");
-                return;
-            }
-            try {
-                const response = await fetch(`${appRoot}/EmployeeInfoServlet?action=getEmployeeDetails&eid=${adminEid}`);
-                const data = await response.json();
-                if (data.success) {
-                    populateAndShowEditModal(data.employee, true);
-                } else {
-                    alert('Error fetching admin details: ' + data.error);
-                }
-            } catch (err) {
-                console.error("Failed to fetch admin details:", err);
-                alert("A network error occurred while fetching your details.");
-            }
-        } else if (action === 'open_add_employee') {
-            openAddModal();
-        } else if (action === 'finish_setup') {
-            updateWizardView('setup_complete');
-        } else if (action === 'go_to_employees') {
-            endWizard();
-        } else if (action === 'go_to_help') {
-            window.location.href = `${appRoot}/help.jsp`;
-        }
-    }
-
-    function endWizard() {
-        fetch(`${appRoot}/WizardStatusServlet`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({ 'action': 'endWizard' })
-        })
-        .then(() => window.location.href = `${appRoot}/employees.jsp`);
-    }
     
+	// [FIX] 'endWizard' function now accepts a URL parameter to redirect to.
+	function endWizard(redirectUrl = `${appRoot}/employees.jsp`) {
+	    fetch(`${appRoot}/WizardStatusServlet`, {
+	        method: 'POST',
+	        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+	        body: new URLSearchParams({ 'action': 'endWizard' })
+	    })
+	    .then(response => {
+	        if (response.ok) {
+	            window.location.href = redirectUrl;
+	        } else {
+	            // If ending the wizard fails, still redirect but maybe show an error.
+	            alert('Could not finalize setup. Redirecting...');
+	            window.location.href = redirectUrl;
+	        }
+	    });
+	}
+
+	// [FIX] 'handleWizardAction' now properly calls endWizard for both exit actions.
+	async function handleWizardAction(action) {
+	    _hideModal(wizardModal);
+	    if (action === 'confirm_admin') {
+	        const adminEid = window.wizardAdminEid;
+	        if (!adminEid) {
+	            alert("Error: Admin EID not found for wizard flow.");
+	            return;
+	        }
+	        try {
+	            const response = await fetch(`${appRoot}/EmployeeInfoServlet?action=getEmployeeDetails&eid=${adminEid}`);
+	            const data = await response.json();
+	            if (data.success) {
+	                populateAndShowEditModal(data.employee, true);
+	            } else {
+	                alert('Error fetching admin details: ' + data.error);
+	            }
+	        } catch (err) {
+	            console.error("Failed to fetch admin details:", err);
+	            alert("A network error occurred while fetching your details.");
+	        }
+	    } else if (action === 'open_add_employee') {
+	        openAddModal();
+	    } else if (action === 'finish_setup') {
+	        updateWizardView('setup_complete');
+	    } else if (action === 'go_to_employees') {
+	        endWizard(); // Calls with the default URL: /employees.jsp
+	    } else if (action === 'go_to_help') {
+	        endWizard(`${appRoot}/help.jsp`); // Calls with the help page URL
+	    }
+	}
+
     function formatDateForInput(dateString) {
         if (!dateString) return '';
         const dateObj = new Date(dateString);
@@ -237,7 +210,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        showModal(addModal);
+        _showModal(addModal);
         
         setTimeout(() => {
             addForm.querySelector('#addFirstName').focus();
@@ -283,7 +256,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         adminVerifyStepInput.value = isAdminVerification ? 'true' : 'false';
 
-        showModal(editModal);
+        _showModal(editModal);
 
         if (isAdminVerification) {
             setTimeout(() => {
@@ -434,14 +407,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const isAdminVerify = formData.get('admin_verify_step') === 'true';
         const formActionUrl = this.getAttribute('action');
         
-        console.log("--- DEBUGGING EMPLOYEE SAVE ---");
-        console.log("Submitting to URL:", formActionUrl);
-        console.log("Is Admin Verification:", isAdminVerify);
-        for (let [key, value] of formData.entries()) {
-            console.log(`Form Data -> ${key}: ${value}`);
-        }
-        console.log("---------------------------------");
-        
         fetch(formActionUrl, {
             method: 'POST',
             body: new URLSearchParams(formData)
@@ -501,43 +466,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if(addPhoneInput) addPhoneInput.addEventListener('input', formatPhoneNumber);
     if(editPhoneInput) editPhoneInput.addEventListener('input', formatPhoneNumber);
 
-    function makeModalDraggable(modal) {
-        const header = modal.querySelector('h2');
-        const content = modal.querySelector('.modal-content');
-        if (!header || !content) return;
-        header.style.cursor = 'move';
-        let isDragging = false, initialMouseX, initialMouseY, initialContentX, initialContentY;
-        header.addEventListener('mousedown', (e) => {
-            if (e.target.closest('button, input, select, textarea, .close')) return;
-            isDragging = true;
-            initialMouseX = e.clientX;
-            initialMouseY = e.clientY;
-            const rect = content.getBoundingClientRect();
-            initialContentX = rect.left;
-            initialContentY = rect.top;
-            document.body.classList.add('is-dragging');
-        });
-        document.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            e.preventDefault();
-            const dx = e.clientX - initialMouseX;
-            const dy = e.clientY - initialMouseY;
-            content.style.position = 'absolute';
-            content.style.left = `${initialContentX + dx}px`;
-            content.style.top = `${initialContentY + dy}px`;
-        });
-        document.addEventListener('mouseup', () => {
-            if (isDragging) {
-                isDragging = false;
-                document.body.classList.remove('is-dragging');
-            }
-        });
-    }
-    const style = document.createElement('style');
-    style.textContent = '.is-dragging { user-select: none; }';
-    document.head.appendChild(style);
-    document.querySelectorAll('.modal').forEach(makeModalDraggable);
-
     // --- EVENT LISTENERS ---
     addBtn?.addEventListener('click', () => openAddModal());
     editBtn?.addEventListener('click', () => {
@@ -566,7 +494,6 @@ document.addEventListener('DOMContentLoaded', function() {
         okBtnGeneralNotify.addEventListener('click', () => _hideModal(notificationModal));
     }
 
-
     // --- Page Load Logic ---
     const urlParams = new URLSearchParams(window.location.search);
     const reactivatePrompt = urlParams.get('reactivatePrompt');
@@ -581,28 +508,13 @@ document.addEventListener('DOMContentLoaded', function() {
             urlParams.forEach((value, key) => { prefillData[key] = value; });
             if (reopenModal === 'add') openAddModal(prefillData);
             window.history.replaceState({}, document.title, window.location.pathname);
-        } else {
-            const successMsg = urlParams.get('message');
-            const errorMsg = urlParams.get('error');
-            
-            // FIX: Changed window.showPageNotification to the local showPageNotification function
-            if (errorMsg) {
-                showPageNotification(errorMsg, true, notificationModal, 'Error');
-            }
-            if (successMsg) {
-                showPageNotification(successMsg, false, notificationModal, 'Success');
-                if (okBtnGeneralNotify) {
-                    setTimeout(() => okBtnGeneralNotify.focus(), 150); 
-                }
-            }
-            if (reactivatePrompt === 'true') {
-                const eid = urlParams.get('eid');
-                const email = urlParams.get('email');
-                reactivateModal.querySelector('#reactivateEmail').textContent = email;
-                showModal(reactivateModal);
-                reactivateModal.querySelector('#confirmReactivateBtn').onclick = () => handleReactivation(eid);
-                reactivateModal.querySelector('.cancel-btn').onclick = () => _hideModal(reactivateModal);
-            }
+        } else if (reactivatePrompt === 'true') {
+            const eid = urlParams.get('eid');
+            const email = urlParams.get('email');
+            reactivateModal.querySelector('#reactivateEmail').textContent = email;
+            showModal(reactivateModal);
+            reactivateModal.querySelector('#confirmReactivateBtn').onclick = () => handleReactivation(eid);
+            reactivateModal.querySelector('.cancel-btn').onclick = () => _hideModal(reactivateModal);
         }
         
         const selectedEid = urlParams.get('eid');
@@ -617,4 +529,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // Standardized notification handling
+    const successDiv = document.getElementById('pageNotificationDiv_Success_Emp');
+    const errorDiv = document.getElementById('pageNotificationDiv_Error_Emp');
+    if (successDiv && successDiv.textContent.trim()) {
+        showPageNotification(successDiv.innerHTML, false, notificationModal, 'Success');
+        successDiv.style.display = 'none';
+    }
+    if (errorDiv && errorDiv.textContent.trim()) {
+        showPageNotification(errorDiv.innerHTML, true, notificationModal, 'Error');
+        errorDiv.style.display = 'none';
+    }
 });

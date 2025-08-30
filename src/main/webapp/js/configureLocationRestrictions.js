@@ -2,6 +2,11 @@
 
 const APP_CONTEXT_PATH = window.appConfig.contextPath;
 
+/**
+ * Shows a toast notification. Used for quick, non-blocking messages like a setting save.
+ * @param {string} message The message to display.
+ * @param {string} [type='info'] The type of toast ('info', 'success', 'error').
+ */
 function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
     if (!container) {
@@ -19,18 +24,42 @@ function showToast(message, type = 'info') {
     }, 3500);
 }
 
+/**
+ * Shows a general-purpose modal notification. Used for important confirmations or errors.
+ * @param {string} title The title for the modal.
+ * @param {string} message The message body for the modal.
+ */
+function showNotificationModal(title, message) {
+    const modal = document.getElementById('notificationModalGeneral');
+    if (modal) {
+        const modalTitle = modal.querySelector('#notificationModalGeneralTitle');
+        const modalMessage = modal.querySelector('#notificationModalGeneralMessage');
+        if(modalTitle) modalTitle.textContent = title;
+        if(modalMessage) modalMessage.textContent = message;
+        if (typeof showModal === 'function') {
+            showModal(modal);
+        } else {
+            console.warn('Global showModal function not found. Using basic display block.');
+            modal.style.display = 'block';
+        }
+    } else {
+        alert(title + ":\n" + message);
+    }
+}
+
+
 document.addEventListener('DOMContentLoaded', function() {
     const addLocationBtn = document.getElementById('addLocationBtn');
     const locationModal = document.getElementById('locationModal');
-    const closeLocationModalBtn = document.getElementById('closeLocationModalBtn');
-    const cancelLocationModalBtn = document.getElementById('cancelLocationModalBtn');
     const locationForm = document.getElementById('locationForm');
     const getCurrentLocationBtn = document.getElementById('getCurrentLocationBtn');
     const confirmModal = document.getElementById('confirmModal');
+    const findAddressBtn = document.getElementById('findAddressBtn');
+    const addressSearchInput = document.getElementById('addressSearchInput');
 
     let map = null; 
     let marker = null;
-    const defaultViewLat = 40.0150; 
+    const defaultViewLat = 40.0150; // Boulder, CO
     const defaultViewLon = -105.2705; 
     const defaultViewZoom = 10; 
     const pointSelectZoom = 16;
@@ -83,19 +112,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    function hideLocationModalInternal() { 
-        if (locationModal && typeof hideModal === 'function') { 
-            hideModal(locationModal);
-        }
-    }
-
     addLocationBtn?.addEventListener('click', function() { 
         locationForm.reset();
         locationForm.querySelector('#locationActionInput').value = 'addLocation';
         locationForm.querySelector('#locationIDInput').value = '0';
         if (locationModalTitle) locationModalTitle.textContent = 'Add New Location';
         locationForm.querySelector('#locationIsEnabledInput').checked = true;
-        locationForm.querySelector('#radiusMetersInput').value = '50';
+        locationForm.querySelector('#radiusMetersInput').value = '100';
         initOrUpdateMap(defaultViewLat, defaultViewLon, defaultViewZoom, false); 
         showLocationModalInternal(); 
         document.getElementById('locationNameInput').focus(); 
@@ -112,7 +135,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.innerHTML = '<i class="fas fa-location-arrow"></i> Use My Current Location';
             },
             (error) => {
-                alert("Error getting location: " + error.message);
+                showNotificationModal("Location Error", "Error getting location: " + error.message);
                 this.disabled = false;
                 this.innerHTML = '<i class="fas fa-location-arrow"></i> Use My Current Location';
             },
@@ -120,8 +143,52 @@ document.addEventListener('DOMContentLoaded', function() {
         );
     });
 
-    closeLocationModalBtn?.addEventListener('click', hideLocationModalInternal);
-    cancelLocationModalBtn?.addEventListener('click', hideLocationModalInternal);
+    findAddressBtn?.addEventListener('click', function() {
+        const address = addressSearchInput.value.trim();
+        if (!address) {
+            showNotificationModal('Input Required', 'Please enter an address to search for.');
+            return;
+        }
+
+        this.disabled = true;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Finding...';
+
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`;
+
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data && data.length > 0) {
+                    const firstResult = data[0];
+                    const lat = parseFloat(firstResult.lat);
+                    const lon = parseFloat(firstResult.lon);
+                    updateLatLngFields(lat, lon);
+                    initOrUpdateMap(lat, lon, pointSelectZoom, true);
+                } else {
+                    showNotificationModal('Not Found', 'The address could not be found. Please try again with a different format.');
+                }
+            })
+            .catch(error => {
+                console.error('Address search failed:', error);
+                showNotificationModal('Error', 'An error occurred while searching for the address. Please check your connection and try again.');
+            })
+            .finally(() => {
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-search"></i> Find';
+            });
+    });
+    
+    addressSearchInput?.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault(); 
+            findAddressBtn.click();
+        }
+    });
 
     document.querySelectorAll('.edit-location').forEach(button => { 
         button.addEventListener('click', function() {
@@ -179,27 +246,33 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             fetch(`${APP_CONTEXT_PATH}/LocationRestrictionServlet`, { method: 'POST', body: formData })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok.');
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     showToast(data.message || 'Status updated!', 'success');
-                    // MODIFIED: Only reload the page on success
-                    setTimeout(() => window.location.reload(), 1500);
                 } else {
                     throw new Error(data.error || 'Failed to update status.');
                 }
             })
             .catch(error => {
-                showToast(error.message, 'error');
+                showNotificationModal('Update Failed', error.message);
                 this.checked = !isEnabled; // Revert toggle on error
             });
         });
     });
     
-    document.querySelectorAll('.modal .close, #confirmModalCancelBtn').forEach(btn => {
+    document.querySelectorAll('[data-close-modal-id]').forEach(btn => {
         btn.addEventListener('click', () => {
-            const modal = btn.closest('.modal');
-            if (typeof hideModal === 'function') hideModal(modal);
+            const modalId = btn.dataset.closeModalId;
+            const modal = document.getElementById(modalId);
+            if (modal && typeof hideModal === 'function') {
+                hideModal(modal);
+            }
         });
     });
 });

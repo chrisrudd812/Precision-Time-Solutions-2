@@ -69,18 +69,18 @@ h4.section-heading .fas, h4.section-heading .far { margin-right: 10px; color: #0
     box-sizing: border-box; font-size: 0.95em; font-family: inherit; height: 38px; 
     margin-top: 0; 
     width: auto; 
-    min-width: 180px; /* Default min-width for these controls */
+    min-width: 180px;
 }
 #payPeriodType, #firstDayOfWeek, #payPeriodStartDate {
-    min-width: 180px; /* Consistent width for pay period inputs/selects */
+    min-width: 180px;
 }
 .calculated-date-display { 
     font-weight: bold;
     padding: 8px 10px;
     height: 38px; 
-    line-height: 20px; /* Approx center for 38px height */
+    line-height: 20px;
     display: inline-block;
-    min-width: 180px; /* Match other inputs in that row */
+    min-width: 180px;
     background-color: #e9ecef; 
     color: #495057;
     border: 1px solid #ced4da;
@@ -99,7 +99,7 @@ h4.section-heading .fas, h4.section-heading .far { margin-right: 10px; color: #0
 .setting-block .setting-controls-wrapper input[type="number"].short-input {
     width: 80px !important; 
     max-width: 80px !important;
-    min-width: 80px !important; /* Ensure it doesn't shrink further */
+    min-width: 80px !important;
     padding: 8px 5px; 
 }
 .setting-block .setting-controls-wrapper .radio-group {
@@ -135,19 +135,13 @@ h4.section-heading .fas, h4.section-heading .far { margin-right: 10px; color: #0
 .switch input[type="checkbox"]:checked:disabled + .slider { background-color: #006400; opacity: 0.5; cursor: not-allowed; }
 .switch input[type="checkbox"]:checked:disabled + .slider:before { background-color: #b2dfdb; opacity: 0.7;}
 
-.slider-label { 
-    font-weight: normal; color: #333; margin-right: 8px; display: flex; align-items: center; cursor: default; 
-}
+.slider-label { font-weight: normal; color: #333; margin-right: 8px; display: flex; align-items: center; cursor: default; }
 .setting-block > .slider-label, .form-item-inline > .slider-label { font-weight: bold; }
 .slider-label.disabled-text { color: #999; cursor: not-allowed; }
 .slider-label.disabled-text .fas, .slider-label.disabled-text .far { color: #bbb !important; }
 
 .radio-group { display: flex; flex-wrap: nowrap; gap: 10px; align-items: center; }
-.styled-radio { 
-    display: inline-flex; align-items: center; vertical-align: middle; 
-    cursor: pointer; position: relative; 
-    padding-left: 30px; height: 24px; line-height: 24px; 
-}
+.styled-radio { display: inline-flex; align-items: center; vertical-align: middle; cursor: pointer; position: relative; padding-left: 30px; height: 24px; line-height: 24px; }
 .styled-radio input[type="radio"] { position: absolute; opacity: 0; cursor: pointer; height: 100%; width: 100%; left: 0; top: 0; z-index: 1; margin: 0; }
 .styled-radio label { margin-left: 0; margin-bottom: 0; font-weight: normal; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; color: #333; }
 .styled-radio label::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; border: 2px solid #999; border-radius: 50%; background-color: white; transition: all 0.2s ease; z-index: 0; }
@@ -156,11 +150,7 @@ h4.section-heading .fas, h4.section-heading .far { margin-right: 10px; color: #0
 
 #settingsForm input[type="radio"]:disabled + label { color: #aaa !important; cursor: not-allowed !important; opacity: 0.7 !important; }
 #settingsForm input[type="radio"]:disabled + label::before { background-color: #f0f0f0 !important; border-color: #ddd !important; cursor: not-allowed !important; box-shadow: none !important; opacity: 0.7 !important; }
-#settingsForm input[type="radio"]:checked:disabled + label::before {
-    background-color: #a9d1a9 !important; 
-    border-color: #8cb08c !important;    
-    box-shadow: inset 0 0 0 5px #e0e0e0 !important; 
-}
+#settingsForm input[type="radio"]:checked:disabled + label::before { background-color: #a9d1a9 !important; border-color: #8cb08c !important; box-shadow: inset 0 0 0 5px #e0e0e0 !important; }
 
 .punch-restriction-item { display: flex; align-items: center; margin-bottom: 12px; padding: 6px 0; min-height: 30px;}
 .punch-restriction-item .switch { margin-right: 12px; margin-left: 0; flex-shrink: 0;}
@@ -281,4 +271,32 @@ h4.section-heading .fas, h4.section-heading .far { margin-right: 10px; color: #0
     text-align: center;
     font-size: 1.1em;
     color: #333;
+}
+
+/*
+ * ===============================================================
+ * [FIX START] Styles for Buttons and Wizard UI Bugs
+ * ===============================================================
+ */
+
+/* 1. Glossy Button styles for config pages that don't use reports.css */
+.glossy-button{display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;font-size:.95em;font-weight:500;line-height:1.5;color:#343a40;text-align:center;vertical-align:middle;cursor:pointer;-webkit-user-select:none;user-select:none;border:1px solid #adb5bd;border-radius:5px;text-shadow:0 1px 0 rgba(255,255,255,.5);background-color:#f8f9fa;background-image:linear-gradient(to bottom,#fff,#e9ecef);box-shadow:inset 0 1px 1px rgba(255,255,255,.6),0 1px 2px rgba(0,0,0,.1);transition:all .15s ease-in-out}
+.glossy-button i{margin-right:8px}
+.glossy-button:hover{filter:brightness(1.05);text-decoration:none;border-color:#90a4ae}
+.glossy-button:active{filter:brightness(.95);box-shadow:inset 0 2px 3px rgba(0,0,0,.12)}
+.glossy-button.text-green,.glossy-button.text-green i{color:#19692c!important}
+.glossy-button.text-grey,.glossy-button.text-grey i{color:#343a40!important}
+
+/* 2. Form Actions container for centering buttons */
+.form-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+.form-actions a.glossy-button {
+    text-decoration: none;
 }

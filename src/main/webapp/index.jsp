@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         .logo { display: flex; align-items: center; font-size: 1.5em; font-weight: 500; }
-        .logo-image { height: 40px; margin-right: 10px; }
+        .logo-image { height: 200px; margin-right: 10px; }
         .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
     </style>
 </head>
@@ -19,8 +19,8 @@
     <header class="landing-header">
         <div class="container">
             <div class="logo">
-                <img src="<%= request.getContextPath() %>/images/logo.png" alt="Precision Time Solutions Logo" class="logo-image">
-                Precision Time Solutions
+                <img src="<%= request.getContextPath() %>/Images/logo2.png" alt="Precision Time Solutions Logo" class="logo-image">
+                Powerful, Flexible Time Tracking for your business. 
             </div>
             <nav class="landing-nav">
                  <a href="login.jsp" class="nav-link login-link">Log In</a>

@@ -1,283 +1,83 @@
 /* === css/accruals.css === */
+/* Contains styles specific only to the Accruals page */
 
-/* --- General Page Styles --- */
-.reports-page h1 { 
-    margin-bottom: 15px; 
+/* Fix table container height so it sizes to its content */
+.report-display-area:has(#accrualsTable) {
+    min-height: 0;
+    flex-grow: 0;
 }
-
-.setup-label {
-    font-size: 0.8em; 
-    color: #555;
-}
-
-.instruction-text {
-    text-align: left; 
-    color: #6c757d; 
-    margin-bottom: 10px; 
-    font-size: 0.9em;
-}
-
-.report-display-area {
-    padding-top: 10px;
-}
-
-/* --- Wizard and Modal Styles (Consolidated) --- */
-.wizard-header { 
-    background-color: #004080; 
-    color: white; 
-    padding: 15px 20px; 
-    text-align: center; 
-    margin-bottom:20px; 
-}
-
-.wizard-header h2 { 
-    margin-top:0; 
-    margin-bottom: 5px; 
-    font-weight: 500;
-}
-
-.wizard-header p { 
-    margin-bottom:0; 
-    font-size:0.9em; 
-    opacity: 0.9;
-}
-
-.modal { 
-    display: none; 
-    position: fixed; 
-    z-index: 1055; 
-    left: 0; 
-    top: 0; 
-    width: 100%; 
-    height: 100%; 
-    overflow: auto; 
-    background-color: rgba(0,0,0,0.5); 
-    justify-content: center; 
-    align-items: center; 
-}
-
-.modal.modal-visible { 
-    display: flex !important; 
-}
-
-.modal-content { 
-    background-color: #fefefe; 
-    margin: auto; 
-    padding: 20px 25px; 
-    border: 1px solid #888; 
-    border-radius: 8px; 
-    width: 90%; 
-    max-width: 600px; 
-    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19); 
-    text-align:left; 
-}
-
-.modal-content h2 { 
-    margin-top: 0; 
-    font-size: 1.6em; 
-    color: #005A9C; 
-    padding-bottom: 10px; 
-    border-bottom: 1px solid #eee; 
-    text-align:center;
-}
-
-.close { 
-    color: #aaa; 
-    float: right; 
-    font-size: 28px; 
-    font-weight: bold; 
-    cursor:pointer; 
-}
-
-.page-message { 
-    padding: 10px 15px; 
-    margin: 0 auto 20px auto; 
-    border-radius: 4px; 
-    text-align: center; 
-}
-
-.success-message { 
-    background-color: #d4edda; 
-    color: #155724; 
-    border:1px solid #c3e6cb; 
-}
-
-.error-message { 
-    background-color: #f8d7da; 
-    color: #721c24; 
-    border:1px solid #f5c6cb; 
-}
-
-/* --- Main Button Bar --- */
-#button-container {
-    display: flex;
-    flex-wrap: wrap; 
-    gap: 10px; 
-    margin-bottom: 15px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid #eee;
-    align-items: center;
-}
-#button-container .glossy-button {
-    flex-grow: 0; 
-    flex-shrink: 0;
-    margin-right: 10px; 
-}
-
-/* --- Accrual Policies Table --- */
 .table-container.report-table-container {
-    max-height: 225px; 
-    overflow-y: auto;
-    width: 100%; 
-    box-sizing: border-box;
+    max-height: 20vh; 
 }
 
-/* --- Required Asterisk --- */
+/* Make required asterisk red */
 .required-asterisk { 
     color: #dc3545 !important; 
-    margin-left: 2px; 
-    font-weight: bold; 
 }
 
-/* --- Delete & Reassign Accrual Policy Modal --- */
-#deleteAndReassignAccrualModal .modal-content { 
-    max-width: 550px; 
-    padding: 20px 25px; 
-    background-color: #fefefe; 
-    border: 1px solid #888; 
-    border-radius: 8px;
-    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
+/* Clean up styling for the Delete & Reassign modal's content body */
+#deleteAndReassignAccrualModal .modal-body-content {
+    padding: 15px 25px;
 }
-#deleteAndReassignAccrualModal h2 { 
-    font-size: 1.3em; 
-    margin-bottom: 15px; 
-    color:#c82333;
-    border-bottom: 1px solid #dfb5b9; 
-    padding-bottom: 10px; 
-    margin-top:0;
+#deleteAndReassignAccrualModal .modal-body-content p {
+    margin-top: 0;
+    margin-bottom: 1.2em;
+    font-size: 1em;
+    color: #343a40;
+    line-height: 1.5;
 }
-#deleteAndReassignAccrualModal p#deleteReassignAccrualModalMessage { 
-    font-size: 0.95em; 
-    line-height: 1.6; 
-    margin-bottom: 20px; 
-    text-align: left; 
+#deleteAndReassignAccrualModal .modal-body-content label {
+    display: block;
+    margin-bottom: 0.5em;
+    font-weight: 500;
 }
-#deleteAndReassignAccrualModal .form-item { 
-    margin-bottom: 20px; 
-    text-align: left; 
-}
-#deleteAndReassignAccrualModal .form-item label { 
-    display: block; 
-    margin-bottom: 6px; 
-    font-weight: 500; 
-    color: #495057; 
-}
-#deleteAndReassignAccrualModal .form-item select { 
-    width: 100%; 
-    padding: 9px 12px; 
-    border: 1px solid #ced4da; 
-    border-radius: 4px; 
-    box-sizing: border-box; 
-    font-size: 0.95em; 
-    height: 40px; 
-}
-#deleteAndReassignAccrualModal .error-message { 
-    color: #721c24; 
-    background-color: #f8d7da; 
-    border: 1px solid #f5c6cb; 
-    padding: 10px; 
-    border-radius: 4px; 
-    margin-bottom: 15px; 
-    text-align: center; 
-}
-#deleteAndReassignAccrualModal .button-row { 
-    justify-content: flex-end; 
-    margin-top: 20px; 
-    border-top: 1px solid #eee; 
-    padding-top:15px;
-}
-#deleteAndReassignAccrualModal .glossy-button { 
-    min-width: 120px; 
-}
-
-#wizardGenericModal .modal-content {
-    max-width: 600px;
-}
-
-#wizardGenericModal #wizardGenericModalText1 {
-    padding: 10px 15px; 
-    font-size: 1.1em;
-}
-
-#wizardGenericModal #wizardGenericModalText2 {
-    padding: 0px 15px 15px; 
-    font-size: 1em; 
-    color: #555;
-}
-
-#wizardGenericModal #wizardGenericModalButtonRow {
-    justify-content: center; 
-    padding-top: 15px; 
-    border-top: 1px solid #eee;
-}
-
-#notificationModalGeneral {
-    z-index: 10005;
-}
-
-#notificationModalGeneral .modal-content {
-    max-width: 480px;
-}
-
-#notificationModalGeneral #notificationModalGeneralMessage {
-    padding: 15px 20px; 
-    text-align: center; 
-    line-height:1.6;
-}
-
-#notificationModalGeneral .button-row {
-     justify-content: center;
-}
-
-
 
 /* --- Accrual Adjustment Form Styles --- */
 #adjustAccrualBalanceSection {
     width: 100%; 
     margin-top: 30px;
-    padding-top: 20px;
-    border-top: 2px solid #005A9C;
     box-sizing: border-box;
+    background: linear-gradient(to bottom, #f8fafc, #f0fdfa); /* MODIFIED: New theme gradient */
+    border: 1px solid #e2e8f0; /* MODIFIED: Softer border */
+    border-radius: 8px;
+    padding: 20px 25px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.07);
 }
 
 .manage-accrual-form-outer-box {
     width: 100%; 
     max-width: none; 
-    margin: 0px auto 20px auto;
-    padding: 20px 0px 0px 0px;
-    background-color: #ffffff; 
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.07);
+    margin: 0;
+    padding: 0;
+    background-color: transparent; 
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
 }
 
 .manage-accrual-form-outer-box h2 {
-    text-align: center; color: #343a40; font-size: 1.4em;
+    text-align: center; 
+    color: #1e293b; /* MODIFIED: Dark charcoal */
+    font-size: 1.4em;
     margin-top: 0; margin-bottom: 10px; padding: 0 20px 10px 20px;
-    border-bottom: 1px solid #dee2e6;
+    border-bottom: 1px solid #99f6e4; /* MODIFIED: Light Teal accent */
 }
 .manage-accrual-form-outer-box p.page-description {
-    text-align: center; font-size: 0.95em; color: #6c757d;
-    margin-bottom: 20px; line-height: 1.5;
+    text-align: center; 
+    font-size: 0.95em; 
+    color: #475569; /* MODIFIED: Medium Gray */
+    margin-bottom: 20px; 
+    line-height: 1.5;
     padding: 0 20px;
 }
 
 .form-elements-gradient-wrapper {
     padding: 25px 30px; 
-    background: #f8f9fa; 
-    border-top: 1px solid #dee2e6;
-    border-bottom: 1px solid #dee2e6;
+    background: #ffffff; /* MODIFIED: White background for contrast */
+    border-top: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
     margin: 0;
+    border-radius: 6px;
 }
 
 #adjustAccrualBalanceForm {
@@ -301,7 +101,7 @@
 .toggle-switch-label {
     margin: 0 10px; 
     font-weight: 500;
-    color: #495057; 
+    color: #475569; 
     font-size: 0.95em;
 }
 
@@ -309,8 +109,8 @@
 .switch input { opacity: 0; width: 0; height: 0; }
 .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; }
 .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; }
-input:checked + .slider { background-color: #28a745; } 
-input:focus + .slider { box-shadow: 0 0 1px #28a745; }
+input:checked + .slider { background-color: #14b8a6; } /* MODIFIED: Teal */
+input:focus + .slider { box-shadow: 0 0 1px #14b8a6; } /* MODIFIED: Teal */
 input:checked + .slider:before { transform: translateX(22px); }
 .slider.round { border-radius: 28px; }
 .slider.round:before { border-radius: 50%; }
@@ -318,19 +118,18 @@ input:checked + .slider:before { transform: translateX(22px); }
 .form-elements-gradient-wrapper .form-item { margin-bottom: 18px; text-align: left; }
 .form-elements-gradient-wrapper .form-item label {
     display: block; margin-bottom: 6px; font-weight: 500;
-    font-size: 0.9em; color: #343a40; 
+    font-size: 0.9em; color: #1e293b; 
 }
-.form-elements-gradient-wrapper .form-item label .required-asterisk { color: #dc3545; margin-left: 2px; }
 
 .form-elements-gradient-wrapper .form-item input[type="number"],
 .form-elements-gradient-wrapper .form-item select {
-    width: 100%; padding: 8px 12px; border: 1px solid #ced4da; 
+    width: 100%; padding: 8px 12px; border: 1px solid #cbd5e0; 
     border-radius: 4px; box-sizing: border-box; font-size: 0.95em; height: 40px;
     background-color: #fff;
 }
 .form-elements-gradient-wrapper .form-item input:focus,
 .form-elements-gradient-wrapper .form-item select:focus {
-    border-color: #80bdff; box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25); outline: none;
+    border-color: #3b82f6; box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25); outline: none;
 }
 
 .form-elements-gradient-wrapper .form-row {
@@ -346,14 +145,14 @@ input:checked + .slider:before { transform: translateX(22px); }
 }
 .form-elements-gradient-wrapper .radio-group input[type="radio"] {
     margin-right: 4px; 
-    accent-color: #28a745; 
+    accent-color: #14b8a6; /* MODIFIED: Teal */
     transform: scale(1.2); 
     vertical-align: middle;
 }
 .form-elements-gradient-wrapper .radio-group label {
     margin-bottom: 0; font-weight: normal; font-size: 0.95em;
     cursor: pointer; padding-right: 10px; display: inline-flex; align-items: center;
-    color: #495057; 
+    color: #475569; 
 }
 
 .manage-accrual-form-outer-box .button-row { 

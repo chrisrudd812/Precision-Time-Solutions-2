@@ -34,7 +34,7 @@ public class SetInitialPinServlet extends HttpServlet {
         String wizardStepVerify = request.getParameter("wizardStepVerify");
 
         if (session == null || !"initialPinSetRequired".equals(session.getAttribute("wizardStep")) || eidStr == null) {
-            response.sendRedirect("signup_company_info.jsp?error=" + URLEncoder.encode("Invalid session or step.", StandardCharsets.UTF_8));
+            response.sendRedirect("signup_company_info.jsp?error=" + URLEncoder.encode("Invalid setup step or session expired.", StandardCharsets.UTF_8));
             return;
         }
 
@@ -73,7 +73,11 @@ public class SetInitialPinServlet extends HttpServlet {
 
                 if (rowsAffected > 0) {
                     logger.info("Successfully set initial PIN for EID: " + eid);
-                    // Set wizardStep to settings_setup and redirect to settings.jsp in wizard mode
+                    
+                    // [FIX] Set the correct 4-hour session timeout for the administrator
+                    session.setMaxInactiveInterval(4 * 60 * 60); // 4 hours in seconds
+                    logger.info("Administrator session timeout set to 4 hours for EID: " + eid);
+
                     session.setAttribute("wizardStep", "settings_setup");
                     response.sendRedirect("settings.jsp?setup_wizard=true&step=settings_setup");
                     return;

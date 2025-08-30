@@ -64,12 +64,6 @@
     outline: none;
 }
 
-/* For the print button styling on this page */
-.report-actions #printArchivedPunchesBtn {
-    /* Base .glossy-button and .text-blue classes are applied in JSP */
-    /* Add specific overrides if needed */
-}
-
 /* Required asterisk, if any input on this page ever needed it */
 .required-asterisk {
     color: #dc3545;

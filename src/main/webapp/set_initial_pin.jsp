@@ -40,7 +40,7 @@
         Object nameObj = initialPinSession.getAttribute("wizardAdminFirstName");
         if (nameObj instanceof String && !((String)nameObj).isEmpty()) adminFirstNameForDisplay = (String) nameObj;
         Object companyNameObj = initialPinSession.getAttribute("CompanyNameSignup");
-         if (companyNameObj instanceof String && !((String)companyNameObj).isEmpty()) companyNameSignup_InitialPin = (String) companyNameObj;
+        if (companyNameObj instanceof String && !((String)companyNameObj).isEmpty()) companyNameSignup_InitialPin = (String) companyNameObj;
 
         signupSuccessfulCompanyInfo = (String) initialPinSession.getAttribute("signupSuccessfulCompanyInfo");
         jspSetInitialPinLogger_SERVER.info("[set_initial_pin.jsp SERVER] WizardStep: " + wizardStep + ", AdminEID: " + wizardAdminEid + 
@@ -61,41 +61,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Set Your Login PIN - YourTimeClock</title>
+    <title>Set Your Login PIN - <%= escapeHtml(companyNameSignup_InitialPin) %></title>
     <link rel="stylesheet" href="<%= request.getContextPath() %>/css/login.css?v=<%= System.currentTimeMillis() %>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Roboto', sans-serif; } 
         .set-pin-container { max-width: 550px; margin-top: 3%; }
-        .set-pin-header .logo-link { font-size: 2em; }
-        .set-pin-header h1 { font-size: 1.6em; margin-bottom: 10px;}
-        .set-pin-header p.welcome-message { font-size: 0.95em; line-height: 1.5; color: #444; margin-bottom:20px; }
+        .login-header h1 { font-size: 1.6em; margin-bottom: 10px;}
+        .login-header p.welcome-message { font-size: 0.95em; line-height: 1.5; color: #444; margin-bottom:20px; }
         .required { color: #dc3545; margin-left: 2px; }
-        .info-box {
-            background-color: #e7f3fe; border-left: 6px solid #2196F3; margin-bottom: 20px;
-            padding: 15px 20px; border-radius: 4px; font-size: 0.9em;
-        }
-        .info-box h3 { margin-top: 0; color: #1E88E5; font-size: 1.2em; }
-        .info-box p { margin-bottom: 8px; line-height: 1.6; }
-        .info-box strong { color: #0D47A1; }
         .page-message.error-message { margin-top:10px; margin-bottom: 10px; }
-        
-        /* Modal Styles */
         .modal { display: none; position: fixed; z-index: 1060; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
         .modal.modal-visible { display: flex !important; } 
-        .modal-content { background-color: #fefefe; margin: auto; padding: 25px 30px; border: 1px solid #bbb; border-radius: 8px; width: 90%; max-width: 520px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); text-align:left; }
+        .modal-content { background-color: #fefefe; margin: auto; padding: 25px 30px; border: 1px solid #bbb; border-radius: 8px; width: 90%; max-width: 520px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); text-align:left; position: relative; }
         .modal-content h2 { margin-top: 0; font-size: 1.75em; color: #0056b3; padding-bottom: 15px; border-bottom: 1px solid #e9ecef; text-align:center; margin-bottom: 20px; font-weight: 500;}
         .modal-content .close-modal-button { color: #888; float: right; font-size: 30px; font-weight: bold; cursor:pointer; position: absolute; top: 10px; right: 15px; line-height: 1; }
         .modal-content .close-modal-button:hover, .modal-content .close-modal-button:focus { color: #000; text-decoration: none; }
         .modal-content .button-row { display: flex; justify-content: space-evenly; gap: 15px; margin-top: 25px; padding-top:15px; border-top: 1px solid #e9ecef;}
         .signup-success-message-content p { margin-bottom: 12px; line-height: 1.65; font-size: 0.95em;}
         .signup-success-message-content p strong { font-weight: 500; }
+        
+        .set-pin-header .logo-image {
+            height: 250px; /* [FIX] Made the logo bigger */
+            width: auto;
+            margin-bottom: 15px;
+        }
 
-        /* ** ENHANCED BUTTON STYLES ** */
         .glossy-button {
-            display: inline-flex; /* For aligning icon and text */
-            align-items: center;
+            display: inline-flex; 
+            align-items: center; 
             justify-content: center;
             font-weight: 500;
             text-align: center;
@@ -103,49 +98,30 @@
             cursor: pointer;
             user-select: none;
             border: 1px solid transparent;
-            padding: 0.65rem 1.2rem; /* Increased padding for better size */
-            font-size: 1rem;        /* Standard font size */
+            padding: 0.65rem 1.2rem;
+            font-size: 1rem;
             line-height: 1.5;
-            border-radius: 0.3rem; /* Slightly more rounded */
-            text-decoration: none; 
+            border-radius: 0.3rem;
+            text-decoration: none;
             transition: color .15s ease-in-out, background-color .15s ease-in-out, border-color .15s ease-in-out, box-shadow .15s ease-in-out;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Subtle shadow */
-        }
-        .glossy-button:hover {
-            filter: brightness(95%);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-        .glossy-button:active {
-            filter: brightness(90%);
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        .glossy-button:disabled {
-            opacity: 0.65;
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-        .glossy-button i.fas { /* Spacing for Font Awesome icons */
-            margin-right: 0.5em; 
-        }
-        .text-green {
-            color: #fff;
-            background-color: #28a745; 
-            border-color: #28a745;
-        }
+        .glossy-button:hover { filter: brightness(95%); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .glossy-button:active { filter: brightness(90%); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .glossy-button:disabled { opacity: 0.65; cursor: not-allowed; box-shadow: none; }
+        .glossy-button i.fas { margin-right: 0.5em; }
+        .text-green { color: #fff; background-color: #28a745; border-color: #28a745; }
         .text-green:hover { background-color: #218838; border-color: #1e7e34; }
-        .text-blue {
-            color: #fff;
-            background-color: #007bff; 
-            border-color: #007bff;
-        }
+        .text-blue { color: #fff; background-color: #007bff; border-color: #007bff; }
         .text-blue:hover { background-color: #0069d9; border-color: #0062cc; }
-        /* Ensure login.css .login-submit-button doesn't overly conflict if .glossy-button is now primary */
     </style>
 </head>
 <body>
     <div class="login-container set-pin-container"> 
         <div class="login-header set-pin-header">
-            <a href="<%= request.getContextPath() %>/index.jsp" class="logo-link"><i class="fas fa-clock"></i> YourTimeClock</a>
+            <a href="<%= request.getContextPath() %>/index.jsp" class="logo-link">
+                <img src="<%= request.getContextPath() %>/Images/logo.png" alt="<%= escapeHtml(companyNameSignup_InitialPin) %> Logo" class="logo-image">
+            </a>
             <h1>Set Your Login PIN</h1>
             <p class="welcome-message">
                 Welcome, <%= escapeHtml(adminFirstNameForDisplay) %>! This is the first step in setting up your user account for 
@@ -158,10 +134,10 @@
                 <span class="close-modal-button" id="closeAccountSuccessInfoModal">&times;</span>
                 <h2>Account Creation Successful!</h2>
                 <div class="signup-success-message-content">
-                    <p><%= signupSuccessfulCompanyInfo %></p> 
-                    <p style="margin-top:15px;">The Administrator Password you created is for managing company-level account settings.</p>
-                    <p>To secure your user account (for <strong><%= escapeHtml(adminEmailForDisplay) %></strong>), please now set your initial 4-digit PIN. This PIN will be used for clocking in/out and accessing user-specific features.</p>
-                    <p>Please make a note of your Company ID (shown above). You will need it for future logins.</p>
+                     <p><%= signupSuccessfulCompanyInfo %></p> 
+                    <p style="margin-top:15px;">The Administrator Password you created is for managing company-level account settings (billing, etc).</p>
+                    <p>To secure your <em>User</em> account (for <strong><%= escapeHtml(adminEmailForDisplay) %></strong>), please now set your initial 4-digit PIN. This PIN will be used for accessing the Dashboard features and clocking in/out.</p>
+                    <p>Please make a note of your Company ID (shown above). You will need to provide it to employees to login.</p>
                 </div>
                 <div class="button-row">
                     <button type="button" id="copyCompanyIdButton_pinPage" class="glossy-button text-blue"><i class="fas fa-copy"></i> Copy Company ID</button>
@@ -173,12 +149,6 @@
         <% if (pageErrorMessage != null && !pageErrorMessage.isEmpty()) { %>
             <p class="page-message error-message"><%= escapeHtml(pageErrorMessage) %></p>
         <% } %>
-
-        <div class="info-box">
-            <h3>Set Your Secure 4-Digit PIN</h3>
-            <p>This PIN is for your personal user account (<strong><%= escapeHtml(adminEmailForDisplay) %></strong>) and will be used for clocking in/out and accessing your employee dashboard.</p>
-            <p>It is separate from the Company Administrator password you previously created.</p>
-        </div>
 
         <form action="<%= request.getContextPath() %>/SetInitialPinServlet" method="POST" id="setInitialPinForm" class="login-form">
             <input type="hidden" name="eid" value="<%= wizardAdminEid %>"> 
@@ -201,7 +171,7 @@
     </div>
     
     <script type="text/javascript">
-        const appRootPath = "<%= request.getContextPath() %>"; 
+        const appRootPath = "<%= request.getContextPath() %>";
     </script>
     <%@ include file="/WEB-INF/includes/common-scripts.jspf" %>
     <script type="text/javascript">
@@ -219,7 +189,7 @@
             function hideSuccessModalAndFocusPin() {
                 console.log("[set_initial_pin.jsp CLIENT] Hiding success modal and focusing PIN field.");
                 if (successModal) {
-                    successModal.classList.remove('modal-visible'); 
+                    successModal.classList.remove('modal-visible');
                     successModal.style.display = 'none'; 
                 }
                 if (newPinField) {
@@ -285,7 +255,7 @@
                         confirmPinField.focus(); isValid = false;
                     }
                     if (!isValid) { 
-                        event.preventDefault(); 
+                        event.preventDefault();
                     } else {
                         const submitBtnEl = form.querySelector('button[type="submit"]');
                         if(submitBtnEl){
@@ -299,7 +269,7 @@
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('error') || urlParams.has('message')) { 
                 if (typeof window.clearUrlParams === 'function') { 
-                    window.clearUrlParams(['error', 'message']); 
+                    window.clearUrlParams(['error', 'message']);
                 } else { 
                     try { 
                         const newUrl = window.location.pathname + (window.location.hash || '');

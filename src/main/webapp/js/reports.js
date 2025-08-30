@@ -1,8 +1,7 @@
 /**
  * reports.js
  * Handles fetching and displaying reports dynamically on reports.jsp
- * Uses commonUtils.js for shared functionality.
- * v13: Removed default sort text from descriptions.
+ * v15: Rewritten print function for multi-page reports.
  */
 
 // --- Draggable Modal Functionality ---
@@ -50,11 +49,10 @@ function makeElementDraggable(elmnt, handle) {
         document.onmousemove = null;
     }
 }
-// --- End Draggable Modal Functionality ---
 
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("Reports JS Loaded - v13 (Removed default sort text)");
+    console.log("Reports JS Loaded - v15 (Multi-page Print)");
 
     const reportOutputDiv = document.getElementById('reportOutput');
     const loadingIndicator = document.getElementById('loadingIndicator');
@@ -105,7 +103,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // --- MODIFIED: Removed "Default sort" text ---
     const reportDescriptions = {
         exception: "Shows punch records with missing OUT times for work-type punches within the current pay period. Click a row to select, then 'Fix Missing Punches'.",
         tardy: "Summarizes employees marked as tardy or leaving early based on punch data.",
@@ -114,46 +111,34 @@ document.addEventListener('DOMContentLoaded', function() {
         inactiveEmployees: "Lists employees marked as inactive. Click a row to reactivate.",
         employeesByDept: "Lists active employees filtered by the selected department.",
         employeesBySched: "Lists active employees filtered by the selected schedule.",
-        employeesBySup: "Lists active employees filtered by the selected supervisor."
+        employeesBySup: "Lists active employees filtered by the selected supervisor.",
+        accrualBalance: "Displays current vacation, sick, and personal time balances for all active employees.",
+        systemAccess: "Lists all active employees with 'Administrator' permissions for security auditing."
     };
-    const employeeReportHeaders = `<thead><tr><th class="sortable" data-sort-type="number">EID</th><th class="sortable" data-sort-type="string">First Name</th><th class="sortable" data-sort-type="string">Last Name</th><th class="sortable" data-sort-type="string">Department</th><th class="sortable" data-sort-type="string">Schedule</th><th class="sortable" data-sort-type="string">Supervisor</th><th class="sortable" data-sort-type="string">Email</th><th class="sortable" data-sort-type="string">Phone</th></tr></thead>`;
+
+    const employeeReportHeaders = `<thead><tr><th class="sortable" data-sort-type="number">EID</th><th class="sortable" data-sort-type="string">First Name</th><th class="sortable" data-sort-type="string">Last Name</th><th class="sortable" data-sort-type="string">Department</th><th class="sortable" data-sort-type="string">Schedule</th><th class="sortable" data-sort-type="string">Supervisor</th><th class="sortable" data-sort-type="string">Email</th></tr></thead>`;
+    
     const reportHeaders = {
          exception: `<thead><tr><th class="sortable" data-sort-type="number">EID</th><th class="sortable" data-sort-type="string">First Name</th><th class="sortable" data-sort-type="string">Last Name</th><th class="sortable" data-sort-type="date">Date</th><th class="sortable" data-sort-type="string">IN Time</th><th class="sortable" data-sort-type="string">OUT Time</th></tr></thead>`,
          tardy: `<thead><tr><th class="sortable" data-sort-type="number">EID</th><th class="sortable" data-sort-type="string">First Name</th><th class="sortable" data-sort-type="string">Last Name</th><th class="sortable" data-sort-type="number">Late Count</th><th class="sortable" data-sort-type="number">Early Out Count</th></tr></thead>`,
-         whosin: `<thead><tr><th class="sortable" data-sort-type="number">EID</th><th class="sortable" data-sort-type="string">First Name</th><th class="sortable" data-sort-type="string">Last Name</th><th class="sortable" data-sort-type="string">Department</th><th class="sortable" data-sort-type="string">Schedule</th></tr></thead>`,
+         whosin: `<thead><tr><th class="sortable" data-sort-type="number">EID</th><th class="sortable" data-sort-type="string">First Name</th><th class="sortable" data-sort-type="string">Last Name</th><th class="sortable" data-sort-type="string">Department</th><th class="sortable" data-sort-type="string">Schedule</th><th class="sortable" data-sort-type="string">Email</th></tr></thead>`,
          activeEmployees: employeeReportHeaders,
          inactiveEmployees: employeeReportHeaders,
          employeesByDept: employeeReportHeaders,
          employeesBySched: employeeReportHeaders,
-         employeesBySup: employeeReportHeaders
+         employeesBySup: employeeReportHeaders,
+         accrualBalance: `<thead><tr><th class="sortable" data-sort-type="number">EID</th><th class="sortable" data-sort-type="string">First Name</th><th class="sortable" data-sort-type="string">Last Name</th><th class="sortable" data-sort-type="number">Vacation Hours</th><th class="sortable" data-sort-type="number">Sick Hours</th><th class="sortable" data-sort-type="number">Personal Hours</th></tr></thead>`,
+         systemAccess: `<thead><tr><th class="sortable" data-sort-type="number">EID</th><th class="sortable" data-sort-type="string">First Name</th><th class="sortable" data-sort-type="string">Last Name</th><th class="sortable" data-sort-type="string">Email</th></tr></thead>`
     };
 
-    const hideModal = window.hideModal || function(modalElement) { if(modalElement) modalElement.classList.remove('modal-visible'); console.warn("hideModal from commonUtils not found, using fallback."); };
-    const showModal = window.showModal || function(modalElement) { if(modalElement) modalElement.classList.add('modal-visible'); console.warn("showModal from commonUtils not found, using fallback."); };
-    const showPageNotification = window.showPageNotification || function(message, isError) { alert((isError ? "Error: " : "Info: ") + message); console.warn("showPageNotification from commonUtils not found, using alert fallback."); };
-    const decodeHtmlEntities = window.decodeHtmlEntities || function(text) {
-        const textArea = document.createElement('textarea');
-        textArea.innerHTML = text;
-        return textArea.value;
-    };
-    const parseTimeTo24Hour = window.parseTimeTo24Hour || function(timeStr12hr) {
-        if (!timeStr12hr || typeof timeStr12hr !== 'string' || String(timeStr12hr).trim() === '' || String(timeStr12hr).toLowerCase().includes('missing')) return '';
-        timeStr12hr = String(timeStr12hr).trim();
-        try {
-            if (/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(timeStr12hr)) { if (timeStr12hr.length === 5) return timeStr12hr + ':00'; return timeStr12hr; }
-            const parts = timeStr12hr.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)/i);
-            if (!parts) { console.warn("Reports.js: Could not parse 12hr time string:", timeStr12hr); return ''; }
-            let h = parseInt(parts[1], 10); const m = parts[2]; const s = parts[3] ? parts[3] : '00'; const ampm = parts[4].toUpperCase();
-            if (isNaN(h) || h < 1 || h > 12) { console.warn("Reports.js: Invalid hour in time:", timeStr12hr); return '';}
-            if (ampm === 'PM' && h !== 12) h += 12;
-            if (ampm === 'AM' && h === 12) h = 0;
-            return `${String(h).padStart(2, '0')}:${m}:${s}`;
-        } catch (e) { console.error("Reports.js: Error parsing time string:", timeStr12hr, e); return ''; }
-    };
+    const hideModal = window.hideModal || function(modalElement) { if(modalElement) modalElement.classList.remove('modal-visible'); };
+    const showModal = window.showModal || function(modalElement) { if(modalElement) modalElement.classList.add('modal-visible'); };
+    const showPageNotification = window.showPageNotification || function(message, isError) { alert((isError ? "Error: " : "Info: ") + message); };
+    const decodeHtmlEntities = window.decodeHtmlEntities || function(text) { const ta = document.createElement('textarea'); ta.innerHTML = text; return ta.value; };
+    const parseTimeTo24Hour = window.parseTimeTo24Hour || function(timeStr12hr) { return timeStr12hr; };
 
 
     function loadReport(reportType, filterValue = null) {
-        console.log(`Reports.js: Attempting to load report: ${reportType}, Filter: ${filterValue}`);
         if (loadingIndicator) loadingIndicator.style.display = 'flex';
         if (reportActionsDiv) reportActionsDiv.style.display = 'none';
         if (fixMissingPunchesBtnReports) fixMissingPunchesBtnReports.style.display = 'none';
@@ -162,7 +147,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const reportName = reportType.replace(/([A-Z])/g, ' $1').trim();
         let titleText = `${reportName.charAt(0).toUpperCase() + reportName.slice(1)} Report`;
         if (filterValue) {
-             try { filterValue = decodeURIComponent(filterValue); } catch(e) { console.warn("Reports.js: Error decoding filterValue:", e); }
+             try { filterValue = decodeURIComponent(filterValue); } catch(e) { console.warn("Error decoding filterValue:", e); }
              if(reportType === 'employeesByDept') titleText = `Department: ${filterValue} - Employees`;
              else if(reportType === 'employeesBySched') titleText = `Schedule: ${filterValue} - Employees`;
              else if(reportType === 'employeesBySup') titleText = `Supervisor: ${filterValue} - Employees`;
@@ -177,14 +162,10 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch('ReportServlet', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' }, body: params })
         .then(response => {
             if (!response.ok) return response.text().then(text => { throw new Error(`Server Error: ${response.status} - ${text || response.statusText}`); });
-            const contentType = response.headers.get("content-type");
-            if (contentType && contentType.includes("application/json")) return response.json();
-            throw new Error("Received non-JSON response from server.");
+            return response.json();
         })
         .then(data => {
-            console.log("Reports.js: Report data received:", data);
             if (loadingIndicator) loadingIndicator.style.display = 'none';
-
             if (data.success) {
                 if (data.html && data.html !== 'NO_EXCEPTIONS') {
                     const tableHeadersHTML = reportHeaders[reportType] || `<thead><tr><th>Report Data</th></tr></thead>`;
@@ -193,35 +174,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (reportType === 'exception') tableClass += ' exception-report-table-interactive';
 
                     if(reportOutputDiv) {
-                        reportOutputDiv.innerHTML = `
-                            <div class="table-container report-table-container">
-                                <table class="report-table ${tableClass}" id="dynamicReportTable">
-                                    ${tableHeadersHTML}
-                                    <tbody>
-                                        ${data.html}
-                                    </tbody>
-                                </table>
-                            </div>`;
+                        reportOutputDiv.innerHTML = `<div class="table-container report-table-container"><table class="report-table ${tableClass}" id="dynamicReportTable">${tableHeadersHTML}<tbody>${data.html}</tbody></table></div>`;
                         const reportTable = reportOutputDiv.querySelector('#dynamicReportTable');
-                        if (reportTable) {
-                            const initialSort = { columnIndex: 0, ascending: true }; 
-                            
-                            if (typeof makeTableSortable === 'function') {
-                                makeTableSortable(reportTable, initialSort);
-                            } else {
-                                console.warn("makeTableSortable not found (expected in commonUtils.js)");
-                            }
-
-                            if (reportActionsDiv && printReportBtn) {
-                                printReportBtn.style.display = 'inline-flex';
-                                reportActionsDiv.style.display = 'flex';
-                            }
-                            if (reportType === 'exception' && fixMissingPunchesBtnReports) {
-                                fixMissingPunchesBtnReports.style.display = 'inline-flex';
-                                fixMissingPunchesBtnReports.disabled = true;
-                            }
-                        } else {
-                            if (reportActionsDiv) reportActionsDiv.style.display = 'none';
+                        if (reportTable && typeof makeTableSortable === 'function') {
+                            makeTableSortable(reportTable, { columnIndex: 0, ascending: true });
+                        }
+                        if (reportActionsDiv && printReportBtn) {
+                            printReportBtn.style.display = 'inline-flex';
+                            reportActionsDiv.style.display = 'flex';
+                        }
+                        if (reportType === 'exception' && fixMissingPunchesBtnReports) {
+                            fixMissingPunchesBtnReports.style.display = 'inline-flex';
+                            fixMissingPunchesBtnReports.disabled = true;
                         }
                     }
                 } else {
@@ -235,7 +199,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .catch(error => {
-            console.error('Reports.js: Error fetching or processing report:', error);
             if (loadingIndicator) loadingIndicator.style.display = 'none';
             if(reportTitleElement) reportTitleElement.textContent = "Report Error";
             if(reportDescriptionElement) reportDescriptionElement.textContent = "Could not load the requested report.";
@@ -433,15 +396,41 @@ document.addEventListener('DOMContentLoaded', function() {
         const description = reportDescriptionElement?.textContent || '';
         const reportTableElement = reportOutputDiv?.querySelector('#dynamicReportTable');
         if (!reportTableElement) { showPageNotification("No report table content to print.", true); return; }
-        const reportTableContainerClone = reportTableElement.closest('.report-table-container')?.cloneNode(true);
-        if (!reportTableContainerClone) { showPageNotification("Could not prepare report content for printing.", true); return; }
+        
         const reportsCSSLink = document.querySelector('link[href^="css/reports.css"]');
-        const cssVersion = reportsCSSLink ? reportsCSSLink.getAttribute('href').split('v=')[1] || '1' : '1';
+        const cssPath = reportsCSSLink ? reportsCSSLink.href : 'css/reports.css';
+        
         const printWindow = window.open('', '_blank', 'width=1100,height=850,scrollbars=yes,resizable=yes');
         if (!printWindow) { showPageNotification("Could not open print window. Please check popup blocker settings.", true); return; }
-        printWindow.document.write(`<html><head><title>Print - ${decodeHtmlEntities(title)}</title><link rel="stylesheet" href="css/reports.css?v=${cssVersion}"><style>body{margin:20px;background-color:#fff!important;}</style></head><body><h1 style="text-align:center;font-size:16pt;color:#000;">${decodeHtmlEntities(title)}</h1><p style="text-align:center;font-size:10pt;color:#333;">${decodeHtmlEntities(description)}</p>${reportTableContainerClone.outerHTML}</body></html>`);
+
+        printWindow.document.write('<html><head><title>Print - ' + decodeHtmlEntities(title) + '</title>');
+        printWindow.document.write('<link rel="stylesheet" href="' + cssPath + '">');
+        printWindow.document.write(`
+            <style>
+                body { margin: 20px; background-color: #fff !important; }
+                .report-table-container { max-height: none !important; overflow-y: visible !important; border: 1px solid #ccc !important; }
+                table.report-table { font-size: 9pt; }
+                table.report-table thead { display: table-header-group; }
+                table.report-table tbody tr { page-break-inside: avoid; }
+                .main-navbar, .report-actions, .filter-form, #button-container { display: none !important; }
+            </style>
+        `);
+        printWindow.document.write('</head><body>');
+        printWindow.document.write('<h1 style="text-align:center;font-size:16pt;color:#000;">' + decodeHtmlEntities(title) + '</h1>');
+        printWindow.document.write('<p style="text-align:center;font-size:10pt;color:#333;">' + decodeHtmlEntities(description) + '</p>');
+        printWindow.document.write('<div class="table-container report-table-container">' + reportTableElement.outerHTML + '</div>');
+        printWindow.document.write('</body></html>');
         printWindow.document.close();
-        setTimeout(() => { try { printWindow.focus(); printWindow.print(); } catch (e) { showPageNotification("Printing failed: " + e.message, true); try {printWindow.close();}catch(e2){} } }, 750);
+
+        setTimeout(() => {
+            try {
+                printWindow.focus();
+                printWindow.print();
+            } catch (e) {
+                showPageNotification("Printing failed: " + e.message, true);
+                try { printWindow.close(); } catch (e2) {}
+            }
+        }, 750);
     }
 
 
@@ -455,7 +444,7 @@ document.addEventListener('DOMContentLoaded', function() {
         loadReport(initialReport, initialFilterValue);
     } else {
          if(reportTitleElement) reportTitleElement.textContent = "Select Report";
-         if(reportDescriptionElement) reportDescriptionElement.textContent = "Choose a report from the menu.";
+         if(reportDescriptionElement) reportDescriptionElement.textContent = "Choose a report from the 'Reports' menu in the navigation bar.";
          if (reportOutputDiv && reportOutputDiv.innerHTML.trim() === '') {
             reportOutputDiv.innerHTML = '<p class="report-placeholder">Please select a report from the menu.</p>';
          }
@@ -463,3 +452,4 @@ document.addEventListener('DOMContentLoaded', function() {
          if(reportActionsDiv) reportActionsDiv.style.display = 'none';
     }
 });
+// End of reports.js

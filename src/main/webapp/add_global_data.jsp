@@ -4,11 +4,6 @@
 <%
     String successMessage = request.getParameter("message");
     String errorMessage = request.getParameter("error");
-    String pageError = null;
-    if (errorMessage != null && !errorMessage.isEmpty()) {
-         pageError = errorMessage;
-         successMessage = null;
-    }
     String todayDate = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
 %>
 <!DOCTYPE html>
@@ -18,69 +13,87 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>Add Global Hours</title>
     <link rel="stylesheet" href="css/navbar.css">
+    <link rel="stylesheet" href="css/reports.css?v=<%= System.currentTimeMillis() %>">
     <link rel="stylesheet" href="css/add_global_data.css?v=<%= System.currentTimeMillis() %>">
-    <link rel="stylesheet" href="css/punches.css?v=<%= System.currentTimeMillis() %>">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
-<body class="add-global-page">
+<body class="reports-page">
     <%@ include file="/WEB-INF/includes/navbar.jspf" %>
 
-    <div class="parent-container">
-        <h1>Add Global Hours</h1>
+    <div class="parent-container reports-container">
+        <h1><i class="fas fa-globe-americas"></i> Add Global Hours</h1>
         <p class="intro-paragraph">Add non-clocked time (like Holiday, Sick Day) for ALL active employees.</p>
 
-        <% if (successMessage != null && !successMessage.isEmpty()) { %>
-            <div id="notification-bar" class="success-message"><%= successMessage %></div>
-        <% } else if (pageError != null && !pageError.isEmpty()) { %>
-            <div id="notification-bar" class="error-message"><%= pageError %></div>
+        <% if (errorMessage != null && !errorMessage.isEmpty()) { %>
+            <div class="page-message error-message"><%= errorMessage %></div>
         <% } %>
 
         <div class="form-container">
             <form id="addGlobalHoursForm" action="AddEditAndDeletePunchesServlet" method="post">
                 <input type="hidden" name="action" value="addGlobalHoursSubmit">
 
-                <div class="form-item">
-                     <label for="addHoursDate">Date:</label>
-                     <input type="date" id="addHoursDate" name="addHoursDate" value="<%= todayDate %>" required>
-                 </div>
+                <fieldset class="form-section">
+                    <legend>Date <span class="required-asterisk">*</span></legend>
+                    <input type="date" id="addHoursDate" name="addHoursDate" value="<%= todayDate %>" required>
+                </fieldset>
 
-                 <div class="form-item">
-                     <label for="addHoursTotal">Hours:</label>
-                     <input type="number" id="addHoursTotal" name="addHoursTotal" step="0.01" min="0.01" max="24" required placeholder="e.g., 8.0"
-                            value="8" autofocus>
-                 </div>
+                <fieldset class="form-section">
+                    <legend>Hours <span class="required-asterisk">*</span></legend>
+                    <input type="number" id="addHoursTotal" name="addHoursTotal" step="0.01" min="0.01" max="24" required placeholder="e.g., 8.0" value="8">
+                </fieldset>
 
-                <div class="form-item">
-                    <label for="addHoursPunchTypeDropDown">Reason / Punch Type:</label>
+                <fieldset class="form-section">
+                    <legend>Reason / Punch Type <span class="required-asterisk">*</span></legend>
                     <select id="addHoursPunchTypeDropDown" name="addHoursPunchTypeDropDown" required>
                         <option value="Holiday">Holiday</option>
                         <option value="Vacation">Vacation</option>
                         <option value="Sick">Sick</option>
                         <option value="Personal">Personal</option>
-                        <option value="Bereavement">Bereavement</option>
                         <option value="Other">Other</option>
                     </select>
-                 </div>
+                </fieldset>
 
                 <div class="button-row">
-                    <button type="submit" class="submit-btn">Add Global Entry</button>
+                     <button type="submit" class="glossy-button text-green"><i class="fas fa-plus-circle"></i> Add Global Entry</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <div id="notificationModal" class="modal">
-         <div class="modal-content">
-             <span class="close-button" id="closeNotificationModal">&times;</span>
-             <h2>Notification</h2>
-             <p id="notificationMessage"></p>
-             <div class="modal-footer" style="justify-content: center;">
-                 <button type="button" id="okButton" class="modal-ok-button">OK</button>
-             </div>
-         </div>
-    </div>
-
-    <script type="text/javascript" src="js/punches.js?v=<%= System.currentTimeMillis() %>"></script>
+    <%@ include file="/WEB-INF/includes/notification-modals.jspf" %>
     <%@ include file="/WEB-INF/includes/common-scripts.jspf" %>
+
+    <%-- MODIFICATION: Removed incorrect punches.js script and added self-contained logic --%>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // This part shows the modal if a success message is in the URL
+            <% if (successMessage != null && !successMessage.isEmpty()) { %>
+                showPageNotification('<%= successMessage.replace("'", "\\'") %>', false, null, "Success");
+            <% } %>
+
+            // --- Self-Contained Modal Close Logic for THIS PAGE ONLY ---
+            const notificationModal = document.getElementById('notificationModalGeneral');
+            if (notificationModal) {
+                const okButton = document.getElementById('okButtonNotificationModalGeneral');
+                const closeXButton = notificationModal.querySelector('.close'); // Standard close button
+
+                function closeAndRefresh() {
+                    // This function now handles closing the modal AND refreshing the page
+                    if (typeof hideModal === 'function') {
+                        hideModal(notificationModal);
+                    }
+                    // Use location.pathname to reload the page without the URL parameters
+                    window.location.href = window.location.pathname;
+                }
+
+                if (okButton) {
+                    okButton.addEventListener('click', closeAndRefresh);
+                }
+                if (closeXButton) {
+                    closeXButton.addEventListener('click', closeAndRefresh);
+                }
+            }
+        });
+    </script>
 </body>
 </html>

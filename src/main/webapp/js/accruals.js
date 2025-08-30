@@ -1,54 +1,5 @@
 // js/accruals.js
 
-/**
- * FIX: Copied utility functions from commonUtils.js to resolve script loading order issues.
- * This ensures these functions are available when this script runs, without modifying shared files.
- */
-function decodeHtmlEntities(encodedString) {
-    if (encodedString === null || typeof encodedString === 'undefined' || String(encodedString).toLowerCase() === 'null') { return ''; }
-    try {
-        const textarea = document.createElement('textarea');
-        textarea.innerHTML = String(encodedString); 
-        return textarea.value;
-    } catch (e) {
-        return String(encodedString); 
-    }
-}
-
-function showModal(modalElement) {
-    if (modalElement && typeof modalElement.classList !== 'undefined') {
-        modalElement.style.display = 'flex';
-        modalElement.classList.add('modal-visible');
-    }
-}
-
-function hideModal(modalElement) {
-    if (modalElement && typeof modalElement.classList !== 'undefined') {
-        modalElement.style.display = 'none';
-        modalElement.classList.remove('modal-visible');
-    }
-}
-
-function showPageNotification(message, isError = false, modalInstance = null, titleText = "Notification") { 
-    const modalToUse = modalInstance || document.getElementById("notificationModalGeneral");
-    const msgElem = modalToUse ? modalToUse.querySelector('#notificationModalGeneralMessage') : null;
-    const modalTitleElem = modalToUse ? modalToUse.querySelector('#notificationModalGeneralTitle') : null;
-
-    if (!modalToUse || !msgElem) {
-        alert((isError ? "Error: " : "Notification: ") + message);
-        return;
-    }
-    if(modalTitleElem) modalTitleElem.textContent = titleText;
-    msgElem.innerHTML = message;
-    showModal(modalToUse); 
-    
-    const okButton = modalToUse.querySelector('#okButtonNotificationModalGeneral');
-    if (okButton) {
-        setTimeout(() => okButton.focus(), 150);
-    }
-}
-
-
 document.addEventListener('DOMContentLoaded', function() {
     console.log("[ACCRUALS.JS] DOMContentLoaded: Script loaded.");
 
@@ -258,32 +209,24 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!isValid) { showPageNotification(errorMessage, true, notificationModal, "Validation Error"); return; }
             
             const formData = new FormData(adjustmentForm);
-            const successDiv = document.getElementById('pageNotificationDiv_Success_Accrual');
-            const errorDiv = document.getElementById('pageNotificationDiv_Error_Accrual');
-            if(successDiv) successDiv.style.display = 'none';
-            if(errorDiv) errorDiv.style.display = 'none';
             const formActionUrl = adjustmentForm.getAttribute('action');
 
             fetch(formActionUrl, { method: 'POST', body: new URLSearchParams(formData) })
             .then(response => { if (!response.ok) { throw new Error(`Server responded with status: ${response.status}`); } return response.json(); })
             .then(data => {
+                // MODIFIED: Always use the modal for notifications
                 if (data.success) {
-                    if(successDiv) { successDiv.textContent = data.message; successDiv.style.display = 'block'; } 
-                    else { showPageNotification(data.message, false, notificationModal, "Success"); }
+                    showPageNotification(data.message || "Adjustment applied successfully.", false, notificationModal, "Success");
                     adjustmentForm.reset();
                     allEmployeesToggle.dispatchEvent(new Event('change'));
                 } else {
-                     if(errorDiv) { errorDiv.textContent = data.error; errorDiv.style.display = 'block'; } 
-                     else { showPageNotification(data.error, true, notificationModal, "Adjustment Failed"); }
+                    showPageNotification(data.error || "Adjustment failed.", true, notificationModal, "Adjustment Failed");
                 }
-                window.scrollTo(0, 0);
             })
             .catch(error => {
                 console.error('Error submitting adjustment:', error);
-                const displayError = error.message.includes("JSON") ? 'An unexpected response was received from the server. Please check the server logs.' : 'A network error occurred. Please try again.';
-                if(errorDiv) { errorDiv.textContent = displayError; errorDiv.style.display = 'block'; } 
-                else { showPageNotification(displayError, true, notificationModal, "Network Error"); }
-                window.scrollTo(0, 0);
+                const displayError = error.message.includes("JSON") ? 'An unexpected response was received from the server.' : 'A network error occurred. Please try again.';
+                showPageNotification(displayError, true, notificationModal, "Network Error");
             });
         });
     }
@@ -377,5 +320,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + (window.inWizardMode_Page ? '?setup_wizard=true' : '');
             window.history.replaceState({path: cleanUrl}, '', cleanUrl);
         }
+    }
+    
+    // ADDED: Check for and display the page-level success notification in a modal
+    const successNotificationDiv = document.getElementById('pageNotificationDiv_Success_Accrual');
+    if (successNotificationDiv && successNotificationDiv.textContent.trim()) {
+        const message = successNotificationDiv.innerHTML;
+        successNotificationDiv.style.display = 'none'; // Hide the original div
+        showPageNotification(message, false, notificationModal, "Success");
     }
 });

@@ -1,26 +1,30 @@
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("signup_validation.js - v22 FINAL UNABRIDGED");
+    console.log("signup_validation.js - v35 FINAL POLISH");
 
     let isFreePlan = false;
     let stripe, cardNumberElement;
     const appRoot = typeof appRootPath === 'string' ? appRootPath : "";
+    
+    const stripeValidationState = {
+        cardNumber: false,
+        cardExpiry: false,
+        cardCvc: false
+    };
 
     // --- HTML Element References ---
     const form = document.getElementById('companySignupForm');
     const clientSideErrorDiv = document.getElementById('card-errors');
     const mainSubmitButton = document.getElementById('mainSubmitButton');
-    const originalSubmitButtonHTML = mainSubmitButton.innerHTML;
+    const originalSubmitButtonHTML = mainSubmitButton ? mainSubmitButton.innerHTML : '';
     const paymentSection = document.getElementById('payment-section');
-    const paymentFields = Array.from(paymentSection.querySelectorAll('input, select'));
     const promoCodeInput = document.getElementById('promoCodeInput');
     const validatePromoButton = document.getElementById('validatePromoButton');
     const promoStatusDiv = document.getElementById('promo-status');
     const appliedPromoCodeHiddenInput = document.getElementById('appliedPromoCode');
     const sameAsCompanyAddressCheckbox = document.getElementById('sameAsCompanyAddress');
     const companyPhoneInput = document.getElementById('companyPhone');
-    const companyZipInput = document.getElementById('companyZip');
-    const billingZipInput = document.getElementById('billingZip');
-    const adminEmailInput = document.getElementById('adminEmail');
+    const termsAgreementCheckbox = document.getElementById('termsAgreement');
+
 
     // --- Stripe Initialization ---
     function initializeStripe() {
@@ -28,67 +32,145 @@ document.addEventListener('DOMContentLoaded', function() {
             stripe = Stripe('pk_test_51RUHnpBtvyYfb2KWE9qJPWYzUdwurEUDf8W1VtxuV16ZJj8eJtCS8ubiNZI1W3XNikJa8XjjbiKp9f3dkzXRabkm009fB33jMV');
             const elements = stripe.elements();
             const style = { base: { fontSize: '16px', color: '#32325d', '::placeholder': { color: '#aab7c4' } } };
+            
             cardNumberElement = elements.create('cardNumber', { style: style });
             cardNumberElement.mount('#card-number');
+            addStripeValidationListener(cardNumberElement, 'card-number', 'cardNumber');
+
             const cardExpiryElement = elements.create('cardExpiry', { style: style });
             cardExpiryElement.mount('#card-expiry');
+            addStripeValidationListener(cardExpiryElement, 'card-expiry', 'cardExpiry');
+            
             const cardCvcElement = elements.create('cardCvc', { style: style });
             cardCvcElement.mount('#card-cvc');
+            addStripeValidationListener(cardCvcElement, 'card-cvc', 'cardCvc');
+
         } catch (e) {
             console.error("Stripe.js has not loaded yet.");
         }
+    }
+
+    function addStripeValidationListener(element, containerId, fieldType) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        
+        element.on('change', function(event) {
+            const isValid = event.complete && !event.error;
+            stripeValidationState[fieldType] = isValid;
+            
+            if (isValid) {
+                container.classList.add('is-valid');
+                container.classList.remove('is-invalid');
+            } else if (event.error || (!event.empty && !isValid)) {
+                container.classList.add('is-invalid');
+                container.classList.remove('is-valid');
+            } else {
+                 container.classList.remove('is-valid', 'is-invalid');
+            }
+            checkFormCompletion();
+        });
     }
     
     // --- Event Listeners ---
     if (form) form.addEventListener('submit', handleFormSubmit);
     if (validatePromoButton) validatePromoButton.addEventListener('click', handlePromoValidation);
     if (sameAsCompanyAddressCheckbox) sameAsCompanyAddressCheckbox.addEventListener('change', handleAddressCheckbox);
-    if (promoCodeInput) promoCodeInput.addEventListener('input', handlePromoInput);
-    if (companyPhoneInput) companyPhoneInput.addEventListener('input', (e) => formatAndValidate(e.target, formatPhoneNumber, (val) => val.length === 14 || val.length === 0));
-    if (companyZipInput) companyZipInput.addEventListener('input', (e) => formatAndValidate(e.target, formatZipCode, (val) => val.length === 5 || val.length === 0));
-    if (billingZipInput) billingZipInput.addEventListener('input', (e) => formatAndValidate(e.target, formatZipCode, (val) => val.length === 5 || val.length === 0));
-    if (adminEmailInput) adminEmailInput.addEventListener('blur', (e) => formatAndValidate(e.target, null, validateEmail));
-
+    if (promoCodeInput) promoCodeInput.addEventListener('input', () => { validatePromoButton.disabled = promoCodeInput.value.trim() === ''; });
+    if (companyPhoneInput) {
+        companyPhoneInput.addEventListener('input', (e) => formatPhoneNumber(e.target));
+    }
+    if (termsAgreementCheckbox) {
+        termsAgreementCheckbox.addEventListener('change', checkFormCompletion);
+    }
+    if (form) {
+        form.querySelectorAll('input[required], input[pattern], select[required]').forEach(field => {
+            const handleValidation = () => {
+                validateField(field);
+                checkFormCompletion();
+            };
+            field.addEventListener('input', handleValidation);
+            field.addEventListener('blur', handleValidation);
+            if (field.tagName === 'SELECT') {
+                field.addEventListener('change', handleValidation);
+            }
+        });
+    }
+    
     // --- Functions ---
-    function handlePromoInput() {
-        validatePromoButton.disabled = this.value.trim() === '';
+    function checkFormCompletion() {
+        if (!form || !mainSubmitButton || !termsAgreementCheckbox) return;
+
+        let allRequiredFieldsValid = true;
+        form.querySelectorAll('[required]').forEach(field => {
+            if (!isFreePlan && paymentSection.contains(field)) {
+                if (!field.checkValidity()) allRequiredFieldsValid = false;
+            } else if (!paymentSection.contains(field)) {
+                 if (!field.checkValidity()) allRequiredFieldsValid = false;
+            }
+        });
+
+        let allStripeFieldsValid = true;
+        if (!isFreePlan) {
+            allStripeFieldsValid = Object.values(stripeValidationState).every(isValid => isValid);
+        }
+
+        const canSubmit = allRequiredFieldsValid && allStripeFieldsValid && termsAgreementCheckbox.checked;
+        mainSubmitButton.disabled = !canSubmit;
+    }
+
+    function validateField(field) {
+        if (!field) return true;
+        if (!field.required && field.value.trim() === '') {
+            field.classList.remove('is-valid', 'is-invalid');
+            return true;
+        }
+        const isValid = field.checkValidity();
+        if (isValid) {
+            field.classList.add('is-valid');
+            field.classList.remove('is-invalid');
+        } else {
+            field.classList.add('is-invalid');
+            field.classList.remove('is-valid');
+        }
+        return isValid;
     }
 
     function handleAddressCheckbox() {
+        const billingAddress = document.getElementById('billingAddress');
+        const billingCity = document.getElementById('billingCity');
+        const billingState = document.getElementById('billingState');
+        const billingZip = document.getElementById('billingZip');
+
         if (this.checked) {
-            document.getElementById('billingAddress').value = document.getElementById('companyAddress').value;
-            document.getElementById('billingCity').value = document.getElementById('companyCity').value;
-            document.getElementById('billingState').value = document.getElementById('companyState').value;
-            document.getElementById('billingZip').value = document.getElementById('companyZip').value;
+            billingAddress.value = document.getElementById('companyAddress').value;
+            billingCity.value = document.getElementById('companyCity').value;
+            billingState.value = document.getElementById('companyState').value;
+            billingZip.value = document.getElementById('companyZip').value;
+
+            validateField(billingAddress);
+            validateField(billingCity);
+            validateField(billingState);
+            validateField(billingZip);
+        } else {
+            billingAddress.value = '';
+            billingCity.value = '';
+            billingState.value = '';
+            billingZip.value = '';
+            validateField(billingAddress);
+            validateField(billingCity);
+            validateField(billingState);
+            validateField(billingZip);
         }
-    }
-    
-    function formatAndValidate(element, formatter, validator) {
-        if (formatter) formatter(element);
-        const isValid = validator(element.value);
-        element.setCustomValidity(isValid ? '' : 'Invalid format.');
-        element.classList.toggle('is-invalid', !isValid && element.value.length > 0);
+        checkFormCompletion();
     }
 
     function formatPhoneNumber(element) {
-        let input = element.value.replace(/\D/g, '').substring(0, 10);
-        if (input.length === 0) { element.value = ''; return; }
-        let areaCode = input.substring(0, 3);
-        let middle = input.substring(3, 6);
-        let last = input.substring(6, 10);
-        if (input.length > 6) { element.value = `(${areaCode}) ${middle}-${last}`; } 
-        else if (input.length > 3) { element.value = `(${areaCode}) ${middle}`; } 
-        else { element.value = `(${areaCode}`; }
-    }
-
-    function formatZipCode(element) {
-        element.value = element.value.replace(/\D/g, '').substring(0, 5);
-    }
-
-    function validateEmail(email) {
-        if (email.trim() === '') return true;
-        const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-        return re.test(String(email).toLowerCase());
+        const digits = element.value.replace(/\D/g, '');
+        let formatted = '';
+        if (digits.length > 0) formatted = '(' + digits.substring(0, 3);
+        if (digits.length >= 4) formatted += ') ' + digits.substring(3, 6);
+        if (digits.length >= 7) formatted += '-' + digits.substring(6, 10);
+        element.value = formatted;
     }
 
     async function handlePromoValidation() {
@@ -110,9 +192,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (result.type === 'LIFETIME' || promoCode.toLowerCase() === 'altman55') {
                     isFreePlan = true;
                     paymentSection.style.display = 'none';
-                } else {
-                    isFreePlan = false;
-                    paymentSection.style.display = 'block';
                 }
             } else {
                 promoStatusDiv.textContent = result.error || 'Invalid promo code.';
@@ -125,6 +204,7 @@ document.addEventListener('DOMContentLoaded', function() {
             promoStatusDiv.textContent = 'Could not validate code. Check connection.';
             promoStatusDiv.className = 'promo-status error';
         }
+        checkFormCompletion();
     }
 
     async function handleFormSubmit(event) {
@@ -132,18 +212,16 @@ document.addEventListener('DOMContentLoaded', function() {
         setButtonState(true);
         displayClientSideError('');
 
-        if (isFreePlan) {
-            paymentFields.forEach(el => el.disabled = true);
-        }
+        let isFormValid = true;
+        form.querySelectorAll('input[required], input[pattern], select[required]').forEach(field => {
+            if (!validateField(field)) { isFormValid = false; }
+        });
 
-        if (!form.checkValidity()) {
-            if (isFreePlan) paymentFields.forEach(el => el.disabled = false);
+        if (!isFormValid) {
             form.reportValidity();
             setButtonState(false);
             return;
         }
-        
-        if (isFreePlan) paymentFields.forEach(el => el.disabled = false);
 
         if (document.getElementById('adminPassword').value !== document.getElementById('adminConfirmPassword').value) {
             displayClientSideError("Passwords do not match.");
@@ -154,7 +232,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const formData = new FormData(form);
 
         if (isFreePlan) {
-            await submitDataToServer(formData);
+            const paymentFields = Array.from(paymentSection.querySelectorAll('input, select'));
+            paymentFields.forEach(el => el.disabled = true);
+            const formDataFree = new FormData(form);
+            paymentFields.forEach(el => el.disabled = false);
+            await submitDataToServer(formDataFree);
         } else {
             const { paymentMethod, error } = await stripe.createPaymentMethod({
                 type: 'card',
@@ -182,24 +264,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await response.json();
 
             if (data.action_required) {
-                const { error: scaError, paymentIntent } = await stripe.handleNextAction({ clientSecret: data.client_secret });
+                const { error: scaError } = await stripe.handleNextAction({ clientSecret: data.client_secret });
                 if (scaError) {
                     displayClientSideError(scaError.message); 
-                    setButtonState(false); 
-                    return;
-                }
-                setButtonState(true, 'Finalizing...');
-                const finalizeResponse = await fetch(`${appRoot}/SignupServlet`, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: new URLSearchParams({ action: 'finalizeSubscription', payment_intent_id: paymentIntent.id }) 
-                });
-                const finalizeResult = await finalizeResponse.json();
-                if (finalizeResult.success) {
-                    window.location.href = finalizeResult.redirect_url;
-                } else {
-                    displayClientSideError(finalizeResult.error || 'Failed to finalize payment.'); 
                     setButtonState(false);
+                } else {
+                    window.location.href = data.redirect_url_after_sca;
                 }
             } else if (data.success) {
                 window.location.href = data.redirect_url;
@@ -227,8 +297,22 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // --- Initializers ---
     document.getElementById('browserTimeZoneIdField').value = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    initializeStripe();
+    if (paymentSection) initializeStripe();
     if (promoCodeInput) {
-        handlePromoInput.call(promoCodeInput);
+        validatePromoButton.disabled = promoCodeInput.value.trim() === '';
+    }
+    if (form) {
+        form.querySelectorAll('[required]').forEach(field => {
+            validateField(field);
+        });
+        
+        // [FIX] Apply initial invalid state to Stripe fields on page load
+        if (!isFreePlan) {
+            document.getElementById('card-number').classList.add('is-invalid');
+            document.getElementById('card-expiry').classList.add('is-invalid');
+            document.getElementById('card-cvc').classList.add('is-invalid');
+        }
+
+        checkFormCompletion();
     }
 });

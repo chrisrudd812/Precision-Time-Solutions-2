@@ -1,9 +1,5 @@
 // js/scheduling.js
 
-/**
- * FIX: Copied utility functions from commonUtils.js to resolve script loading order issues.
- * This ensures these functions are available when this script runs, without modifying shared files.
- */
 function decodeHtmlEntities(encodedString) {
     if (encodedString === null || typeof encodedString === 'undefined' || String(encodedString).toLowerCase() === 'null') { return ''; }
     try {
@@ -42,7 +38,6 @@ function showPageNotification(message, isError = false, modalInstance = null, ti
     msgElem.innerHTML = message;
     showModal(modalToUse); 
     
-    // FIX: Automatically focus the OK button for better accessibility.
     const okButton = modalToUse.querySelector('#okButtonNotificationModalGeneral');
     if (okButton) {
         setTimeout(() => okButton.focus(), 150);
@@ -237,7 +232,6 @@ document.addEventListener('DOMContentLoaded', function() {
             };
             
             const schedNameLower = selectedSchedData.name.trim().toLowerCase();
-            // FIX: Improved notification messages for clarity.
             if (schedNameLower === 'open') {
                 showPageNotification("The default 'Open' schedule cannot be edited or deleted. It serves as a system fallback.", false, notificationModal, "System Schedule");
             } else if (schedNameLower === 'open w/ auto lunch') {
@@ -279,8 +273,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const fieldsToToggle = [
             'editScheduleName', 'editShiftStart', 'editLunchStart', 
             'editLunchEnd', 'editShiftEnd', 'editDaySun', 'editDayMon', 
-            'editDayTue', 'editDayWed', 'editDayThu', 'editDayFri', 'editDaySat',
-            'editAutoLunch'
+            'editDayTue', 'editDayWed', 'editDayThu', 'editDayFri', 'editDaySat'
         ];
         
         fieldsToToggle.forEach(id => {
@@ -417,5 +410,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + (window.inWizardMode_Page ? '?setup_wizard=true' : '');
             window.history.replaceState({path: cleanUrl}, '', cleanUrl);
         }
+    }
+
+    // ADDED: Check for and display the page-level success notification in a modal
+    const successNotificationDiv = document.getElementById('pageNotificationDiv_Success_Sched');
+    if (successNotificationDiv && successNotificationDiv.textContent.trim()) {
+        const message = successNotificationDiv.innerHTML;
+        successNotificationDiv.style.display = 'none'; // Hide the original div
+        showPageNotification(message, false, document.getElementById('notificationModalGeneral'), "Success");
     }
 });

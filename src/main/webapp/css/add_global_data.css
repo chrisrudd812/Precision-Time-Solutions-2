@@ -1,160 +1,29 @@
 /* === css/add_global_data.css === */
-/* v4: Unified form container background */
+/* Styles specific to the Add Global Data page, relying on reports.css for base styles. */
 
-/* --- General Page Styles --- */
-body.add-global-page {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background-color: #f8f9fa;
-    color: #343a40;
-    line-height: 1.5;
-}
-
-.add-global-page .parent-container {
-    max-width: 750px;
-    margin: 20px auto;
-    padding: 25px 30px;
-    background-color: #ffffff;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.07);
-}
-
-/* --- Page Header --- */
-.add-global-page h1 {
-    text-align: center;
-    color: #343a40;
-    margin-bottom: 15px;
-    font-weight: 300;
-    font-size: 2em;
-    border-bottom: 1px solid #dee2e6;
-    padding-bottom: 15px;
-}
-
-.add-global-page .intro-paragraph {
+.intro-paragraph {
     text-align: center;
     margin-bottom: 25px;
-    color: #6c757d;
+    color: #475569;
     font-size: 1em;
     max-width: 600px;
     margin-left: auto;
     margin-right: auto;
 }
 
-/* --- Form Container Styling --- */
-.add-global-page .form-container {
+/* Container for the form to center it on the page */
+.form-container {
+	min-width: 300px;
     max-width: 500px;
     margin: 20px auto;
-    padding: 25px 30px; /* Adjusted padding for content */
-    background: linear-gradient(to bottom, #eBF5FF, #D6E9FF); /* Light blue gradient */
-    border: 1px solid #B0C9E3; /* Complementary blue border */
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-/* --- Form Item Layout & Spacing --- */
-.add-global-page .form-item {
-    margin-bottom: 18px;
-}
-
-.add-global-page .form-item label {
-    display: block;
-    margin-bottom: 6px;
-    font-weight: 500;
-    font-size: .9em;
-    color: #495057; /* Darker label color for better contrast on gradient if needed */
-}
-
-/* --- Input & Select Styling (to match modal inputs) --- */
-.add-global-page .form-item input[type="date"],
-.add-global-page .form-item input[type="number"],
-.add-global-page .form-item select {
-    width: 100%;
-    padding: 9px 12px;
-    border: 1px solid #B0C9E3; /* Matching border color with container */
-    border-radius: 4px;
-    box-sizing: border-box;
-    font-size: .95em;
-    height: 40px;
-    font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-    transition: border-color .2s ease,box-shadow .2s ease;
-    background-color: #fff; /* Ensure input background is white */
-}
-
-.add-global-page .form-item input[type="date"]:focus,
-.add-global-page .form-item input[type="number"]:focus,
-.add-global-page .form-item select:focus {
-    border-color: #005A9C; 
-    box-shadow: 0 0 0 .2rem rgba(0,90,156,.25);
-    outline: none;
-}
-
-.add-global-page .form-item input[type="number"]::placeholder {
-    color: #aaa;
-    font-style: italic;
-}
-
-/* --- Button Styling --- */
-.add-global-page .button-row {
+/* Spacing for the submit button */
+.form-container .button-row {
     margin-top: 25px;
     text-align: center;
 }
 
-.add-global-page .button-row button.submit-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 10px 25px;
-    font-size: 1em;
-    font-weight: 500;
-    line-height: 1.5;
-    color: #19692c !important;
-    text-align: center;
-    vertical-align: middle;
-    cursor: pointer;
-    user-select: none;
-    border: 1px solid #adb5bd;
-    border-radius: 5px;
-    text-shadow: 0 1px 0 rgba(255,255,255,.5);
-    background-color: #f8f9fa;
-    background-image: linear-gradient(to bottom,#fff,#e9ecef);
-    box-shadow: inset 0 1px 1px rgba(255,255,255,.6),0 1px 2px rgba(0,0,0,.1);
-    transition: all .15s ease-in-out;
-    min-width: 220px;
-}
-.add-global-page .button-row button.submit-btn:hover {
-    filter: brightness(1.05);
-    border-color: #90a4ae;
-}
-.add-global-page .button-row button.submit-btn:active {
-    filter: brightness(.95);
-    box-shadow: inset 0 2px 3px rgba(0,0,0,.12);
-}
-.add-global-page .button-row button.submit-btn:focus {
-    outline:0;
-    border-color:#80bdff;
-    box-shadow:inset 0 1px 1px rgba(255,255,255,.6),0 1px 2px rgba(0,0,0,.1),0 0 0 .2rem rgba(130,138,145,.5);
-}
-
-
-/* --- Notification Bar --- */
-.add-global-page #notification-bar {
-    max-width: 500px; 
-    margin: 0 auto 20px auto;
-    padding: 12px 18px;
-    border: 1px solid transparent;
-    border-radius: 5px;
-    text-align: center;
-    font-weight: 500;
-}
-.add-global-page #notification-bar.success-message {
-    color:#0f5132;
-    background-color:#d1e7dd;
-    border-color:#badbcc;
-}
-.add-global-page #notification-bar.error-message {
-    color:#842029;
-    background-color:#f8d7da;
-    border-color:#f5c2c7;
-}
-
-/* Modal styles from punches.css or reports.css will apply */
+button {
+	    min-width: 300px;
+} 

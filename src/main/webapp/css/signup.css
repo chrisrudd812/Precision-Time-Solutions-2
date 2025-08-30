@@ -95,38 +95,34 @@ body {
     display: flex;
     flex-wrap: wrap;
     gap: 20px;
-    /* margin-bottom is now handled by .form-group unless it's the last element */
 }
 
 .form-group {
     flex-grow: 1;
     flex-basis: 100%;
     min-width: 0;
-    margin-bottom: 18px; /* INCREASED: Universal bottom margin for form groups */
+    margin-bottom: 18px;
 }
 
-/* Remove bottom margin from the last form-group or form-row within a fieldset */
 fieldset > .form-group:last-child,
-fieldset > .form-row:last-child > .form-group:last-child { /* More specific for form-row contents */
+fieldset > .form-row:last-child > .form-group:last-child {
     margin-bottom: 0;
 }
-/* If a form-row is last, ensure its contents' margins don't cause issues with fieldset padding */
 fieldset > .form-row:last-child {
-    margin-bottom: 0; /* The groups inside will also have their last-child margin removed by above rule if needed */
+    margin-bottom: 0;
 }
-
 
 .form-group.half-width {
     flex-basis: calc(50% - 10px);
 }
 .form-group.third-width {
-    flex-basis: calc(33.333% - 13.33px); /* Adjust if gap changes, (100% - (N-1)*gap) / N */
+    flex-basis: calc(33.333% - 13.33px);
 }
 
 
 .form-group label {
     display: block;
-    margin-bottom: 8px; /* INCREASED: More space between label and input */
+    margin-bottom: 8px;
     font-weight: 500;
     font-size: 0.9em;
     color: #495057;
@@ -173,8 +169,8 @@ fieldset > .form-row:last-child {
     display: block;
     font-size: 0.8em;
     color: #6c757d;
-    margin-top: 6px; /* INCREASED: More space above small text */
-    line-height: 1.3; /* ADDED: Slightly more line height for multi-line small text */
+    margin-top: 6px;
+    line-height: 1.3;
 }
 
 .form-actions {

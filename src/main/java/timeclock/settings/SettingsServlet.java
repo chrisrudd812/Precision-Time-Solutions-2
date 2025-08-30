@@ -84,17 +84,18 @@ public class SettingsServlet extends HttpServlet {
         }
         settingKey = settingKey.trim();
 
-        // --- Basic Server-side Validation (Example) ---
+        // --- MODIFIED: Server-side Validation to catch empty strings for numeric fields ---
         if (settingKey.contains("Threshold") || settingKey.equals("GracePeriod") || settingKey.endsWith("Rate")) {
-            if (!settingValue.isEmpty()) {
-                try {
-                    Double.parseDouble(settingValue);
-                } catch (NumberFormatException e) {
-                    logger.warning("[SettingsServlet] Invalid number format for Key: " + settingKey + ", Value: " + settingValue);
-                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                    response.getWriter().write("Error: Invalid number format for " + settingKey);
-                    return;
-                }
+            // This block now validates numeric fields even if the value is an empty string.
+            try {
+                // An empty string will correctly throw a NumberFormatException here.
+                Double.parseDouble(settingValue);
+            } catch (NumberFormatException e) {
+                logger.warning("[SettingsServlet] Invalid number format for Key: " + settingKey + ", Value: '" + settingValue + "'");
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                // Provide a user-friendly error message.
+                response.getWriter().write("Error: A valid number is required for " + settingKey);
+                return;
             }
         }
 

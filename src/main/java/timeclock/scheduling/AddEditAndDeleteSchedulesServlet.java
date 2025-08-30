@@ -25,7 +25,7 @@ import java.util.logging.Logger;
 
 @WebServlet("/AddEditAndDeleteSchedulesServlet")
 public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
-    private static final long serialVersionUID = 5L; // Version updated
+    private static final long serialVersionUID = 6L; // Version updated
     private static final Logger logger = Logger.getLogger(AddEditAndDeleteSchedulesServlet.class.getName());
     private static final DateTimeFormatter INPUT_TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
@@ -40,7 +40,6 @@ public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
     }
 
     private boolean isValid(String s) { return s != null && !s.trim().isEmpty(); }
-    private boolean isEmpty(String s) { return s == null || s.trim().isEmpty(); }
     private String encodeUrlParam(String value) throws IOException {
         if (value == null) return "";
         return URLEncoder.encode(value, StandardCharsets.UTF_8.name());
@@ -55,19 +54,15 @@ public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
             url.append(firstParam ? "?" : "&").append("setup_wizard=true");
             firstParam = false;
             url.append("&wizardStep=").append(encodeUrlParam(wizardNextStep));
-            if (itemAddedInWizard) {
-                if ("scheduling.jsp".equals(page)) {
-                    url.append("&scheduleAdded=true");
-                }
+            if (itemAddedInWizard && "scheduling.jsp".equals(page)) {
+                url.append("&scheduleAdded=true");
             }
         }
 
         if (error != null && !error.isEmpty()) {
             url.append(firstParam ? "?" : "&").append("error=").append(encodeUrlParam(error));
-            firstParam = false;
         } else if (success != null && !success.isEmpty()) {
             url.append(firstParam ? "?" : "&").append("message=").append(encodeUrlParam(success));
-            firstParam = false;
         }
         logger.info("[AddEditAndDeleteSchedulesServlet] Redirecting to: " + url.toString());
         return url.toString();
@@ -94,7 +89,7 @@ public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
         }
 
         String action = request.getParameter("action");
-        logger.info("AddEditAndDeleteSchedulesServlet doPost received action: " + action + " for TenantID: " + tenantId);
+        logger.info("...SchedulesServlet doPost received action: " + action + " for TenantID: " + tenantId);
         
         boolean isWizardModeActive = (session != null && Boolean.TRUE.equals(session.getAttribute("startSetupWizard")));
         String currentWizardStepInSession = isWizardModeActive ? (String) session.getAttribute("wizardStep") : null;
@@ -117,7 +112,7 @@ public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
     }
 
     private Time parseTime(String timeString) {
-        if (isEmpty(timeString)) return null;
+        if (timeString == null || timeString.trim().isEmpty()) return null;
         try {
             return Time.valueOf(LocalTime.parse(timeString.trim(), INPUT_TIME_FORMATTER));
         } catch (DateTimeParseException e) {
@@ -126,17 +121,23 @@ public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
         }
     }
     
+    // *** MODIFICATION: Corrected this method to build the SMTWHFA string format. ***
     private String getDaysWorkedString(String[] checkedDaysArray) {
-        if (checkedDaysArray == null || checkedDaysArray.length == 0) return "-------";
-        char[] days = {'-', '-', '-', '-', '-', '-', '-'}; 
-        for (String day : checkedDaysArray) {
-            switch (day.toLowerCase()) {
-                case "sun": days[0] = 'S'; break; case "mon": days[1] = 'M'; break;
-                case "tue": days[2] = 'T'; break; case "wed": days[3] = 'W'; break;
-                case "thu": days[4] = 'H'; break; case "fri": days[5] = 'F'; break;
-                case "sat": days[6] = 'A'; break;
+        char[] days = {'-', '-', '-', '-', '-', '-', '-'}; // Index 0=Sun, 1=Mon, ..., 6=Sat
+        if (checkedDaysArray != null) {
+            for (String day : checkedDaysArray) {
+                switch (day.toLowerCase()) {
+                    case "sun": days[0] = 'S'; break;
+                    case "mon": days[1] = 'M'; break;
+                    case "tue": days[2] = 'T'; break;
+                    case "wed": days[3] = 'W'; break;
+                    case "thu": days[4] = 'H'; break; // H for Thursday
+                    case "fri": days[5] = 'F'; break;
+                    case "sat": days[6] = 'A'; break; // A for Saturday
+                }
             }
-        } return new String(days);
+        }
+        return new String(days);
     }
 
     private void addSchedule(HttpServletRequest request, HttpServletResponse response, int tenantId, HttpSession session, 
@@ -154,21 +155,11 @@ public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
         
         String redirectPage = "scheduling.jsp";
         String errorMessage = null; 
-        String successMessage = null;
-        String wizardRedirectNextStep = null;
-        boolean itemAddedInWizardFlow = false;
-
+        
         if (!isValid(scheduleName)) { errorMessage = "Schedule Name is required."; }
         
-        boolean isOpenTypeSchedule = false;
-        if (errorMessage == null && scheduleName != null) {
-            isOpenTypeSchedule = "Open".equalsIgnoreCase(scheduleName.trim()) || 
-                                 "Open with Auto Lunch".equalsIgnoreCase(scheduleName.trim()) || 
-                                 "Open w/ Auto Lunch".equalsIgnoreCase(scheduleName.trim());
-            if (isOpenTypeSchedule) {
-                shiftStart = null; lunchStart = null; lunchEnd = null; shiftEnd = null;
-                daysWorked = "SMTWHFA"; 
-            }
+        if (errorMessage == null && (scheduleName.equalsIgnoreCase("Open") || scheduleName.equalsIgnoreCase("Open w/ Auto Lunch"))) {
+            daysWorked = "SMTWHFA"; 
         }
 
         double hoursRequired = 0.0; 
@@ -190,8 +181,9 @@ public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
         }
 
         if (errorMessage != null) {
-            String stepForRedirect = isWizardModeActive ? currentWizardStepInSession : null;
-            response.sendRedirect(buildRedirectUrl(request, redirectPage, errorMessage, null, isWizardModeActive, stepForRedirect, false));
+            String url = buildRedirectUrl(request, redirectPage, errorMessage, null, isWizardModeActive, currentWizardStepInSession, false);
+            url += (url.contains("?") ? "&" : "?") + "reopenModal=addSchedule&scheduleName=" + encodeUrlParam(scheduleName);
+            response.sendRedirect(url);
             return;
         }
 
@@ -204,9 +196,8 @@ public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
                 psCheck.setString(2, scheduleName.trim().toLowerCase());
                 try (ResultSet rs = psCheck.executeQuery()) {
                     if (rs.next()) {
-                        errorMessage = "Schedule '" + scheduleName.trim() + "' already exists for your company.";
-                        String stepForRedirect = isWizardModeActive ? currentWizardStepInSession : null;
-                        String url = buildRedirectUrl(request, redirectPage, errorMessage, null, isWizardModeActive, stepForRedirect, false);
+                        errorMessage = "Schedule '" + scheduleName.trim() + "' already exists.";
+                        String url = buildRedirectUrl(request, redirectPage, errorMessage, null, isWizardModeActive, currentWizardStepInSession, false);
                         url += (url.contains("?") ? "&" : "?") + "reopenModal=addSchedule&scheduleName=" + encodeUrlParam(scheduleName.trim());
                         response.sendRedirect(url);
                         return;
@@ -218,10 +209,10 @@ public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
                 int paramIdx = 1;
                 psInsert.setInt(paramIdx++, tenantId);
                 psInsert.setString(paramIdx++, scheduleName.trim());
-                if (shiftStart != null) psInsert.setTime(paramIdx++, shiftStart); else psInsert.setNull(paramIdx++, Types.TIME);
-                if (lunchStart != null) psInsert.setTime(paramIdx++, lunchStart); else psInsert.setNull(paramIdx++, Types.TIME);
-                if (lunchEnd != null) psInsert.setTime(paramIdx++, lunchEnd); else psInsert.setNull(paramIdx++, Types.TIME);
-                if (shiftEnd != null) psInsert.setTime(paramIdx++, shiftEnd); else psInsert.setNull(paramIdx++, Types.TIME);
+                psInsert.setTime(paramIdx++, shiftStart);
+                psInsert.setTime(paramIdx++, lunchStart);
+                psInsert.setTime(paramIdx++, lunchEnd);
+                psInsert.setTime(paramIdx++, shiftEnd);
                 psInsert.setString(paramIdx++, daysWorked);
                 psInsert.setBoolean(paramIdx++, autoLunch);
                 if (autoLunch) {
@@ -232,57 +223,41 @@ public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
                     psInsert.setNull(paramIdx++, Types.INTEGER);
                 }
                 
-                int rowsAffected = psInsert.executeUpdate();
-                if (rowsAffected > 0) {
-                    successMessage = "Schedule '" + scheduleName.trim() + "' added successfully.";
-                    logger.info(successMessage + " For TenantID: " + tenantId);
-
-                    if (isWizardModeActive && currentWizardStepInSession != null && 
-                        (currentWizardStepInSession.equals("schedules_prompt") || currentWizardStepInSession.equals("schedules_after_add_prompt"))) {
-                        itemAddedInWizardFlow = true;
-                        wizardRedirectNextStep = "schedules_after_add_prompt"; 
-                        if(session != null) session.setAttribute("wizardStep", wizardRedirectNextStep); 
-                        logger.info("[AddEditAndDeleteSchedulesServlet] Schedule added in wizard. Next step in session: " + wizardRedirectNextStep);
-                    }
+                if (psInsert.executeUpdate() > 0) {
+                    String successMessage = "Schedule '" + scheduleName.trim() + "' added successfully.";
+                    boolean itemAdded = isWizardModeActive && (currentWizardStepInSession.equals("schedules_prompt") || currentWizardStepInSession.equals("schedules_after_add_prompt"));
+                    String nextStep = itemAdded ? "schedules_after_add_prompt" : currentWizardStepInSession;
+                    if (itemAdded && session != null) session.setAttribute("wizardStep", nextStep);
+                    response.sendRedirect(buildRedirectUrl(request, redirectPage, null, successMessage, isWizardModeActive, nextStep, itemAdded));
                 } else {
-                    errorMessage = "Failed to add schedule. Please try again.";
+                    response.sendRedirect(buildRedirectUrl(request, redirectPage, "Failed to add schedule.", null, isWizardModeActive, currentWizardStepInSession, false));
                 }
             }
         } catch (SQLException e) {
             logger.log(Level.SEVERE, "Database error adding schedule for TenantID: " + tenantId, e);
-            errorMessage = "Database error: " + e.getMessage();
+            response.sendRedirect(buildRedirectUrl(request, redirectPage, "Database error: " + e.getMessage(), null, isWizardModeActive, currentWizardStepInSession, false));
         }
-        response.sendRedirect(buildRedirectUrl(request, redirectPage, errorMessage, successMessage, isWizardModeActive, wizardRedirectNextStep, itemAddedInWizardFlow));
     }
 
     private void editSchedule(HttpServletRequest request, HttpServletResponse response, int tenantId, HttpSession session, 
                               boolean isWizardModeActive, String currentWizardStepInSession) throws IOException {
-        String redirectPage = "scheduling.jsp";
-        String successMessage = null;
-        String errorMessage = null;
-        String wizardRedirectNextStep = isWizardModeActive ? currentWizardStepInSession : null;
-
         String originalScheduleName = request.getParameter("originalScheduleName");
         
         if (!isValid(originalScheduleName)) {
-            errorMessage = "Original schedule name was not provided. Cannot update.";
-            response.sendRedirect(buildRedirectUrl(request, redirectPage, errorMessage, null, isWizardModeActive, wizardRedirectNextStep, false));
-            return;
-        }
-
-        String scheduleNameLower = originalScheduleName.trim().toLowerCase();
-        boolean isUneditableOpen = scheduleNameLower.equals("open");
-        boolean isAutoLunchOpen = scheduleNameLower.equals("open w/ auto lunch");
-
-        if (isUneditableOpen) {
-            errorMessage = "The default 'Open' schedule cannot be edited.";
-            response.sendRedirect(buildRedirectUrl(request, redirectPage, errorMessage, null, isWizardModeActive, wizardRedirectNextStep, false));
+            response.sendRedirect(buildRedirectUrl(request, "scheduling.jsp", "Original schedule name not provided.", null, isWizardModeActive, currentWizardStepInSession, false));
             return;
         }
 
         String sqlUpdate;
+        boolean isAutoLunchOpen = originalScheduleName.trim().equalsIgnoreCase("open w/ auto lunch");
+
+        if (originalScheduleName.trim().equalsIgnoreCase("open")) {
+            response.sendRedirect(buildRedirectUrl(request, "scheduling.jsp", "The default 'Open' schedule cannot be edited.", null, isWizardModeActive, currentWizardStepInSession, false));
+            return;
+        }
+        
         if (isAutoLunchOpen) {
-            sqlUpdate = "UPDATE SCHEDULES SET HRS_REQUIRED = ?, LUNCH_LENGTH = ? WHERE TenantID = ? AND NAME = ?";
+            sqlUpdate = "UPDATE SCHEDULES SET AUTO_LUNCH = TRUE, HRS_REQUIRED = ?, LUNCH_LENGTH = ? WHERE TenantID = ? AND NAME = ?";
         } else {
             sqlUpdate = "UPDATE SCHEDULES SET SHIFT_START = ?, LUNCH_START = ?, LUNCH_END = ?, SHIFT_END = ?, " +
                         "DAYS_WORKED = ?, AUTO_LUNCH = ?, HRS_REQUIRED = ?, LUNCH_LENGTH = ? " +
@@ -291,126 +266,79 @@ public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
 
         try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement psUpdate = con.prepareStatement(sqlUpdate)) {
+            
+            double hoursRequired = 0.0;
+            int lunchLength = 0;
+            boolean autoLunch = "true".equalsIgnoreCase(request.getParameter("autoLunch"));
+            String errorMessage = null;
+
+            if (autoLunch || isAutoLunchOpen) {
+                try {
+                    hoursRequired = Double.parseDouble(request.getParameter("hoursRequired"));
+                    lunchLength = Integer.parseInt(request.getParameter("lunchLength"));
+                    if (hoursRequired <= 0 || lunchLength <= 0) {
+                        errorMessage = "Hours Required and Lunch Length must be positive values.";
+                    }
+                } catch (NumberFormatException e) {
+                    errorMessage = "Invalid number format for Hours Required or Lunch Length.";
+                }
+            }
+            
+            if (errorMessage != null) {
+                response.sendRedirect(buildRedirectUrl(request, "scheduling.jsp", errorMessage, null, isWizardModeActive, currentWizardStepInSession, false));
+                return;
+            }
 
             if (isAutoLunchOpen) {
-                // *** FIX: Logic specific to the "Open w/ auto lunch" schedule ***
-                double hoursRequired = 0.0;
-                int lunchLength = 0;
-                String hoursRequiredStr = request.getParameter("hoursRequired");
-                String lunchLengthStr = request.getParameter("lunchLength");
-
-                if (!isValid(hoursRequiredStr) || !isValid(lunchLengthStr)) {
-                    errorMessage = "For 'Open w/ Auto Lunch', 'Hours Required' and 'Lunch Length' must be specified.";
-                } else {
-                    try {
-                        hoursRequired = Double.parseDouble(hoursRequiredStr);
-                        lunchLength = Integer.parseInt(lunchLengthStr);
-                        if (hoursRequired <= 0 || lunchLength <= 0) {
-                            errorMessage = "For 'Open w/ Auto Lunch', 'Hours Required' and 'Lunch Length' must be positive values.";
-                        }
-                    } catch (NumberFormatException e) {
-                        errorMessage = "Invalid number format for Hours Required or Lunch Length.";
-                    }
-                }
-                
-                if (errorMessage != null) {
-                    response.sendRedirect(buildRedirectUrl(request, redirectPage, errorMessage, null, isWizardModeActive, wizardRedirectNextStep, false));
-                    return;
-                }
-
                 psUpdate.setDouble(1, hoursRequired);
                 psUpdate.setInt(2, lunchLength);
                 psUpdate.setInt(3, tenantId);
                 psUpdate.setString(4, originalScheduleName);
             } else {
-                // *** FIX: Standard logic for all other schedules ***
-                double hoursRequired = 0.0;
-                int lunchLength = 0;
-                boolean autoLunch = "true".equalsIgnoreCase(request.getParameter("autoLunch"));
-
+                psUpdate.setTime(1, parseTime(request.getParameter("shiftStart")));
+                psUpdate.setTime(2, parseTime(request.getParameter("lunchStart")));
+                psUpdate.setTime(3, parseTime(request.getParameter("lunchEnd")));
+                psUpdate.setTime(4, parseTime(request.getParameter("shiftEnd")));
+                psUpdate.setString(5, getDaysWorkedString(request.getParameterValues("days")));
+                psUpdate.setBoolean(6, autoLunch);
                 if (autoLunch) {
-                    String hoursRequiredStr = request.getParameter("hoursRequired");
-                    String lunchLengthStr = request.getParameter("lunchLength");
-                     if (!isValid(hoursRequiredStr) || !isValid(lunchLengthStr)) {
-                        errorMessage = "If Auto Lunch is enabled, 'Hours Required' and 'Lunch Length' must be specified.";
-                    } else {
-                        try {
-                            hoursRequired = Double.parseDouble(hoursRequiredStr);
-                            lunchLength = Integer.parseInt(lunchLengthStr);
-                            if (hoursRequired <= 0 || lunchLength <= 0) {
-                                errorMessage = "For Auto Lunch, 'Hours Required' and 'Lunch Length' must be positive values.";
-                            }
-                        } catch (NumberFormatException e) {
-                            errorMessage = "Invalid number format for Hours Required or Lunch Length.";
-                        }
-                    }
-                }
-                
-                if (errorMessage != null) {
-                    response.sendRedirect(buildRedirectUrl(request, redirectPage, errorMessage, null, isWizardModeActive, wizardRedirectNextStep, false));
-                    return;
-                }
-
-                Time shiftStart = parseTime(request.getParameter("shiftStart"));
-                Time lunchStart = parseTime(request.getParameter("lunchStart"));
-                Time lunchEnd = parseTime(request.getParameter("lunchEnd"));
-                Time shiftEnd = parseTime(request.getParameter("shiftEnd"));
-                String[] checkedDaysArray = request.getParameterValues("days");
-                String daysWorked = getDaysWorkedString(checkedDaysArray);
-
-                int paramIdx = 1;
-                psUpdate.setTime(paramIdx++, shiftStart);
-                psUpdate.setTime(paramIdx++, lunchStart);
-                psUpdate.setTime(paramIdx++, lunchEnd);
-                psUpdate.setTime(paramIdx++, shiftEnd);
-                psUpdate.setString(paramIdx++, daysWorked);
-                psUpdate.setBoolean(paramIdx++, autoLunch);
-                if (autoLunch) {
-                    psUpdate.setDouble(paramIdx++, hoursRequired);
-                    psUpdate.setInt(paramIdx++, lunchLength);
+                    psUpdate.setDouble(7, hoursRequired);
+                    psUpdate.setInt(8, lunchLength);
                 } else {
-                    psUpdate.setNull(paramIdx++, Types.DOUBLE);
-                    psUpdate.setNull(paramIdx++, Types.INTEGER);
+                    psUpdate.setNull(7, Types.DOUBLE);
+                    psUpdate.setNull(8, Types.INTEGER);
                 }
-                psUpdate.setInt(paramIdx++, tenantId);
-                psUpdate.setString(paramIdx++, originalScheduleName);
+                psUpdate.setInt(9, tenantId);
+                psUpdate.setString(10, originalScheduleName);
             }
 
-            int rowsAffected = psUpdate.executeUpdate();
-            if (rowsAffected > 0) {
-                successMessage = "Schedule '" + originalScheduleName + "' updated successfully.";
-                logger.info(successMessage + " For TenantID: " + tenantId);
+            if (psUpdate.executeUpdate() > 0) {
+                 response.sendRedirect(buildRedirectUrl(request, "scheduling.jsp", null, "Schedule '" + originalScheduleName + "' updated.", isWizardModeActive, currentWizardStepInSession, false));
             } else {
-                errorMessage = "Schedule '" + originalScheduleName + "' not found or no changes were made.";
+                response.sendRedirect(buildRedirectUrl(request, "scheduling.jsp", "Schedule not found or no changes made.", null, isWizardModeActive, currentWizardStepInSession, false));
             }
-
         } catch (SQLException e) {
-            logger.log(Level.SEVERE, "Database error updating schedule '" + originalScheduleName + "' for TenantID: " + tenantId, e);
-            errorMessage = "Database error: " + e.getMessage();
+            logger.log(Level.SEVERE, "DB error updating schedule '" + originalScheduleName + "' for T:" + tenantId, e);
+            response.sendRedirect(buildRedirectUrl(request, "scheduling.jsp", "Database error: " + e.getMessage(), null, isWizardModeActive, currentWizardStepInSession, false));
         }
-        
-        response.sendRedirect(buildRedirectUrl(request, redirectPage, errorMessage, successMessage, isWizardModeActive, wizardRedirectNextStep, false));
     }
     
     private void handleDeleteAndReassignSchedule(HttpServletRequest request, HttpServletResponse response, int tenantId, HttpSession session,
                                                  boolean isWizardModeActive, String currentWizardStepInSession) throws IOException {
-        String redirectPage = "scheduling.jsp";
-        String successMessage = null; 
-        String errorMessage = null;
-        String wizardRedirectNextStep = isWizardModeActive ? currentWizardStepInSession : null;
         String scheduleNameToDelete = request.getParameter("scheduleNameToDelete");
         String targetScheduleForReassignment = request.getParameter("targetScheduleForReassignment");
+        String errorMessage = null;
 
         if (!isValid(scheduleNameToDelete) || !isValid(targetScheduleForReassignment)) {
-            errorMessage = "Schedule to delete and target schedule for reassignment are required.";
+            errorMessage = "Required schedules for delete/reassign not provided.";
         } else if (scheduleNameToDelete.equalsIgnoreCase(targetScheduleForReassignment)) {
-            errorMessage = "Cannot reassign employees to the same schedule you are deleting.";
+            errorMessage = "Cannot reassign to the schedule being deleted.";
         } else if (scheduleNameToDelete.toLowerCase().startsWith("open")) {
             errorMessage = "Default 'Open' schedules cannot be deleted.";
         }
-
+        
         if (errorMessage != null) {
-            response.sendRedirect(buildRedirectUrl(request, redirectPage, errorMessage, null, isWizardModeActive, wizardRedirectNextStep, false));
+            response.sendRedirect(buildRedirectUrl(request, "scheduling.jsp", errorMessage, null, isWizardModeActive, currentWizardStepInSession, false));
             return;
         }
 
@@ -418,33 +346,30 @@ public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
             con.setAutoCommit(false);
             
             String updateEmployeesSql = "UPDATE EMPLOYEE_DATA SET SCHEDULE = ? WHERE TenantID = ? AND SCHEDULE = ?";
-            int employeesReassigned = 0;
+            int employeesReassigned;
             try (PreparedStatement psUpdateEmp = con.prepareStatement(updateEmployeesSql)) {
                 psUpdateEmp.setString(1, targetScheduleForReassignment);
                 psUpdateEmp.setInt(2, tenantId);
                 psUpdateEmp.setString(3, scheduleNameToDelete);
                 employeesReassigned = psUpdateEmp.executeUpdate();
-                logger.info(employeesReassigned + " employees reassigned from '" + scheduleNameToDelete + "' to '" + targetScheduleForReassignment + "' for TenantID: " + tenantId);
             }
 
             String deleteSql = "DELETE FROM SCHEDULES WHERE TenantID = ? AND NAME = ?";
             try (PreparedStatement psDelete = con.prepareStatement(deleteSql)) {
                 psDelete.setInt(1, tenantId);
                 psDelete.setString(2, scheduleNameToDelete);
-                int rowsAffected = psDelete.executeUpdate();
-                if (rowsAffected > 0) {
+                if (psDelete.executeUpdate() > 0) {
                     con.commit();
-                    successMessage = "Schedule '" + scheduleNameToDelete + "' deleted. " + employeesReassigned + " employees were reassigned to '" + targetScheduleForReassignment + "'.";
+                    String successMessage = "Schedule '" + scheduleNameToDelete + "' deleted. " + employeesReassigned + " employees reassigned.";
+                    response.sendRedirect(buildRedirectUrl(request, "scheduling.jsp", null, successMessage, isWizardModeActive, currentWizardStepInSession, false));
                 } else {
                     con.rollback();
-                    errorMessage = "Schedule '" + scheduleNameToDelete + "' not found. No changes were made.";
+                    response.sendRedirect(buildRedirectUrl(request, "scheduling.jsp", "Schedule '" + scheduleNameToDelete + "' not found.", null, isWizardModeActive, currentWizardStepInSession, false));
                 }
             }
         } catch (SQLException e) {
             logger.log(Level.SEVERE, "Error during schedule deletion/reassignment for T:" + tenantId, e);
-            errorMessage = "Database error during deletion: " + e.getMessage();
+            response.sendRedirect(buildRedirectUrl(request, "scheduling.jsp", "Database error during deletion: " + e.getMessage(), null, isWizardModeActive, currentWizardStepInSession, false));
         }
-
-        response.sendRedirect(buildRedirectUrl(request, redirectPage, errorMessage, successMessage, isWizardModeActive, wizardRedirectNextStep, false));
     }
 }

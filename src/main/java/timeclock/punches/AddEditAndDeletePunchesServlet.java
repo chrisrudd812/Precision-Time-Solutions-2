@@ -8,12 +8,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import timeclock.Configuration;
 import timeclock.db.DatabaseConnection;
-// Assuming ShowPunches might be needed for calculateAndUpdatePunchTotal if it's static there
 import timeclock.punches.ShowPunches;
 
 
 import java.io.IOException;
-import java.net.URLEncoder; // <<< IMPORT ADDED
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -67,11 +66,11 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
     private boolean isHoursOnlyType(String punchType) {
         if (punchType == null) return false;
         String pTypeLower = punchType.trim().toLowerCase();
+        // MODIFICATION: Removed "bereavement" from this server-side check
         return pTypeLower.equals("vacation") || pTypeLower.equals("vacation time") ||
                pTypeLower.equals("sick") || pTypeLower.equals("sick time") ||
                pTypeLower.equals("personal") || pTypeLower.equals("personal time") ||
                pTypeLower.equals("holiday") || pTypeLower.equals("holiday time") ||
-               pTypeLower.equals("bereavement") ||
                pTypeLower.equals("other");
     }
 
@@ -162,16 +161,16 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
 
         switch (action) {
             case "editPunch":
-                handleEditPunch(request, response, tenantId, targetEid); // Pass Integer tenantId
+                handleEditPunch(request, response, tenantId, targetEid);
                 break;
             case "addHours":
-                handleAddHoursOrTimedPunch(request, response, tenantId, targetEid); // Pass Integer tenantId
+                handleAddHoursOrTimedPunch(request, response, tenantId, targetEid);
                 break;
             case "addGlobalHoursSubmit":
-                handleAddGlobalHours(request, response, tenantId, loggedInUserEid); // Pass Integer tenantId
+                handleAddGlobalHours(request, response, tenantId, loggedInUserEid);
                 break;
             case "deletePunch":
-                handleDeletePunch(request, response, tenantId); // Pass Integer tenantId
+                handleDeletePunch(request, response, tenantId);
                 break;
             default:
                 sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Invalid action specified: " + escapeHtml(action), null);
@@ -179,9 +178,8 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
         }
     }
 
-    // *** MODIFIED: Signature to accept Integer tenantId ***
     private void handleEditPunch(HttpServletRequest request, HttpServletResponse response, Integer tenantId, int contextEid) throws IOException {
-        if (tenantId == null || tenantId <= 0) { // Safety check for Integer tenantId
+        if (tenantId == null || tenantId <= 0) {
             logger.warning("[Servlet] handleEditPunch: Called with invalid TenantID.");
             sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Invalid Tenant context.", null);
             return;
@@ -220,13 +218,14 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
         catch (DateTimeParseException e) { sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Invalid Date format. Expected yyyy-MM-dd.", null); return; }
 
         Connection con = null;
+        boolean accrualAdjusted = false;
         try {
             con = DatabaseConnection.getConnection();
             con.setAutoCommit(false);
             String originalPunchTypeDb = null; Double originalTotalHoursDb = null; int punchOwnerEid = -1;
             String fetchSql = "SELECT PUNCH_TYPE, TOTAL, EID FROM PUNCHES WHERE PUNCH_ID = ? AND TenantID = ?";
             try (PreparedStatement psFetch = con.prepareStatement(fetchSql)) {
-                psFetch.setLong(1, punchId); psFetch.setInt(2, tenantId); // tenantId will auto-unbox
+                psFetch.setLong(1, punchId); psFetch.setInt(2, tenantId);
                 try (ResultSet rsFetch = psFetch.executeQuery()) {
                     if (rsFetch.next()) {
                         originalPunchTypeDb = rsFetch.getString("PUNCH_TYPE");
@@ -244,7 +243,9 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
                 String restoreSql = "UPDATE EMPLOYEE_DATA SET " + originalAccrualCol + " = " + originalAccrualCol + " + ? WHERE EID = ? AND TenantID = ?";
                 try (PreparedStatement psRestore = con.prepareStatement(restoreSql)) {
                     psRestore.setDouble(1, originalTotalHoursDb); psRestore.setInt(2, punchOwnerEid); psRestore.setInt(3, tenantId);
-                    psRestore.executeUpdate();
+                    if (psRestore.executeUpdate() > 0) {
+                        accrualAdjusted = true;
+                    }
                 }
             }
             Timestamp newUtcInTimestamp = null; Timestamp newUtcOutTimestamp = null;
@@ -310,11 +311,21 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
                 String deductSql = "UPDATE EMPLOYEE_DATA SET " + newEffectiveAccrualCol + " = " + newEffectiveAccrualCol + " - ? WHERE EID = ? AND TenantID = ?";
                 try (PreparedStatement psDeduct = con.prepareStatement(deductSql)) {
                     psDeduct.setDouble(1, newFinalTotalHoursForAccrual); psDeduct.setInt(2, punchOwnerEid); psDeduct.setInt(3, tenantId);
-                    if(psDeduct.executeUpdate() == 0) logger.warning("Failed to deduct accrual for EID " + punchOwnerEid);
+                    if(psDeduct.executeUpdate() > 0) {
+                        accrualAdjusted = true;
+                    } else {
+                        logger.warning("Failed to deduct accrual for EID " + punchOwnerEid);
+                    }
                 }
             }
             con.commit();
-            sendJsonResponse(response, HttpServletResponse.SC_OK, true, "Punch record updated successfully.", null);
+            
+            String successMsg = "Punch record updated successfully.";
+            if (accrualAdjusted) {
+                successMsg += " Accrual balance adjusted.";
+            }
+            sendJsonResponse(response, HttpServletResponse.SC_OK, true, successMsg, null);
+
         } catch (SQLException e_sql) {
             rollback(con); logger.log(Level.SEVERE, "SQL error in handleEditPunch for PunchID " + punchIdStr, e_sql);
             sendJsonResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, false, "Database error: " + escapeHtml(e_sql.getMessage()), null);
@@ -326,7 +337,6 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
         }
     }
 
-    // Signature changed to accept Integer for tenantId
     private void handleAddHoursOrTimedPunch(HttpServletRequest request, HttpServletResponse response, Integer tenantId, int eid) throws IOException {
         if (tenantId == null || tenantId <= 0) {
             logger.warning("[Servlet] handleAddHoursOrTimedPunch: Called with invalid TenantID.");
@@ -386,7 +396,6 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
 
         String accrualColumn = getAccrualColumn(punchType);
         Connection con = null;
-        // ... (rest of handleAddHoursOrTimedPunch logic from Turn 18 remains the same) ...
         try {
             con = DatabaseConnection.getConnection(); con.setAutoCommit(false);
             String insertSql = "INSERT INTO PUNCHES (TenantID, EID, DATE, IN_1, OUT_1, TOTAL, PUNCH_TYPE, OT, LATE, EARLY_OUTS) VALUES (?, ?, ?, ?, ?, ?, ?, 0.0, FALSE, FALSE)";
@@ -433,8 +442,6 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
 
     private void handleAddGlobalHours(HttpServletRequest request, HttpServletResponse response, Integer tenantId, int loggedInUserEid) throws IOException {
         if (tenantId == null || tenantId <= 0) {
-             logger.warning("[Servlet] handleAddGlobalHours: Called with invalid TenantID.");
-             // Changed to use sendRedirect as add_global_data.jsp expects URL params
              response.sendRedirect("add_global_data.jsp?error=" + URLEncoder.encode("Invalid Tenant context.", StandardCharsets.UTF_8.name()));
              return;
         }
@@ -520,14 +527,12 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
         }
     }
 
-    // Signature changed to accept Integer for tenantId
     private void handleDeletePunch(HttpServletRequest request, HttpServletResponse response, Integer tenantId) throws IOException {
          if (tenantId == null || tenantId <= 0) {
              logger.warning("[Servlet] handleDeletePunch: Called with invalid TenantID.");
              sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Invalid Tenant context.", null);
              return;
         }
-        // ... (Rest of method from Turn 18)
         String punchIdStr = request.getParameter("punchId");
         if (!isValid(punchIdStr)) { sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Missing Punch ID for deletion.", null); return; }
         long punchId;

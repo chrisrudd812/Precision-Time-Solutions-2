@@ -1,11 +1,11 @@
 /* === css/reports.css === */
-/* v25: Unified gradients and general styling */
+/* NEW THEME: Modern Teal & Gray */
 
 /* --- General Page Styles --- */
 body.reports-page {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background-color: #f8f9fa;
-    color: #343a40;
+    background-color: #f8fafc;
+    color: #1e293b;
     line-height: 1.5;
     display: flex;
     flex-direction: column;
@@ -13,6 +13,12 @@ body.reports-page {
     margin: 0;
 }
 
+/* --- Wizard Fix --- */
+/* MODIFIED: This rule is now general and works for all modals */
+body:has(.modal.modal-visible) > .wizard-header { display: none !important; }
+
+/* --- Container Styles --- */
+.reports-page .parent-container,
 .reports-page .parent-container.reports-container {
     padding: 20px 30px;
     min-width: 50%;
@@ -24,14 +30,15 @@ body.reports-page {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    background-color: #ffffff; 
 }
 
 .report-display-area {
-    background-color: #ffffff;
-    border: 1px solid #dee2e6;
+    background: linear-gradient(to bottom, #f0fdfa, #f8fafc); /* MODIFIED: New theme gradient */
+    border: 1px solid #e2e8f0; 
     border-radius: 8px;
     padding: 20px 25px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.07);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05); 
     position: relative;
     display: flex;
     flex-direction: column;
@@ -40,278 +47,175 @@ body.reports-page {
     overflow: hidden;
 }
 
+/* --- Typography --- */
 .reports-page h1 {
-    text-align: center; color: #343a40; margin-bottom: 25px;
-    font-weight: 300; font-size: 2em; border-bottom: 1px solid #dee2e6;
-    padding-bottom: 15px; flex-shrink: 0;
-}
-.report-title {
-    font-size: 1.5em; color: #005A9C; margin-top: 0; margin-bottom: 8px;
-    font-weight: 600; flex-shrink: 0;
-}
-.report-description {
-    font-size: 0.9em; color: #6c757d; margin-bottom: 20px;
-    min-height: 1.3em; flex-shrink: 0;
-}
-
-/* --- Action Button Containers --- */
-.report-actions,
-#button-container {
-    margin-bottom: 20px;
+    text-align: center;
+    color: #1e293b; 
+    margin-bottom: 25px;
+    font-weight: 300;
+    font-size: 2em;
+    border-bottom: 1px solid #e2e8f0; 
     padding-bottom: 15px;
-    border-bottom: 1px dashed #dee2e6;
     flex-shrink: 0;
-    display: flex;
-    gap: 15px;
-    width: 100%;
-    box-sizing: border-box;
 }
-.report-actions { justify-content: flex-end; }
-
-#button-container {
-    justify-content: space-between;
-    border-bottom: none;
-    margin-top: 20px;
-    padding-bottom: 0;
-}
-#button-container button.glossy-button {
-    flex: 1 1 0;
-    max-width: 32%;
-}
-#button-container.payroll-history-actions {
-    justify-content: space-between;
-}
-#button-container.payroll-history-actions .action-left,
-#button-container.payroll-history-actions .action-right {
-    flex: 0 1 auto;
-}
-#button-container.payroll-history-actions button.glossy-button {
-    min-width: 200px;
-    flex-grow: 0;
-}
-#printReportBtn i, #button-container button i { margin-right: 8px; }
-
-/* --- Loading Indicator --- */
-.loading-indicator { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255,255,255,0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; border-radius: 8px; color: #495057; font-weight: 500; font-size: 1.1em;}
-.loading-indicator .spinner { border: 5px solid #e9ecef; border-top: 5px solid #005A9C; border-radius: 50%; width: 40px; height: 40px; animation: spin 0.8s linear infinite; margin-bottom: 15px;}
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-/* --- Report Output Area & Table Styling --- */
-.report-output { margin-top: 10px; flex-grow: 1; overflow: hidden; display: flex; flex-direction: column; }
-.report-output .report-placeholder { color: #6c757d; text-align: center; padding: 40px; font-style: italic; border: 1px dashed #ced4da; border-radius: 6px; background-color: #f8f9fa; margin: auto; }
-
-.report-table-container {
-    width: 100%;
-    max-height: 55vh;
-    overflow: auto;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.04);
-    position: relative;
+.report-title { 
+    font-size: 1.5em; 
+    color: #0f766e; 
+    margin-top: 0; 
+    margin-bottom: 8px; 
+    font-weight: 600; 
+    flex-shrink: 0; 
 }
 
-table.report-table, table#departments, table#accruals, table#schedules, table#employees, table#historyTable {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.85em;
-    background-color: #fff;
+.report-actions {
+		display: flex;
+			gap: 10px;
+			margin-bottom: 15px;
+			flex-wrap: wrap;
 }
 
-table.report-table th, table.report-table td,
-table#departments th, table#departments td,
-table#accruals th, table#accruals td,
-table#schedules th, table#schedules td,
-table#employees th, table#employees td,
-table#historyTable th, table#historyTable td {
-    padding: 8px 10px;
-    border: none;
-    border-bottom: 1px solid #dee2e6;
-    text-align: left;
-    vertical-align: middle;
-    white-space: normal;
-    word-break: break-word;
+.report-description { 
+    font-size: 0.9em; 
+    color: #475569; 
+    margin-bottom: 20px; 
+    min-height: 1.3em; 
+    flex-shrink: 0; 
 }
-
-/* Sticky Headers with NEW GRADIENT */
-table.report-table thead, table#departments thead, table#accruals thead, table#schedules thead, table#employees thead, table#historyTable thead {
-    position: -webkit-sticky; position: sticky; top: -1px;
-    z-index: 20;
-    background: linear-gradient(to bottom, #eBF5FF, #D6E9FF); /* <<< UNIFIED GRADIENT */
-}
-table.report-table thead th, table#departments thead th, table#accruals thead th, table#schedules thead th, table#employees thead th, table#historyTable thead th {
-    background: inherit;
-    color: #336A9E; /* <<< UNIFIED COLOR */
-    font-weight: 600;
-    border-bottom: 2px solid #B0C9E3 !important; /* <<< UNIFIED BORDER */
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 2px 3px -1px rgba(0,0,0,0.12);
-    text-shadow: 0 1px 0 rgba(255,255,255,0.4); padding: 10px 12px;
-}
-
-/* Row Highlighting - THIS IS THE KEY STYLE FOR ALL TABLES */
-table.report-table tbody tr.selected td,
-table#departments tbody tr.selected td,
-table#accruals tbody tr.selected td,
-table#schedules tbody tr.selected td,
-table#employees tbody tr.selected td,
-table#historyTable tbody tr.selected td {
-    background-color: #cfe2ff !important; /* Light blue for selected row */
-    font-weight: bold !important;
-    color: #004085 !important;
-}
-
-table.report-table tbody tr:hover td,
-table#departments tbody tr:not(.selected):hover td,
-table#accruals tbody tr:not(.selected):hover td,
-table#schedules tbody tr:not(.selected):hover td,
-table#employees tbody tr:not(.selected):hover td,
-table#historyTable tbody tr:not(.selected):hover td {
-    background-color: #e9ecef; /* Default hover for non-selected rows */
-    cursor: pointer;
+.required-asterisk {
+    color: #ef4444; 
+    font-weight: bold;
 }
 
 
-/* Utility classes */
-.center-text { text-align: center !important; }
-.left-text { text-align: left !important; }
-.right-text { text-align: right !important; }
-td.hours-cell, td.currency { text-align: right !important; }
+/* --- Action Buttons --- */
+#button-container { display: flex; gap: 15px; width: 100%; box-sizing: border-box; justify-content: space-between; margin-bottom: 20px; }
+#button-container.main-action-buttons .glossy-button { flex: 1 1 auto; min-width: 160px; max-width: 32%; }
 
-
-table.report-table tbody tr:last-child td,
-table#departments tbody tr:last-child td,
-table#accruals tbody tr:last-child td,
-table#schedules tbody tr:last-child td,
-table#employees tbody tr:last-child td,
-table#historyTable tbody tr:last-child td {
-    border-bottom: none;
+/* --- Table Styling --- */
+.report-table-container { width: 100%; max-height: 55vh; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.04); position: relative; }
+table.report-table { width: 100%; border-collapse: collapse; font-size: 0.85em; background-color: #fff; }
+table.report-table th, table.report-table td { padding: 8px 10px; border: none; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: middle; }
+table.report-table thead { 
+    position: sticky; 
+    top: -1px; 
+    z-index: 20; 
+    background: #f1f5f9; 
 }
-
-/* === REVISED SORT INDICATORS SECTION === */
-table.report-table thead th.sortable, table#departments thead th.sortable, table#accruals thead th.sortable, table#schedules thead th.sortable, table#employees thead th.sortable, table#historyTable thead th.sortable { 
+table.report-table thead th { 
+    background: inherit; 
+    color: #0f766e; 
+    font-weight: 600; 
+    border-bottom: 2px solid #14b8a6 !important; 
+}
+table.report-table tbody tr.selected td { 
+    background-color: #ccfbf1 !important; 
+    color: #0f766e !important; 
+    font-weight: bold !important; 
+}
+table.report-table tbody tr:not(.selected):hover td { 
+    background-color: #f1f5f9; 
     cursor: pointer; 
-    position: relative; 
-    padding-right: 28px !important; 
 }
-table.report-table thead th.sortable:hover, table#departments thead th.sortable:hover, table#accruals thead th.sortable:hover, table#schedules thead th.sortable:hover, table#employees thead th.sortable:hover, table#historyTable thead th.sortable:hover { 
-    background: linear-gradient(to bottom, #dceaff, #c6d9f0); 
-}
-/* Generic arrow containers */
-table.report-table thead th.sortable::before, table.report-table thead th.sortable::after, table#departments thead th.sortable::before, table#departments thead th.sortable::after, table#accruals thead th.sortable::before, table#accruals thead th.sortable::after, table#schedules thead th.sortable::before, table#schedules thead th.sortable::after, table#employees thead th.sortable::before, table#employees thead th.sortable::after, table#historyTable thead th.sortable::before, table#historyTable thead th.sortable::after { 
-    content: ""; 
-    position: absolute; 
-    right: 10px; 
-    border: 5px solid transparent; 
-    opacity: 0.4; 
-}
-/* Up Arrow (::before) - Positioned above the center */
-table.report-table thead th.sortable::before, table#departments thead th.sortable::before, table#accruals thead th.sortable::before, table#schedules thead th.sortable::before, table#employees thead th.sortable::before, table#historyTable thead th.sortable::before { 
-    bottom: 50%;
-    margin-bottom: 2px;
-    border-bottom-color: #336A9E; 
-}
-/* Down Arrow (::after) - Positioned below the center */
-table.report-table thead th.sortable::after, table#departments thead th.sortable::after, table#accruals thead th.sortable::after, table#schedules thead th.sortable::after, table#employees thead th.sortable::after, table#historyTable thead th.sortable::after { 
-    top: 50%;
-    margin-top: 2px;
-    border-top-color: #336A9E; 
-}
-/* Active Up Arrow */
-table.report-table thead th.sort-asc::before, table#departments thead th.sort-asc::before, table#accruals thead th.sort-asc::before, table#schedules thead th.sort-asc::before, table#employees thead th.sort-asc::before, table#historyTable thead th.sort-asc::before { 
-    border-bottom-color: #004a7c !important; 
-    opacity: 1 !important; 
-}
-/* Active Down Arrow */
-table.report-table thead th.sort-desc::after, table#departments thead th.sort-desc::after, table#accruals thead th.sort-desc::after, table#schedules thead th.sort-desc::after, table#employees thead th.sort-desc::after, table#historyTable thead th.sort-desc::after { 
-    border-top-color: #004a7c !important; 
-    opacity: 1 !important; 
-}
-/* Hide inactive arrows when one is active */
-table.report-table thead th.sort-asc::after, table#departments thead th.sort-asc::after, table#accruals thead th.sort-asc::after, table#schedules thead th.sort-asc::after, table#employees thead th.sort-asc::after, table#historyTable thead th.sort-asc::after { 
-    opacity: 0.15 !important; 
-}
-table.report-table thead th.sort-desc::before, table#departments thead th.sort-desc::before, table#accruals thead th.sort-desc::before, table#schedules thead th.sort-desc::before, table#employees thead th.sort-desc::before, table#historyTable thead th.sort-desc::before { 
-    opacity: 0.15 !important; 
-}
-/* [FIX] Style for the active sorted column header - MORE NOTICEABLE */
-table.report-table thead th.sort-asc,
-table.report-table thead th.sort-desc {
-    background-color: #cce5ff; /* A more noticeable blue */
-    background-image: linear-gradient(to bottom, #d4e8ff, #b8d7f7);
-    color: #004085; /* Darker text for contrast */
+table.report-table tbody tr:nth-child(even) { background-color: #f8fafc; } 
+table.report-table tbody tr { transition: background-color 0.15s ease-in-out; }
+
+/* --- Sort Indicators --- */
+table.report-table thead th.sortable { cursor: pointer; position: relative; padding-right: 28px !important; }
+table.report-table thead th.sortable:hover { background: #e2e8f0; } 
+table.report-table thead th.sortable::before, table.report-table thead th.sortable::after { content: ""; position: absolute; right: 10px; border: 5px solid transparent; opacity: 0.4; }
+table.report-table thead th.sortable::before { bottom: 50%; margin-bottom: 2px; border-bottom-color: #0f766e; } 
+table.report-table thead th.sortable::after { top: 50%; margin-top: 2px; border-top-color: #0f766e; } 
+table.report-table thead th.sort-asc::before { border-bottom-color: #14b8a6 !important; opacity: 1 !important; } 
+table.report-table thead th.sort-desc::after { border-top-color: #14b8a6 !important; opacity: 1 !important; } 
+table.report-table thead th.sort-asc::after, table.report-table thead th.sort-desc::before { opacity: 0.15 !important; }
+table.report-table thead th.sort-asc, table.report-table thead th.sort-desc { 
+    background-color: #e2e8f0; 
+    color: #0f766e; 
 }
 
-table.report-table tbody tr, table#departments tbody tr, table#accruals tbody tr, table#schedules tbody tr, table#employees tbody tr, table#historyTable tbody tr { transition: background-color 0.15s ease-in-out; }
-table.report-table tbody tr:nth-child(even), table#departments tbody tr:nth-child(even), table#accruals tbody tr:nth-child(even), table#schedules tbody tr:nth-child(even), table#employees tbody tr:nth-child(even), table#historyTable tbody tr:nth-child(even) { background-color: #f8f9fa; }
-
-.report-message-row td, p.report-message-row { text-align: center !important; font-style: italic; padding: 15px !important; color: #0c5460; background-color: #d1ecf1 !important; border: 1px solid #bee5eb; border-radius: 4px; font-weight: 500; }
-.report-error-row td, p.report-error-row { text-align: center !important; font-style: normal; padding: 15px !important; color: #721c24; background-color: #f8d7da !important; border: 1px solid #f5c6cb; border-radius: 4px; font-weight: bold; }
-.report-table td.empty-cell, table#departments td.empty-cell, table#accruals td.empty-cell, table#schedules td.empty-cell, table#employees td.empty-cell, table#historyTable td.empty-cell { font-style: italic; color: #999; }
-/* Simplified placeholder style in reports.css, primary style in payroll.css */
-.missing-punch-placeholder { color: #dc3545; font-weight: bold; }
-
-
-/* === MODAL Styles === */
-.modal { display: none !important; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); }
+/* === MODAL & BUTTON STYLES (CONSOLIDATED) === */
+.modal { display: none !important; position: fixed; z-index: 10080; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); }
 .modal.modal-visible { display: flex !important; align-items: center; justify-content: center; }
 .modal-content { background-color: #fff; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); width: auto; min-width: 400px; max-width: 600px; max-height: 90vh; position: relative; display: flex; flex-direction: column; overflow: hidden; }
-#addEmployeeModal .modal-content, #editEmployeeModal .modal-content { max-width: 750px; }
-#notificationModal .modal-content { min-width: 350px; max-width: 500px; text-align: center; }
-#notificationModalGeneral .modal-content { min-width: 350px; max-width: 450px; text-align: center; }
-
-
-.modal-content > h2 {
-    padding: 15px 20px; margin: 0; text-align: center; font-size: 1.3em;
-    flex-shrink: 0;
-    background: linear-gradient(to bottom, #eBF5FF, #D6E9FF); /* <<< UNIFIED GRADIENT */
-    color: #336A9E; /* <<< UNIFIED COLOR */
-    border-bottom: 1px solid #B0C9E3; /* <<< UNIFIED BORDER */
-    border-top-left-radius: 8px; border-top-right-radius: 8px;
-    text-shadow: 0 1px 0 rgba(255,255,255,0.3);
+.modal-content.wide-modal { max-width: 750px; }
+.modal-content > h2 { 
+    padding: 15px 20px; margin: 0; text-align: center; font-size: 1.3em; flex-shrink: 0; 
+    background: #0f766e; color: #ffffff; border-bottom: none; 
 }
-#notificationModal .modal-content > h2#notificationModalTitle {
-    font-size: 1.2em;
-    background: #f0f4f8;
-    text-shadow: none; border-bottom: 1px solid #dee2e6;
-    padding-bottom: 12px; padding-top: 12px; color: #333;
-}
-#notificationModal #notificationMessage { padding: 15px 20px; margin: 0; text-align: left !important; font-size: 0.95em; line-height: 1.6; color: #333; }
-
-
 .modal-content form { padding: 20px 25px; margin: 0; box-sizing: border-box; overflow-y: auto; flex-grow: 1; }
-.modal-content .form-item { margin-bottom: 18px; }
-.modal-content .form-row { display: flex; gap: 15px; margin-bottom: 18px; flex-wrap: wrap; }
-.modal-content .form-row .form-item { margin-bottom: 0; flex: 1; min-width: calc(50% - 8px); }
-.modal-content label { display: block; margin-bottom: 5px; font-weight: 500; font-size: .9em; color: #495057; }
-.modal-content input[type=text], .modal-content input[type=email], .modal-content input[type=tel], .modal-content input[type=password], .modal-content input[type=date], .modal-content input[type=number], .modal-content select, .modal-content input[type=time]{width:100%;padding:9px 12px;border:1px solid #ced4da;border-radius:4px;box-sizing:border-box;font-size:.95em;height:40px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;transition:border-color .2s ease,box-shadow .2s ease}
-.modal-content input[type=time]::-webkit-datetime-edit-fields-wrapper{padding:0}
-.modal-content input[type=time]::-webkit-clear-button,.modal-content input[type=time]::-webkit-inner-spin-button{display:none}
-.modal-content input:focus,.modal-content select:focus{border-color:#005A9C;box-shadow:0 0 0 .2rem rgba(0,90,156,.25);outline:0}
-.modal-content input:disabled, .modal-content select:disabled, .modal-content input[readonly] { background-color: #e9ecef; color: #6c757d; cursor: not-allowed; opacity: 0.7;}
-.modal-content .input-with-symbol{position:relative} .modal-content .input-with-symbol .currency-symbol{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#495057}
-.modal-content .input-with-symbol input[type=number]{padding-left:25px} .modal-content small{font-size:.8em;color:#6c757d;display:block;margin-top:3px} .required-asterisk{color:#dc3545;margin-left:2px;font-weight:700}
-.modal-content .button-row{display:flex;gap:10px;padding:15px 25px;margin-top:auto;flex-shrink:0;background:linear-gradient(to top,#f0f4f8,#e2e8f0);border-top:1px solid #ced4da;border-bottom-left-radius:8px;border-bottom-right-radius:8px}
-.modal-content .button-row button{flex:1}
-#notificationModal .button-row{justify-content:space-around;border-top:none;background-color:transparent;padding-top:15px;padding-bottom:15px}
-#notificationModalGeneral .button-row {justify-content: center; border-top:1px solid #ced4da; background-color: #f8f9fa; }
+.modal-content .button-row { display:flex; gap:10px; padding:15px 25px; margin-top:auto; flex-shrink:0; background: #f1f5f9; border-top:1px solid #e2e8f0; } 
+.modal-content .button-row .glossy-button { flex: 1 1 0; min-width: 150px; }
 
+/* FIX for the wizard setup modal text alignment */
+#wizardGenericModal .modal-content p {
+    padding: 10px 25px; /* Ensures consistent inner spacing */
+    margin: 0;          /* Removes the conflicting browser default margin */
+    text-align: center; /* Explicitly center-aligns the text */
+    line-height: 1.6;   /* Improves readability */
+}
 
-.close{color:#c82333!important;opacity:.8;position:absolute;top:8px;right:10px;font-size:26px;font-weight:700;line-height:1;cursor:pointer;padding:5px;transition:color .2s ease,opacity .2s ease;text-shadow:0 0 1px #fff}
-.close:focus,.close:hover{color:#a01c28!important;opacity:1;text-decoration:none}
-.page-message{padding:12px 18px;margin-bottom:20px;border:1px solid transparent;border-radius:5px;text-align:center;font-weight:500}
-.page-message.success-message{color:#0f5132;background-color:#d1e7dd;border-color:#badbcc}
-.page-message.error-message{color:#842029;background-color:#f8d7da;border-color:#f5c2c7}
+#notificationModalGeneralMessage {
+    padding: 20px 25px;
+    text-align: center;
+    line-height: 1.5;
+    margin: 0;
+    color: #1e293b;
+}
 
-/* === Glossy Button Styles === */
-.glossy-button{display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;font-size:.95em;font-weight:500;line-height:1.5;color:#343a40;text-align:center;vertical-align:middle;cursor:pointer;-webkit-user-select:none;user-select:none;border:1px solid #adb5bd;border-radius:5px;text-shadow:0 1px 0 rgba(255,255,255,.5);background-color:#f8f9fa;background-image:linear-gradient(to bottom,#fff,#e9ecef);box-shadow:inset 0 1px 1px rgba(255,255,255,.6),0 1px 2px rgba(0,0,0,.1);transition:all .15s ease-in-out}
+.close { color:#ef4444 !important; opacity:.8; position:absolute; top:8px; right:10px; font-size:26px; font-weight:700; cursor:pointer; } 
+.close:hover { opacity: 1; }
+
+.glossy-button { display:inline-flex; align-items:center; justify-content:center; padding:10px 18px; font-size:.95em; font-weight:500; line-height:1.5; color:#343a40; text-align:center; vertical-align:middle; cursor:pointer; user-select:none; border:1px solid #adb5bd; border-radius:5px; text-shadow:0 1px 0 rgba(255,255,255,.5); background-color:#f8f9fa; background-image:linear-gradient(to bottom,#fff,#e9ecef); box-shadow:inset 0 1px 1px rgba(255,255,255,.6),0 1px 2px rgba(0,0,0,.1); transition:all .15s ease-in-out }
 .glossy-button i{margin-right:8px}
 .glossy-button:hover{filter:brightness(1.05);text-decoration:none;border-color:#90a4ae}
 .glossy-button:active{filter:brightness(.95);box-shadow:inset 0 2px 3px rgba(0,0,0,.12)}
-.glossy-button:focus{outline:0;border-color:#80bdff;box-shadow:inset 0 1px 1px rgba(255,255,255,.6),0 1px 2px rgba(0,0,0,.1),0 0 0 .2rem rgba(130,138,145,.5)}
-.glossy-button.disabled,.glossy-button:disabled{cursor:not-allowed;background-color:#e9ecef!important;background-image:none!important;border-color:#ced4da!important;box-shadow:none;opacity:.65;color:#6c757d!important}
-.glossy-button.text-green,.glossy-button.text-green i{color:#19692c!important}
-.glossy-button.text-orange,.glossy-button.text-orange i{color:#c67c00!important}
-.glossy-button.text-red,.glossy-button.text-red i{color:#b02a37!important}
-.glossy-button.text-blue,.glossy-button.text-blue i{color:#0056b3!important}
+.glossy-button.text-green, .glossy-button.text-green i{color:#16a34a !important} 
+.glossy-button.text-red, .glossy-button.text-red i{color:#dc2626 !important} 
+.glossy-button.text-orange, .glossy-button.text-orange i{color:#ea580c !important} 
+.glossy-button.text-blue, .glossy-button.text-blue i{color:#2563eb !important} 
+.glossy-button.text-grey, .glossy-button.text-grey i{color:#343a40!important}
+/* MODIFICATION: Added new yellowish-orange color class */
+.glossy-button.text-amber, .glossy-button.text-amber i{color:#f59e0b !important}
+.glossy-button:disabled { cursor: not-allowed; background-color: #e9ecef!important; background-image: none!important; border-color: #ced4da!important; box-shadow: none; opacity: .65; color: #6c757d!important; }
 
-/* Print Specific Styles */
-@media print{body.reports-page,body{background-color:#fff!important;padding-top:0!important;margin:0;font-size:9pt;display:block!important;min-height:auto;overflow:visible!important}.reports-page .parent-container.reports-container,.report-display-area{display:block!important;overflow:visible!important;flex-grow:0}.main-navbar,.reports-page h1,.report-actions,#button-container,.loading-indicator,.modal{display:none!important}.reports-page .parent-container,.parent-container{padding:0;margin:15mm;max-width:100%;box-shadow:none;border:none}.report-display-area{border:none;box-shadow:none;padding:0;margin:0}.report-title{color:#000!important;font-size:14pt;text-align:center;border-bottom:1px solid #999;padding-bottom:5px;margin-bottom:10px}.report-description{color:#000!important;font-size:9pt;text-align:center;margin-bottom:15px}.report-output{overflow:visible!important;flex-grow:0;margin-top:0}.report-table-container{max-height:none!important;height:auto!important;overflow:visible!important;border:1px solid #999!important;box-shadow:none;max-width:100%!important;margin:0}table.report-table,table#departments,table#accruals,table#schedules,table#historyTable{width:100%;border-collapse:collapse!important;font-size:8pt}table.report-table th,table.report-table td,table#departments th,table#departments td,table#accruals th,table#accruals td,table#schedules th,table#schedules td,table#historyTable th,table#historyTable td{border:1px solid #bbb!important;padding:4px 6px;background-color:#fff!important;color:#000!important;white-space:normal!important;word-break:break-word}table.report-table thead th,table#departments thead th,table#accruals thead th,table#schedules thead th,table#historyTable thead th{background:#e9ecef!important;color:#000!important;font-weight:700;border-bottom:2px solid #aaa!important;box-shadow:none!important;text-shadow:none!important;padding-right:6px!important;position:static!important}table.report-table thead th.sortable::before,table.report-table thead th.sortable::after,table#departments thead th.sortable::before,table#departments thead th.sortable::after,table#accruals thead th.sortable::before,table#accruals thead th.sortable::after,table#schedules thead th.sortable::before,table#schedules thead th.sortable::after,table#historyTable thead th.sortable::before,table#historyTable thead th.sortable::after{display:none!important}.report-message-row td::before{content:"Note: "}.report-error-row td::before{content:"Error: "}@page{size:landscape;margin:.5in}}
+/* === GENERAL FORM STYLING === */
+.reports-page .form-section {
+    margin-bottom: 15px;
+    border: 1px solid #e2e8f0; 
+    border-radius: 6px;
+    padding: 15px;
+    background-color: #f8fafc; 
+}
+.reports-page .form-section legend {
+    font-weight: 600;
+    color: #475569; 
+    padding: 0 8px;
+    font-size: 0.9em;
+    background-color: #f8fafc; 
+}
+.reports-page .form-row { display: flex; gap: 15px; margin-bottom: 18px; flex-wrap: wrap; }
+.reports-page .form-row .form-item { flex: 1; min-width: calc(50% - 8px); }
+.reports-page label { display: block; margin-bottom: 5px; font-weight: 500; font-size: .9em; color: #475569; } 
+.reports-page input[type=text], .reports-page input[type=email], .reports-page input[type=tel], .reports-page input[type=password], .reports-page input[type=date], .reports-page input[type=time], .reports-page input[type=number], .reports-page select { 
+    width:100%; 
+    padding:9px 12px; 
+    border:1px solid #cbd5e0; 
+    border-radius:4px; 
+    box-sizing:border-box; 
+    font-size:.95em; 
+    height:40px; 
+    font-family: inherit; 
+}
+
+/* Style for the general notification modal's message area */
+#notificationModalGeneralMessage {
+    padding: 20px 25px;
+    text-align: center;
+    line-height: 1.5;
+    margin: 0;
+    color: #1e293b;
+}
+
+#notificationModalGeneral {
+    z-index: 10100; /* Increased from 10050 to be higher than the default 10080 */
+}

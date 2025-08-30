@@ -123,6 +123,19 @@
     </div>
     <div class="toast-notification-container" id="toast-container"></div>
     
+    <div id="confirmModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="close" data-close-modal-id="confirmModal">&times;</span>
+            <h2 id="confirmModalTitle">Confirm Action</h2>
+            <p id="confirmModalMessage" style="padding: 15px 25px; line-height: 1.6;"></p>
+            <div class="button-row">
+                <%-- MODIFIED: Added an ID to the cancel button for the script to find it --%>
+                <button type="button" id="confirmModalCancelBtn" class="glossy-button text-grey" data-close-modal-id="confirmModal">Cancel</button>
+                <button type="button" id="confirmModalOkBtn" class="glossy-button text-red">OK</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const APP_CONTEXT_PATH = "<%= APP_CONTEXT_PATH_JSP %>";
         const PAGE_IS_IN_WIZARD_MODE = <%= pageIsInWizardMode %>;
@@ -131,5 +144,18 @@
     <%@ include file="/WEB-INF/includes/common-scripts.jspf" %>
     <%@ include file="/WEB-INF/includes/notification-modals.jspf" %>
     <script src="<%= APP_CONTEXT_PATH_JSP %>/js/configureDeviceRestrictions.js?v=<%= System.currentTimeMillis() %>"></script>
+
+    <%-- MODIFIED: Added a script to specifically handle the confirm modal's cancel button --%>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const confirmModal = document.getElementById('confirmModal');
+            const confirmModalCancelBtn = document.getElementById('confirmModalCancelBtn');
+            if (confirmModal && confirmModalCancelBtn && typeof hideModal === 'function') {
+                confirmModalCancelBtn.addEventListener('click', () => {
+                    hideModal(confirmModal);
+                });
+            }
+        });
+    </script>
 </body>
 </html>

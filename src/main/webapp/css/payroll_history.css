@@ -6,6 +6,16 @@
     is inherited from css/reports.css by applying common classes.
 */
 
+/* MODIFIED: Add rules to make container height dynamic */
+.report-display-area:has(#historyTable) {
+    min-height: 0;
+    flex-grow: 0;
+}
+.report-display-area:has(#historyTable) .report-table-container {
+    max-height: none;
+}
+
+
 /* Align currency cells to the right if not already handled by .report-table */
 table#historyTable td.currency,
 table#historyTable th[data-sort-type="currency"] {
@@ -47,8 +57,6 @@ table#historyTable th[data-sort-type="currency"] {
 /* .glossy-button class from reports.css provides base style */
 .payroll-history-actions button.glossy-button {
     min-width: 200px; /* Give buttons a good minimum width */
-    /* flex-grow: 0; /* Prevent buttons from growing beyond their content + padding */
-    /* flex-shrink: 0; */
 }
 
 /* Ensure icons within these specific buttons inherit the text color */

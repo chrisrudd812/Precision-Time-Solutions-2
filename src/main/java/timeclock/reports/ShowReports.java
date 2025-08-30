@@ -20,17 +20,14 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import timeclock.db.DatabaseConnection;
-// No ShowPunches needed if isValid is self-contained or not used for TZ string.
-// For consistency with other classes, let's use timeclock.punches.ShowPunches.isValid if it's intended for general string validation.
-// However, the local isValid method seems fine for its current use.
-import timeclock.punches.ShowPunches; // For consistent isValid method if desired, otherwise local is fine.
+import timeclock.punches.ShowPunches;
 
 
 public class ShowReports {
 
     private static final Logger logger = Logger.getLogger(ShowReports.class.getName());
     private static final String NOT_APPLICABLE_DISPLAY = "N/A";
-    private static final String UTC_ZONE_ID = "UTC"; // Constant for UTC
+    private static final String UTC_ZONE_ID = "UTC";
 
     private static String escapeHtml(String input) {
         if (input == null) return "";
@@ -41,15 +38,12 @@ public class ShowReports {
                     .replace("'", "&#39;");
     }
 
-    // Using ShowPunches.isValid for consistency, ensure it's imported or accessible.
-    // If kept local, it's fine too. For this example, assuming local or correctly pathed.
-    public static boolean isValid(String s) { // Local isValid
+    public static boolean isValid(String s) {
         return s != null && !s.trim().isEmpty() && !"null".equalsIgnoreCase(s) && !"undefined".equalsIgnoreCase(s);
     }
 
 
     // --- Methods to populate dropdowns (Tenant-Aware) ---
-    // These methods (getDepartmentsForTenant, etc.) remain unchanged.
     public static List<Map<String, String>> getDepartmentsForTenant(int tenantId) {
         List<Map<String, String>> departments = new ArrayList<>();
         if (tenantId <= 0) { logger.warning("getDepartmentsForTenant invalid TenantID: " + tenantId); return departments; }
@@ -109,7 +103,7 @@ public class ShowReports {
         
         ZoneId displayZoneId;
         try {
-            if (!ShowPunches.isValid(userTimeZoneIdStr)) { // Using ShowPunches.isValid for broader checks
+            if (!ShowPunches.isValid(userTimeZoneIdStr)) {
                 throw new Exception("User TimeZoneId string is invalid or null.");
             }
             displayZoneId = ZoneId.of(userTimeZoneIdStr);
@@ -138,16 +132,16 @@ public class ShowReports {
         String sql = "SELECT p.PUNCH_ID, ed.EID, ed.TenantEmployeeNumber, ed.FIRST_NAME, ed.LAST_NAME, p.DATE, p.IN_1, p.OUT_1 " +
                      "FROM EMPLOYEE_DATA ed JOIN PUNCHES p ON ed.TenantID = p.TenantID AND ed.EID = p.EID " +
                      "WHERE p.TenantID = ? " +
-                     "  AND p.OUT_1 IS NULL " + // Core condition for an open punch exception
+                     "  AND p.OUT_1 IS NULL " +
                      "  AND ed.ACTIVE = TRUE " +
-                     "  AND p.PUNCH_TYPE IN ('User Initiated', 'Supervisor Override', 'Sample Data') " + 
-                     "  AND p.DATE BETWEEN ? AND ? " + // Date range for the exception
+                     "  AND p.PUNCH_TYPE IN ('User Initiated', 'Supervisor Override', 'Sample Data', 'Regular') " + 
+                     "  AND p.DATE BETWEEN ? AND ? " +
                      "ORDER BY ed.LAST_NAME, ed.FIRST_NAME, p.DATE, p.IN_1";
 
         try (Connection con = DatabaseConnection.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, tenantId);
             ps.setDate(2, Date.valueOf(periodStartDate));
-            ps.setDate(3, Date.valueOf(LocalDate.now().minusDays(1))); // Use yesterday's date to ensure we capture all exceptions up to today
+            ps.setDate(3, Date.valueOf(periodEndDate));
 
             logger.info("[ShowReports.showExceptionReport] Executing for T:" + tenantId + " for period " + periodStartDate + " to " + periodEndDate + " with TZ: " + displayZoneId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -161,38 +155,26 @@ public class ShowReports {
                     String lN = rs.getString("LAST_NAME");
                     Date punchDbDate = rs.getDate("DATE");
                     Timestamp inTsUtc = rs.getTimestamp("IN_1");
-                    // OUT_1 will be null due to query condition
 
-                    LocalDate displayDate;
-                    if (inTsUtc != null) {
-                        displayDate = ZonedDateTime.ofInstant(inTsUtc.toInstant(), displayZoneId).toLocalDate();
-                    } else if (punchDbDate != null) {
-                        displayDate = punchDbDate.toLocalDate();
-                    } else {
-                        displayDate = LocalDate.now(displayZoneId); // Fallback if DB date is null
-                    }
+                    LocalDate displayDate = (punchDbDate != null) ? punchDbDate.toLocalDate() : LocalDate.now(displayZoneId);
 
                     String fDt = displayDate.format(dateFormatForDisplay);
                     String iC = (inTsUtc != null) ? timeFormatForDisplay.format(ZonedDateTime.ofInstant(inTsUtc.toInstant(), displayZoneId)) : "<span class='missing-punch-placeholder'>Missing IN</span>";
-                    String oC = "<span class='missing-punch-placeholder'>Missing OUT</span>"; // Always missing for this report
-
-                    String iCls = (inTsUtc == null) ? " class='empty-cell missing-punch-placeholder'" : "";
-                    String oCls = " class='empty-cell missing-punch-placeholder'";
-
+                    String oC = "<span class='missing-punch-placeholder'>Missing OUT</span>";
 
                     html.append("<tr data-punch-id=\"").append(pId).append("\" data-eid=\"").append(gEID).append("\">")
                         .append("<td>").append(dEID).append("</td>")
                         .append("<td>").append(escapeHtml(fN)).append("</td>")
                         .append("<td>").append(escapeHtml(lN)).append("</td>")
                         .append("<td>").append(fDt).append("</td>")
-                        .append("<td").append(iCls).append(">").append(iC).append("</td>")
-                        .append("<td").append(oCls).append(">").append(oC).append("</td>")
+                        .append("<td>").append(iC).append("</td>")
+                        .append("<td class='empty-cell'>").append(oC).append("</td>")
                         .append("</tr>\n");
                 }
             }
             if (!foundExceptions) {
                 logger.info("[ShowReports.showExceptionReport] No exceptions found for T:" + tenantId + " in period.");
-                return "NO_EXCEPTIONS"; // Signal to servlet
+                return "NO_EXCEPTIONS";
             }
         } catch (SQLException e) {
             logger.log(Level.SEVERE, "[ShowReports.showExceptionReport] Error ExceptionReport T:" + tenantId, e);
@@ -220,22 +202,27 @@ public class ShowReports {
     }
 
     public static String showWhosInReport(int tenantId) {
-        if (tenantId <= 0) { return "<tr><td colspan='5' class='report-error-row'>Invalid tenant.</td></tr>"; }
+        if (tenantId <= 0) { return "<tr><td colspan='6' class='report-error-row'>Invalid tenant.</td></tr>"; }
         StringBuilder html = new StringBuilder(); boolean found = false;
-        // This query relies on CURDATE() which uses DB server time. For "Who's In NOW", this is usually acceptable.
-        // If times needed to be shown relative to user's timezone, this method would also need userTimeZoneIdStr.
-        String q = "SELECT ed.EID,ed.TenantEmployeeNumber,ed.FIRST_NAME,ed.LAST_NAME,ed.DEPT,ed.SCHEDULE FROM EMPLOYEE_DATA ed JOIN PUNCHES p ON ed.TenantID=p.TenantID AND ed.EID=p.EID WHERE ed.TenantID=? AND ed.ACTIVE=TRUE AND p.DATE=CURDATE() AND p.OUT_1 IS NULL AND p.IN_1=(SELECT MAX(p2.IN_1)FROM PUNCHES p2 WHERE p2.TenantID=ed.TenantID AND p2.EID=ed.EID AND p2.DATE=CURDATE())ORDER BY ed.LAST_NAME,ed.FIRST_NAME";
+        String q = "SELECT ed.EID,ed.TenantEmployeeNumber,ed.FIRST_NAME,ed.LAST_NAME,ed.DEPT,ed.SCHEDULE,ed.EMAIL FROM EMPLOYEE_DATA ed JOIN PUNCHES p ON ed.TenantID=p.TenantID AND ed.EID=p.EID WHERE ed.TenantID=? AND ed.ACTIVE=TRUE AND p.DATE=CURDATE() AND p.OUT_1 IS NULL AND p.IN_1=(SELECT MAX(p2.IN_1)FROM PUNCHES p2 WHERE p2.TenantID=ed.TenantID AND p2.EID=ed.EID AND p2.DATE=CURDATE())ORDER BY ed.LAST_NAME,ed.FIRST_NAME";
         try (Connection con = DatabaseConnection.getConnection(); PreparedStatement ps = con.prepareStatement(q)) {
             ps.setInt(1, tenantId);
             logger.info("[ShowReports.showWhosInReport] Executing for T:" + tenantId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     found=true; Integer tENo=rs.getObject("TenantEmployeeNumber")!=null?rs.getInt("TenantEmployeeNumber"):null; String dEID=(tENo!=null&&tENo>0)?String.valueOf(tENo):String.valueOf(rs.getInt("EID"));
-                    html.append("<tr data-eid=\"").append(rs.getInt("EID")).append("\">").append("<td>").append(dEID).append("</td><td>").append(escapeHtml(rs.getString("FIRST_NAME"))).append("</td><td>").append(escapeHtml(rs.getString("LAST_NAME"))).append("</td><td>").append(escapeHtml(rs.getString("DEPT"))).append("</td><td>").append(escapeHtml(rs.getString("SCHEDULE"))).append("</td></tr>\n");
+                    html.append("<tr data-eid=\"").append(rs.getInt("EID")).append("\">")
+                        .append("<td>").append(dEID).append("</td>")
+                        .append("<td>").append(escapeHtml(rs.getString("FIRST_NAME"))).append("</td>")
+                        .append("<td>").append(escapeHtml(rs.getString("LAST_NAME"))).append("</td>")
+                        .append("<td>").append(escapeHtml(rs.getString("DEPT"))).append("</td>")
+                        .append("<td>").append(escapeHtml(rs.getString("SCHEDULE"))).append("</td>")
+                        .append("<td>").append(escapeHtml(rs.getString("EMAIL"))).append("</td>")
+                        .append("</tr>\n");
                 }
             }
-            if(!found) { logger.info("[ShowReports.showWhosInReport] Nobody clocked in for T:" + tenantId); return "<tr><td colspan='5' class='report-message-row'>No employees currently clocked in.</td></tr>"; }
-        } catch (SQLException e) { logger.log(Level.SEVERE,"[ShowReports.showWhosInReport] Error WhosIn T:"+tenantId,e); return "<tr><td colspan='5' class='report-error-row'>Error retrieving who's in report.</td></tr>"; }
+            if(!found) { logger.info("[ShowReports.showWhosInReport] Nobody clocked in for T:" + tenantId); return "<tr><td colspan='6' class='report-message-row'>No employees currently clocked in.</td></tr>"; }
+        } catch (SQLException e) { logger.log(Level.SEVERE,"[ShowReports.showWhosInReport] Error WhosIn T:"+tenantId,e); return "<tr><td colspan='6' class='report-error-row'>Error retrieving who's in report.</td></tr>"; }
         return html.toString();
     }
 
@@ -254,18 +241,18 @@ public class ShowReports {
 
         ZoneId targetZone;
         try {
-            if (!ShowPunches.isValid(userTimeZoneIdStr)) { // Using ShowPunches.isValid
+            if (!ShowPunches.isValid(userTimeZoneIdStr)) {
                  throw new Exception("User TimeZoneId string is invalid or null for archived report.");
             }
             targetZone = ZoneId.of(userTimeZoneIdStr);
         } catch (Exception e) {
             logger.log(Level.WARNING, "[ShowReports.showArchivedPunchesReport] Invalid userTimeZoneIdStr: '" + userTimeZoneIdStr + "'. Defaulting to UTC. Error: " + e.getMessage());
-            targetZone = ZoneId.of(UTC_ZONE_ID); // Fallback to UTC
+            targetZone = ZoneId.of(UTC_ZONE_ID);
         }
         logger.info("[ShowReports.showArchivedPunchesReport] Using targetZone: " + targetZone + " for TenantID: " + tenantId);
 
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("hh:mm:ss a", Locale.ENGLISH).withZone(targetZone);
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MM/dd/yyyy", Locale.ENGLISH); // Keep date as is from DB, format IN time's date
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MM/dd/yyyy", Locale.ENGLISH);
 
         StringBuilder sqlBuilder = new StringBuilder();
         sqlBuilder.append("SELECT p.PUNCH_ID, p.EID AS PUNCH_OWNER_EID, p.DATE AS PUNCH_TABLE_DATE, p.IN_1, p.OUT_1, p.TOTAL, p.PUNCH_TYPE");
@@ -300,14 +287,13 @@ public class ShowReports {
                     long punchId = rs.getLong("PUNCH_ID"); int punchOwnerGlobalEid = rs.getInt("PUNCH_OWNER_EID");
                     Timestamp inTsUtc = rs.getTimestamp("IN_1"); Timestamp outTsUtc = rs.getTimestamp("OUT_1");
                     double total = rs.getDouble("TOTAL"); if (rs.wasNull()) total = 0.0;
-                    String punchType = rs.getString("PUNCH_TYPE"); Date punchTableDate = rs.getDate("PUNCH_TABLE_DATE"); // UTC Date from DB
+                    String punchType = rs.getString("PUNCH_TYPE"); Date punchTableDate = rs.getDate("PUNCH_TABLE_DATE");
 
                     String formattedDate = NOT_APPLICABLE_DISPLAY;
-                    // Display date should be derived from IN punch in target timezone, or fallback to DB date if IN is null
                     if (inTsUtc != null) {
                         formattedDate = dateFormatter.format(ZonedDateTime.ofInstant(inTsUtc.toInstant(), targetZone));
                     } else if (punchTableDate != null) {
-                        formattedDate = dateFormatter.format(punchTableDate.toLocalDate()); // Format the LocalDate
+                        formattedDate = dateFormatter.format(punchTableDate.toLocalDate());
                     }
 
                     String formattedIn = (inTsUtc != null) ? timeFormatter.format(ZonedDateTime.ofInstant(inTsUtc.toInstant(), targetZone)) : "<span class='missing-punch-placeholder'>Missing</span>";
@@ -339,9 +325,10 @@ public class ShowReports {
     }
 
     private static String generateEmployeeReportRows(int tenantId, String whereClause, Object... params) {
-        StringBuilder html = new StringBuilder(); final int COLS = 8;
+        StringBuilder html = new StringBuilder();
+        final int COLS = 7;
         if (tenantId <= 0) { return "<tr><td colspan='" + COLS + "' class='report-error-row'>Invalid tenant.</td></tr>"; }
-        String baseSql = "SELECT EID, TenantEmployeeNumber, FIRST_NAME, LAST_NAME, DEPT, SCHEDULE, SUPERVISOR, EMAIL, PHONE FROM EMPLOYEE_DATA WHERE TenantID = ? ";
+        String baseSql = "SELECT EID, TenantEmployeeNumber, FIRST_NAME, LAST_NAME, DEPT, SCHEDULE, SUPERVISOR, EMAIL FROM EMPLOYEE_DATA WHERE TenantID = ? ";
         String finalSql = baseSql + (whereClause != null ? whereClause : "") + " ORDER BY LAST_NAME, FIRST_NAME";
         List<Object> allParams = new ArrayList<>(); allParams.add(tenantId); if (params != null) { for (Object p : params) { allParams.add(p); } }
         try (Connection con = DatabaseConnection.getConnection(); PreparedStatement ps = con.prepareStatement(finalSql)) {
@@ -349,7 +336,7 @@ public class ShowReports {
             try (ResultSet rs = ps.executeQuery()) {
                 boolean found = false; while (rs.next()) {
                     found = true; int gEID = rs.getInt("EID"); Integer tENo = rs.getObject("TenantEmployeeNumber")!=null?rs.getInt("TenantEmployeeNumber"):null; String dEID = (tENo!=null&&tENo>0)?String.valueOf(tENo):String.valueOf(gEID);
-                    html.append("<tr data-eid=\"").append(gEID).append("\"><td>").append(dEID).append("</td><td>").append(escapeHtml(rs.getString("FIRST_NAME"))).append("</td><td>").append(escapeHtml(rs.getString("LAST_NAME"))).append("</td><td>").append(escapeHtml(rs.getString("DEPT"))).append("</td><td>").append(escapeHtml(rs.getString("SCHEDULE"))).append("</td><td>").append(escapeHtml(rs.getString("SUPERVISOR"))).append("</td><td>").append(escapeHtml(rs.getString("EMAIL"))).append("</td><td>").append(escapeHtml(rs.getString("PHONE"))).append("</td></tr>\n");
+                    html.append("<tr data-eid=\"").append(gEID).append("\"><td>").append(dEID).append("</td><td>").append(escapeHtml(rs.getString("FIRST_NAME"))).append("</td><td>").append(escapeHtml(rs.getString("LAST_NAME"))).append("</td><td>").append(escapeHtml(rs.getString("DEPT"))).append("</td><td>").append(escapeHtml(rs.getString("SCHEDULE"))).append("</td><td>").append(escapeHtml(rs.getString("SUPERVISOR"))).append("</td><td>").append(escapeHtml(rs.getString("EMAIL"))).append("</td></tr>\n");
                 } if (!found) { html.append("<tr><td colspan='").append(COLS).append("' class='report-message-row'>No employees found.</td></tr>"); }
             }
         } catch (SQLException e) { logger.log(Level.SEVERE, "Error EmployeeReport T:"+tenantId, e); html.setLength(0); html.append("<tr><td colspan='").append(COLS).append("' class='report-error-row'>Error data.</td></tr>"); }
@@ -357,8 +344,76 @@ public class ShowReports {
     }
     public static String showActiveEmployeesReport(int tenantId) { return generateEmployeeReportRows(tenantId, "AND ACTIVE = TRUE"); }
     public static String showInactiveEmployeesReport(int tenantId) { return generateEmployeeReportRows(tenantId, "AND ACTIVE = FALSE"); }
-    public static String showEmployeesByDepartmentReport(int tenantId, String department) { if (!ShowPunches.isValid(department)) return "<tr><td colspan='8' class='report-error-row'>Dept not specified.</td></tr>"; return generateEmployeeReportRows(tenantId, "AND DEPT = ? AND ACTIVE = TRUE", department); }
-    public static String showEmployeesByScheduleReport(int tenantId, String schedule) { if (!ShowPunches.isValid(schedule)) return "<tr><td colspan='8' class='report-error-row'>Sched not specified.</td></tr>"; return generateEmployeeReportRows(tenantId, "AND SCHEDULE = ? AND ACTIVE = TRUE", schedule); }
-    public static String showEmployeesBySupervisorReport(int tenantId, String supervisor) { if (!ShowPunches.isValid(supervisor)) return "<tr><td colspan='8' class='report-error-row'>Super not specified.</td></tr>"; return generateEmployeeReportRows(tenantId, "AND SUPERVISOR = ? AND ACTIVE = TRUE", supervisor); }
+    public static String showEmployeesByDepartmentReport(int tenantId, String department) { if (!isValid(department)) return "<tr><td colspan='7' class='report-error-row'>Dept not specified.</td></tr>"; return generateEmployeeReportRows(tenantId, "AND DEPT = ? AND ACTIVE = TRUE", department); }
+    public static String showEmployeesByScheduleReport(int tenantId, String schedule) { if (!isValid(schedule)) return "<tr><td colspan'7' class='report-error-row'>Sched not specified.</td></tr>"; return generateEmployeeReportRows(tenantId, "AND SCHEDULE = ? AND ACTIVE = TRUE", schedule); }
+    public static String showEmployeesBySupervisorReport(int tenantId, String supervisor) { if (!isValid(supervisor)) return "<tr><td colspan'7' class='report-error-row'>Super not specified.</td></tr>"; return generateEmployeeReportRows(tenantId, "AND SUPERVISOR = ? AND ACTIVE = TRUE", supervisor); }
 
+    // --- NEW REPORTS ---
+    public static String showAccrualBalanceReport(int tenantId) {
+        StringBuilder html = new StringBuilder();
+        final int COLS = 6;
+        if (tenantId <= 0) { return "<tr><td colspan='" + COLS + "' class='report-error-row'>Invalid tenant.</td></tr>"; }
+        String sql = "SELECT EID, TenantEmployeeNumber, FIRST_NAME, LAST_NAME, VACATION_HOURS, SICK_HOURS, PERSONAL_HOURS FROM EMPLOYEE_DATA WHERE TenantID = ? AND ACTIVE = TRUE ORDER BY LAST_NAME, FIRST_NAME";
+        try (Connection con = DatabaseConnection.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, tenantId);
+            try (ResultSet rs = ps.executeQuery()) {
+                boolean found = false;
+                while (rs.next()) {
+                    found = true;
+                    int gEID = rs.getInt("EID");
+                    Integer tENo = rs.getObject("TenantEmployeeNumber") != null ? rs.getInt("TenantEmployeeNumber") : null;
+                    String dEID = (tENo != null && tENo > 0) ? String.valueOf(tENo) : String.valueOf(gEID);
+                    html.append("<tr data-eid=\"").append(gEID).append("\">")
+                        .append("<td>").append(dEID).append("</td>")
+                        .append("<td>").append(escapeHtml(rs.getString("FIRST_NAME"))).append("</td>")
+                        .append("<td>").append(escapeHtml(rs.getString("LAST_NAME"))).append("</td>")
+                        .append("<td>").append(String.format(Locale.US, "%.2f", rs.getBigDecimal("VACATION_HOURS"))).append("</td>")
+                        .append("<td>").append(String.format(Locale.US, "%.2f", rs.getBigDecimal("SICK_HOURS"))).append("</td>")
+                        .append("<td>").append(String.format(Locale.US, "%.2f", rs.getBigDecimal("PERSONAL_HOURS"))).append("</td>")
+                        .append("</tr>\n");
+                }
+                if (!found) {
+                    html.append("<tr><td colspan='").append(COLS).append("' class='report-message-row'>No active employees found to display accrual balances.</td></tr>");
+                }
+            }
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Error generating Accrual Balance Report for T:" + tenantId, e);
+            html.setLength(0);
+            html.append("<tr><td colspan='").append(COLS).append("' class='report-error-row'>Error generating accrual report.</td></tr>");
+        }
+        return html.toString();
+    }
+
+    public static String showSystemAccessReport(int tenantId) {
+        StringBuilder html = new StringBuilder();
+        final int COLS = 4;
+        if (tenantId <= 0) { return "<tr><td colspan='" + COLS + "' class='report-error-row'>Invalid tenant.</td></tr>"; }
+        String sql = "SELECT EID, TenantEmployeeNumber, FIRST_NAME, LAST_NAME, EMAIL FROM EMPLOYEE_DATA WHERE TenantID = ? AND PERMISSIONS = 'Administrator' AND ACTIVE = TRUE ORDER BY LAST_NAME, FIRST_NAME";
+        try (Connection con = DatabaseConnection.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, tenantId);
+            try (ResultSet rs = ps.executeQuery()) {
+                boolean found = false;
+                while (rs.next()) {
+                    found = true;
+                    int gEID = rs.getInt("EID");
+                    Integer tENo = rs.getObject("TenantEmployeeNumber") != null ? rs.getInt("TenantEmployeeNumber") : null;
+                    String dEID = (tENo != null && tENo > 0) ? String.valueOf(tENo) : String.valueOf(gEID);
+                    html.append("<tr data-eid=\"").append(gEID).append("\">")
+                        .append("<td>").append(dEID).append("</td>")
+                        .append("<td>").append(escapeHtml(rs.getString("FIRST_NAME"))).append("</td>")
+                        .append("<td>").append(escapeHtml(rs.getString("LAST_NAME"))).append("</td>")
+                        .append("<td>").append(escapeHtml(rs.getString("EMAIL"))).append("</td>")
+                        .append("</tr>\n");
+                }
+                if (!found) {
+                    html.append("<tr><td colspan='").append(COLS).append("' class='report-message-row'>No active employees with administrator permissions found.</td></tr>");
+                }
+            }
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Error generating System Access Report for T:" + tenantId, e);
+            html.setLength(0);
+            html.append("<tr><td colspan='").append(COLS).append("' class='report-error-row'>Error generating system access report.</td></tr>");
+        }
+        return html.toString();
+    }
 }

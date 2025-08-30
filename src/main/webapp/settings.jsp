@@ -101,15 +101,16 @@
     final String STD_DEFAULT_OVERTIME_RULE_MODE = "Manual"; final String STD_DEFAULT_OVERTIME_STATE = ""; final String STD_FIXED_OVERTIME_ENABLED_VALUE = "true"; final String STD_DEFAULT_OVERTIME_RATE = "1.5";
     final String STD_DEFAULT_OVERTIME_DAILY_ENABLED = "false"; final String STD_DEFAULT_OVERTIME_DAILY_THRESHOLD = "8.0"; final String STD_DEFAULT_OVERTIME_DOUBLE_TIME_ENABLED = "false"; final String STD_DEFAULT_OVERTIME_DOUBLE_TIME_THRESHOLD = "12.0";
     final String STD_DEFAULT_OVERTIME_SEVENTH_DAY_ENABLED = "false"; final String STD_DEFAULT_OVERTIME_SEVENTH_DAY_OT_THRESHOLD = "8.0"; final String STD_DEFAULT_OVERTIME_SEVENTH_DAY_DT_THRESHOLD = "8.0";
-    final String STD_DEFAULT_PUNCH_RESTRICTIONS_ENABLED = "false";
+    
     String currentPayPeriod = STD_DEFAULT_PAY_PERIOD_TYPE; String currentFirstDayOfWeek = STD_DEFAULT_FIRST_DAY_OF_WEEK; String currentPayPeriodStartDate = STD_DEFAULT_PAY_PERIOD_START_DATE;
     String currentGracePeriod = "0"; String currentOvertimeRuleMode = STD_DEFAULT_OVERTIME_RULE_MODE;
-    String currentOvertimeState = STD_DEFAULT_OVERTIME_STATE; boolean currentPunchRestrictionsEnabled = Boolean.parseBoolean(STD_DEFAULT_PUNCH_RESTRICTIONS_ENABLED);
+    String currentOvertimeState = STD_DEFAULT_OVERTIME_STATE;
     boolean currentRestrictByTimeDay = false; boolean currentRestrictByLocation = false; boolean currentRestrictByNetwork = false;
     boolean currentRestrictByDevice = false; String currentOvertimeRate = STD_DEFAULT_OVERTIME_RATE;
     boolean currentOvertimeDailyEnabled = Boolean.parseBoolean(STD_DEFAULT_OVERTIME_DAILY_ENABLED); String currentOvertimeDailyThreshold = STD_DEFAULT_OVERTIME_DAILY_THRESHOLD; boolean currentOvertimeDoubleTimeEnabled = Boolean.parseBoolean(STD_DEFAULT_OVERTIME_DOUBLE_TIME_ENABLED);
     String currentOvertimeDoubleTimeThreshold = STD_DEFAULT_OVERTIME_DOUBLE_TIME_THRESHOLD; boolean currentOvertimeSeventhDayEnabled = Boolean.parseBoolean(STD_DEFAULT_OVERTIME_SEVENTH_DAY_ENABLED);
     String currentOvertimeSeventhDayOTThreshold = STD_DEFAULT_OVERTIME_SEVENTH_DAY_OT_THRESHOLD; String currentOvertimeSeventhDayDTThreshold = STD_DEFAULT_OVERTIME_SEVENTH_DAY_DT_THRESHOLD;
+    
     if (tenantId_settings != null && tenantId_settings > 0 && pageLevelError_settings == null) {
         boolean isFirstWizardSettingsLoad = false;
         if (inSetupWizardMode_JSP) {
@@ -122,7 +123,7 @@
         if (inSetupWizardMode_JSP && isFirstWizardSettingsLoad) {
             jspSettingsPageLogger.info("[settings.jsp] FIRST WIZARD LOAD: Applying and SAVING Wizard Defaults for TenantID: " + tenantId_settings);
             currentPayPeriod = "Weekly"; currentFirstDayOfWeek = "Sunday"; currentPayPeriodStartDate = LocalDate.now().format(DateTimeFormatter.ISO_DATE); currentGracePeriod = "0"; currentOvertimeRuleMode = "AutoByState";
-            currentOvertimeState = (companyStateFromSignup != null && !companyStateFromSignup.isEmpty()) ? companyStateFromSignup : "FLSA"; currentPunchRestrictionsEnabled = false; currentRestrictByTimeDay = false;
+            currentOvertimeState = (companyStateFromSignup != null && !companyStateFromSignup.isEmpty()) ? companyStateFromSignup : "FLSA"; currentRestrictByTimeDay = false;
             currentRestrictByLocation = false;
             currentRestrictByNetwork = false; currentRestrictByDevice = false; currentOvertimeRate = "1.5"; currentOvertimeDailyEnabled = false; currentOvertimeDailyThreshold = "8.0";
             currentOvertimeDoubleTimeEnabled = false;
@@ -130,7 +131,6 @@
             try {
                 Configuration.saveProperty(tenantId_settings, "PayPeriodType", currentPayPeriod);
                 Configuration.saveProperty(tenantId_settings, "FirstDayOfWeek", currentFirstDayOfWeek); Configuration.saveProperty(tenantId_settings, "PayPeriodStartDate", currentPayPeriodStartDate); Configuration.saveProperty(tenantId_settings, "GracePeriod", currentGracePeriod); Configuration.saveProperty(tenantId_settings, "OvertimeRuleMode", currentOvertimeRuleMode); Configuration.saveProperty(tenantId_settings, "OvertimeState", currentOvertimeState);
-                Configuration.saveProperty(tenantId_settings, "PunchRestrictionsEnabled", String.valueOf(currentPunchRestrictionsEnabled));
                 Configuration.saveProperty(tenantId_settings, "RestrictByTimeDay", "false"); Configuration.saveProperty(tenantId_settings, "RestrictByLocation", "false"); Configuration.saveProperty(tenantId_settings, "RestrictByNetwork", "false"); Configuration.saveProperty(tenantId_settings, "RestrictByDevice", "false"); Configuration.saveProperty(tenantId_settings, "Overtime", STD_FIXED_OVERTIME_ENABLED_VALUE);
                 Configuration.saveProperty(tenantId_settings, "OvertimeRate", currentOvertimeRate);
                 Configuration.saveProperty(tenantId_settings, "OvertimeDaily", String.valueOf(currentOvertimeDailyEnabled)); Configuration.saveProperty(tenantId_settings, "OvertimeDailyThreshold", currentOvertimeDailyThreshold); Configuration.saveProperty(tenantId_settings, "OvertimeDoubleTimeEnabled", String.valueOf(currentOvertimeDoubleTimeEnabled)); Configuration.saveProperty(tenantId_settings, "OvertimeDoubleTimeThreshold", currentOvertimeDoubleTimeThreshold);
@@ -141,14 +141,12 @@
             } catch (SQLException e) { jspSettingsPageLogger.log(Level.SEVERE, "[settings.jsp] WIZARD DEFAULTS SAVE FAILED T:" + tenantId_settings, e);
             pageLevelError_settings = "Error saving initial settings: " + e.getMessage(); }
         } else { 
-            // This block runs for normal page loads OR subsequent wizard page loads
             currentPayPeriod = Configuration.getProperty(tenantId_settings, "PayPeriodType", STD_DEFAULT_PAY_PERIOD_TYPE);
             currentFirstDayOfWeek = Configuration.getProperty(tenantId_settings, "FirstDayOfWeek", STD_DEFAULT_FIRST_DAY_OF_WEEK);
             currentPayPeriodStartDate = Configuration.getProperty(tenantId_settings, "PayPeriodStartDate", STD_DEFAULT_PAY_PERIOD_START_DATE); 
             currentGracePeriod = Configuration.getProperty(tenantId_settings, "GracePeriod", "0"); 
             currentOvertimeRuleMode = Configuration.getProperty(tenantId_settings, "OvertimeRuleMode", STD_DEFAULT_OVERTIME_RULE_MODE);
             currentOvertimeState = Configuration.getProperty(tenantId_settings, "OvertimeState", STD_DEFAULT_OVERTIME_STATE); 
-            currentPunchRestrictionsEnabled = "true".equalsIgnoreCase(Configuration.getProperty(tenantId_settings, "PunchRestrictionsEnabled", STD_DEFAULT_PUNCH_RESTRICTIONS_ENABLED)); 
             currentRestrictByTimeDay = "true".equalsIgnoreCase(Configuration.getProperty(tenantId_settings, "RestrictByTimeDay", "false"));
             currentRestrictByLocation = "true".equalsIgnoreCase(Configuration.getProperty(tenantId_settings, "RestrictByLocation", "false"));
             currentRestrictByNetwork = "true".equalsIgnoreCase(Configuration.getProperty(tenantId_settings, "RestrictByNetwork", "false")); 
@@ -198,7 +196,8 @@
                 <div class="form-row">
                     <div class="setting-block" id="firstDayOfWeekBlock"><label for="firstDayOfWeek" class="setting-label-fixed">First Day of Work Week:</label><div class="setting-controls-wrapper"><select id="firstDayOfWeek" name="FirstDayOfWeek"><option value="Sunday" <% if ("Sunday".equalsIgnoreCase(currentFirstDayOfWeek)) out.print(" selected"); %>>Sunday</option><option value="Monday" <% if ("Monday".equalsIgnoreCase(currentFirstDayOfWeek)) out.print(" selected"); %>>Monday</option><option value="Tuesday" <% if ("Tuesday".equalsIgnoreCase(currentFirstDayOfWeek)) out.print(" selected"); %>>Tuesday</option><option value="Wednesday" <% if ("Wednesday".equalsIgnoreCase(currentFirstDayOfWeek)) out.print(" selected"); %>>Wednesday</option><option value="Thursday" <% if ("Thursday".equalsIgnoreCase(currentFirstDayOfWeek)) out.print(" selected"); %>>Thursday</option><option value="Friday" <% if ("Friday".equalsIgnoreCase(currentFirstDayOfWeek)) out.print(" selected"); %>>Friday</option><option value="Saturday" <% if ("Saturday".equalsIgnoreCase(currentFirstDayOfWeek)) out.print(" selected"); %>>Saturday</option></select><span id="FirstDayOfWeek-status" class="save-status"></span></div></div>
                 </div>
-                <div class="setting-info">
+                <%-- MODIFIED: Added an ID to this div so it can be hidden --%>
+                <div class="setting-info" id="firstDayOfWeekNote">
                     <strong>Note:</strong> This setting is used to determine the 7-day period for calculating weekly overtime.
                 </div>
                 <div class="form-row">
@@ -232,18 +231,48 @@
                 </div>
                 <div id="manualOvertimeSettings" style="margin-top:20px; border-top:1px dashed #ccc; padding-top:15px; <% if ("AutoByState".equals(currentOvertimeRuleMode)) { out.print("opacity:0.7;"); } %>"><div class="form-row"><div class="setting-block"><label class="setting-label-fixed">Weekly Overtime (FLSA):</label> <div class="setting-controls-wrapper"><label class="switch"><input type="checkbox" id="overtimeWeeklyEnabled" name="Overtime" value="true" checked disabled><span class="slider round"></span></label><span style="margin-left: 5px;">Enabled (After 40 hours)</span><small class="fixed-setting-note" style="margin-left:10px;">Fixed</small></div></div><div class="setting-block"><label class="setting-label-fixed">Std. Overtime Rate:</label><div class="setting-controls-wrapper"><div class="radio-group"><span class="styled-radio"><input type="radio" id="overtimeRate1.5" name="OvertimeRate" value="1.5" <% if ("1.5".equals(currentOvertimeRate)) out.print(" checked"); %>><label for="overtimeRate1.5">1.5x</label></span> <span class="styled-radio"><input type="radio" id="overtimeRate2.0" name="OvertimeRate" value="2.0" <% if ("2.0".equals(currentOvertimeRate)) out.print(" checked"); %>><label for="overtimeRate2.0">2.0x</label></span></div><span id="OvertimeRate-status" class="save-status radio-group-status"></span></div></div></div><hr style="border:0; border-top: 1px dashed #eee; margin: 15px 0;"><div class="form-row"><div class="setting-block"><label for="overtimeDaily" class="setting-label-fixed">Enable Daily OT:</label><div class="setting-controls-wrapper"><label class="switch"><input type="checkbox" id="overtimeDaily" name="OvertimeDaily" value="true" <% if (currentOvertimeDailyEnabled) out.print(" checked"); %>><span class="slider round"></span></label><span id="OvertimeDaily-status" class="save-status checkbox-status"></span></div></div><div class="setting-block" id="overtimeDailyThresholdBlock" style="<% if (!currentOvertimeDailyEnabled && "Manual".equals(currentOvertimeRuleMode)) out.print("opacity:0.5;"); %>"><label for="overtimeDailyThreshold" class="setting-label-fixed">Daily OT After (Hrs):</label><div class="setting-controls-wrapper"><input type="number" id="overtimeDailyThreshold" name="OvertimeDailyThreshold" min="0.5" max="23.5" step="0.5" placeholder="e.g., 8.0" value="<%= currentOvertimeDailyThreshold %>" class="short-input"><span id="OvertimeDailyThreshold-status" class="save-status"></span></div></div></div><div class="form-row"><div class="setting-block"><label for="overtimeDoubleTimeEnabled" class="setting-label-fixed">Enable Daily DT:</label><div class="setting-controls-wrapper"><label class="switch"><input type="checkbox" id="overtimeDoubleTimeEnabled" name="OvertimeDoubleTimeEnabled" value="true" <% if (currentOvertimeDoubleTimeEnabled) out.print(" checked"); %>><span class="slider round"></span></label><span id="OvertimeDoubleTimeEnabled-status" class="save-status checkbox-status"></span></div></div><div class="setting-block" id="overtimeDoubleTimeThresholdBlock" style="<% if (!currentOvertimeDoubleTimeEnabled && "Manual".equals(currentOvertimeRuleMode)) out.print("opacity:0.5;"); %>"><label for="overtimeDoubleTimeThreshold" class="setting-label-fixed">Daily DT After (Hrs):</label><div class="setting-controls-wrapper"><input type="number" id="overtimeDoubleTimeThreshold" name="OvertimeDoubleTimeThreshold" min="0.5" max="23.5" step="0.5" placeholder="e.g., 12.0" value="<%= currentOvertimeDoubleTimeThreshold %>" class="short-input"><span id="OvertimeDoubleTimeThreshold-status" class="save-status"></span></div></div></div><hr style="border:0; border-top: 1px dashed #eee; margin: 15px 0;"><div class="form-row"><div class="setting-block"><label for="overtimeSeventhDayEnabled" class="setting-label-fixed">Enable 7th Day OT:</label><div class="setting-controls-wrapper"><label class="switch"><input type="checkbox" id="overtimeSeventhDayEnabled" name="OvertimeSeventhDayEnabled" value="true" <% if (currentOvertimeSeventhDayEnabled) out.print(" checked"); %>><span class="slider round"></span></label><span id="OvertimeSeventhDayEnabled-status" class="save-status checkbox-status"></span></div></div></div><div class="form-row" id="seventhDayOTDetailsBlock" style="padding-left:20px; <% if(!currentOvertimeSeventhDayEnabled) out.print("display:none;"); %> <% if (!currentOvertimeSeventhDayEnabled && "Manual".equals(currentOvertimeRuleMode)) out.print("opacity:0.5;"); %>"><div class="setting-block"><label for="overtimeSeventhDayOTThreshold" class="setting-label-fixed" style="font-weight:normal;">7th Day 1.5x Up To (Hrs):</label><div class="setting-controls-wrapper"><input type="number" id="overtimeSeventhDayOTThreshold" name="OvertimeSeventhDayOTThreshold" min="0.5" max="24" step="0.5" placeholder="e.g., 8.0" value="<%= currentOvertimeSeventhDayOTThreshold %>" class="short-input"><span style="margin-left:5px;">hours</span><span id="OvertimeSeventhDayOTThreshold-status" class="save-status"></span></div></div><div class="setting-block"><label for="overtimeSeventhDayDTThreshold" class="setting-label-fixed" style="font-weight:normal;">7th Day 2.0x After (Hrs):</label><div class="setting-controls-wrapper"><input type="number" id="overtimeSeventhDayDTThreshold" name="OvertimeSeventhDayDTThreshold" min="0.5" max="24" step="0.5" placeholder="e.g., 8.0" value="<%= currentOvertimeSeventhDayDTThreshold %>" class="short-input"><span style="margin-left:5px;">hours</span><span id="OvertimeSeventhDayDTThreshold-status" class="save-status"></span></div></div></div></div>
             </div>
-            <div class="setting-item"><h4 class="section-heading"><i class="fas fa-fingerprint"></i>Punch Restrictions</h4><div class="setting-info" style="margin-bottom: 15px;"><strong>Note:</strong> Global settings enabled here will apply to ALL employees unless a more specific restriction is set on their individual schedule.</div><div class="setting-block" style="margin-bottom:10px;"><label for="punchRestrictionsEnabled" class="setting-label-fixed">Enable Punch Restrictions:</label><div class="setting-controls-wrapper"><label class="switch"><input type="checkbox" id="punchRestrictionsEnabled" name="PunchRestrictionsEnabled" value="true" <% if (currentPunchRestrictionsEnabled) out.print(" checked"); %>><span class="slider round"></span></label><span id="PunchRestrictionsEnabled-status" class="save-status checkbox-status"></span></div></div><div id="specificPunchRestrictionsGroup" class="sub-settings-group" style="<% if (!currentPunchRestrictionsEnabled) out.print("opacity:0.6;"); %>"><div class="punch-restriction-item"><label class="switch"><input type="checkbox" id="restrictByTimeDay" name="RestrictByTimeDay" value="true" <% if (currentRestrictByTimeDay) out.print(" checked"); %> <% if(!currentPunchRestrictionsEnabled) out.print("disabled");%>><span class="slider round"></span></label><label for="restrictByTimeDay" class="slider-label <% if(!currentPunchRestrictionsEnabled) out.print("disabled-text");%>"><i class="far fa-calendar-alt"></i>Restrict by Time/Day</label><span class="spacer"></span><button type="button" class="configure-button" id="configureTimeDayBtn" <% if(!currentPunchRestrictionsEnabled || !currentRestrictByTimeDay) out.print("disabled");%>>Configure</button></div><div class="punch-restriction-item"><label class="switch"><input type="checkbox" id="restrictByLocation" name="RestrictByLocation" value="true" <% if (currentRestrictByLocation) out.print(" checked"); %> <% if(!currentPunchRestrictionsEnabled) out.print("disabled");%>><span class="slider round"></span></label><label for="restrictByLocation" class="slider-label <% if(!currentPunchRestrictionsEnabled) out.print("disabled-text");%>"><i class="fas fa-map-marker-alt"></i>Restrict by Location<span class="required-asterisk">*</span></label><span class="spacer"></span><button type="button" class="configure-button" id="configureLocationBtn" <% if(!currentPunchRestrictionsEnabled || !currentRestrictByLocation) out.print("disabled");%>>Configure</button></div>
-                <%-- === START: REMOVED Restrict by Network === --%>
-                <%--
-                <div class="punch-restriction-item">
-                    <label class="switch"><input type="checkbox" id="restrictByNetwork" name="RestrictByNetwork" value="true" <% if (currentRestrictByNetwork) out.print(" checked"); %> <% if(!currentPunchRestrictionsEnabled) out.print("disabled");%>><span class="slider round"></span></label>
-                    <label for="restrictByNetwork" class="slider-label <% if(!currentPunchRestrictionsEnabled) out.print("disabled-text");%>"><i class="fas fa-network-wired"></i>Restrict by Network</label>
-                    <span class="spacer"></span>
-                    <button type="button" class="configure-button" id="configureNetworkBtn" <% if(!currentPunchRestrictionsEnabled || !currentRestrictByNetwork) out.print("disabled");%>>Configure</button>
+            <div class="setting-item">
+                <h4 class="section-heading"><i class="fas fa-fingerprint"></i>Punch Restrictions</h4>
+                Restrictions may be applied in any combination, alone or not at all. <div class="setting-info" style="margin-bottom: 15px;"><strong>Note:</strong> Settings enabled here will apply to ALL active employees and describe when, where and how a user can punch In or Out. <br>
                 </div>
-                --%>
-                <%-- === END: REMOVED Restrict by Network === --%>
-                <div class="punch-restriction-item"><label class="switch"><input type="checkbox" id="restrictByDevice" name="RestrictByDevice" value="true" <% if (currentRestrictByDevice) out.print(" checked"); %> <% if(!currentPunchRestrictionsEnabled) out.print("disabled");%>><span class="slider round"></span></label><label for="restrictByDevice" class="slider-label <% if(!currentPunchRestrictionsEnabled) out.print("disabled-text");%>"><i class="fas fa-mobile-alt"></i>Restrict by Device</label><span class="spacer"></span><button type="button" class="configure-button" id="configureDeviceBtn" <% if(!currentPunchRestrictionsEnabled || !currentRestrictByDevice) out.print("disabled");%>>Configure</button></div></div><div class="setting-info" style="margin-top: 20px; padding-left: 10px;"><span class="required-asterisk" style="font-size:1em; margin-right: 5px; font-style:normal; font-weight:bold;">*</span> Wi-Fi or device GPS is recommended for employee use on mobile devices for this restriction.</div></div>
+                
+                <div id="specificPunchRestrictionsGroup" class="sub-settings-group">
+                    <div class="punch-restriction-item">
+                        <label class="switch">
+                            <input type="checkbox" id="restrictByTimeDay" name="RestrictByTimeDay" value="true" <% if (currentRestrictByTimeDay) out.print(" checked"); %>>
+                            <span class="slider round"></span>
+                        </label>
+                        <label for="restrictByTimeDay" class="slider-label">
+                            <i class="far fa-calendar-alt"></i>Restrict by Time/Day
+                        </label>
+                        <span class="spacer"></span>
+                        <button type="button" class="configure-button" id="configureTimeDayBtn" <% if(!currentRestrictByTimeDay) out.print("disabled");%>>Configure</button>
+                    </div>
+                    <div class="punch-restriction-item">
+                        <label class="switch">
+                            <input type="checkbox" id="restrictByLocation" name="RestrictByLocation" value="true" <% if (currentRestrictByLocation) out.print(" checked"); %>>
+                            <span class="slider round"></span>
+                        </label>
+                        <label for="restrictByLocation" class="slider-label">
+                            <i class="fas fa-map-marker-alt"></i>Restrict by Location<span class="required-asterisk">*</span>
+                        </label>
+                        <span class="spacer"></span>
+                        <button type="button" class="configure-button" id="configureLocationBtn" <% if(!currentRestrictByLocation) out.print("disabled");%>>Configure</button>
+                    </div>
+                    <div class="punch-restriction-item">
+                        <label class="switch">
+                            <input type="checkbox" id="restrictByDevice" name="RestrictByDevice" value="true" <% if (currentRestrictByDevice) out.print(" checked"); %>>
+                            <span class="slider round"></span>
+                        </label>
+                        <label for="restrictByDevice" class="slider-label">
+                            <i class="fas fa-mobile-alt"></i>Restrict by Device
+                        </label>
+                        <span class="spacer"></span>
+                        <button type="button" class="configure-button" id="configureDeviceBtn" <% if(!currentRestrictByDevice) out.print("disabled");%>>Configure</button>
+                    </div>
+                </div>
+                <div class="setting-info" style="margin-top: 20px; padding-left: 10px;"><span class="required-asterisk" style="font-size:1em; margin-right: 5px; font-style:normal; font-weight:bold;">*</span> Wi-Fi or device GPS is recommended for employee use on mobile devices for this restriction.</div>
+            </div>
         </form>
         <% if (inSetupWizardMode_JSP) { %>
             <div class="wizard-navigation" style="text-align: right; margin-top: 30px; padding-top:20px; border-top: 1px solid #eee;">
@@ -277,7 +306,6 @@
             gracePeriod: "<%= escapeForJavaScriptString(currentGracePeriod) %>",
             overtimeRuleMode: "<%= escapeForJavaScriptString(currentOvertimeRuleMode) %>",
             overtimeState: "<%= escapeForJavaScriptString(currentOvertimeState) %>",
-            punchRestrictionsEnabled: <%= currentPunchRestrictionsEnabled %>,
             overtimeRate: "<%= escapeForJavaScriptString(currentOvertimeRate) %>",
             overtimeDailyEnabled: <%= currentOvertimeDailyEnabled %>,
             overtimeDailyThreshold: "<%= escapeForJavaScriptString(currentOvertimeDailyThreshold) %>",
