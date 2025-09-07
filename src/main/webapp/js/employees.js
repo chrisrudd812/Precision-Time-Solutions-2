@@ -152,23 +152,24 @@ document.addEventListener('DOMContentLoaded', function() {
 	    } else if (action === 'go_to_help') {
 	        endWizard(`${appRoot}/help.jsp`);
 	    } else if (action === 'send_welcome') {
-            // [FIX] Updated logic to build the enhanced welcome message and login link
+            // Get company details passed from the JSP page
             const companyName = window.companyNameSignup || 'Your Company';
             const companyId = window.companyIdentifier || '';
 
-            // Construct the full login link with pre-filled company ID and a focus flag
+            // Construct the full login link to pre-fill the company ID for the employee
             const loginLink = `${window.location.origin}${appRoot}/login.jsp?companyId=${encodeURIComponent(companyId)}&focus=email`;
 
             const subject = `Welcome to ${companyName}!`;
-            const body = `Welcome to Precision Time Solutions!\n\n` +
-                         `To log in to the time and attendance system, please use the following link (we recommend bookmarking it for easy access):\n` +
+            const body = `Welcome to your new time and attendance system!\n\n` +
+                         `To log in and manage your timecard, please use the following link. We recommend bookmarking it for easy access:\n` +
                          `${loginLink}\n\n` +
                          `Your login details are:\n` +
-                         `- Company ID: ${companyId}\n` +
-                         `- Username: Your Email Address\n` +
-                         `- Temporary PIN: 1234\n\n` +
-                         `You will be required to change this PIN on your first login.`;
+                         `  • Company ID: ${companyId}\n` +
+                         `  • Username: Your Email Address\n` +
+                         `  • Temporary PIN: 1234\n\n` +
+                         `You will be required to change this PIN on your first login for security.`;
 
+            // Build the redirect URL and end the wizard session
             const params = new URLSearchParams({ action: 'welcome', subject, body });
             const redirectUrl = `${appRoot}/messaging.jsp?${params.toString()}`;
             endWizard(redirectUrl);

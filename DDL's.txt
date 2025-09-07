@@ -232,3 +232,18 @@ CREATE TABLE `tenants` (
   CONSTRAINT `fk_tenants_promocode` FOREIGN KEY (`AppliedPromoCodeID`) REFERENCES `promo_codes` (`PromoCodeID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=253 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
 
+CREATE TABLE `login_messages` (
+  `MessageID` int NOT NULL AUTO_INCREMENT,
+  `TenantID` int NOT NULL,
+  `SenderEID` int DEFAULT NULL,
+  `RecipientEID` int NOT NULL,
+  `Subject` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `Body` text COLLATE utf8mb4_general_ci NOT NULL,
+  `CreatedAt` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`MessageID`),
+  KEY `fk_msg_tenant` (`TenantID`),
+  KEY `idx_recipient` (`RecipientEID`),
+  CONSTRAINT `fk_msg_recipient` FOREIGN KEY (`RecipientEID`) REFERENCES `employee_data` (`EID`) ON DELETE CASCADE,
+  CONSTRAINT `fk_msg_tenant` FOREIGN KEY (`TenantID`) REFERENCES `tenants` (`TenantID`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=42 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+

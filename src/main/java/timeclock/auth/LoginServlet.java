@@ -109,7 +109,9 @@ public class LoginServlet extends HttpServlet {
 					String subscriptionStatus = syncSubscriptionStatus(conn, tenantId);
 					session.setAttribute("SubscriptionStatus", subscriptionStatus);
 
-					// [DEBUG LOG] Log the values right before the security check
+                    // *** MODIFIED: Renamed method call to reflect new "delete" logic ***
+                    checkForAndClearLoginMessages(conn, eid, session);
+
 					logger.info("[SubscriptionCheck] User Permissions: '" + userPermissions + "'");
 					logger.info("[SubscriptionCheck] Subscription Status from DB: '" + subscriptionStatus + "'");
 
@@ -118,7 +120,6 @@ public class LoginServlet extends HttpServlet {
 									|| "unpaid".equalsIgnoreCase(subscriptionStatus)
 									|| "past_due".equalsIgnoreCase(subscriptionStatus))) {
 
-						// [DEBUG LOG] Log that the condition was met
 						logger.info("[SubscriptionCheck] CONDITION MET. Redirecting to account page.");
 						session.setAttribute("errorMessage",
 								"Your subscription is inactive. Please update your billing information to restore access.");
@@ -126,7 +127,6 @@ public class LoginServlet extends HttpServlet {
 						return;
 					}
 
-					// [DEBUG LOG] Log that the condition was NOT met
 					logger.info("[SubscriptionCheck] Condition NOT met. Proceeding with normal login.");
 
 					if (rsUser.getBoolean("RequiresPasswordChange")) {
@@ -156,6 +156,62 @@ public class LoginServlet extends HttpServlet {
 					+ URLEncoder.encode("A server error occurred. Please try again.", StandardCharsets.UTF_8));
 		}
 	}
+
+    /**
+     * MODIFIED: Checks for login messages, adds them to the session, and then DELETES them.
+     */
+    private void checkForAndClearLoginMessages(Connection conn, int eid, HttpSession session) {
+        List<Map<String, String>> messages = new ArrayList<>();
+        List<Integer> messageIdsToDelete = new ArrayList<>();
+        // *** MODIFIED: Removed 'is_read' clause since the column is gone ***
+        String selectSql = "SELECT MessageID, Subject, Body FROM login_messages WHERE RecipientEID = ? ORDER BY CreatedAt ASC";
+
+        try {
+            conn.setAutoCommit(false); 
+
+            // 1. Fetch messages
+            try (PreparedStatement psSelect = conn.prepareStatement(selectSql)) {
+                psSelect.setInt(1, eid);
+                try (ResultSet rs = psSelect.executeQuery()) {
+                    while (rs.next()) {
+                        Map<String, String> message = new HashMap<>();
+                        message.put("subject", rs.getString("Subject"));
+                        message.put("body", rs.getString("Body"));
+                        messages.add(message);
+                        messageIdsToDelete.add(rs.getInt("MessageID"));
+                    }
+                }
+            }
+
+            // 2. If messages were found, delete them
+            if (!messageIdsToDelete.isEmpty()) {
+                logger.info("Found " + messages.size() + " login messages for EID: " + eid + ". Deleting them now.");
+                // *** MODIFIED: Changed UPDATE statement to a DELETE statement ***
+                String deleteSql = "DELETE FROM login_messages WHERE MessageID IN (" +
+                                   messageIdsToDelete.stream().map(String::valueOf).collect(Collectors.joining(",")) + ")";
+                try (PreparedStatement psDelete = conn.prepareStatement(deleteSql)) {
+                    psDelete.executeUpdate();
+                }
+                session.setAttribute("unreadLoginMessages", messages);
+            }
+            
+            conn.commit();
+
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Error fetching or deleting login messages for EID " + eid, e);
+            try {
+                conn.rollback();
+            } catch (SQLException ex) {
+                logger.log(Level.SEVERE, "Failed to rollback login message transaction", ex);
+            }
+        } finally {
+             try {
+                conn.setAutoCommit(true);
+            } catch (SQLException e) {
+                 logger.log(Level.SEVERE, "Failed to restore autocommit state", e);
+            }
+        }
+    }
 
 	private String syncSubscriptionStatus(Connection conn, int tenantId) {
 		String currentDbStatus = "error";

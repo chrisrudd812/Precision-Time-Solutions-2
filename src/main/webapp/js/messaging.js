@@ -103,14 +103,23 @@ document.addEventListener('DOMContentLoaded', function() {
         const body = urlParams.get('body');
 
         if (subject) {
-            messageSubject.value = subject;
+            messageSubject.value = decodeURIComponent(subject);
         }
         if (body) {
-            messageBody.value = body;
+            // Replace encoded newlines with actual newlines for the textarea
+            messageBody.value = decodeURIComponent(body).replace(/\\n/g, '\n');
         }
         
+        // --- NEW LOGIC ADDED HERE ---
+        // Automatically set the delivery type to 'email'
+        document.getElementById('deliveryTypeEmail').checked = true;
+        deliveryTypeInput.value = 'email'; 
+        // --- END OF NEW LOGIC ---
+
         recipientTypeSelect.value = 'all';
         recipientTypeSelect.dispatchEvent(new Event('change'));
+        
+        // Clean the URL so the parameters don't stick around on refresh
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 });

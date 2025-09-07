@@ -2,7 +2,7 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="java.util.List, java.util.Map, jakarta.servlet.http.HttpSession" %>
 
-<%-- ... other modals (notificationModalGeneral, wizardGenericModal) ... --%>
+<%-- General purpose notification modal --%>
 <div id="notificationModalGeneral" class="modal">
     <div class="modal-content">
         <span class="close" data-close-modal-id="notificationModalGeneral">&times;</span>
@@ -14,6 +14,7 @@
     </div>
 </div>
 
+<%-- Modal for the setup wizard --%>
 <div id="wizardGenericModal" class="modal">
     <div class="modal-content">
          <span class="close" id="closeWizardGenericModal" data-close-modal-id="wizardGenericModal">&times;</span>
@@ -49,6 +50,7 @@
                 </div>
             <%
                     }
+                    // *** MODIFIED: Clear the messages from the session after displaying them ***
                     modalSession.removeAttribute("unreadLoginMessages");
                 }
             %>

@@ -26,9 +26,10 @@
                     <input type="hidden" id="messageDeliveryType" name="messageDeliveryType" value="login">
 
                     <div class="toggle-switch-container">
-                        <input type="radio" id="deliveryTypeEmail" name="deliveryType" value="email">
+                        <% boolean isWelcomeAction = "welcome".equals(request.getParameter("action")); %>
+                        <input type="radio" id="deliveryTypeEmail" name="deliveryType" value="email" <%= isWelcomeAction ? "checked" : "" %>>
                         <label for="deliveryTypeEmail">Email Message</label>
-                        <input type="radio" id="deliveryTypeLogin" name="deliveryType" value="login" checked>
+                        <input type="radio" id="deliveryTypeLogin" name="deliveryType" value="login" <%= !isWelcomeAction ? "checked" : "" %>>
                         <label for="deliveryTypeLogin">Login Message</label>
                         <div class="toggle-glider"></div>
                     </div>
