@@ -1,8 +1,7 @@
 /* === css/archived_punches.css === */
-/* v4: Specific styles for archived_punches.jsp */
+/* v5: Manual submit button styles */
 
-/* Inherits .reports-page, .parent-container.reports-container, .report-display-area,
-   .report-table-container, .report-table, modal base, and .glossy-button base styles from reports.css */
+/* Inherits styles from reports.css */
 
 .archive-controls-form {
     background-color: #f0f4f8;
@@ -34,6 +33,16 @@
     min-width: 160px;
     flex: 1 1 160px;
 }
+/* [NEW] Style for the button container */
+.archive-controls-flex .form-item-container.button-item {
+    flex-grow: 0; /* Don't allow the button to grow */
+    min-width: auto;
+}
+.archive-controls-flex .form-item-container.button-item .glossy-button {
+    padding-left: 25px;
+    padding-right: 25px;
+}
+
 
 .archive-controls-flex label {
     margin-bottom: 6px;
@@ -62,11 +71,4 @@
     border-color: #005A9C;
     box-shadow: 0 0 0 2px rgba(0, 90, 156, 0.2);
     outline: none;
-}
-
-/* Required asterisk, if any input on this page ever needed it */
-.required-asterisk {
-    color: #dc3545;
-    margin-left: 2px;
-    font-weight: bold;
 }

@@ -8,7 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import timeclock.db.DatabaseConnection; // Your database connection class
-import org.mindrot.jbcrypt.BCrypt; // For password hashing and checking
+import org.mindrot.jbcrypt.BCrypt;
 
 import java.io.IOException;
 import java.net.URLEncoder;

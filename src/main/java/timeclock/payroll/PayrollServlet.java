@@ -50,13 +50,12 @@ public class PayrollServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final Logger logger = Logger.getLogger(PayrollServlet.class.getName());
 
-    // Class-level constants for UTC and processing zone fallback
     private static final String UTC_ZONE_ID_SERVLET = "UTC";
-    private static final String DEFAULT_TENANT_PROCESSING_ZONE_ID_STR = "America/Denver"; // Fallback for processing
+    private static final String DEFAULT_TENANT_PROCESSING_ZONE_ID_STR = "America/Denver";
 
     private static final double DEFAULT_HOURS_PER_ACCRUAL_DAY = 8.0;
-    private static final String PAYROLL_HISTORY_TABLE = "payroll_history";
-    private static final String INSERT_PAYROLL_HISTORY_SQL = "INSERT INTO " + PAYROLL_HISTORY_TABLE
+    private static final String payroll_history_TABLE = "payroll_history";
+    private static final String INSERT_payroll_history_SQL = "INSERT INTO " + payroll_history_TABLE
             + " (TenantID, processed_date, period_start_date, period_end_date, grand_total) VALUES (?, ?, ?, ?, ?)";
 
     private String encodeUrlParam(String value) throws IOException {
@@ -95,15 +94,14 @@ public class PayrollServlet extends HttpServlet {
         request.setCharacterEncoding(StandardCharsets.UTF_8.name());
         String action = request.getParameter("action");
 
-        // Define constants here for full method scope for display timezone determination
         final String PACIFIC_TIME_FALLBACK = "America/Los_Angeles";
-        final String DEFAULT_TENANT_FALLBACK_TIMEZONE = "America/Denver"; // App's default for tenant display TZ
+        final String DEFAULT_TENANT_FALLBACK_TIMEZONE = "America/Denver";
 
         logger.info("PayrollServlet POST action received: " + action);
         HttpSession session = request.getSession(false);
         Integer tenantId = getTenantIdFromSession(session);
         Integer sessionEidForLog = null;
-        String userTimeZoneId = null; // For display/user-context purposes
+        String userTimeZoneId = null;
 
         if (session != null) {
             Object eidObj = session.getAttribute("EID");
@@ -114,30 +112,24 @@ public class PayrollServlet extends HttpServlet {
             Object userTimeZoneIdObj = session.getAttribute("userTimeZoneId");
             if (userTimeZoneIdObj instanceof String && ShowPunches.isValid((String)userTimeZoneIdObj)) {
                 userTimeZoneId = (String) userTimeZoneIdObj;
-                logger.info("[PayrollServlet_TZ] Using userTimeZoneId from session: " + userTimeZoneId + " for EID: " + sessionEidForLog);
             }
         }
 
-        // Standard Timezone Determination Logic
         if (tenantId != null && tenantId > 0) {
             if (!ShowPunches.isValid(userTimeZoneId)) {
                 String tenantDefaultTz = Configuration.getProperty(tenantId, "DefaultTimeZone");
                 if (ShowPunches.isValid(tenantDefaultTz)) {
                     userTimeZoneId = tenantDefaultTz;
-                    logger.info("[PayrollServlet_TZ] Using Tenant DefaultTimeZone from SETTINGS: " + userTimeZoneId + " for Tenant: " + tenantId);
                 } else {
                     userTimeZoneId = DEFAULT_TENANT_FALLBACK_TIMEZONE;
-                    logger.info("[PayrollServlet_TZ] Tenant DefaultTimeZone not set/invalid. Using application default: " + userTimeZoneId + " for Tenant: " + tenantId);
                 }
             }
         } else if (!ShowPunches.isValid(userTimeZoneId)){
              userTimeZoneId = PACIFIC_TIME_FALLBACK;
-             logger.info("[PayrollServlet_TZ] TenantId invalid or not found for TZ lookup, trying system fallback (Pacific) " + userTimeZoneId);
         }
 
         if (!ShowPunches.isValid(userTimeZoneId)) {
             userTimeZoneId = PACIFIC_TIME_FALLBACK;
-            logger.warning("[PayrollServlet_TZ] User/Tenant timezone not determined. Defaulting to system fallback (Pacific Time): " + userTimeZoneId + " for Tenant: " + tenantId);
         }
 
         try {
@@ -147,7 +139,6 @@ public class PayrollServlet extends HttpServlet {
             userTimeZoneId = UTC_ZONE_ID_SERVLET;
         }
         logger.info("[PayrollServlet_TZ] Final effective userTimeZoneId for request (display context): " + userTimeZoneId + " for Tenant: " + tenantId);
-        // --- End Standardized Timezone Logic for userTimeZoneId ---
 
         if (tenantId == null) {
             logger.log(Level.WARNING, "PayrollServlet action '" + action + "' failed: TenantID is null after session processing.");
@@ -171,7 +162,7 @@ public class PayrollServlet extends HttpServlet {
                 handleExportPayroll(request, response, tenantId);
                 break;
             case "exceptionReport":
-                handleExceptionReport(request, response, tenantId, userTimeZoneId); // Pass determined userTimeZoneId
+                handleExceptionReport(request, response, tenantId, userTimeZoneId);
                 break;
             default:
                 logger.warning("Unknown POST action: '" + action + "' for TenantID: " + tenantId);
@@ -183,14 +174,12 @@ public class PayrollServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        // ... (implementation as provided) ...
         logger.warning("Unsupported GET request received for PayrollServlet. Redirecting to payroll page.");
         response.sendRedirect("payroll.jsp?error=" + encodeUrlParam("Invalid request method. Please use POST."));
     }
 
     private void handleExceptionReport(HttpServletRequest request, HttpServletResponse response, int tenantId, String userTimeZoneId)
             throws IOException {
-        // ... (implementation as provided, uses passed userTimeZoneId) ...
         logger.info("Handling exceptionReport for TenantID: " + tenantId + " with TimeZone: " + userTimeZoneId);
         String reportHtmlOrFlag = "<tr><td colspan='6' class='report-error-row'>Error initializing report.</td></tr>";
         LocalDate periodStartDate = null;
@@ -231,7 +220,6 @@ public class PayrollServlet extends HttpServlet {
     }
 
     private void sendErrorResponse(HttpServletResponse response, String message) throws IOException {
-        // ... (implementation as provided) ...
         if (!response.isCommitted()) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             response.setContentType("text/plain;charset=UTF-8");
@@ -244,7 +232,6 @@ public class PayrollServlet extends HttpServlet {
 
     private void handleExportPayroll(HttpServletRequest request, HttpServletResponse response, int tenantId)
             throws IOException {
-        // ... (implementation as provided, this part seems okay regarding DT as it exports aggregated values) ...
         logger.info("Handling exportPayroll T:" + tenantId);
         LocalDate sd = null, ed = null; String eMsg = null;
         try {
@@ -316,138 +303,104 @@ public class PayrollServlet extends HttpServlet {
             if (!ShowPunches.isValid(sds) || !ShowPunches.isValid(eds)) { throw new Exception("Current Pay Period dates are not set in Settings."); }
             csd = LocalDate.parse(sds.trim()); ced = LocalDate.parse(eds.trim());
             switch (pt) {
-                case "DAILY": ppy = 365; break;
-                case "WEEKLY": ppy = 52; break;
-                case "BIWEEKLY": ppy = 26; break;
-                case "SEMIMONTHLY": ppy = 24; break;
-                case "MONTHLY": ppy = 12; break;
+                case "DAILY": ppy = 365; break; case "WEEKLY": ppy = 52; break; case "BIWEEKLY": ppy = 26; break;
+                case "SEMIMONTHLY": ppy = 24; break; case "MONTHLY": ppy = 12; break;
                 default: ppy = 52; logger.warning("Unknown PayPeriodType '" + pt + "', defaulting to 52 for T:"+tenantId); break;
             }
-        } catch (Exception e) { logger.log(Level.SEVERE, "Error getting settings for close period T:" + tenantId, e); response.sendRedirect("payroll.jsp?error=" + encodeUrlParam("Error reading settings: " + e.getMessage())); return; }
+        } catch (Exception e) {
+            opMsg = "Error reading settings: " + e.getMessage();
+            oS = false;
+            // Fall through to redirect at the end
+        }
 
-        int arcC = 0, delC = 0, accUC = 0;
-        BigDecimal fGT = BigDecimal.ZERO;
+        if (csd != null && ced != null) {
+            int arcC = 0, delC = 0, accUC = 0;
+            BigDecimal fGT = BigDecimal.ZERO;
+            try {
+                con = DatabaseConnection.getConnection();
+                con.setAutoCommit(false);
 
-        try {
-            con = DatabaseConnection.getConnection();
-            con.setAutoCommit(false);
+                if (!updatePunchOtForPeriod(con, tenantId, csd, ced, processingZone)) {
+                    throw new SQLException("Failed to update Overtime/Double Time values on punches.");
+                }
+                List<Map<String, Object>> fpD = ShowPayroll.calculatePayrollData(tenantId, csd, ced);
+                fGT = fpD.stream().map(rD -> BigDecimal.valueOf((Double) rD.getOrDefault("TotalPay", 0.0))).reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, BigDecimal.ROUND_HALF_UP);
 
-            logger.info("Step A: Updating Punch OT/DT for T:" + tenantId);
-            if (!updatePunchOtForPeriod(con, tenantId, csd, ced, processingZone)) {
-                throw new SQLException("Failed to update Overtime/Double Time values on punches.");
-            }
+                String cL = "TenantID, PUNCH_ID, EID, DATE, IN_1, OUT_1, TOTAL, OT, DT, LATE, EARLY_OUTS, PUNCH_TYPE";
+                String aSQL = "INSERT INTO archived_punches (" + cL + ") SELECT " + cL + " FROM punches WHERE TenantID=? AND DATE BETWEEN ? AND ?";
+                try (PreparedStatement psA = con.prepareStatement(aSQL)) {
+                    psA.setInt(1, tenantId); psA.setDate(2, Date.valueOf(csd)); psA.setDate(3, Date.valueOf(ced));
+                    arcC = psA.executeUpdate();
+                }
 
-            logger.info("Step B: Calculating Final Payroll for T:" + tenantId);
-            List<Map<String, Object>> fpD = ShowPayroll.calculatePayrollData(tenantId, csd, ced);
-            if (fpD != null) {
-                fGT = fpD.stream().map(rD -> BigDecimal.valueOf((Double) rD.getOrDefault("TotalPay", 0.0))).reduce(BigDecimal.ZERO, BigDecimal::add);
-                fGT = fGT.setScale(2, BigDecimal.ROUND_HALF_UP);
-            } else { throw new SQLException("Final payroll calculation returned null data."); }
+                String dSQL = "DELETE FROM punches WHERE TenantID=? AND DATE BETWEEN ? AND ?";
+                try (PreparedStatement psD = con.prepareStatement(dSQL)) {
+                    psD.setInt(1, tenantId); psD.setDate(2, Date.valueOf(csd)); psD.setDate(3, Date.valueOf(ced));
+                    delC = psD.executeUpdate();
+                }
+                if (arcC != delC) { throw new SQLException("Mismatch archiving/deleting punches. Rolling back."); }
 
-            logger.info("Step C: Archiving Punches T:" + tenantId);
-            // *** MODIFIED: Added DT to the column list for archiving ***
-            String cL = "TenantID, PUNCH_ID, EID, DATE, IN_1, OUT_1, TOTAL, OT, DT, LATE, EARLY_OUTS, PUNCH_TYPE";
-            String aSQL = "INSERT INTO ARCHIVED_PUNCHES (" + cL + ") SELECT " + cL + " FROM PUNCHES WHERE TenantID=? AND DATE BETWEEN ? AND ?";
-            try (PreparedStatement psA = con.prepareStatement(aSQL)) {
-                psA.setInt(1, tenantId); psA.setDate(2, Date.valueOf(csd)); psA.setDate(3, Date.valueOf(ced));
-                arcC = psA.executeUpdate(); logger.info("Archived " + arcC + " punches.");
-            }
-
-            logger.info("Step D: Deleting Active Punches T:" + tenantId);
-            String dSQL = "DELETE FROM PUNCHES WHERE TenantID=? AND DATE BETWEEN ? AND ?";
-            try (PreparedStatement psD = con.prepareStatement(dSQL)) {
-                psD.setInt(1, tenantId); psD.setDate(2, Date.valueOf(csd)); psD.setDate(3, Date.valueOf(ced));
-                delC = psD.executeUpdate(); logger.info("Deleted " + delC + " punches.");
-            }
-            if (arcC != delC) {
-                logger.warning("Archive/Delete mismatch T:" + tenantId + ": Archived=" + arcC + ", Deleted=" + delC);
-                if (arcC > 0 && arcC != delC) { throw new SQLException("Mismatch archiving/deleting punches. Rolling back."); }
-            }
-
-            logger.info("Step E: Processing Accruals T:" + tenantId);
-            // ... (Accrual logic as provided by user) ...
-            String gASQL = "SELECT e.EID, e.VACATION_HOURS, e.SICK_HOURS, e.PERSONAL_HOURS, " +
-                           "a.VACATION AS AV, a.SICK AS ASick, a.PERSONAL AS APers " +
-                           "FROM EMPLOYEE_DATA e JOIN ACCRUALS a ON e.TenantID = a.TenantID AND e.ACCRUAL_POLICY = a.NAME " +
-                           "WHERE e.TenantID = ? AND e.ACTIVE = TRUE";
-            String uASQL = "UPDATE EMPLOYEE_DATA SET VACATION_HOURS=?,SICK_HOURS=?,PERSONAL_HOURS=? WHERE EID=? AND TenantID=?";
-            try (PreparedStatement psG = con.prepareStatement(gASQL); PreparedStatement psU = con.prepareStatement(uASQL)) {
-                psG.setInt(1, tenantId);
-                try (ResultSet rs = psG.executeQuery()) {
-                    int batchCount = 0;
-                    while (rs.next()) {
-                        int eid = rs.getInt("EID");
-                        double vH = rs.getDouble("VACATION_HOURS"), sH = rs.getDouble("SICK_HOURS"), pH = rs.getDouble("PERSONAL_HOURS");
-                        int vD = rs.getInt("AV"), sD = rs.getInt("ASick"), pD = rs.getInt("APers");
-                        double hpa = DEFAULT_HOURS_PER_ACCRUAL_DAY;
-                        double vA = (vD > 0 && ppy > 0) ? (double) vD / ppy * hpa : 0.0;
-                        double sA = (sD > 0 && ppy > 0) ? (double) sD / ppy * hpa : 0.0;
-                        double pA = (pD > 0 && ppy > 0) ? (double) pD / ppy * hpa : 0.0;
-                        psU.setDouble(1, Math.round((vH + vA) * 100.0) / 100.0);
-                        psU.setDouble(2, Math.round((sH + sA) * 100.0) / 100.0);
-                        psU.setDouble(3, Math.round((pH + pA) * 100.0) / 100.0);
-                        psU.setInt(4, eid); psU.setInt(5, tenantId);
-                        psU.addBatch(); batchCount++;
-                    }
-                    if (batchCount > 0) {
+                String gASQL = "SELECT e.EID, e.VACATION_HOURS, e.SICK_HOURS, e.PERSONAL_HOURS, a.VACATION AS AV, a.SICK AS ASick, a.PERSONAL AS APers FROM employee_data e JOIN accruals a ON e.TenantID = a.TenantID AND e.ACCRUAL_POLICY = a.NAME WHERE e.TenantID = ? AND e.ACTIVE = TRUE";
+                String uASQL = "UPDATE employee_data SET VACATION_HOURS=?,SICK_HOURS=?,PERSONAL_HOURS=? WHERE EID=? AND TenantID=?";
+                try (PreparedStatement psG = con.prepareStatement(gASQL); PreparedStatement psU = con.prepareStatement(uASQL)) {
+                    psG.setInt(1, tenantId);
+                    try (ResultSet rs = psG.executeQuery()) {
+                        while (rs.next()) {
+                            double hpa = DEFAULT_HOURS_PER_ACCRUAL_DAY;
+                            double vA = (rs.getInt("AV") / (double) ppy) * hpa;
+                            double sA = (rs.getInt("ASick") / (double) ppy) * hpa;
+                            double pA = (rs.getInt("APers") / (double) ppy) * hpa;
+                            psU.setDouble(1, Math.round((rs.getDouble("VACATION_HOURS") + vA) * 100.0) / 100.0);
+                            psU.setDouble(2, Math.round((rs.getDouble("SICK_HOURS") + sA) * 100.0) / 100.0);
+                            psU.setDouble(3, Math.round((rs.getDouble("PERSONAL_HOURS") + pA) * 100.0) / 100.0);
+                            psU.setInt(4, rs.getInt("EID")); psU.setInt(5, tenantId);
+                            psU.addBatch();
+                        }
                         int[] cts = psU.executeBatch();
                         accUC = Arrays.stream(cts).filter(c -> c >= 0 || c == Statement.SUCCESS_NO_INFO).sum();
                     }
-                    logger.info("Updated accruals for " + accUC + " employees out of " + batchCount + " eligible.");
                 }
+
+                LocalDate nsd = ced.plusDays(1); LocalDate ned;
+                switch (pt) {
+                    case "DAILY": ned = nsd; break;
+                    case "WEEKLY": ned = nsd.plusDays(6); break;
+                    case "BIWEEKLY": ned = nsd.plusDays(13); break;
+                    case "SEMIMONTHLY": ned = (nsd.getDayOfMonth() == 1) ? nsd.withDayOfMonth(15) : nsd.with(TemporalAdjusters.lastDayOfMonth()); break;
+                    case "MONTHLY": ned = nsd.with(TemporalAdjusters.lastDayOfMonth()); break;
+                    default: ned = nsd.plusDays(6); break;
+                }
+                Configuration.saveProperty(tenantId, "PayPeriodStartDate", nsd.toString());
+                Configuration.saveProperty(tenantId, "PayPeriodEndDate", ned.toString());
+
+                try (PreparedStatement psH = con.prepareStatement(INSERT_payroll_history_SQL)) {
+                    psH.setInt(1, tenantId); psH.setTimestamp(2, Timestamp.from(Instant.now()));
+                    psH.setDate(3, Date.valueOf(csd)); psH.setDate(4, Date.valueOf(ced));
+                    psH.setBigDecimal(5, fGT);
+                    psH.executeUpdate();
+                }
+
+                con.commit();
+                oS = true;
+                opMsg = String.format(Locale.US, "Period (%s to %s) closed. %d punches archived. %d accruals updated. Payroll Total: $%.2f. Next period: %s to %s.", csd, ced, arcC, accUC, fGT.doubleValue(), nsd, ned);
+            } catch (Exception e) {
+                oS = false; opMsg = "Error during close: " + e.getMessage();
+                rollback(con);
+            } finally {
+                if (con != null) { try { con.setAutoCommit(true); con.close(); } catch (SQLException e) {} }
             }
-
-
-            logger.info("Step F: Setting Next Pay Period T:" + tenantId);
-            // ... (Next pay period logic as provided by user) ...
-             LocalDate nsd = ced.plusDays(1); LocalDate ned;
-            switch (pt) {
-                case "DAILY": ned = nsd; break;
-                case "WEEKLY": ned = nsd.plusDays(6); break;
-                case "BIWEEKLY": ned = nsd.plusDays(13); break;
-                case "SEMIMONTHLY": ned = (nsd.getDayOfMonth() == 1) ? nsd.withDayOfMonth(15) : nsd.with(TemporalAdjusters.lastDayOfMonth()); break;
-                case "MONTHLY": ned = nsd.with(TemporalAdjusters.lastDayOfMonth()); break;
-                default: ned = nsd.plusDays(6); break;
-            }
-            Configuration.saveProperty(tenantId, "PayPeriodStartDate", nsd.toString());
-            Configuration.saveProperty(tenantId, "PayPeriodEndDate", ned.toString());
-            logger.info("Next pay period set: " + nsd + " to " + ned);
-
-
-            logger.info("Step G: Logging to Payroll History T:" + tenantId);
-            // ... (Payroll history logging as provided by user) ...
-            try (PreparedStatement psH = con.prepareStatement(INSERT_PAYROLL_HISTORY_SQL)) {
-                psH.setInt(1, tenantId); psH.setTimestamp(2, Timestamp.from(Instant.now()));
-                psH.setDate(3, Date.valueOf(csd)); psH.setDate(4, Date.valueOf(ced));
-                psH.setBigDecimal(5, fGT);
-                if (psH.executeUpdate() != 1) { throw new SQLException("Failed to insert payroll history record."); }
-                logger.info("Payroll history logged.");
-            }
-
-
-            con.commit(); oS = true;
-            opMsg = String.format(Locale.US, "Period (%s to %s) closed. %d punches archived. %d accruals updated. Payroll Total: $%.2f. Next period: %s to %s.",
-                                  csd, ced, arcC, accUC, fGT.doubleValue(), nsd, ned);
-            logger.info("Pay period close successful for T:" + tenantId);
-
-        } catch (SQLException e) {
-            oS = false; opMsg = "Database Error during close: " + e.getMessage();
-            logger.log(Level.SEVERE, "SQL failure during close pay period T:" + tenantId, e);
-            rollback(con);
-        } catch (Exception e) {
-            oS = false; opMsg = "General Error during close: " + e.getMessage();
-            logger.log(Level.SEVERE, "General failure during close pay period T:" + tenantId, e);
-            rollback(con);
-        } finally {
-            if (con != null) { try { if (!con.isClosed()) { if (!con.getAutoCommit()) con.setAutoCommit(true); con.close(); } }
-                             catch (SQLException e) { logger.log(Level.SEVERE, "Failed to close DB connection.", e); } }
         }
-        response.sendRedirect("payroll.jsp?" + (oS ? "message=" : "error=") + encodeUrlParam(opMsg));
+        
+        String redirectUrl = "payroll.jsp?";
+        if (oS) {
+            redirectUrl += "message=" + encodeUrlParam(opMsg) + "&msgType=success";
+        } else {
+            redirectUrl += "error=" + encodeUrlParam(opMsg) + "&msgType=error";
+        }
+        response.sendRedirect(redirectUrl);
     }
 
     private boolean updatePunchOtForPeriod(Connection con, int tenantId, LocalDate startDate, LocalDate endDate, ZoneId scheduleZone) throws SQLException {
-        logger.info("Updating punch OT/DT for T:" + tenantId + ", Period:" + startDate + " to " + endDate + ", Zone: " + scheduleZone);
-        // ... (OT/DT calculation logic as provided by user, with DT now being saved) ...
         boolean weeklyOtEnabled = "true".equalsIgnoreCase(Configuration.getProperty(tenantId, "Overtime", "true"));
         boolean dailyOtEnabled = "true".equalsIgnoreCase(Configuration.getProperty(tenantId, "OvertimeDaily", "false"));
         double dailyThreshold = Double.parseDouble(Configuration.getProperty(tenantId, "OvertimeDailyThreshold", "8.0"));
@@ -458,12 +411,7 @@ public class PayrollServlet extends HttpServlet {
         double seventhDayDTThreshold = Double.parseDouble(Configuration.getProperty(tenantId, "OvertimeSeventhDayDTThreshold", "8.0"));
         String firstDayOfWeekSetting = Configuration.getProperty(tenantId, "FirstDayOfWeek", "SUNDAY").toUpperCase(Locale.ENGLISH);
 
-        String punchesSql = "SELECT p.PUNCH_ID,p.EID,p.DATE AS PUNCH_UTC_DATE,p.IN_1 AS IN_UTC,p.OUT_1 AS OUT_UTC,p.PUNCH_TYPE," +
-                            "s.AUTO_LUNCH,s.HRS_REQUIRED,s.LUNCH_LENGTH " +
-                            "FROM PUNCHES p JOIN EMPLOYEE_DATA e ON p.EID=e.EID AND p.TenantID=e.TenantID " +
-                            "LEFT JOIN SCHEDULES s ON e.SCHEDULE=s.NAME AND e.TenantID=s.TenantID " +
-                            "WHERE p.TenantID=? AND e.ACTIVE=TRUE AND e.WAGE_TYPE='Hourly' AND p.DATE BETWEEN ? AND ? " +
-                            "ORDER BY p.EID,p.DATE,p.IN_1";
+        String punchesSql = "SELECT p.PUNCH_ID,p.EID,p.DATE AS PUNCH_UTC_DATE,p.IN_1 AS IN_UTC,p.OUT_1 AS OUT_UTC,p.PUNCH_TYPE, s.AUTO_LUNCH,s.HRS_REQUIRED,s.LUNCH_LENGTH FROM punches p JOIN employee_data e ON p.EID=e.EID AND p.TenantID=e.TenantID LEFT JOIN schedules s ON e.SCHEDULE=s.NAME AND e.TenantID=s.TenantID WHERE p.TenantID=? AND e.ACTIVE=TRUE AND e.WAGE_TYPE='Hourly' AND p.DATE BETWEEN ? AND ? ORDER BY p.EID,p.DATE,p.IN_1";
         Map<Integer, List<Map<String, Object>>> punchesByEidMap = new HashMap<>();
         try (PreparedStatement psP = con.prepareStatement(punchesSql)) {
             psP.setInt(1, tenantId); psP.setDate(2, Date.valueOf(startDate)); psP.setDate(3, Date.valueOf(endDate));
@@ -473,7 +421,6 @@ public class PayrollServlet extends HttpServlet {
                     pD.put("PUNCH_ID", rs.getLong("PUNCH_ID"));
                     Timestamp iTs = rs.getTimestamp("IN_UTC"); pD.put("In", iTs != null ? iTs.toInstant() : null);
                     Timestamp oTs = rs.getTimestamp("OUT_UTC"); pD.put("Out", oTs != null ? oTs.toInstant() : null);
-                    pD.put("PunchUTCDate", rs.getDate("PUNCH_UTC_DATE").toLocalDate());
                     pD.put("PunchType", rs.getString("PUNCH_TYPE"));
                     pD.put("AutoLunch", rs.getBoolean("s.AUTO_LUNCH"));
                     Object hrObj = rs.getObject("s.HRS_REQUIRED"); pD.put("HoursRequired", hrObj != null ? ((Number)hrObj).doubleValue() : null);
@@ -483,8 +430,7 @@ public class PayrollServlet extends HttpServlet {
             }
         }
 
-        // *** MODIFIED: SQL now includes DT column for update ***
-        String updateOtSql = "UPDATE PUNCHES SET OT=?, DT=?, TOTAL=? WHERE PUNCH_ID=? AND TenantID=?";
+        String updateOtSql = "UPDATE punches SET OT=?, DT=?, TOTAL=? WHERE PUNCH_ID=? AND TenantID=?";
         try (PreparedStatement psUOt = con.prepareStatement(updateOtSql)) {
             for (Map.Entry<Integer, List<Map<String, Object>>> empPunchesEntry : punchesByEidMap.entrySet()) {
                 List<Map<String, Object>> punches = empPunchesEntry.getValue();
@@ -516,7 +462,7 @@ public class PayrollServlet extends HttpServlet {
                 Map<LocalDate, Double> weeklyHoursForFLSA = new HashMap<>();
 
                 for (Map<String, Object> punch : punches) {
-                    double punchOtHours = 0; double punchDtHours = 0; // DT is calculated
+                    double punchOtHours = 0; double punchDtHours = 0;
                     double calculatedTotalHours = (Double) punch.getOrDefault("CalculatedTotalHours", 0.0);
                     String punchType = (String) punch.get("PunchType");
                     Instant inInstant = (Instant) punch.get("In");
@@ -555,7 +501,7 @@ public class PayrollServlet extends HttpServlet {
                         }
                     }
                     punch.put("ProcessedOt", punchOtHours);
-                    punch.put("ProcessedDt", punchDtHours); // Store calculated DT on the punch map temporarily
+                    punch.put("ProcessedDt", punchDtHours);
                 }
 
                  Map<LocalDate, Integer> daysWorkedInWeekMap = new HashMap<>();
@@ -574,9 +520,9 @@ public class PayrollServlet extends HttpServlet {
 
                 for (Map<String, Object> punch : punches) {
                     double punchOtHours = (Double)punch.getOrDefault("ProcessedOt", 0.0);
-                    double punchDtHours = (Double)punch.getOrDefault("ProcessedDt", 0.0); // Use the DT calculated earlier
+                    double punchDtHours = (Double)punch.getOrDefault("ProcessedDt", 0.0);
                     double calculatedTotalHours = (Double) punch.getOrDefault("CalculatedTotalHours", 0.0);
-                    double hoursRemainingForWeeklyOtCalc = calculatedTotalHours - punchOtHours - punchDtHours; // Subtract both
+                    double hoursRemainingForWeeklyOtCalc = calculatedTotalHours - punchOtHours - punchDtHours;
                     String punchType = (String) punch.get("PunchType");
                     Instant inInstant = (Instant) punch.get("In");
 
@@ -611,9 +557,8 @@ public class PayrollServlet extends HttpServlet {
                     punchOtHours = Math.round(punchOtHours * 100.0) / 100.0;
                     punchDtHours = Math.round(punchDtHours * 100.0) / 100.0;
 
-                    // *** MODIFIED: Set parameters for OT, DT, TOTAL ***
                     psUOt.setDouble(1, punchOtHours);
-                    psUOt.setDouble(2, punchDtHours); // Set the DT value
+                    psUOt.setDouble(2, punchDtHours);
                     psUOt.setDouble(3, calculatedTotalHours);
                     psUOt.setLong(4, (Long) punch.get("PUNCH_ID"));
                     psUOt.setInt(5, tenantId);

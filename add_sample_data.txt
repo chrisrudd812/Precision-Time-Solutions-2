@@ -1,0 +1,194 @@
+-- =================================================================
+-- SQL SCRIPT TO CREATE A NEW TENANT AND POPULATE IT (v6 - Corrected Dependencies)
+-- Creates: A new tenant and all associated sample data.
+-- Populates: All 20 sample employees and 5 days of punch data each.
+-- =================================================================
+
+-- WARNING: This script will create a new tenant. Run it on a clean database.
+
+-- Step 1: Insert the "parent" tenant record first.
+INSERT INTO `tenants`
+(`CompanyName`, `CompanyIdentifier`, `AdminEmail`, `AdminPasswordHash`, `SubscriptionStatus`, `DefaultTimeZone`)
+VALUES
+('ACME Talent Agency', 'acme123', 'admin@example.com', '$2a$12$jdOKaeqCZRoEfNHkhzSZYuzCpsXhMz.kSnoO1t1lla3NeBKlwNZSa', 'Active - Lifetime Promo', 'America/Denver');
+
+-- Step 2: IMPORTANT - Capture the ID of the tenant you just created.
+SET @tenant_id = LAST_INSERT_ID();
+
+-- Set a variable for the default user PIN hash (for PIN "1234")
+SET @default_user_pin_hash = '$2a$12$x97hRk9lNucBmcJ71HNaCOtPqPc7Q4V2uLI9i1mmxk0EYw567R4tm';
+
+-- Step 3: Insert default Departments for the new tenant.
+-- ## FIX: Added the 'None' department which is referenced by employees. ##
+INSERT IGNORE INTO `departments` (`TenantID`, `NAME`, `DESCRIPTION`, `SUPERVISOR`) VALUES
+(@tenant_id, 'Cinema', 'Movie production and talent', 'John Candy'),
+(@tenant_id, 'Music', 'Music production and talent', 'Ringo Starr'),
+(@tenant_id, 'Television', 'Television production and talent', 'Alan Alda'),
+(@tenant_id, 'None', 'Unassigned Department', NULL);
+
+-- Step 4: Insert default Schedules for the new tenant.
+-- Corrected: Mon-Fri schedules use '-MTWHF-', Weekend Warriors is 'S-----A', Open schedules have '-------'.
+INSERT IGNORE INTO `schedules` (`TenantID`, `NAME`, `SHIFT_START`, `SHIFT_END`, `DAYS_WORKED`, `AUTO_LUNCH`, `HRS_REQUIRED`, `LUNCH_LENGTH`) VALUES
+(@tenant_id, 'First Shift', '07:00:00', '15:30:00', '-MTWHF-', 1, 6, 30),
+(@tenant_id, 'Second Shift', '12:00:00', '20:30:00', '-MTWHF-', 1, 6, 30),
+(@tenant_id, 'Third Shift', '20:00:00', '05:00:00', '-MTWHF-', 0, 0, 0),
+(@tenant_id, 'Weekend Warriors', '09:00:00', '17:30:00', 'S-----A', 1, 8, 30),
+(@tenant_id, 'Open', NULL, NULL, '-------', 0, 0, 0),
+(@tenant_id, 'Open w/ Auto Lunch', NULL, NULL, '-------', 1, 6, 30);
+
+-- Step 5: Insert default Accrual Policies for the new tenant.
+-- ## FIX: Added the 'Standard' and 'None' policies which are referenced by employees. ##
+INSERT IGNORE INTO `accruals` (`TenantID`, `NAME`, `VACATION`, `SICK`, `PERSONAL`) VALUES
+(@tenant_id, 'Executive', 30, 30, 30),
+(@tenant_id, 'Standard', 5, 5, 0),
+(@tenant_id, 'None', 0, 0, 0);
+
+-- Step 5.5: Insert default Settings for the new tenant.
+INSERT IGNORE INTO `settings` (`TenantID`, `setting_key`, `setting_value`) VALUES
+('1', 'FirstDayOfWeek', 'Sunday'),
+('1', 'GracePeriod', '1'),
+('1', 'OvertimeDaily', 'true'),
+('1', 'OvertimeDailyThreshold', '8.0'),
+('1', 'OvertimeDoubleTimeEnabled', 'true'),
+('1', 'OvertimeDoubleTimeThreshold', '12.0'),
+('1', 'OvertimeRate', '1.5'),
+('1', 'OvertimeRuleMode', 'AutoByState'),
+('1', 'OvertimeSeventhDayDTThreshold', '8.0'),
+('1', 'OvertimeSeventhDayEnabled', 'true'),
+('1', 'OvertimeSeventhDayOTThreshold', '8.0'),
+('1', 'OvertimeState', 'CA'),
+('1', 'PayPeriodEndDate', '2025-08-23'),
+('1', 'PayPeriodStartDate', '2025-08-17'),
+('1', 'PayPeriodType', 'Weekly'),
+('1', 'RestrictByDevice', 'false'),
+('1', 'RestrictByLocation', 'false'),
+('1', 'RestrictByTimeDay', 'false');
+
+-- Step 6: Insert a full set of 20 sample employees.
+-- This statement now uses the correct password hash for "1234" for all employees.
+INSERT IGNORE INTO `employee_data`
+(`TenantID`, `FIRST_NAME`, `LAST_NAME`, `DEPT`, `SCHEDULE`, `SUPERVISOR`, `PERMISSIONS`, `ADDRESS`, `CITY`, `STATE`, `ZIP`, `PHONE`, `EMAIL`, `ACCRUAL_POLICY`, `HIRE_DATE`, `WORK_SCHEDULE`, `WAGE_TYPE`, `WAGE`, `PasswordHash`, `RequiresPasswordChange`, `TenantEmployeeNumber`)
+VALUES
+(@tenant_id, 'Administrator', '(Sample)', 'None', 'Open', 'None', 'Administrator', '1 Admin Way', 'Adminville', 'AS', '00000', '(000) 000-0000', 'admin@example.com', 'Executive', CURDATE(), 'Full Time', 'Salary', 120000.00, @default_user_pin_hash, 1, 2),
+(@tenant_id, 'John', 'Candy', 'Cinema', 'Open', 'John Candy', 'Administrator', '4462 Murietta Ave', 'Sherman Oaks', 'CA', '91340', '(818) 990-4450', 'jcandy@example.com', 'Executive', '2023-10-22', 'Full Time', 'Salary', 100000.00, @default_user_pin_hash, 1, 3),
+(@tenant_id, 'George', 'Peppard', 'Cinema', 'Open', 'John Candy', 'User', '4483 Stern Ave', 'Sherman Oaks', 'CA', '91343', '(818) 990-4457', 'gpeppard@example.com', 'Standard', '2023-11-22', 'Full Time', 'Hourly', 20.20, @default_user_pin_hash, 1, 4),
+(@tenant_id, 'Ringo', 'Starr', 'Music', 'First Shift', 'Ringo Starr', 'Administrator', '14350 Addison St', 'Van Nuys', 'CA', '91342', '212-859-7752', 'rstarr@example.com', 'Executive', '2024-08-22', 'Full Time', 'Salary', 90000.00, @default_user_pin_hash, 1, 5),
+(@tenant_id, 'Jeff', 'Beck', 'Music', 'Weekend Warriors', 'Ringo Starr', 'User', '4540 Alpine Ave', 'Boulder', 'CO', '80305', '(720) 648-5588', 'jbeck@example.com', 'Standard', '2025-07-22', 'Part Time', 'Hourly', 28.60, @default_user_pin_hash, 1, 6),
+(@tenant_id, 'Janice', 'Joplin', 'Music', 'First Shift', 'Ringo Starr', 'User', '1847 Whittier St', 'N Hills', 'CA', '91320', '(818) 556-9988', 'jjoplin@example.com', 'Standard', '2021-05-22', 'Part Time', 'Hourly', 20.50, @default_user_pin_hash, 1, 7),
+(@tenant_id, 'Steve', 'Luthaker', 'Music', 'Weekend Warriors', 'Ringo Starr', 'User', '16555 Yankee Ct', 'Las Vegas', 'NV', '87556', '215-888-9632', 'sluthaker@example.com', 'Standard', '2023-11-22', 'Part Time', 'Hourly', 19.40, @default_user_pin_hash, 1, 8),
+(@tenant_id, 'Donald', 'Fagen', 'Music', 'First Shift', 'Ringo Starr', 'User', '7350 Lankershim Bl', 'N Hollywood', 'CA', '91340', '(818) 785-8995', 'dfagen@example.com', 'Standard', '2024-09-22', 'Full Time', 'Hourly', 15.65, @default_user_pin_hash, 1, 9),
+(@tenant_id, 'Jessica', 'Alba', 'Cinema', 'First Shift', 'John Candy', 'User', '4877 Spring Lane', 'Studio City', 'CA', '91054', '(818) 996-9885', 'jalba@example.com', 'Standard', '2023-12-22', 'Full Time', 'Hourly', 25.00, @default_user_pin_hash, 1, 10),
+(@tenant_id, 'Charlie', 'Sheen', 'Television', 'Open', 'Alan Alda', 'User', '5849 Ute St', 'Salt Lake City', 'UT', '85996', '850-998-8475', 'csheen@example.com', 'Standard', '2023-01-22', 'Full Time', 'Hourly', 22.50, @default_user_pin_hash, 1, 11),
+(@tenant_id, 'Jack', 'Nicholson', 'Cinema', 'Open', 'John Candy', 'User', '4458 Deer Ln', 'Park City', 'UT', '94117', '404-885-9856', 'jnicholson@example.com', 'Standard', '2022-12-22', 'Full Time', 'Hourly', 25.00, @default_user_pin_hash, 1, 12),
+(@tenant_id, 'Adam', 'Sandler', 'Cinema', 'Second Shift', 'John Candy', 'User', '4699 Rio Ave', 'Las Vegas', 'NV', '85633', '818-899-7532', 'asandler@example.com', 'Standard', '2025-07-22', 'Full Time', 'Hourly', 15.25, @default_user_pin_hash, 1, 13),
+(@tenant_id, 'Michael', 'Jackson', 'Music', 'Second Shift', 'Ringo Starr', 'User', '15425 Havenhurst Ave', 'Encino', 'CA', '91033', '(818) 855-9663', 'mjackson@example.com', 'Standard', '2024-09-22', 'Full Time', 'Hourly', 26.50, @default_user_pin_hash, 1, 14),
+(@tenant_id, 'Robert', 'Plant', 'Music', 'Second Shift', 'Ringo Starr', 'User', '4650 Wilbur Ave', 'Tarzana', 'CA', '94115', '(818) 665-9886', 'rplant@example.com', 'Standard', '2022-12-22', 'Part Time', 'Hourly', 16.75, @default_user_pin_hash, 1, 15),
+(@tenant_id, 'Sandra', 'Bullock', 'Cinema', 'Second Shift', 'John Candy', 'User', '22150 Roscoe Bl', 'Canoga Park', 'CA', '91346', '213-995-6877', 'sbullock@example.com', 'Standard', '2023-11-22', 'Full Time', 'Hourly', 16.90, @default_user_pin_hash, 1, 16),
+(@tenant_id, 'Mila', 'Kunis', 'Television', 'Second Shift', 'Alan Alda', 'User', '4410 Sale Ave', 'Woodland Hills', 'CA', '91323', '720-558-9665', 'mkunis@example.com', 'Standard', '2023-11-22', 'Part Time', 'Hourly', 16.00, @default_user_pin_hash, 1, 17),
+(@tenant_id, 'John', 'Lithgow', 'Television', 'Third Shift', 'Alan Alda', 'User', '21565 Arapahoe Trail', 'Chatsworth', 'CA', '91365', '(818) 996-3352', 'jlithgow@example.com', 'Standard', '2023-11-22', 'Full Time', 'Hourly', 21.00, @default_user_pin_hash, 1, 18),
+(@tenant_id, 'Ozzy', 'Osbourne', 'Music', 'Third Shift', 'Ringo Starr', 'User', '940 W 3900 S', 'Salt Lake City', 'UT', '84115', '415-589-9632', 'oosbourne@example.com', 'Standard', '2024-09-22', 'Full Time', 'Hourly', 19.50, @default_user_pin_hash, 1, 19),
+(@tenant_id, 'Alan', 'Alda', 'Television', 'First Shift', 'Alan Alda', 'Administrator', '4563 Samual Colt Ct', 'Park City', 'UT', '93155', '715-869-8552', 'aalda@example.com', 'Executive', '2021-05-22', 'Full Time', 'Salary', 100000.00, @default_user_pin_hash, 1, 20),
+(@tenant_id, 'Drew', 'Barrymore', 'Cinema', 'Weekend Warriors', 'John Candy', 'User', '880 W Moorhead Cir', 'Boulder', 'CO', '80305', '(720) 855-9647', 'dbarrymore@example.com', 'Standard', '2023-11-22', 'Full Time', 'Hourly', 18.65, @default_user_pin_hash, 1, 21);
+
+-- Step 7: Insert sample punch data for ALL employees.
+INSERT IGNORE INTO `punches` (`TenantID`, `EID`, `DATE`, `IN_1`, `OUT_1`, `TOTAL`, `PUNCH_TYPE`, `LATE`, `EARLY_OUTS`) VALUES
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=2), '2025-08-22', '2025-08-22 15:00:00', '2025-08-22 23:30:00', 8.5, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=2), '2025-08-21', '2025-08-21 14:58:00', '2025-08-21 23:28:00', 8.5, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=2), '2025-08-20', '2025-08-20 14:55:00', '2025-08-20 23:25:00', 8.5, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=2), '2025-08-19', '2025-08-19 15:02:00', '2025-08-19 23:32:00', 8.5, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=2), '2025-08-18', '2025-08-18 14:50:00', '2025-08-18 23:20:00', 8.5, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=3), '2025-08-22', '2025-08-22 15:10:00', '2025-08-22 23:45:00', 8.58, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=3), '2025-08-21', '2025-08-21 15:05:00', '2025-08-21 23:35:00', 8.5, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=3), '2025-08-20', '2025-08-20 15:00:00', '2025-08-20 23:30:00', 8.5, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=3), '2025-08-19', '2025-08-19 14:55:00', '2025-08-19 23:25:00', 8.5, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=3), '2025-08-18', '2025-08-18 15:03:00', '2025-08-18 23:33:00', 8.5, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=4), '2025-08-22', '2025-08-22 14:30:00', '2025-08-22 23:00:00', 8.50, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=4), '2025-08-21', '2025-08-21 15:01:00', '2025-08-21 23:30:00', 8.48, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=4), '2025-08-20', '2025-08-20 14:25:00', '2025-08-20 22:50:00', 8.42, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=4), '2025-08-19', '2025-08-19 14:32:00', '2025-08-19 23:10:00', 8.63, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=4), '2025-08-18', '2025-08-18 12:00:00', '2025-08-18 18:00:00', 6.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=5), '2025-08-22', '2025-08-22 12:55:00', '2025-08-22 21:35:00', 8.17, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=5), '2025-08-21', '2025-08-21 13:05:00', '2025-08-21 21:30:00', 7.92, 'User Initiated', 1, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=5), '2025-08-20', '2025-08-20 13:00:00', '2025-08-20 21:28:00', 7.97, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=5), '2025-08-19', '2025-08-19 12:59:00', '2025-08-19 21:31:00', 8.03, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=5), '2025-08-18', '2025-08-18 13:08:00', '2025-08-18 21:34:00', 7.93, 'User Initiated', 1, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=6), '2025-08-17', '2025-08-17 15:02:00', '2025-08-17 23:31:00', 8.00, 'User Initiated', 1, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=6), '2025-08-16', '2025-08-16 14:59:00', '2025-08-16 23:35:00', 8.10, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=6), '2025-08-10', '2025-08-10 15:00:00', '2025-08-10 23:01:00', 7.52, 'User Initiated', 0, 1),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=6), '2025-08-09', '2025-08-09 15:15:00', '2025-08-09 23:45:00', 8.00, 'User Initiated', 1, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=6), '2025-08-03', '2025-08-03 14:55:00', '2025-08-03 23:25:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=7), '2025-08-22', '2025-08-22 13:05:00', '2025-08-22 21:32:00', 8.00, 'User Initiated', 1, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=7), '2025-08-21', '2025-08-21 12:58:00', '2025-08-21 21:29:00', 8.02, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=7), '2025-08-20', '2025-08-20 13:01:00', '2025-08-20 21:30:00', 7.98, 'User Initiated', 1, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=7), '2025-08-19', '2025-08-19 12:55:00', '2025-08-19 21:01:00', 7.60, 'User Initiated', 0, 1),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=7), '2025-08-18', '2025-08-18 13:10:00', '2025-08-18 21:40:00', 8.00, 'User Initiated', 1, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=8), '2025-08-17', '2025-08-17 14:55:00', '2025-08-17 23:30:00', 8.08, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=8), '2025-08-16', '2025-08-16 15:08:00', '2025-08-16 23:32:00', 7.90, 'User Initiated', 1, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=8), '2025-08-10', '2025-08-10 15:03:00', '2025-08-10 23:34:00', 8.02, 'User Initiated', 1, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=8), '2025-08-09', '2025-08-09 14:58:00', '2025-08-09 23:29:00', 8.02, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=8), '2025-08-03', '2025-08-03 15:00:00', '2025-08-03 23:30:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=9), '2025-08-22', '2025-08-22 13:02:00', NULL, NULL, 'User Initiated', 1, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=9), '2025-08-21', '2025-08-21 12:50:00', '2025-08-21 21:25:00', 8.08, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=9), '2025-08-20', '2025-08-20 13:00:00', '2025-08-20 21:30:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=9), '2025-08-19', '2025-08-19 13:01:00', '2025-08-19 21:31:00', 8.00, 'User Initiated', 1, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=9), '2025-08-18', '2025-08-18 12:58:00', '2025-08-18 21:29:00', 8.02, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=10), '2025-08-22', '2025-08-22 13:03:00', '2025-08-22 21:33:00', 8.00, 'User Initiated', 1, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=10), '2025-08-21', '2025-08-21 12:45:00', '2025-08-21 21:15:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=10), '2025-08-20', '2025-08-20 12:59:00', '2025-08-20 21:30:00', 8.02, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=10), '2025-08-19', '2025-08-19 13:00:00', '2025-08-19 21:28:00', 7.97, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=10), '2025-08-18', '2025-08-18 13:06:00', '2025-08-18 21:34:00', 7.97, 'User Initiated', 1, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=11), '2025-08-22', '2025-08-22 16:00:00', NULL, NULL, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=11), '2025-08-21', '2025-08-21 16:15:00', '2025-08-22 00:45:00', 8.50, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=11), '2025-08-20', '2025-08-20 15:50:00', '2025-08-21 00:20:00', 8.50, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=11), '2025-08-19', '2025-08-19 16:05:00', '2025-08-20 00:35:00', 8.50, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=11), '2025-08-18', '2025-08-18 16:00:00', '2025-08-19 00:30:00', 8.50, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=12), '2025-08-22', '2025-08-22 13:00:00', '2025-08-22 21:00:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=12), '2025-08-21', '2025-08-21 13:30:00', '2025-08-21 22:30:00', 9.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=12), '2025-08-20', '2025-08-20 13:15:00', '2025-08-20 21:45:00', 8.50, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=12), '2025-08-19', '2025-08-19 13:05:00', '2025-08-19 21:05:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=12), '2025-08-18', '2025-08-18 14:00:00', '2025-08-18 22:00:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=13), '2025-08-22', '2025-08-22 18:02:00', '2025-08-23 02:31:00', 8.00, 'User Initiated', 1, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=13), '2025-08-21', '2025-08-21 17:59:00', '2025-08-22 02:35:00', 8.10, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=13), '2025-08-20', '2025-08-20 18:00:00', '2025-08-21 02:01:00', 7.52, 'User Initiated', 0, 1),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=13), '2025-08-19', '2025-08-19 18:15:00', '2025-08-20 02:45:00', 8.00, 'User Initiated', 1, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=13), '2025-08-18', '2025-08-18 17:55:00', '2025-08-19 02:25:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=14), '2025-08-22', '2025-08-22 18:00:00', '2025-08-23 02:30:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=14), '2025-08-21', '2025-08-21 18:00:00', '2025-08-22 02:30:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=14), '2025-08-20', '2025-08-20 18:00:00', '2025-08-21 02:30:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=14), '2025-08-19', '2025-08-19 18:00:00', '2025-08-20 02:30:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=14), '2025-08-18', '2025-08-18 18:00:00', '2025-08-19 02:30:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=15), '2025-08-22', '2025-08-22 18:00:00', '2025-08-23 02:30:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=15), '2025-08-21', '2025-08-21 18:00:00', '2025-08-22 02:30:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=15), '2025-08-20', '2025-08-20 18:00:00', '2025-08-21 02:30:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=15), '2025-08-19', '2025-08-19 18:00:00', '2025-08-20 02:30:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=15), '2025-08-18', '2025-08-18 18:00:00', '2025-08-19 02:30:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=16), '2025-08-22', '2025-08-22 17:50:00', '2025-08-23 02:20:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=16), '2025-08-21', '2025-08-21 18:00:00', '2025-08-22 02:30:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=16), '2025-08-20', '2025-08-20 18:05:00', '2025-08-21 02:35:00', 8.00, 'User Initiated', 1, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=16), '2025-08-19', '2025-08-19 18:00:00', '2025-08-20 02:30:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=16), '2025-08-18', '2025-08-18 17:58:00', '2025-08-19 02:28:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=17), '2025-08-22', '2025-08-22 18:08:00', '2025-08-23 02:38:00', 8.00, 'User Initiated', 1, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=17), '2025-08-21', '2025-08-21 17:58:00', '2025-08-22 02:28:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=17), '2025-08-20', '2025-08-20 18:00:00', '2025-08-21 02:30:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=17), '2025-08-19', '2025-08-19 18:01:00', '2025-08-20 02:31:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=17), '2025-08-18', '2025-08-18 18:00:00', '2025-08-19 02:30:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=18), '2025-08-22', '2025-08-23 02:05:00', '2025-08-23 11:00:00', 8.92, 'User Initiated', 1, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=18), '2025-08-21', '2025-08-22 01:58:00', '2025-08-22 11:05:00', 9.12, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=18), '2025-08-20', '2025-08-21 02:00:00', '2025-08-21 11:01:00', 9.02, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=18), '2025-08-19', '2025-08-20 01:50:00', '2025-08-20 10:30:00', 8.67, 'User Initiated', 0, 1),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=18), '2025-08-18', '2025-08-19 02:10:00', '2025-08-19 11:15:00', 9.08, 'User Initiated', 1, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=19), '2025-08-22', '2025-08-23 02:00:00', NULL, NULL, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=19), '2025-08-21', '2025-08-22 02:03:00', '2025-08-22 11:00:00', 8.95, 'User Initiated', 1, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=19), '2025-08-20', '2025-08-21 01:59:00', '2025-08-21 11:02:00', 9.05, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=19), '2025-08-19', '2025-08-20 02:00:00', '2025-08-20 11:00:00', 9.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=19), '2025-08-18', '2025-08-19 01:45:00', '2025-08-19 10:50:00', 9.08, 'User Initiated', 0, 1),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=20), '2025-08-22', '2025-08-22 13:10:00', '2025-08-22 21:40:00', 8.00, 'User Initiated', 1, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=20), '2025-08-21', '2025-08-21 12:59:00', '2025-08-21 21:29:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=20), '2025-08-20', '2025-08-20 13:00:00', '2025-08-20 21:30:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=20), '2025-08-19', '2025-08-19 12:55:00', '2025-08-19 21:25:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=20), '2025-08-18', '2025-08-18 13:00:00', '2025-08-18 21:30:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=21), '2025-08-17', '2025-08-17 14:50:00', '2025-08-17 23:25:00', 8.08, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=21), '2025-08-16', '2025-08-16 15:10:00', '2025-08-16 23:35:00', 7.92, 'User Initiated', 1, 1),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=21), '2025-08-10', '2025-08-10 15:00:00', '2025-08-10 23:30:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=21), '2025-08-09', '2025-08-09 15:00:00', '2025-08-09 23:30:00', 8.00, 'User Initiated', 0, 0),
+(@tenant_id, (SELECT EID FROM employee_data WHERE TenantID=@tenant_id AND TenantEmployeeNumber=21), '2025-08-03', '2025-08-03 15:00:00', '2025-08-03 23:30:00', 8.00, 'User Initiated', 0, 0);

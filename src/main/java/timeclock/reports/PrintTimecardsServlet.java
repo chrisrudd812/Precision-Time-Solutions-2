@@ -12,8 +12,6 @@ import timeclock.punches.ShowPunches;
 import timeclock.Configuration;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
@@ -23,7 +21,6 @@ import java.sql.SQLException;
 import java.sql.Time;
 import java.text.NumberFormat;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -72,7 +69,8 @@ public class PrintTimecardsServlet extends HttpServlet {
         String filterType = request.getParameter("filterType");
         String filterValue = request.getParameter("filterValue");
 
-        logger.info("[PrintTimecardsServlet] Request for TenantID: " + tenantId + ", FilterType: " + filterType + ", FilterValue: " + filterValue);
+        // [DEBUG LOG]
+        logger.info("[PrintTimecardsServlet-Debug] Received request. filterType=" + filterType + ", filterValue=" + filterValue);
 
         List<Map<String, Object>> printableTimecardsData = new ArrayList<>();
         String pageTitle = "Time Card Report";
@@ -87,8 +85,15 @@ public class PrintTimecardsServlet extends HttpServlet {
             LocalDate periodEndDate = periodInfo.get("endDate");
             DateTimeFormatter longDateFormatter = DateTimeFormatter.ofPattern("EEEE, MMMM d, uuuu", Locale.ENGLISH);
             payPeriodMessageForPrint = periodStartDate.format(longDateFormatter) + " to " + periodEndDate.format(longDateFormatter);
+            
+            if(session != null) {
+                session.setAttribute("payPeriodMessageForPrint", payPeriodMessageForPrint);
+            }
 
             List<Integer> employeeIdsToProcess = getEmployeeIdsForReport(tenantId, filterType, filterValue);
+
+            // [DEBUG LOG]
+            logger.info("[PrintTimecardsServlet-Debug] EIDs to process after DB query: " + employeeIdsToProcess.toString());
 
             if (employeeIdsToProcess.isEmpty()) {
                 errorMessage = "No active employees found for the selected filter criteria.";
@@ -106,7 +111,6 @@ public class PrintTimecardsServlet extends HttpServlet {
                     Map<String, Object> timecardPunchData = ShowPunches.getTimecardPunchData(tenantId, eid, periodStartDate, periodEndDate, employeeInfo, userTimeZoneId);
 
                     if (timecardPunchData != null) {
-                        // The override logic is removed from here because the fix is now in ShowPunches.java
                         printableCard.put("punchesList", timecardPunchData.get("punches"));
                         populatePrintableCardTotals(printableCard, timecardPunchData);
                     }
@@ -130,7 +134,7 @@ public class PrintTimecardsServlet extends HttpServlet {
     
     private List<Integer> getEmployeeIdsForReport(int tenantId, String filterType, String filterValue) throws SQLException {
         List<Integer> eids = new ArrayList<>();
-        StringBuilder sql = new StringBuilder("SELECT EID FROM EMPLOYEE_DATA WHERE TenantID = ? AND ACTIVE = TRUE ");
+        StringBuilder sql = new StringBuilder("SELECT EID FROM employee_data WHERE TenantID = ? AND ACTIVE = TRUE ");
         List<Object> params = new ArrayList<>();
         params.add(tenantId);
 
@@ -143,7 +147,11 @@ public class PrintTimecardsServlet extends HttpServlet {
         } else if ("supervisor".equalsIgnoreCase(filterType)) {
             sql.append("AND SUPERVISOR = ? ");
             params.add(filterValue);
+        } else if ("single".equalsIgnoreCase(filterType)) {
+            sql.append("AND EID = ? ");
+            params.add(Integer.parseInt(filterValue));
         }
+
         sql.append("ORDER BY LAST_NAME, FIRST_NAME");
 
         try (Connection con = DatabaseConnection.getConnection();
@@ -170,6 +178,7 @@ public class PrintTimecardsServlet extends HttpServlet {
         card.put("employeeName", empInfo.getOrDefault("employeeName", "N/A"));
         card.put("department", empInfo.getOrDefault("department", "N/A"));
         card.put("supervisor", empInfo.getOrDefault("supervisor", "N/A"));
+        card.put("email", empInfo.getOrDefault("email", ""));
         String scheduleName = (String) empInfo.getOrDefault("scheduleName", "N/A");
         card.put("scheduleName", scheduleName);
         
@@ -180,7 +189,6 @@ public class PrintTimecardsServlet extends HttpServlet {
         
         boolean autoLunch = (Boolean) empInfo.getOrDefault("autoLunch", false);
 
-        // *** BUG FIX: Cast the object from the map to a Number to get its double value safely ***
         Object hrsReqObj = empInfo.getOrDefault("hoursRequired", 0.0);
         double hrsReqDouble = (hrsReqObj instanceof Number) ? ((Number) hrsReqObj).doubleValue() : 0.0;
         String hrsReqStr = String.format(Locale.US, "%.2f", hrsReqDouble);

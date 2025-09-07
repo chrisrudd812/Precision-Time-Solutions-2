@@ -1,11 +1,12 @@
 <%-- /WEB-INF/includes/notification-modals.jspf --%>
-<%-- This file contains the HTML for general-purpose notification modals. --%>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page import="java.util.List, java.util.Map, jakarta.servlet.http.HttpSession" %>
 
+<%-- ... other modals (notificationModalGeneral, wizardGenericModal) ... --%>
 <div id="notificationModalGeneral" class="modal">
     <div class="modal-content">
         <span class="close" data-close-modal-id="notificationModalGeneral">&times;</span>
         <h2 id="notificationModalGeneralTitle">Notification</h2>
-        <%-- FIX: Added padding and line-height for better readability --%>
         <p id="notificationModalGeneralMessage" style="padding: 15px 25px; line-height: 1.6;"></p>
         <div class="button-row">
             <button type="button" id="okButtonNotificationModalGeneral" data-close-modal-id="notificationModalGeneral" class="glossy-button text-blue">OK</button>
@@ -21,5 +22,39 @@
         <p id="wizardGenericModalText2" style="padding: 0px 15px 15px; font-size: 1em; color: #555;"></p>
         <div class="button-row" id="wizardGenericModalButtonRow" style="justify-content: center; padding-top: 15px; border-top: 1px solid #eee;">
             </div>
+    </div>
+</div>
+
+
+<%-- Modal for displaying unread messages upon login --%>
+<%
+    HttpSession modalSession = request.getSession(false);
+    List<Map<String, String>> unreadMessages = null;
+    if (modalSession != null) {
+        unreadMessages = (List<Map<String, String>>) modalSession.getAttribute("unreadLoginMessages");
+    }
+%>
+<div id="loginMessageModal" class="modal">
+    <div class="modal-content">
+        <h2 id="loginMessageModalTitle">Important Message</h2>
+        <%-- [FIX] Added text-align:center to the container --%>
+        <div class="login-message-body" style="padding: 15px 25px; line-height: 1.6; max-height: 60vh; overflow-y: auto; text-align: center;">
+            <%
+                if (unreadMessages != null && !unreadMessages.isEmpty()) {
+                    for (Map<String, String> message : unreadMessages) {
+            %>
+                <div class="message-item" style="border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 15px;">
+                    <h3 style="margin-top:0; margin-bottom:10px; color:#0f766e;"><%= message.get("subject") %></h3>
+                    <p style="margin:0;"><%= message.get("body").replace("\n", "<br>") %></p>
+                </div>
+            <%
+                    }
+                    modalSession.removeAttribute("unreadLoginMessages");
+                }
+            %>
+        </div>
+        <div class="button-row" style="justify-content: center;">
+            <button type="button" id="okButtonLoginMessage" class="glossy-button text-blue">OK</button>
+        </div>
     </div>
 </div>

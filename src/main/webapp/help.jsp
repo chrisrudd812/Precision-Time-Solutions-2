@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Precision Time Solutions - Help & User Guide</title>
+    <%@ include file="/WEB-INF/includes/common-head.jspf" %>
     <style>
         /* Smooth scrolling for TOC links */
         html {
@@ -232,7 +233,20 @@
                  </ol>
                 <img src="Images/deactivate_employee.png"  style="max-width:600px" alt="Deactivate employee confirmation modal">
                 <blockquote><strong>Note:</strong> Inactive employees can be viewed and reactivated from the <strong>Reports -> Employee Reports</strong> section.</blockquote>
-            </section>
+                
+                <h3>Re-Assigning Employees</h3>
+                <p>While editing an individual employee is done in the edit form, you can also re-assign multiple employees to a different department, schedule, or accrual policy in bulk.</p>
+				<ol>
+					<li>On the Navbar go to Employees > Re-assign Employees by ></li>
+					
+					<li>In the "Re-Assign Employees" modal, choose the new
+						department, schedule, or accrual policy from the dropdowns.</li>
+					<li>Click <strong>"Apply Reassignment"</strong> to apply the changes to
+						all selected employees.
+					</li>
+					</ol>
+					                <img src="Images/employees_reassign.png"  style="max-width:1000px" alt="Re-assign employees modal">
+			</section>
             
             <section id="departments">
                  <h2>Managing Departments</h2>

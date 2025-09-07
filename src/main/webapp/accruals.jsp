@@ -7,7 +7,7 @@
     // --- 1. INITIALIZE JSP-SPECIFIC LOGGER ---
     // ====================================================================================================
     Logger jspLogger = Logger.getLogger("accruals.jsp");
-    jspLogger.info("[ACCRUALS.JSP DEBUG] STEP 1: Page execution started.");
+    jspLogger.info("[accruals.JSP DEBUG] STEP 1: Page execution started.");
 %>
 <%@ page import="timeclock.accruals.ShowAccruals,
                  jakarta.servlet.http.HttpSession,
@@ -20,7 +20,7 @@
     // ====================================================================================================
     // --- 2. LOG AFTER IMPORTS ---
     // ====================================================================================================
-    jspLogger.info("[ACCRUALS.JSP DEBUG] STEP 2: All classes imported successfully.");
+    jspLogger.info("[accruals.JSP DEBUG] STEP 2: All classes imported successfully.");
 %>
 <%!
     private String escapeJspHtml(String input) { if (input == null) return ""; return input.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&#39;"); }
@@ -30,7 +30,7 @@
     // ====================================================================================================
     // --- 3. SESSION AND PERMISSION VALIDATION ---
     // ====================================================================================================
-    jspLogger.info("[ACCRUALS.JSP DEBUG] STEP 3: Starting session and permission validation.");
+    jspLogger.info("[accruals.JSP DEBUG] STEP 3: Starting session and permission validation.");
     HttpSession currentSession = request.getSession(false);
     Integer tenantId = null;
     String pageLevelError = request.getParameter("error"); 
@@ -43,7 +43,7 @@
     String companyNameSignup_Accruals = "Your Company";
 
     if (currentSession != null) {
-        jspLogger.info("[ACCRUALS.JSP DEBUG] Session exists. Reading attributes.");
+        jspLogger.info("[accruals.JSP DEBUG] Session exists. Reading attributes.");
         Object tenantIdObj = currentSession.getAttribute("TenantID");
         if (tenantIdObj instanceof Integer) { tenantId = (Integer) tenantIdObj; }
         
@@ -56,13 +56,13 @@
             inSetupWizardMode_JSP = true;
             String sessionWizardStep = (String) currentSession.getAttribute("wizardStep");
             String wizardStepFromParam = request.getParameter("step");
-            jspLogger.info("[ACCRUALS.JSP DEBUG] In wizard mode. Session step: " + sessionWizardStep + ", Param step: " + wizardStepFromParam);
+            jspLogger.info("[accruals.JSP DEBUG] In wizard mode. Session step: " + sessionWizardStep + ", Param step: " + wizardStepFromParam);
 
             if (wizardStepFromParam != null && !wizardStepFromParam.trim().isEmpty()) {
                 currentWizardStepForPage_JSP = wizardStepFromParam.trim();
                 if (!currentWizardStepForPage_JSP.equals(sessionWizardStep)) {
                     currentSession.setAttribute("wizardStep", currentWizardStepForPage_JSP);
-                    jspLogger.info("[ACCRUALS.JSP DEBUG] Updated session step from parameter to: " + currentWizardStepForPage_JSP);
+                    jspLogger.info("[accruals.JSP DEBUG] Updated session step from parameter to: " + currentWizardStepForPage_JSP);
                 }
             } else {
                 currentWizardStepForPage_JSP = sessionWizardStep;
@@ -83,42 +83,42 @@
             pageLevelError = "Access Denied.";
         }
     } else {
-        jspLogger.warning("[ACCRUALS.JSP DEBUG] FATAL: No session found. Redirecting to login.");
+        jspLogger.warning("[accruals.JSP DEBUG] FATAL: No session found. Redirecting to login.");
         response.sendRedirect(request.getContextPath() + "/login.jsp?error=" + URLEncoder.encode("Session expired. Please log in.", StandardCharsets.UTF_8.name()));
         return; 
     }
-    jspLogger.info("[ACCRUALS.JSP DEBUG] STEP 3 Complete. TenantID: " + tenantId + ", WizardMode: " + inSetupWizardMode_JSP);
+    jspLogger.info("[accruals.JSP DEBUG] STEP 3 Complete. TenantID: " + tenantId + ", WizardMode: " + inSetupWizardMode_JSP);
    
     // ====================================================================================================
     // --- 4. DATA FETCHING ---
     // ====================================================================================================
-    jspLogger.info("[ACCRUALS.JSP DEBUG] STEP 4: Starting data fetching block.");
+    jspLogger.info("[accruals.JSP DEBUG] STEP 4: Starting data fetching block.");
     List<Map<String, String>> allAccrualPoliciesForDropdown = new ArrayList<>();
     List<Map<String, String>> allEmployeesForDropdown = new ArrayList<>();
     String accrualRowsHtml = "";
     String dataFetchError = null;
     if (tenantId != null && tenantId > 0) {
         try {
-            jspLogger.info("[ACCRUALS.JSP DEBUG] Calling ShowAccruals.getAccrualPoliciesForTenant...");
+            jspLogger.info("[accruals.JSP DEBUG] Calling ShowAccruals.getAccrualPoliciesForTenant...");
             allAccrualPoliciesForDropdown = ShowAccruals.getAccrualPoliciesForTenant(tenantId);
-            jspLogger.info("[ACCRUALS.JSP DEBUG] Calling ShowAccruals.getEmployeesForTenant...");
+            jspLogger.info("[accruals.JSP DEBUG] Calling ShowAccruals.getEmployeesForTenant...");
             allEmployeesForDropdown = ShowAccruals.getEmployeesForTenant(tenantId, false);
-            jspLogger.info("[ACCRUALS.JSP DEBUG] Calling ShowAccruals.showAccruals...");
+            jspLogger.info("[accruals.JSP DEBUG] Calling ShowAccruals.showAccruals...");
             accrualRowsHtml = ShowAccruals.showAccruals(tenantId);
-            jspLogger.info("[ACCRUALS.JSP DEBUG] All ShowAccruals methods completed successfully.");
+            jspLogger.info("[accruals.JSP DEBUG] All ShowAccruals methods completed successfully.");
         } catch (Throwable t) { // Catching Throwable to capture deeper errors like NoClassDefFoundError
             dataFetchError = "A critical error occurred while loading page data: " + t.toString();
-            jspLogger.log(Level.SEVERE, "[ACCRUALS.JSP DEBUG] CRITICAL FAILURE in data fetching block.", t);
+            jspLogger.log(Level.SEVERE, "[accruals.JSP DEBUG] CRITICAL FAILURE in data fetching block.", t);
         }
     } else {
         dataFetchError = "Invalid session or tenant context.";
-        jspLogger.warning("[ACCRUALS.JSP DEBUG] Data fetching skipped. Invalid TenantID.");
+        jspLogger.warning("[accruals.JSP DEBUG] Data fetching skipped. Invalid TenantID.");
     }
     
     if (dataFetchError != null) {
         accrualRowsHtml = "<tr><td colspan='4' class='report-error-row'>" + escapeJspHtml(dataFetchError) + "</td></tr>";
     }
-    jspLogger.info("[ACCRUALS.JSP DEBUG] STEP 4 Complete. Data fetching finished.");
+    jspLogger.info("[accruals.JSP DEBUG] STEP 4 Complete. Data fetching finished.");
 %>
 <!DOCTYPE html>
 <html lang="en">
@@ -126,13 +126,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>Manage Accrual Policies<% if(inSetupWizardMode_JSP) { %> - Company Setup<% } %></title>
-    <link rel="stylesheet" href="<%= request.getContextPath() %>/css/navbar.css?v=<%= System.currentTimeMillis() %>">
-    <link rel="stylesheet" href="<%= request.getContextPath() %>/css/reports.css?v=<%= System.currentTimeMillis() %>"> 
+    <%@ include file="/WEB-INF/includes/common-head.jspf" %>
     <link rel="stylesheet" href="<%= request.getContextPath() %>/css/accruals.css?v=<%= System.currentTimeMillis() %>"> 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
 <body class="reports-page">
-<% jspLogger.info("[ACCRUALS.JSP DEBUG] STEP 5: Rendering HTML body."); %>
+<% jspLogger.info("[accruals.JSP DEBUG] STEP 5: Rendering HTML body."); %>
     <% if (!inSetupWizardMode_JSP) { %>
         <%@ include file="/WEB-INF/includes/navbar.jspf" %>
     <% } else { %>
@@ -244,11 +242,11 @@
         window.allAvailableAccrualPoliciesForReassign = [ <% if (allAccrualPoliciesForDropdown != null) { boolean firstPolicy = true; for (Map<String, String> policy : allAccrualPoliciesForDropdown) { if (policy != null && policy.get("name") != null) { if (!firstPolicy) { out.print(","); } %> { "name": "<%= escapeForJavaScriptString(policy.get("name")) %>" }<% firstPolicy = false; }}} %> ];
         window.inWizardMode_Page = <%= inSetupWizardMode_JSP %>;
         window.currentWizardStep_Page = "<%= currentWizardStepForPage_JSP != null ? escapeForJavaScriptString(currentWizardStepForPage_JSP) : "" %>";
-        window.COMPANY_NAME_SIGNUP_JS_ACCRUALS = "<%= escapeForJavaScriptString(companyNameSignup_Accruals) %>";
+        window.COMPANY_NAME_SIGNUP_JS_accruals = "<%= escapeForJavaScriptString(companyNameSignup_Accruals) %>";
     </script>
     
     <%@ include file="/WEB-INF/includes/common-scripts.jspf" %>
     <script src="<%= request.getContextPath() %>/js/accruals.js?v=<%= System.currentTimeMillis() %>"></script>
-    <% jspLogger.info("[ACCRUALS.JSP DEBUG] STEP 6: End of file reached. Page rendering complete."); %>
+    <% jspLogger.info("[accruals.JSP DEBUG] STEP 6: End of file reached. Page rendering complete."); %>
 </body>
 </html>

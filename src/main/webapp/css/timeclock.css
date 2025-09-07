@@ -362,3 +362,25 @@ table.timecard-table {
     .parent-container { width: 100% !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important; box-shadow: none !important; border: none !important; }
     .timecard { width: 100% !important; max-width: 100% !important; box-shadow: none !important; border: none !important; padding: 0 !important; }
 }
+
+/* --- Fixes for Single Timecard View Admin Controls --- */
+
+/* This applies Flexbox to the container to align the items inside it */
+.employee-selector-container {
+    display: flex;
+    align-items: center; /* Vertically aligns the label, select, and button */
+    gap: 15px;           /* Sets space between items */
+}
+
+/* This makes the dropdown grow to fill the available space */
+.employee-selector-container select {
+    flex-grow: 1;
+    height: 40px; /* Explicitly set height to match the glossy-button default */
+}
+
+/* This ensures the button doesn't shrink and matches the dropdown height */
+#btnPrintEmailSingleTimecard {
+    flex-shrink: 0;
+    height: 40px;
+    white-space: nowrap;
+}

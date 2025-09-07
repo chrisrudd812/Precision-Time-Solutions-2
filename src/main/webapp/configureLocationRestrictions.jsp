@@ -44,10 +44,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Configure Location Punch Restrictions</title>
-    <link rel="stylesheet" href="<%= app_context_path %>/css/navbar.css?v=<%= System.currentTimeMillis() %>">
+    <%@ include file="/WEB-INF/includes/common-head.jspf" %>
     <link rel="stylesheet" href="<%= app_context_path %>/css/settings.css?v=<%= System.currentTimeMillis() %>">
-    <link rel="stylesheet" href="<%= app_context_path %>/css/reports.css?v=<%= System.currentTimeMillis() %>">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>

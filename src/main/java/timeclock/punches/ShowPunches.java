@@ -114,11 +114,12 @@ public class ShowPunches {
 
     public static Map<String, Object> getEmployeeTimecardInfo(int tenantId, int globalEID) {
         Map<String, Object> info = new HashMap<>();
+        // [FIX #1 of 2] Added e.EMAIL to the SELECT statement
         String sql = "SELECT e.EID, e.TenantEmployeeNumber, e.FIRST_NAME, e.LAST_NAME, e.DEPT, e.SUPERVISOR, " +
-                     "e.SCHEDULE AS ScheduleName, e.WAGE_TYPE, " +
+                     "e.SCHEDULE AS ScheduleName, e.WAGE_TYPE, e.EMAIL, " +
                      "s.SHIFT_START, s.SHIFT_END, s.AUTO_LUNCH, s.HRS_REQUIRED, s.LUNCH_LENGTH, s.DAYS_WORKED, " +
                      "e.VACATION_HOURS, e.SICK_HOURS, e.PERSONAL_HOURS " +
-                     "FROM EMPLOYEE_DATA e LEFT JOIN SCHEDULES s ON e.TenantID = s.TenantID AND e.SCHEDULE = s.NAME " +
+                     "FROM employee_data e LEFT JOIN schedules s ON e.TenantID = s.TenantID AND e.SCHEDULE = s.NAME " +
                      "WHERE e.EID = ? AND e.TenantID = ? AND e.ACTIVE = TRUE";
         if (tenantId <= 0 || globalEID <= 0) return null;
         try (Connection con = DatabaseConnection.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
@@ -141,6 +142,8 @@ public class ShowPunches {
                     info.put("vacationHours", rs.getDouble("VACATION_HOURS"));
                     info.put("sickHours", rs.getDouble("SICK_HOURS"));
                     info.put("personalHours", rs.getDouble("PERSONAL_HOURS"));
+                    // [FIX #2 of 2] Get the email from the result set and add it to the map
+                    info.put("email", rs.getString("EMAIL"));
                     return info;
                 } else { return null; }
             }
@@ -169,7 +172,7 @@ public class ShowPunches {
 
     public static List<Map<String, Object>> getActiveEmployeesForDropdown(int tenantId) {
         List<Map<String, Object>> employeeList = new ArrayList<>();
-        String sql = "SELECT EID, TenantEmployeeNumber, FIRST_NAME, LAST_NAME FROM EMPLOYEE_DATA WHERE ACTIVE = TRUE AND TenantID = ? ORDER BY LAST_NAME, FIRST_NAME";
+        String sql = "SELECT EID, TenantEmployeeNumber, FIRST_NAME, LAST_NAME FROM employee_data WHERE ACTIVE = TRUE AND TenantID = ? ORDER BY LAST_NAME, FIRST_NAME";
         if (tenantId <= 0) return employeeList;
         try (Connection con = DatabaseConnection.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, tenantId);
@@ -191,7 +194,7 @@ public class ShowPunches {
     }
     
     public static double applyAutoLunch(Connection con, int tenantId, int eid, double rawTotalHours) {
-        String sql = "SELECT s.AUTO_LUNCH, s.HRS_REQUIRED, s.LUNCH_LENGTH FROM EMPLOYEE_DATA e JOIN SCHEDULES s ON e.TenantID=s.TenantID AND e.SCHEDULE=s.NAME WHERE e.EID=? AND e.TenantID=?";
+        String sql = "SELECT s.AUTO_LUNCH, s.HRS_REQUIRED, s.LUNCH_LENGTH FROM employee_data e JOIN schedules s ON e.TenantID=s.TenantID AND e.SCHEDULE=s.NAME WHERE e.EID=? AND e.TenantID=?";
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, eid); ps.setInt(2, tenantId);
             ResultSet rs = ps.executeQuery();
@@ -208,7 +211,7 @@ public class ShowPunches {
 
     public static void calculateAndUpdatePunchTotal(Connection con, int tenantId, int eid, Timestamp in, Timestamp out, long punchId) throws SQLException {
          if (in == null || out == null) {
-            String sql = "UPDATE PUNCHES SET TOTAL=NULL, OT=0, DT=0 WHERE PUNCH_ID=?";
+            String sql = "UPDATE punches SET TOTAL=NULL, OT=0, DT=0 WHERE PUNCH_ID=?";
             try(PreparedStatement ps = con.prepareStatement(sql)) { ps.setLong(1, punchId); ps.executeUpdate(); }
             return;
         }
@@ -216,7 +219,7 @@ public class ShowPunches {
         double totalHours = d.isNegative() ? 0 : d.getSeconds() / 3600.0;
         totalHours = applyAutoLunch(con, tenantId, eid, totalHours);
         totalHours = Math.round(totalHours * 100.0) / 100.0;
-        String sql = "UPDATE PUNCHES SET TOTAL=? WHERE PUNCH_ID=?";
+        String sql = "UPDATE punches SET TOTAL=? WHERE PUNCH_ID=?";
         try(PreparedStatement ps = con.prepareStatement(sql)) { ps.setDouble(1, totalHours); ps.setLong(2, punchId); ps.executeUpdate(); }
     }
 
@@ -247,7 +250,7 @@ public class ShowPunches {
         String daysWorkedStr = (String) employeeInfo.get("daysWorkedStr");
         List<String> scheduledDays = getScheduledDays(daysWorkedStr);
         
-        String sqlGetPunches = "SELECT PUNCH_ID, IN_1, OUT_1, TOTAL, PUNCH_TYPE, `DATE` AS UTC_DB_DATE FROM PUNCHES WHERE EID = ? AND TenantID = ? AND " +
+        String sqlGetPunches = "SELECT PUNCH_ID, IN_1, OUT_1, TOTAL, PUNCH_TYPE, `DATE` AS UTC_DB_DATE FROM punches WHERE EID = ? AND TenantID = ? AND " +
                                "((IN_1 IS NOT NULL AND IN_1 >= ? AND IN_1 < ?) OR (IN_1 IS NULL AND `DATE` BETWEEN ? AND ?)) " +
                                "ORDER BY `DATE` ASC, IN_1 ASC, PUNCH_ID ASC";
 
@@ -324,26 +327,22 @@ public class ShowPunches {
                     punchMap.put("totalHours", String.format(Locale.US, "%.2f", totalHours));
                     punchesDataList.add(punchMap);
                     
-                    // Aggregate daily totals for OT calculation
                     if (isWorkPunchType(punchType) && !rsPunches.wasNull()) {
                          dailyAggregatedWorkHours.put(displayPunchDate, dailyAggregatedWorkHours.getOrDefault(displayPunchDate, 0.0) + totalHours);
                     }
                 }
             }
             
-            // *** BUG FIX: Entire OT calculation block is rewritten for correctness ***
             double calculatedPeriodRegular = 0.0;
             double calculatedPeriodOt = 0.0;
             double calculatedPeriodDt = 0.0;
             String wageType = (String) employeeInfo.getOrDefault("wageType", "");
 
             if (!"Hourly".equalsIgnoreCase(wageType)) {
-                // For non-hourly, all hours are regular
                 for (double hours : dailyAggregatedWorkHours.values()) {
                     calculatedPeriodRegular += hours;
                 }
             } else {
-                // Get OT settings
                 boolean dailyOtEnabled = "true".equalsIgnoreCase(Configuration.getProperty(tenantId, "OvertimeDaily", "false"));
                 double dailyOtThreshold = getDoubleConfigProperty(tenantId, "OvertimeDailyThreshold", "8.0");
                 boolean doubleTimeEnabled = "true".equalsIgnoreCase(Configuration.getProperty(tenantId, "OvertimeDoubleTimeEnabled", "false"));
@@ -355,7 +354,6 @@ public class ShowPunches {
 
                 Map<LocalDate, Double> dailyNetRegularHours = new LinkedHashMap<>();
 
-                // Loop 1: Calculate daily OT/DT first
                 for (LocalDate date = payPeriodStartDate; !date.isAfter(payPeriodEndDate); date = date.plusDays(1)) {
                     double hoursWorkedToday = dailyAggregatedWorkHours.getOrDefault(date, 0.0);
                     if (hoursWorkedToday <= 0) {
@@ -381,7 +379,6 @@ public class ShowPunches {
                     dailyNetRegularHours.put(date, Math.max(0, todaysReg));
                 }
 
-                // Loop 2: Calculate weekly and 7th day rules
                 LocalDate currentEvalDate = payPeriodStartDate;
                 while (!currentEvalDate.isAfter(payPeriodEndDate)) {
                     LocalDate weekStart = calculateWeekStart(currentEvalDate, firstDayOfWeekSetting);
@@ -398,7 +395,6 @@ public class ShowPunches {
                         weeklyNetRegularSum += dailyNetRegularHours.getOrDefault(dateInWeek, 0.0);
                     }
 
-                    // 7th Day Logic (only applies if 7 consecutive days worked in the WORK WEEK)
                     if (seventhDayOtEnabled && daysWorkedInWeek == 7) {
                         LocalDate seventhDay = weekEnd;
                         if (dailyAggregatedWorkHours.containsKey(seventhDay)) {
@@ -414,12 +410,11 @@ public class ShowPunches {
 
                                 calculatedPeriodDt += seventhDayDt;
                                 calculatedPeriodOt += seventhDayOt;
-                                weeklyNetRegularSum -= (seventhDayOt + seventhDayDt); // Remove these hours from weekly calc
+                                weeklyNetRegularSum -= (seventhDayOt + seventhDayDt);
                             }
                         }
                     }
 
-                    // Weekly OT Logic (on remaining net regular hours)
                     if (weeklyNetRegularSum > WEEKLY_OT_THRESHOLD_FLSA) {
                         double weeklyOt = weeklyNetRegularSum - WEEKLY_OT_THRESHOLD_FLSA;
                         calculatedPeriodOt += weeklyOt;
@@ -428,7 +423,6 @@ public class ShowPunches {
                     currentEvalDate = weekEnd.plusDays(1);
                 }
 
-                // Loop 3: Sum up final regular hours
                 double totalWorkHours = 0;
                 for (double hours : dailyAggregatedWorkHours.values()) {
                     totalWorkHours += hours;
@@ -436,7 +430,6 @@ public class ShowPunches {
                 calculatedPeriodRegular = Math.max(0, totalWorkHours - calculatedPeriodOt - calculatedPeriodDt);
             }
             
-            // Add non-work hours (Vacation, etc.) to the regular total for payroll.
             double nonWorkPaidHoursTotal = 0;
             for(Map<String, String> punch : punchesDataList) {
                 if (isHoursOnlyType(punch.get("punchType"))) {

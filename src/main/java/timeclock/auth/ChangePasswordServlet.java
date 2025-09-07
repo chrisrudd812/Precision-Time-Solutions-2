@@ -100,7 +100,7 @@ public class ChangePasswordServlet extends HttpServlet {
             if (conn == null) throw new SQLException("Failed to get database connection.");
             conn.setAutoCommit(false);
 
-            String checkSql = "SELECT RequiresPasswordChange FROM EMPLOYEE_DATA WHERE EID = ? AND TenantID = ?";
+            String checkSql = "SELECT RequiresPasswordChange FROM employee_data WHERE EID = ? AND TenantID = ?";
             boolean dbRequiresChange = false;
 
             psCheck = conn.prepareStatement(checkSql);
@@ -134,7 +134,7 @@ public class ChangePasswordServlet extends HttpServlet {
             }
 
             String hashedNewPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt(12));
-            String updateSql = "UPDATE EMPLOYEE_DATA SET PasswordHash = ?, RequiresPasswordChange = ? WHERE EID = ? AND TenantID = ?";
+            String updateSql = "UPDATE employee_data SET PasswordHash = ?, RequiresPasswordChange = ? WHERE EID = ? AND TenantID = ?";
             psUpdate = conn.prepareStatement(updateSql);
 
             psUpdate.setString(1, hashedNewPassword);

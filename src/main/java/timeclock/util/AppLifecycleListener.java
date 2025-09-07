@@ -65,7 +65,7 @@
  * println("Attempting database initialization check (DBInitializer.initialize())..."
  * ); // This will run your logic to check/create schema and tables. // If you
  * followed previous advice, it might also add sample data // ONLY if all tables
- * exist and EMPLOYEE_DATA is empty. DBInitializer.initialize();
+ * exist and employee_data is empty. DBInitializer.initialize();
  * System.out.println("Database initialization check completed successfully.");
  * 
  * // Optional: Initialize connection pool here if you implement one later //

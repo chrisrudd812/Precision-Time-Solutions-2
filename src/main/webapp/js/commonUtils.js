@@ -1,13 +1,46 @@
 // js/commonUtils.js
 
-// ADDED: Global variable to dynamically manage modal z-index
-let currentMaxZIndex = 10080; // Start at the base z-index from your CSS
+let currentMaxZIndex = 10080;
 
 /**
- * Shows a toast notification.
- * @param {string} message The message to display.
- * @param {string} [type='info'] The type of toast ('info', 'success', 'error').
+ * Parses a 12-hour time string (e.g., "05:30:00 PM") into a 24-hour format ("17:30:00").
+ * @param {string} timeStr12hr The 12-hour format time string.
+ * @returns {string} The time in 24-hour format, or an empty string if parsing fails.
  */
+function parseTimeTo24Hour(timeStr12hr) {
+    if (!timeStr12hr || String(timeStr12hr).trim() === '' || String(timeStr12hr).toLowerCase().includes('missing') || String(timeStr12hr).toLowerCase() === "n/a") return '';
+    timeStr12hr = String(timeStr12hr).trim();
+    try {
+        if (/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(timeStr12hr)) {
+            return timeStr12hr.length === 5 ? timeStr12hr + ':00' : timeStr12hr;
+        }
+        const parts = timeStr12hr.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)/i);
+        if (!parts) {
+            console.warn("commonUtils.js (parseTimeTo24Hour): Could not parse time string:", timeStr12hr);
+            return '';
+        }
+        let h = parseInt(parts[1],10);
+        const m = parts[2];
+        const s = parts[3] ? parts[3] : '00';
+        const ampm = parts[4] ? parts[4].toUpperCase() : null;
+
+        if (ampm) {
+            if (ampm === 'PM' && h !== 12) h += 12;
+            if (ampm === 'AM' && h === 12) h = 0;
+        }
+        if (h > 23 || h < 0 || isNaN(h) || isNaN(parseInt(m,10)) || isNaN(parseInt(s,10)) || parseInt(m,10) > 59 || parseInt(s,10) > 59 ) {
+            console.warn("commonUtils.js (parseTimeTo24Hour): Hour, minute, or second out of range after conversion:", timeStr12hr); return '';
+        }
+        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    } catch(e) {
+        console.error("commonUtils.js (parseTimeTo24Hour): Error parsing time string:", timeStr12hr, e);
+        return '';
+    }
+}
+// Expose the function globally
+window.parseTimeTo24Hour = parseTimeTo24Hour;
+
+
 function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
     if (!container) {
@@ -37,15 +70,10 @@ function decodeHtmlEntities(encodedString) {
     }
 }
 
-// MODIFIED: Added detailed logging
 function showModal(modalElement) {
-    console.log(`%c[showModal] CALLED for: #${modalElement ? modalElement.id : 'UNKNOWN'}`, 'color: #28a745; font-weight: bold;');
     if (modalElement && typeof modalElement.classList !== 'undefined') {
-        console.log(`[showModal] PREVIOUS z-index: ${currentMaxZIndex}`);
-        currentMaxZIndex++; // Increment z-index for the new modal
+        currentMaxZIndex++;
         modalElement.style.zIndex = currentMaxZIndex;
-        console.log(`[showModal] NEW z-index: ${currentMaxZIndex} applied to #${modalElement.id}`);
-
         modalElement.style.display = 'flex';
         requestAnimationFrame(() => {
              modalElement.classList.add('modal-visible');
@@ -59,15 +87,20 @@ function showModal(modalElement) {
     }
 }
 
-// MODIFIED: Added detailed logging
 function hideModal(modalElement) {
-    console.log(`%c[hideModal] CALLED for: #${modalElement ? modalElement.id : 'UNKNOWN'}`, 'color: #dc3545; font-weight: bold;');
     if (modalElement && typeof modalElement.classList !== 'undefined') {
         modalElement.classList.remove('modal-visible');
-        // Let the CSS transition finish before hiding the element
         setTimeout(() => {
             modalElement.style.display = 'none';
-        }, 300); // Match this duration to your CSS transition time
+            const content = modalElement.querySelector('.modal-content');
+            if (content && content.style.position === 'absolute') {
+                 content.style.position = '';
+                 content.style.left = '';
+                 content.style.top = '';
+                 content.style.margin = '';
+                 content.style.transform = '';
+            }
+        }, 300);
     }
 }
 
@@ -91,43 +124,43 @@ function makeModalDraggable(modalElement) {
     const header = content ? content.querySelector('h2') : null;
     if (!header || !content) return;
 
-    header.style.cursor = 'move';
-    header.addEventListener('mousedown', function(e) {
+    header.style.cursor = 'grab';
+    
+    let initialMouseX, initialMouseY;
+    let initialContentX, initialContentY;
+
+    function dragStart(e) {
         e.preventDefault();
-
-        let initialMouseX = e.clientX;
-        let initialMouseY = e.clientY;
-
-        const rect = content.getBoundingClientRect();
-        const initialContentX = rect.left;
-        const initialContentY = rect.top;
-
         if (window.getComputedStyle(content).position !== 'absolute') {
+            const rect = content.getBoundingClientRect();
             content.style.position = 'absolute';
-            content.style.left = `${initialContentX}px`;
-            content.style.top = `${initialContentY}px`;
+            content.style.left = `${rect.left}px`;
+            content.style.top = `${rect.top}px`;
+            content.style.margin = '0';
         }
-
-        function elementDrag(e) {
-            e.preventDefault();
-            const dx = e.clientX - initialMouseX;
-            const dy = e.clientY - initialMouseY;
-            content.style.left = `${initialContentX + dx}px`;
-            content.style.top = `${initialContentY + dy}px`;
-        }
-
-        function closeDragElement() {
-            document.removeEventListener('mousemove', elementDrag);
-            document.removeEventListener('mouseup', closeDragElement);
-        }
-
+        header.style.cursor = 'grabbing';
+        initialMouseX = e.clientX;
+        initialMouseY = e.clientY;
+        initialContentX = content.offsetLeft;
+        initialContentY = content.offsetTop;
         document.addEventListener('mousemove', elementDrag);
-        document.addEventListener('mouseup', closeDragElement);
-    });
+        document.addEventListener('mouseup', dragEnd);
+    }
+
+    function elementDrag(e) {
+        const dx = e.clientX - initialMouseX;
+        const dy = e.clientY - initialMouseY;
+        content.style.left = `${initialContentX + dx}px`;
+        content.style.top = `${initialContentY + dy}px`;
+    }
+
+    function dragEnd() {
+        header.style.cursor = 'grab';
+        document.removeEventListener('mousemove', elementDrag);
+        document.removeEventListener('mouseup', dragEnd);
+    }
+    header.addEventListener('mousedown', dragStart);
 }
-
-
-// --- Table Sorting Logic ---
 
 function applyDefaultSort(table) {
     if (!table) return;
@@ -157,7 +190,6 @@ function makeTableSortable(table) {
     headers.forEach((header, index) => {
         const newHeader = header.cloneNode(true);
         header.parentNode.replaceChild(newHeader, header);
-
         newHeader.addEventListener('click', () => {
             sortTableByColumn(table, index);
         });
@@ -169,19 +201,14 @@ function sortTableByColumn(table, columnIndex) {
     if (!tBody) return;
     const rows = Array.from(tBody.querySelectorAll("tr"));
     const header = table.querySelectorAll('th.sortable')[columnIndex];
-    
     const currentIsAsc = header.classList.contains('sort-asc');
     const direction = currentIsAsc ? 'desc' : 'asc';
-
     const firstRowCell = rows[0]?.cells[columnIndex];
     if (!firstRowCell) return;
-
     const isNumeric = /^[$\-\s]*(\d{1,3}(,\d{3})*|\d+)(\.\d+)?$/.test(firstRowCell.textContent.trim());
-
     const sortedRows = rows.sort((a, b) => {
         const aCellText = a.cells[columnIndex]?.textContent.trim() || '';
         const bCellText = b.cells[columnIndex]?.textContent.trim() || '';
-        
         if (isNumeric) {
             const aVal = parseFloat(aCellText.replace(/[$,\s]/g, '')) || 0;
             const bVal = parseFloat(bCellText.replace(/[$,\s]/g, '')) || 0;
@@ -192,9 +219,7 @@ function sortTableByColumn(table, columnIndex) {
                 : bCellText.localeCompare(aCellText, undefined, {sensitivity: 'base'});
         }
     });
-
     tBody.append(...sortedRows);
-
     table.querySelectorAll('th.sortable').forEach(th => {
         th.classList.remove('sort-asc', 'sort-desc');
     });
@@ -202,14 +227,49 @@ function sortTableByColumn(table, columnIndex) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    if (typeof makeModalDraggable === 'function') {
-        const allModalsOnPage = document.querySelectorAll('.modal');
-        allModalsOnPage.forEach(modal => {
-            makeModalDraggable(modal);
-        });
-    }
+    const allModalsOnPage = document.querySelectorAll('.modal');
+    allModalsOnPage.forEach(modal => {
+        makeModalDraggable(modal);
+    });
     
     if (typeof initializeAllSortableTables === 'function') {
         initializeAllSortableTables();
+    }
+
+    const allCloseButtons = document.querySelectorAll('.modal .close, .modal .cancel-btn, .modal [data-close-modal-id], .modal .close-modal-btn');
+    allCloseButtons.forEach(button => {
+        button.addEventListener('click', function(event) {
+            const modalToClose = event.target.closest('.modal');
+            if (modalToClose && typeof hideModal === 'function') {
+                hideModal(modalToClose);
+            }
+        });
+    });
+
+    const allOkButtons = document.querySelectorAll('#okButtonNotificationModalGeneral, #okButton');
+     allOkButtons.forEach(button => {
+        button.addEventListener('click', function(event) {
+            const modalToClose = event.target.closest('.modal');
+            if (modalToClose && typeof hideModal === 'function') {
+                hideModal(modalToClose);
+            }
+        });
+    });
+
+    // [NEW] Logic to find and display the login message modal
+    const loginMessageModal = document.getElementById('loginMessageModal');
+    if (loginMessageModal) {
+        const messageBody = loginMessageModal.querySelector('.login-message-body');
+        // Only show modal if the server actually populated messages into it
+        if (messageBody && messageBody.innerHTML.trim() !== '') {
+            showModal(loginMessageModal);
+        }
+
+        const okButton = document.getElementById('okButtonLoginMessage');
+        if (okButton) {
+            okButton.addEventListener('click', function() {
+                hideModal(loginMessageModal);
+            });
+        }
     }
 });

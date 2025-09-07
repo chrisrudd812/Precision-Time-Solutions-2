@@ -32,7 +32,7 @@ public class TimeDayRestrictionServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final Logger logger = Logger.getLogger(TimeDayRestrictionServlet.class.getName());
     private static final List<String> DAYS_OF_WEEK = Arrays.asList("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday");
-    private static final String WIZARD_RETURN_STEP_SETTINGS = "settings_setup";
+    private static final String WIZARD_RETURN_STEP_settings = "settings_setup";
 
     private Integer getTenantId(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
@@ -94,9 +94,9 @@ public class TimeDayRestrictionServlet extends HttpServlet {
 
         if (session != null && Boolean.TRUE.equals(session.getAttribute("startSetupWizard"))) {
             String currentSessionWizardStep = (String) session.getAttribute("wizardStep");
-            if (WIZARD_RETURN_STEP_SETTINGS.equals(currentSessionWizardStep)) {
+            if (WIZARD_RETURN_STEP_settings.equals(currentSessionWizardStep)) {
                 pageIsActuallyInWizardMode = true;
-                wizardStepToReturnToOnSettingsPage = WIZARD_RETURN_STEP_SETTINGS;
+                wizardStepToReturnToOnSettingsPage = WIZARD_RETURN_STEP_settings;
             }
         }
 

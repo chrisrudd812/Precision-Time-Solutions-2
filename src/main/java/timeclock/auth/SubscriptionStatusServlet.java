@@ -47,21 +47,26 @@ public class SubscriptionStatusServlet extends HttpServlet {
         try (Connection conn = DatabaseConnection.getConnection()) {
             String stripeSubscriptionId = getStripeSubscriptionId(conn, tenantId);
 
-            if (stripeSubscriptionId == null) {
-                throw new Exception("No Subscription ID found for this account.");
+            // ## FIX: Handle non-Stripe customers gracefully ##
+            // If the subscription ID is null or empty, it means this is a free-plan user
+            // or an account type that doesn't require Stripe billing.
+            if (stripeSubscriptionId == null || stripeSubscriptionId.trim().isEmpty()) {
+                // Instead of throwing an error, we send a success response indicating
+                // that no synchronization is necessary.
+                jsonResponse.put("success", true).put("message", "Account status is already up-to-date.");
+            } else {
+                // For paying customers, proceed with syncing from Stripe as before.
+                Subscription stripeSubscription = Subscription.retrieve(stripeSubscriptionId);
+
+                String newStatus = stripeSubscription.getStatus();
+                String newPriceId = stripeSubscription.getItems().getData().get(0).getPrice().getId();
+                Timestamp newPeriodEnd = new Timestamp(stripeSubscription.getCurrentPeriodEnd() * 1000L);
+
+                int newMaxUsers = getMaxUsersForPriceId(conn, newPriceId);
+
+                updateTenantSubscription(conn, tenantId, newStatus, newPriceId, newPeriodEnd, newMaxUsers);
+                jsonResponse.put("success", true).put("message", "Subscription details successfully synced!");
             }
-
-            Subscription stripeSubscription = Subscription.retrieve(stripeSubscriptionId);
-
-            String newStatus = stripeSubscription.getStatus();
-            String newPriceId = stripeSubscription.getItems().getData().get(0).getPrice().getId();
-            Timestamp newPeriodEnd = new Timestamp(stripeSubscription.getCurrentPeriodEnd() * 1000L);
-
-            // IMPROVEMENT: Get MaxUsers dynamically from your subscription_plans table
-            int newMaxUsers = getMaxUsersForPriceId(conn, newPriceId);
-
-            updateTenantSubscription(conn, tenantId, newStatus, newPriceId, newPeriodEnd, newMaxUsers);
-            jsonResponse.put("success", true).put("message", "Subscription details successfully synced!");
 
         } catch (StripeException e) {
             logger.log(Level.SEVERE, "Stripe API error syncing subscription for TenantID: " + tenantId, e);
@@ -73,10 +78,12 @@ public class SubscriptionStatusServlet extends HttpServlet {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         } catch (Exception e) {
             logger.log(Level.SEVERE, "General error syncing subscription for TenantID: " + tenantId, e);
-            jsonResponse.put("success", false).put("error", e.getMessage());
+            // ## IMPROVEMENT: Use a generic error message for security ##
+            jsonResponse.put("success", false).put("error", "An unexpected error occurred while verifying your subscription.");
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         }
 
+        // Write the final JSON response
         try (PrintWriter out = response.getWriter()) {
             out.print(jsonResponse.toString());
         }
@@ -103,7 +110,6 @@ public class SubscriptionStatusServlet extends HttpServlet {
                 if (rs.next()) {
                     return rs.getInt("maxUsers");
                 } else {
-                    // This is a safeguard in case a plan exists in Stripe but not your DB
                     logger.log(Level.WARNING, "Plan details for Price ID {0} not found in local DB. Defaulting to 25 users.", priceId);
                     return 25; 
                 }

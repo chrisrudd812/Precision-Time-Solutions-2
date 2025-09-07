@@ -39,9 +39,12 @@ table#payrollTable td:nth-child(9), table#payrollTable td:nth-child(10) { text-a
     margin-top: 20px; margin-bottom: 20px; padding-top: 15px;
     border-top: 1px solid #dee2e6; width: 100%;
 }
-#payroll-actions-container form { display: contents; }
+#payroll-actions-container form,
+#payroll-actions-container a { /* Apply to both forms and anchor tags */
+    display: contents; 
+}
 #payroll-actions-container button.full-width-button,
-#payroll-actions-container input.full-width-button[type="submit"] {
+#payroll-actions-container a.full-width-button { /* Apply to both buttons and anchor tags */
     width: 100%; padding-top: 12px; padding-bottom: 12px; font-size: 1em;
 }
 
@@ -101,7 +104,7 @@ table#payrollTable td:nth-child(9), table#payrollTable td:nth-child(10) { text-a
 }
 #editPunchModal .edit-punch-info p {
     margin: 6px 0; line-height: 1.5; color: #495057; display: flex;
-    flex-wrap: wrap; align-items: baseline;
+    flex-wrap: nowrap; align-items: baseline;
 }
 #editPunchModal .edit-punch-info p strong {
     font-weight: 600; color: #343a40; margin-right: 8px;
@@ -111,7 +114,7 @@ table#payrollTable td:nth-child(9), table#payrollTable td:nth-child(10) { text-a
     flex-grow: 1; word-break: break-word;
 }
 
-/* === [FIX] Custom Confirmation Modal Styling (Close Pay Period) === */
+/* === Custom Confirmation Modal Styling (Close Pay Period) === */
 #closePeriodConfirmModal .modal-content {
     max-width: 550px;
     min-width: 400px;
@@ -122,7 +125,6 @@ table#payrollTable td:nth-child(9), table#payrollTable td:nth-child(10) { text-a
     font-size: 1.2em;
 }
 
-/* Generic message styling */
 #closePeriodConfirmModal #confirmModalMessage {
     padding: 20px 25px;
     font-size: 0.95em;
@@ -130,18 +132,16 @@ table#payrollTable td:nth-child(9), table#payrollTable td:nth-child(10) { text-a
     color: #333;
     max-height: 450px;
     overflow-y: auto;
-    margin: 0; /* Reset margin */
+    margin: 0;
 }
 
-/* Specific class for centered text */
 #closePeriodConfirmModal .confirm-message-centered {
     text-align: center;
 }
 
-/* Specific class for left-aligned lists */
 #closePeriodConfirmModal .confirm-message-list {
     text-align: left;
-    white-space: pre-wrap; /* Only apply this for lists */
+    white-space: pre-wrap;
 }
 
 #closePeriodConfirmModal .button-row {
@@ -154,27 +154,27 @@ table#payrollTable td:nth-child(9), table#payrollTable td:nth-child(10) { text-a
     font-weight: 500;
     padding: 9px 18px;
 }
-/* End Custom Confirmation Modal Styling */
-
 .required-asterisk { color: #dc3545; margin-left: 2px; font-weight: bold; }
-.empty-cell { /* Used by Java to mark cells, styled specifically for exception report */ }
+.empty-cell { }
 
-/* [FIX] Ensure the general notification modal always appears on top */
 #notificationModalGeneral {
-    z-index: 10090; /* Higher than the default modal z-index of 10080 */
+    z-index: 10090;
 }
 
-/* --- NEW: Sticky Footer Styles --- */
 #payrollTable tfoot {
     position: sticky;
-    bottom: -1px; /* Sticks to the bottom of the container, -1px hides the row border above it */
-    z-index: 20;  /* Same z-index as the sticky header to ensure it's on top */
+    bottom: -1px;
+    z-index: 20;
 }
 
-/* This overrides the old blue gradient footer style to match the teal header */
 #payrollTable tfoot td {
-    background: #f1f5f9 !important; /* Match header background */
-    color: #0f766e !important;       /* Match header text color */
-    border-top: 2px solid #14b8a6 !important; /* Match header border */
-    text-shadow: none !important;      /* Remove old text shadow */
+    background: #f1f5f9 !important;
+    color: #0f766e !important;
+    border-top: 2px solid #14b8a6 !important;
+    text-shadow: none !important;
+}
+
+.glossy-button.text-purple, 
+.glossy-button.text-purple i {
+    color: #8b5cf6 !important;
 }

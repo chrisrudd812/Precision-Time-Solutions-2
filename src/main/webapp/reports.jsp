@@ -103,45 +103,61 @@
             </p>
 
             <div id="reportActions" class="report-actions" style="display: none;">
-                <button id="fixMissingPunchesBtnReports" class="glossy-button text-orange" style="display: none;" disabled>
-                    <i class="fas fa-edit"></i> Fix Missing Punches
-                </button>
-                <%-- MODIFICATION: Added text-blue class --%>
-                <button id="printReportBtn" class="glossy-button text-blue">
-                    <i class="fas fa-print"></i> Print Report
-                </button>
+                <div id="reportSpecificFilters">
+                    </div>
+                <div class="action-buttons-group">
+                    <button id="fixMissingPunchesBtnReports" class="glossy-button text-orange" style="display: none;" disabled>
+                        <i class="fas fa-edit"></i> Fix Missing Punches
+                    </button>
+                    <button id="reactivateEmployeeBtn" class="glossy-button text-green" style="display: none;" disabled>
+                        <i class="fas fa-user-check"></i> Reactivate Employee
+                    </button>
+                    <button id="printReportBtn" class="glossy-button text-blue">
+                         <i class="fas fa-print"></i> Print Report
+                    </button>
+                </div>
+            </div>
+
+            <div id="archiveReportFilters" class="archive-filters-container" style="display: none;">
+                <div class="form-item">
+                    <label for="archiveStartDate">From:</label>
+                    <input type="date" id="archiveStartDate" name="archiveStartDate">
+                </div>
+                <div class="form-item">
+                    <label for="archiveEndDate">To:</label>
+                    <input type="date" id="archiveEndDate" name="archiveEndDate">
+                </div>
+                <button id="applyArchiveFilterBtn" class="glossy-button text-green"><i class="fas fa-check"></i> Apply</button>
             </div>
 
             <div id="loadingIndicator" class="loading-indicator" style="<%= reportSelected ? "display: flex;" : "display: none;" %>">
                 <div class="spinner"></div>
                 Loading report...
-            </div>
+             </div>
 
             <div id="reportOutput" class="report-output">
                 <% if (!reportSelected) { %>
-                     <p class="report-placeholder">Report results will appear here once selected from the menu.</p>
+                    <p class="report-placeholder">Report results will appear here once selected from the menu.</p>
                 <% } %>
             </div>
-        </div>
+         </div>
     </div> <%-- End parent-container --%>
 
-    <%-- Edit Punch Modal --%>
     <div id="editPunchModalReports" class="modal">
         <div class="modal-content">
             <span class="close" id="closeEditPunchModalReports">&times;</span>
             <h2>Edit Punch Record</h2>
             <div class="edit-punch-info">
                 <p><strong>Employee:</strong> <span id="reports_editPunchEmployeeName"></span></p>
-                <p><strong>Schedule:</strong> <span id="reports_editPunchScheduleInfo"></span></p>
+                 <p><strong>Schedule:</strong> <span id="reports_editPunchScheduleInfo"></span></p>
             </div>
             <form id="editPunchFormReports" action="AddEditAndDeletePunchesServlet" method="post">
                 <input type="hidden" id="reports_editPunchIdField" name="editPunchId">
                 <input type="hidden" name="action" value="editPunch">
                 <input type="hidden" id="reports_editEmployeeIdField" name="editEmployeeId">
-                <input type="hidden" id="reports_editUserTimeZone" name="userTimeZone" value="<%= escapeJspHtml(userTimeZoneId) %>">
-                <input type="hidden" name="editPunchType" value="Supervisor Override">
-
-                <div class="form-item">
+                 <input type="hidden" id="reports_editUserTimeZone" name="userTimeZone" value="<%= escapeJspHtml(userTimeZoneId) %>">
+                 <input type="hidden" name="editPunchType" value="Supervisor Override">
+                 <div class="form-item">
                     <label for="reports_editDate">Date: <span class="required-asterisk">*</span></label>
                     <input type="date" id="reports_editDate" name="editDate" required>
                 </div>
@@ -149,35 +165,39 @@
                     <label for="reports_editInTime">IN Time (HH:MM:SS):</label>
                     <input type="time" id="reports_editInTime" name="editInTime" step="1">
                 </div>
-                <div class="form-item">
+                 <div class="form-item">
                     <label for="reports_editOutTime">OUT Time (HH:MM:SS):</label>
                     <input type="time" id="reports_editOutTime" name="editOutTime" step="1">
                 </div>
             </form>
-            <div class="button-row">
+             <div class="button-row">
                 <button type="submit" form="editPunchFormReports" class="glossy-button text-green">
                     <i class="fas fa-save"></i> Save Changes
                 </button>
                 <button type="button" id="reports_cancelEditPunch" class="glossy-button text-red">
-                    <i class="fas fa-times"></i> Cancel
+                     <i class="fas fa-times"></i> Cancel
                 </button>
             </div>
         </div>
     </div>
 
-    <%-- Generic Notification Modal --%>
-    <div id="notificationModal" class="modal">
+    <%@ include file="/WEB-INF/includes/notification-modals.jspf" %>
+    
+    <div id="upgradePlanModal" class="modal">
         <div class="modal-content">
-            <span class="close" id="closeNotificationModal">&times;</span>
-            <h2 id="notificationModalTitle">Notification</h2>
-            <p id="notificationMessage"></p>
-            <div class="button-row" style="justify-content: center;">
-                <button type="button" id="okButton" class="glossy-button text-blue">OK</button>
+            <span class="close">&times;</span>
+            <h2 id="upgradePlanModalTitle" style="color: #c82333;">User Limit Reached</h2>
+            <p id="upgradePlanModalMessage" style="padding: 15px 20px; text-align: center; line-height:1.6;"></p>
+            <div class="button-row">
+                <button type="button" id="upgradePlanCancelBtn" class="glossy-button text-red">Cancel</button>
+                <a href="account.jsp?highlight=billing" id="upgradePlanGoBtn" class="glossy-button text-green">Upgrade Plan</a>
             </div>
         </div>
     </div>
 
     <script type="text/javascript">
+        // [FIX] Added appRootPath for correct servlet URL construction
+        window.appRootPath = "<%= request.getContextPath() %>";
         const effectiveUserTimeZoneId = "<%= escapeJspHtml(userTimeZoneId) %>";
         const initialReport = "<%= initialReportType != null ? escapeJspHtml(initialReportType) : "" %>";
     </script>

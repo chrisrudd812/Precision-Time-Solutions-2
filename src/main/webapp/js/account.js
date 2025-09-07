@@ -17,13 +17,21 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const notificationModal = document.getElementById('notificationModalGeneral');
 
+    const billingRequiredModal = document.getElementById('billingRequiredModal');
+    const billingModalMessageElement = document.getElementById('billingRequiredModalMessage');
+    const billingModalManageButton = document.getElementById('billingModalManageButton');
+    
+    // ## NEW: Selector for the new Lifetime Access Modal ##
+    const lifetimeAccessModal = document.getElementById('lifetimeAccessModal');
+
+
     // Function to handle checking subscription status after returning from portal
     function checkSubscriptionStatus() {
         const notificationDiv = document.getElementById('subscriptionStatusMessage');
         if (!notificationDiv) return;
 
         notificationDiv.textContent = 'Syncing your subscription details...';
-        notificationDiv.className = 'page-message info-message'; // A new style for 'info'
+        notificationDiv.className = 'page-message info-message';
         notificationDiv.style.display = 'block';
 
         fetch('SubscriptionStatusServlet', {
@@ -38,9 +46,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 notificationDiv.textContent = data.error || 'Failed to sync subscription.';
                 notificationDiv.className = 'page-message error-message';
             }
-            // Reload the page to show updated details from the server
             setTimeout(() => {
-                // Clear the 'from_portal' param from URL and reload
                 window.location.href = window.location.pathname;
             }, 2500);
         })
@@ -62,16 +68,28 @@ document.addEventListener('DOMContentLoaded', function() {
             if (verificationNextAction) verificationNextAction.value = 'editCompanyDetails';
             if (verifyAdminCurrentPasswordField) verifyAdminCurrentPasswordField.value = "";
             showModal(verifyAdminPasswordModal);
-            if (verifyAdminCurrentPasswordField) verifyAdminCurrentPasswordField.focus();
+            if (verifyAdminCurrentPasswordField) {
+                setTimeout(() => verifyAdminCurrentPasswordField.focus(), 150);
+            }
         });
     }
 
     if (manageBillingBtn) {
+        // ## MODIFIED LOGIC FOR BILLING BUTTON ##
         manageBillingBtn.addEventListener('click', function() {
-             if (verificationNextAction) verificationNextAction.value = 'redirectToPortal';
-             if (verifyAdminCurrentPasswordField) verifyAdminCurrentPasswordField.value = "";
-             showModal(verifyAdminPasswordModal);
-             if (verifyAdminCurrentPasswordField) verifyAdminCurrentPasswordField.focus();
+            // Check the subscription status passed from the JSP
+            if (typeof currentSubscriptionStatus !== 'undefined' && currentSubscriptionStatus === 'Active - Lifetime Promo') {
+                // If it's a lifetime plan, show the special modal
+                showModal(lifetimeAccessModal);
+            } else {
+                // Otherwise, proceed with the normal password verification flow
+                if (verificationNextAction) verificationNextAction.value = 'redirectToPortal';
+                if (verifyAdminCurrentPasswordField) verifyAdminCurrentPasswordField.value = "";
+                showModal(verifyAdminPasswordModal);
+                if (verifyAdminCurrentPasswordField) {
+                    setTimeout(() => verifyAdminCurrentPasswordField.focus(), 150);
+                }
+            }
         });
     }
     
@@ -98,7 +116,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.success) {
                     hideModal(verifyAdminPasswordModal);
                     if (nextAction === 'redirectToPortal') {
-                        // Find the form and submit it
                         document.getElementById('stripePortalForm').submit();
                     } else if (nextAction === 'editCompanyDetails') {
                         fetchAndPopulateCompanyDetails();
@@ -168,6 +185,15 @@ document.addEventListener('DOMContentLoaded', function() {
          });
     }
     
+    if (billingModalManageButton) {
+        billingModalManageButton.addEventListener('click', function() {
+            hideModal(billingRequiredModal);
+            if (manageBillingBtn) {
+                manageBillingBtn.click();
+            }
+        });
+    }
+    
     document.querySelectorAll('[data-close-modal]').forEach(button => {
         button.addEventListener('click', () => {
             const modalToClose = button.closest('.modal');
@@ -179,5 +205,26 @@ document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('from_portal') === 'true') {
         checkSubscriptionStatus();
+    }
+    
+    if (typeof shouldShowBillingModal !== 'undefined' && shouldShowBillingModal) {
+        if (billingRequiredModal && billingModalMessageElement) {
+            billingModalMessageElement.textContent = typeof billingMessage !== 'undefined' ? billingMessage : 'Your subscription requires attention.';
+            showModal(billingRequiredModal);
+        }
+    }
+
+    // Add phone formatting for company phone field
+    const editCompanyPhoneInput = document.getElementById('editCompanyPhone');
+    if (editCompanyPhoneInput) {
+        editCompanyPhoneInput.addEventListener('input', function(event) {
+            const input = event.target;
+            const digits = input.value.replace(/\D/g, '');
+            let formatted = '';
+            if (digits.length > 0) formatted = '(' + digits.substring(0, 3);
+            if (digits.length >= 4) formatted += ') ' + digits.substring(3, 6);
+            if (digits.length >= 7) formatted += '-' + digits.substring(6, 10);
+            input.value = formatted;
+        });
     }
 });

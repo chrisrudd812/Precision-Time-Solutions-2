@@ -43,7 +43,7 @@ public class AddSampleData {
     private static final Logger logger = Logger.getLogger(AddSampleData.class.getName());
     private static final ZoneId SCHEDULE_ZONE = ZoneId.of("America/Denver");
     private static final double ROUNDING_FACTOR = 10000.0;
-    private static final int TARGET_MISSING_PUNCHES = 3;
+    private static final int TARGET_MISSING_punches = 3;
     private static final int DEV_TENANT_ID = 1;
 
     private record ScheduleInfo(String name, LocalTime shiftStart, LocalTime shiftEnd, boolean autoLunch, Integer hrsRequired, Integer lunchLength) {}
@@ -82,8 +82,8 @@ public class AddSampleData {
         int daysToGeneratePunches = 14;
         int totalPunchesToGenerate = employees.length * daysToGeneratePunches;
         Set<Integer> missingPunchIndices = new HashSet<>();
-        if (TARGET_MISSING_PUNCHES > 0 && totalPunchesToGenerate > 0) {
-            Random r = new Random(); int t = Math.min(TARGET_MISSING_PUNCHES, totalPunchesToGenerate);
+        if (TARGET_MISSING_punches > 0 && totalPunchesToGenerate > 0) {
+            Random r = new Random(); int t = Math.min(TARGET_MISSING_punches, totalPunchesToGenerate);
             while (missingPunchIndices.size() < t) { missingPunchIndices.add(r.nextInt(totalPunchesToGenerate)); }
             logger.info("Pre-selected " + missingPunchIndices.size() + " indices for missing OUT punches.");
         }
@@ -94,7 +94,7 @@ public class AddSampleData {
             currentStep = "Data Clearing for Tenant " + DEV_TENANT_ID;
             logger.info(currentStep + "...");
             try (Statement stmt = con.createStatement()) {
-                String[] tablesToDeleteFrom = {"PUNCHES", "ARCHIVED_PUNCHES", "PAYROLL_HISTORY", "EMPLOYEE_DATA", "SETTINGS", "SCHEDULES", "DEPARTMENTS", "ACCRUALS"};
+                String[] tablesToDeleteFrom = {"punches", "archived_punches", "payroll_history", "employee_data", "settings", "schedules", "departments", "accruals"};
                 for (String tbl : tablesToDeleteFrom) {
                     try { stmt.executeUpdate("DELETE FROM " + tbl + " WHERE TenantID = " + DEV_TENANT_ID); logger.info("Deleted from " + tbl + " for TenantID " + DEV_TENANT_ID); }
                     catch (SQLException e) { logger.log(Level.INFO, "Info: Could not delete from " + tbl + " (may not exist/no data): " + e.getMessage()); }
@@ -118,24 +118,24 @@ public class AddSampleData {
                     ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
                 stmt.execute(createTenantsTableSQL);
 
-                logger.fine("Creating SETTINGS table if not exists...");
-                String createSettingsTableSQL = "CREATE TABLE IF NOT EXISTS SETTINGS (TenantID INT NOT NULL, setting_key VARCHAR(255) NOT NULL, setting_value TEXT NULL, PRIMARY KEY (TenantID, setting_key), FOREIGN KEY (TenantID) REFERENCES Tenants(TenantID) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
+                logger.fine("Creating settings table if not exists...");
+                String createSettingsTableSQL = "CREATE TABLE IF NOT EXISTS settings (TenantID INT NOT NULL, setting_key VARCHAR(255) NOT NULL, setting_value TEXT NULL, PRIMARY KEY (TenantID, setting_key), FOREIGN KEY (TenantID) REFERENCES Tenants(TenantID) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
                 stmt.execute(createSettingsTableSQL);
 
-                logger.fine("Creating DEPARTMENTS table if not exists...");
-                String createDepartmentsTableSQL = "CREATE TABLE IF NOT EXISTS DEPARTMENTS (TenantID INT NOT NULL, NAME VARCHAR(50) NOT NULL, DESCRIPTION VARCHAR(255) NULL, SUPERVISOR VARCHAR(100) NULL, PRIMARY KEY (TenantID, NAME), FOREIGN KEY (TenantID) REFERENCES Tenants(TenantID) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
+                logger.fine("Creating departments table if not exists...");
+                String createDepartmentsTableSQL = "CREATE TABLE IF NOT EXISTS departments (TenantID INT NOT NULL, NAME VARCHAR(50) NOT NULL, DESCRIPTION VARCHAR(255) NULL, SUPERVISOR VARCHAR(100) NULL, PRIMARY KEY (TenantID, NAME), FOREIGN KEY (TenantID) REFERENCES Tenants(TenantID) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
                 stmt.execute(createDepartmentsTableSQL);
 
-                logger.fine("Creating ACCRUALS table if not exists...");
-                String createAccrualsTableSQL = "CREATE TABLE IF NOT EXISTS ACCRUALS (TenantID INT NOT NULL, NAME VARCHAR(50) NOT NULL, VACATION INT DEFAULT 0, SICK INT DEFAULT 0, PERSONAL INT DEFAULT 0, PRIMARY KEY (TenantID, NAME), FOREIGN KEY (TenantID) REFERENCES Tenants(TenantID) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
+                logger.fine("Creating accruals table if not exists...");
+                String createAccrualsTableSQL = "CREATE TABLE IF NOT EXISTS accruals (TenantID INT NOT NULL, NAME VARCHAR(50) NOT NULL, VACATION INT DEFAULT 0, SICK INT DEFAULT 0, PERSONAL INT DEFAULT 0, PRIMARY KEY (TenantID, NAME), FOREIGN KEY (TenantID) REFERENCES Tenants(TenantID) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
                 stmt.execute(createAccrualsTableSQL);
 
-                logger.fine("Creating SCHEDULES table if not exists...");
-                String createSchedulesTableSQL = "CREATE TABLE IF NOT EXISTS SCHEDULES (TenantID INT NOT NULL, NAME VARCHAR(50) NOT NULL, SHIFT_START TIME NULL, LUNCH_START TIME NULL, LUNCH_END TIME NULL, SHIFT_END TIME NULL, DAYS_WORKED VARCHAR(100) NULL, AUTO_LUNCH TINYINT(1) DEFAULT 0, HRS_REQUIRED INT DEFAULT 0, LUNCH_LENGTH INT DEFAULT 0, WORK_SCHEDULE VARCHAR(20) NULL, PRIMARY KEY (TenantID, NAME), FOREIGN KEY (TenantID) REFERENCES Tenants(TenantID) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
+                logger.fine("Creating schedules table if not exists...");
+                String createSchedulesTableSQL = "CREATE TABLE IF NOT EXISTS schedules (TenantID INT NOT NULL, NAME VARCHAR(50) NOT NULL, SHIFT_START TIME NULL, LUNCH_START TIME NULL, LUNCH_END TIME NULL, SHIFT_END TIME NULL, DAYS_WORKED VARCHAR(100) NULL, AUTO_LUNCH TINYINT(1) DEFAULT 0, HRS_REQUIRED INT DEFAULT 0, LUNCH_LENGTH INT DEFAULT 0, WORK_SCHEDULE VARCHAR(20) NULL, PRIMARY KEY (TenantID, NAME), FOREIGN KEY (TenantID) REFERENCES Tenants(TenantID) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
                 stmt.execute(createSchedulesTableSQL);
 
-                logger.fine("Creating EMPLOYEE_DATA table if not exists...");
-                String createEmployeeDataTableSQL = "CREATE TABLE IF NOT EXISTS EMPLOYEE_DATA (" +
+                logger.fine("Creating employee_data table if not exists...");
+                String createEmployeeDataTableSQL = "CREATE TABLE IF NOT EXISTS employee_data (" +
                     "TenantID INT NOT NULL, EID INT AUTO_INCREMENT PRIMARY KEY, " +
                     "FIRST_NAME VARCHAR(50), LAST_NAME VARCHAR(50), DEPT VARCHAR(50), SCHEDULE VARCHAR(50), " +
                     "SUPERVISOR VARCHAR(100), PERMISSIONS VARCHAR(50), ADDRESS VARCHAR(100), CITY VARCHAR(50), " +
@@ -147,21 +147,21 @@ public class AddSampleData {
                     "PasswordHash VARCHAR(60) NULL, " +
                     "RequiresPasswordChange TINYINT(1) DEFAULT 1, " + // Default to 1 (TRUE)
                     "TenantEmployeeNumber INT NULL, " +
-                    "FOREIGN KEY (TenantID, DEPT) REFERENCES DEPARTMENTS(TenantID, NAME) ON DELETE RESTRICT ON UPDATE CASCADE, " +
-                    "FOREIGN KEY (TenantID, SCHEDULE) REFERENCES SCHEDULES(TenantID, NAME) ON DELETE RESTRICT ON UPDATE CASCADE, " +
-                    "FOREIGN KEY (TenantID, ACCRUAL_POLICY) REFERENCES ACCRUALS(TenantID, NAME) ON DELETE RESTRICT ON UPDATE CASCADE, " +
+                    "FOREIGN KEY (TenantID, DEPT) REFERENCES departments(TenantID, NAME) ON DELETE RESTRICT ON UPDATE CASCADE, " +
+                    "FOREIGN KEY (TenantID, SCHEDULE) REFERENCES schedules(TenantID, NAME) ON DELETE RESTRICT ON UPDATE CASCADE, " +
+                    "FOREIGN KEY (TenantID, ACCRUAL_POLICY) REFERENCES accruals(TenantID, NAME) ON DELETE RESTRICT ON UPDATE CASCADE, " +
                     "FOREIGN KEY (TenantID) REFERENCES Tenants(TenantID) ON DELETE CASCADE, " +
                     "UNIQUE INDEX uq_employee_email_tenant (TenantID, EMAIL), " +
                     "UNIQUE INDEX uq_tenant_employee_number (TenantID, TenantEmployeeNumber) " +
                     ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
                 stmt.execute(createEmployeeDataTableSQL);
 
-                logger.fine("Creating PUNCHES table if not exists...");
-                String createPunchesTableSQL = "CREATE TABLE IF NOT EXISTS PUNCHES (PUNCH_ID INT AUTO_INCREMENT PRIMARY KEY, TenantID INT NOT NULL, EID INT NOT NULL, DATE DATE NOT NULL, IN_1 TIMESTAMP NULL, OUT_1 TIMESTAMP NULL, TOTAL DOUBLE DEFAULT 0, OT DOUBLE DEFAULT 0, LATE TINYINT(1) DEFAULT 0, EARLY_OUTS TINYINT(1) DEFAULT 0, PUNCH_TYPE VARCHAR(25), FOREIGN KEY (EID) REFERENCES EMPLOYEE_DATA(EID) ON DELETE CASCADE ON UPDATE CASCADE, FOREIGN KEY (TenantID) REFERENCES Tenants(TenantID) ON DELETE CASCADE, INDEX idx_punches_tenant_eid_date (TenantID, EID, DATE)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
+                logger.fine("Creating punches table if not exists...");
+                String createPunchesTableSQL = "CREATE TABLE IF NOT EXISTS punches (PUNCH_ID INT AUTO_INCREMENT PRIMARY KEY, TenantID INT NOT NULL, EID INT NOT NULL, DATE DATE NOT NULL, IN_1 TIMESTAMP NULL, OUT_1 TIMESTAMP NULL, TOTAL DOUBLE DEFAULT 0, OT DOUBLE DEFAULT 0, LATE TINYINT(1) DEFAULT 0, EARLY_OUTS TINYINT(1) DEFAULT 0, PUNCH_TYPE VARCHAR(25), FOREIGN KEY (EID) REFERENCES employee_data(EID) ON DELETE CASCADE ON UPDATE CASCADE, FOREIGN KEY (TenantID) REFERENCES Tenants(TenantID) ON DELETE CASCADE, INDEX idx_punches_tenant_eid_date (TenantID, EID, DATE)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
                 stmt.execute(createPunchesTableSQL);
 
-                logger.fine("Creating ARCHIVED_PUNCHES table if not exists...");
-                String createArchivedPunchesTableSQL = "CREATE TABLE IF NOT EXISTS ARCHIVED_PUNCHES (ARCHIVE_ID INT AUTO_INCREMENT PRIMARY KEY, TenantID INT NOT NULL, PUNCH_ID INT NULL, EID INT NOT NULL, DATE DATE NOT NULL, IN_1 TIMESTAMP NULL, OUT_1 TIMESTAMP NULL, TOTAL DOUBLE DEFAULT 0, OT DOUBLE DEFAULT 0, LATE TINYINT(1) DEFAULT 0, EARLY_OUTS TINYINT(1) DEFAULT 0, PUNCH_TYPE VARCHAR(25), ARCHIVED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (TenantID) REFERENCES Tenants(TenantID) ON DELETE CASCADE, INDEX idx_archived_tenant_eid_date (TenantID, EID, DATE)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
+                logger.fine("Creating archived_punches table if not exists...");
+                String createArchivedPunchesTableSQL = "CREATE TABLE IF NOT EXISTS archived_punches (ARCHIVE_ID INT AUTO_INCREMENT PRIMARY KEY, TenantID INT NOT NULL, PUNCH_ID INT NULL, EID INT NOT NULL, DATE DATE NOT NULL, IN_1 TIMESTAMP NULL, OUT_1 TIMESTAMP NULL, TOTAL DOUBLE DEFAULT 0, OT DOUBLE DEFAULT 0, LATE TINYINT(1) DEFAULT 0, EARLY_OUTS TINYINT(1) DEFAULT 0, PUNCH_TYPE VARCHAR(25), ARCHIVED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (TenantID) REFERENCES Tenants(TenantID) ON DELETE CASCADE, INDEX idx_archived_tenant_eid_date (TenantID, EID, DATE)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
                 stmt.execute(createArchivedPunchesTableSQL);
 
                 logger.fine("Creating payroll_history table if not exists...");
@@ -170,7 +170,7 @@ public class AddSampleData {
 
                 logger.info("All tables checked/created successfully.");
                 logger.info("Resetting Auto Increments (best effort)...");
-                String[] tablesToResetAI = {"Tenants", "EMPLOYEE_DATA", "PUNCHES", "payroll_history", "ARCHIVED_PUNCHES"};
+                String[] tablesToResetAI = {"Tenants", "employee_data", "punches", "payroll_history", "archived_punches"};
                 for (String tableName : tablesToResetAI) {
                     try { stmt.executeUpdate("ALTER TABLE " + tableName + " AUTO_INCREMENT = 1;"); }
                     catch (SQLException e) { logger.warning("Could not reset AI on " + tableName + ": " + e.getMessage()); }
@@ -196,7 +196,7 @@ public class AddSampleData {
 
             currentStep = "Populating Default Settings for Tenant " + DEV_TENANT_ID;
             logger.info(currentStep + "...");
-            String insertSettingSQL = "INSERT INTO SETTINGS (TenantID, setting_key, setting_value) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)";
+            String insertSettingSQL = "INSERT INTO settings (TenantID, setting_key, setting_value) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)";
              try (PreparedStatement ps = con.prepareStatement(insertSettingSQL)) {
                  LocalDate today = LocalDate.now(SCHEDULE_ZONE);
                  LocalDate defaultStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY));
@@ -213,7 +213,7 @@ public class AddSampleData {
 
             currentStep = "Adding Departments for Tenant " + DEV_TENANT_ID;
             logger.info(currentStep + "...");
-            try(PreparedStatement ps = con.prepareStatement("INSERT IGNORE INTO DEPARTMENTS (TenantID, NAME, DESCRIPTION, SUPERVISOR) VALUES (?, ?, ?, ?)")) {
+            try(PreparedStatement ps = con.prepareStatement("INSERT IGNORE INTO departments (TenantID, NAME, DESCRIPTION, SUPERVISOR) VALUES (?, ?, ?, ?)")) {
                 Object[][] depts = {{"None", "No Department Assignment", "None"}, {"Cinema", "Movie Stars", "John Candy"}, {"Music", "Rock Stars", "Ringo Starr"}, {"Television", "TV Personalities", "Alan Alda"}};
                 for(Object[] dept : depts){ ps.setInt(1, DEV_TENANT_ID); ps.setString(2, (String)dept[0]); ps.setString(3, (String)dept[1]); ps.setString(4, (String)dept[2]); ps.addBatch(); logger.fine("Dept Added to Batch: " + dept[0]);}
                 int[] results = ps.executeBatch(); logger.info("Departments batch executed. Records affected per statement: " + Arrays.toString(results));
@@ -221,7 +221,7 @@ public class AddSampleData {
 
             currentStep = "Adding Accrual Policies for Tenant " + DEV_TENANT_ID;
             logger.info(currentStep + "...");
-             try(PreparedStatement ps = con.prepareStatement("INSERT IGNORE INTO ACCRUALS (TenantID, NAME, VACATION, SICK, PERSONAL) VALUES (?, ?, ?, ?, ?)")) {
+             try(PreparedStatement ps = con.prepareStatement("INSERT IGNORE INTO accruals (TenantID, NAME, VACATION, SICK, PERSONAL) VALUES (?, ?, ?, ?, ?)")) {
                 Object[][] accruals = {{"None", 0, 0, 0}, {"Standard", 5, 5, 5}, {"Executive", 30, 30, 30}};
                 for(Object[] acc : accruals){ ps.setInt(1, DEV_TENANT_ID); ps.setString(2, (String)acc[0]); ps.setInt(3, (Integer)acc[1]); ps.setInt(4, (Integer)acc[2]); ps.setInt(5, (Integer)acc[3]); ps.addBatch(); logger.fine("Accrual Added to Batch: " + acc[0]);}
                 int[] results = ps.executeBatch(); logger.info("Accruals batch executed. Records affected per statement: " + Arrays.toString(results));
@@ -237,7 +237,7 @@ public class AddSampleData {
                 {"Second Shift", Time.valueOf("12:00:00"), Time.valueOf("16:00:00"), Time.valueOf("16:30:00"), Time.valueOf("20:30:00"), "Mon, Tue, Wed, Thu, Fri", true, 6, 30, "Full Time"},
                 {"Third Shift", Time.valueOf("20:00:00"), Time.valueOf("00:00:00"), Time.valueOf("01:00:00"), Time.valueOf("05:00:00"), "Mon, Tue, Wed, Thu, Fri", false, 0, 0, "Full Time"}
             };
-            String scheduleInsertSql = "INSERT IGNORE INTO SCHEDULES (TenantID, NAME, SHIFT_START, LUNCH_START, LUNCH_END, SHIFT_END, DAYS_WORKED, AUTO_LUNCH, HRS_REQUIRED, LUNCH_LENGTH, WORK_SCHEDULE) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            String scheduleInsertSql = "INSERT IGNORE INTO schedules (TenantID, NAME, SHIFT_START, LUNCH_START, LUNCH_END, SHIFT_END, DAYS_WORKED, AUTO_LUNCH, HRS_REQUIRED, LUNCH_LENGTH, WORK_SCHEDULE) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             try (PreparedStatement psAddSchedules = con.prepareStatement(scheduleInsertSql)) {
                 for(Object[] sched : schedulesData) {
                     psAddSchedules.clearParameters(); psAddSchedules.setInt(1, DEV_TENANT_ID); psAddSchedules.setString(2, (String) sched[0]);
@@ -255,7 +255,7 @@ public class AddSampleData {
 
             currentStep = "Adding Employees for Tenant " + DEV_TENANT_ID;
             logger.info(currentStep + "...");
-            String employeeSql = "INSERT INTO EMPLOYEE_DATA " +
+            String employeeSql = "INSERT INTO employee_data " +
                                  "(TenantID, FIRST_NAME, LAST_NAME, DEPT, SCHEDULE, SUPERVISOR, PERMISSIONS, ADDRESS, CITY, STATE, ZIP, PHONE, EMAIL, ACCRUAL_POLICY, " +
                                  "VACATION_HOURS, SICK_HOURS, PERSONAL_HOURS, HIRE_DATE, WORK_SCHEDULE, WAGE_TYPE, WAGE, " +
                                  "PasswordHash, TenantEmployeeNumber) " + // Removed RequiresPasswordChange, ACTIVE (rely on DB defaults)
@@ -296,7 +296,7 @@ public class AddSampleData {
             currentStep = "Pre-loading Schedule Times Map for Punches for Tenant " + DEV_TENANT_ID;
             logger.info(currentStep + "...");
             Map<String, ScheduleInfo> scheduleTimesMap = new HashMap<>();
-            String scheduleQuery = "SELECT NAME, SHIFT_START, SHIFT_END, AUTO_LUNCH, HRS_REQUIRED, LUNCH_LENGTH FROM SCHEDULES WHERE TenantID = ?";
+            String scheduleQuery = "SELECT NAME, SHIFT_START, SHIFT_END, AUTO_LUNCH, HRS_REQUIRED, LUNCH_LENGTH FROM schedules WHERE TenantID = ?";
             try (PreparedStatement psSchedMap = con.prepareStatement(scheduleQuery)) {
                 psSchedMap.setInt(1, DEV_TENANT_ID);
                 try(ResultSet rs = psSchedMap.executeQuery()) {
@@ -311,7 +311,7 @@ public class AddSampleData {
                 logger.info("Loaded " + scheduleTimesMap.size() + " schedule entries into map for Tenant " + DEV_TENANT_ID);
                  if (scheduleTimesMap.isEmpty() && employees.length > 0) {
                     int scheduleCountInDb = 0;
-                    try(Statement s = con.createStatement(); ResultSet rs = s.executeQuery("SELECT COUNT(*) FROM SCHEDULES WHERE TenantID="+DEV_TENANT_ID)){ if(rs.next()) scheduleCountInDb = rs.getInt(1); }
+                    try(Statement s = con.createStatement(); ResultSet rs = s.executeQuery("SELECT COUNT(*) FROM schedules WHERE TenantID="+DEV_TENANT_ID)){ if(rs.next()) scheduleCountInDb = rs.getInt(1); }
                     if(scheduleCountInDb > 0) throw new RuntimeException("Schedules exist in DB ("+scheduleCountInDb+") but failed to load into map for Tenant " + DEV_TENANT_ID);
                     else logger.warning("No schedules found in DB to load into map for Tenant " + DEV_TENANT_ID + ", punch generation for non-Open schedules may be limited.");
                 }
@@ -319,7 +319,7 @@ public class AddSampleData {
 
             currentStep = "Adding Sample Punches for Tenant " + DEV_TENANT_ID;
             logger.info(currentStep + "...");
-            String punchInsertSql = "INSERT INTO PUNCHES (TenantID, EID, DATE, IN_1, OUT_1, TOTAL, OT, LATE, EARLY_OUTS, PUNCH_TYPE) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            String punchInsertSql = "INSERT INTO punches (TenantID, EID, DATE, IN_1, OUT_1, TOTAL, OT, LATE, EARLY_OUTS, PUNCH_TYPE) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             int punchesAddedCount = 0; int gracePeriod = 1;
             try (PreparedStatement psAddPunches = con.prepareStatement(punchInsertSql)) {
                 int currentPunchIndex = 0; Random timeRand = new Random(); LocalDate todayInScheduleZone = LocalDate.now(SCHEDULE_ZONE);

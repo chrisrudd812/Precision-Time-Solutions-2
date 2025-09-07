@@ -97,7 +97,17 @@ public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
         Integer tenantId = getTenantIdFromSession(session);
 
         if (tenantId == null) {
-            response.sendRedirect(request.getContextPath() + "/login.jsp?error=Session+expired.");
+            String requestedWithHeader = request.getHeader("X-Requested-With");
+            boolean isAjax = "XMLHttpRequest".equals(requestedWithHeader);
+            
+            if (isAjax) {
+                response.setContentType("application/json");
+                response.setCharacterEncoding("UTF-8");
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 401
+                response.getWriter().print("{\"success\": false, \"error\": \"Session expired. Please log in again.\", \"sessionExpired\": true}");
+            } else {
+                response.sendRedirect(request.getContextPath() + "/login.jsp?error=Session+expired.");
+            }
             return;
         }
 
@@ -145,9 +155,38 @@ public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
             con = DatabaseConnection.getConnection(); 
             con.setAutoCommit(false);
             
+            // --- NEW USER LIMIT CHECK ---
+            int maxUsers = 25; // Default value
+            try (PreparedStatement ps = con.prepareStatement("SELECT MaxUsers FROM tenants WHERE TenantID = ?")) {
+                ps.setInt(1, tenantId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        maxUsers = rs.getInt("MaxUsers");
+                    }
+                }
+            }
+
+            int activeUserCount = 0;
+            try (PreparedStatement ps = con.prepareStatement("SELECT COUNT(*) FROM employee_data WHERE TenantID = ? AND ACTIVE = TRUE")) {
+                ps.setInt(1, tenantId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        activeUserCount = rs.getInt(1);
+                    }
+                }
+            }
+            
+            if (activeUserCount >= maxUsers) {
+                logger.warning("Add Employee denied for TenantID " + tenantId + ". Limit of " + maxUsers + " reached.");
+                String errorMsg = "user_limit_exceeded:You have reached your maximum of " + maxUsers + " active users. Please upgrade your plan to add more employees.";
+                response.sendRedirect(buildRedirectUrl(request, "employees.jsp", -1, null, errorMsg, null));
+                return; // Stop execution
+            }
+            // --- END USER LIMIT CHECK ---
+            
             ensureDefaultLookupsExist(con, tenantId);
             
-            String sqlIns = "INSERT INTO EMPLOYEE_DATA (TenantID,TenantEmployeeNumber,FIRST_NAME,LAST_NAME,DEPT,SCHEDULE,SUPERVISOR,PERMISSIONS,ADDRESS,CITY,STATE,ZIP,PHONE,EMAIL,ACCRUAL_POLICY,HIRE_DATE,WORK_SCHEDULE,WAGE_TYPE,WAGE,PasswordHash,RequiresPasswordChange,ACTIVE) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,TRUE)";
+            String sqlIns = "INSERT INTO employee_data (TenantID,TenantEmployeeNumber,FIRST_NAME,LAST_NAME,DEPT,SCHEDULE,SUPERVISOR,PERMISSIONS,ADDRESS,CITY,STATE,ZIP,PHONE,EMAIL,ACCRUAL_POLICY,HIRE_DATE,WORK_SCHEDULE,WAGE_TYPE,WAGE,PasswordHash,RequiresPasswordChange,ACTIVE) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,TRUE)";
             try (PreparedStatement psAdd = con.prepareStatement(sqlIns, Statement.RETURN_GENERATED_KEYS)) {
                 int tenEmpNo = getNextTenantEmployeeNumber(con, tenantId);
                 psAdd.setInt(1, tenantId);
@@ -169,7 +208,6 @@ public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
                 psAdd.setString(17, request.getParameter("workScheduleDropDown"));
                 psAdd.setString(18, request.getParameter("wageTypeDropDown"));
                 
-                // FIX: Robustly parse the wage value to prevent 400 Bad Request errors
                 String wageStr = request.getParameter("wage");
                 if (isValid(wageStr)) {
                     psAdd.setDouble(19, Double.parseDouble(wageStr.replace(',', '.')));
@@ -200,7 +238,7 @@ public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
         } catch (SQLException e) { 
             rollback(con); 
             if (e.getMessage() != null && e.getMessage().toLowerCase().contains("duplicate entry") && e.getMessage().contains("uq_employee_email_tenant")) {
-                String checkInactiveSql = "SELECT EID, ACTIVE FROM EMPLOYEE_DATA WHERE TenantID = ? AND EMAIL = ?";
+                String checkInactiveSql = "SELECT EID, ACTIVE FROM employee_data WHERE TenantID = ? AND EMAIL = ?";
                 try (Connection checkCon = DatabaseConnection.getConnection();
                      PreparedStatement psCheck = checkCon.prepareStatement(checkInactiveSql)) {
                     psCheck.setInt(1, tenantId);
@@ -246,7 +284,7 @@ public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
 
             ensureDefaultLookupsExist(con, tenantId);
 
-            String sqlUpd = "UPDATE EMPLOYEE_DATA SET FIRST_NAME=?,LAST_NAME=?,DEPT=?,SCHEDULE=?,SUPERVISOR=?,PERMISSIONS=?,ADDRESS=?,CITY=?,STATE=?,ZIP=?,PHONE=?,EMAIL=?,ACCRUAL_POLICY=?,HIRE_DATE=?,WORK_SCHEDULE=?,WAGE_TYPE=?,WAGE=? WHERE EID=? AND TenantID=?";
+            String sqlUpd = "UPDATE employee_data SET FIRST_NAME=?,LAST_NAME=?,DEPT=?,SCHEDULE=?,SUPERVISOR=?,PERMISSIONS=?,ADDRESS=?,CITY=?,STATE=?,ZIP=?,PHONE=?,EMAIL=?,ACCRUAL_POLICY=?,HIRE_DATE=?,WORK_SCHEDULE=?,WAGE_TYPE=?,WAGE=? WHERE EID=? AND TenantID=?";
             try(PreparedStatement psU = con.prepareStatement(sqlUpd)) {
                 psU.setString(1, request.getParameter("firstName").trim());
                 psU.setString(2, request.getParameter("lastName").trim());
@@ -265,7 +303,6 @@ public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
                 psU.setString(15, request.getParameter("workScheduleDropDown"));
                 psU.setString(16, request.getParameter("wageTypeDropDown"));
                 
-                // FIX: Robustly parse the wage value to prevent 400 Bad Request errors
                 String wageStr = request.getParameter("wage");
                 if (isValid(wageStr)) {
                     psU.setDouble(17, Double.parseDouble(wageStr.replace(',', '.')));
@@ -310,7 +347,7 @@ public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
             ensureDefaultLookupsExist(con, tenantId);
             
             int globalEID = Integer.parseInt(request.getParameter("eid"));
-            String sqlUpd = "UPDATE EMPLOYEE_DATA SET FIRST_NAME=?,LAST_NAME=?,DEPT=?,SCHEDULE=?,SUPERVISOR=?,PERMISSIONS=?,ADDRESS=?,CITY=?,STATE=?,ZIP=?,PHONE=?,EMAIL=?,ACCRUAL_POLICY=?,HIRE_DATE=?,WORK_SCHEDULE=?,WAGE_TYPE=?,WAGE=? WHERE EID=? AND TenantID=?";
+            String sqlUpd = "UPDATE employee_data SET FIRST_NAME=?,LAST_NAME=?,DEPT=?,SCHEDULE=?,SUPERVISOR=?,PERMISSIONS=?,ADDRESS=?,CITY=?,STATE=?,ZIP=?,PHONE=?,EMAIL=?,ACCRUAL_POLICY=?,HIRE_DATE=?,WORK_SCHEDULE=?,WAGE_TYPE=?,WAGE=? WHERE EID=? AND TenantID=?";
 
             try (PreparedStatement psU = con.prepareStatement(sqlUpd)) {
                 psU.setString(1, request.getParameter("firstName").trim());
@@ -330,7 +367,6 @@ public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
                 psU.setString(15, request.getParameter("workScheduleDropDown"));
                 psU.setString(16, request.getParameter("wageTypeDropDown"));
                 
-                // FIX: Robustly parse the wage value to prevent 400 Bad Request errors
                 String wageStr = request.getParameter("wage");
                 if (isValid(wageStr)) {
                     psU.setDouble(17, Double.parseDouble(wageStr.replace(',', '.')));
@@ -365,22 +401,28 @@ public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
     
     private void deactivateEmployee(HttpServletRequest request, HttpServletResponse response, int tenantId) throws IOException {
         String eidStr = request.getParameter("eid");
+        String deactivationReason = request.getParameter("deactivationReason");
         int eidToDeactivate = -1;
         try {
-            eidToDeactivate = Integer.parseInt( eidStr);
+            eidToDeactivate = Integer.parseInt(eidStr);
         } catch (NumberFormatException e) {
             response.sendRedirect(buildRedirectUrl(request, "employees.jsp", -1, null, "Invalid Employee ID.", null));
             return;
         }
 
+        if (!isValid(deactivationReason)) {
+            response.sendRedirect(buildRedirectUrl(request, "employees.jsp", eidToDeactivate, null, "A reason for deactivation is required.", null));
+            return;
+        }
+
         try (Connection con = DatabaseConnection.getConnection()) {
-            String checkSql = "SELECT Permissions FROM EMPLOYEE_DATA WHERE EID = ? AND TenantID = ? AND ACTIVE = TRUE";
+            String checkSql = "SELECT Permissions FROM employee_data WHERE EID = ? AND TenantID = ? AND ACTIVE = TRUE";
             try (PreparedStatement psCheck = con.prepareStatement(checkSql)) {
                 psCheck.setInt(1, eidToDeactivate);
                 psCheck.setInt(2, tenantId);
                 try (ResultSet rs = psCheck.executeQuery()) {
                     if (rs.next() && "Administrator".equalsIgnoreCase(rs.getString("Permissions"))) {
-                        String countSql = "SELECT COUNT(*) FROM EMPLOYEE_DATA WHERE TenantID = ? AND ACTIVE = TRUE AND Permissions = 'Administrator'";
+                        String countSql = "SELECT COUNT(*) FROM employee_data WHERE TenantID = ? AND ACTIVE = TRUE AND Permissions = 'Administrator'";
                         try (PreparedStatement psCount = con.prepareStatement(countSql)) {
                             psCount.setInt(1, tenantId);
                             try (ResultSet rsCount = psCount.executeQuery()) {
@@ -395,10 +437,11 @@ public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
                 }
             }
 
-            String deactivateSql = "UPDATE EMPLOYEE_DATA SET ACTIVE = FALSE WHERE EID = ? AND TenantID = ?";
+            String deactivateSql = "UPDATE employee_data SET ACTIVE = FALSE, DeactivationReason = ?, DeactivationDate = CURDATE() WHERE EID = ? AND TenantID = ?";
             try (PreparedStatement psDeactivate = con.prepareStatement(deactivateSql)) {
-                psDeactivate.setInt(1, eidToDeactivate);
-                psDeactivate.setInt(2, tenantId);
+                psDeactivate.setString(1, deactivationReason);
+                psDeactivate.setInt(2, eidToDeactivate);
+                psDeactivate.setInt(3, tenantId);
                 if (psDeactivate.executeUpdate() > 0) {
                     response.sendRedirect(buildRedirectUrl(request, "employees.jsp", -1, "Employee successfully deactivated.", null, null));
                 } else {
@@ -413,33 +456,75 @@ public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
 
     private void reactivateEmployee(HttpServletRequest request, HttpServletResponse response, int tenantId) throws IOException {
         String eidStr = request.getParameter("eid");
+        JSONObject jsonResponse = new JSONObject();
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        
         int eidToReactivate = -1;
         try {
             eidToReactivate = Integer.parseInt(eidStr);
         } catch (NumberFormatException e) {
-            response.sendRedirect(buildRedirectUrl(request, "employees.jsp", -1, null, "Invalid Employee ID for reactivation.", null));
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            jsonResponse.put("success", false).put("error", "Invalid Employee ID format.");
+            response.getWriter().print(jsonResponse.toString());
             return;
         }
 
-        String sql = "UPDATE EMPLOYEE_DATA SET ACTIVE = TRUE WHERE EID = ? AND TenantID = ?";
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, eidToReactivate);
-            ps.setInt(2, tenantId);
-            int rowsAffected = ps.executeUpdate();
-            if (rowsAffected > 0) {
-                response.sendRedirect(buildRedirectUrl(request, "employees.jsp", eidToReactivate, "Employee successfully reactivated.", null, null));
-            } else {
-                response.sendRedirect(buildRedirectUrl(request, "employees.jsp", eidToReactivate, null, "Employee not found or could not be reactivated.", null));
+        try (Connection con = DatabaseConnection.getConnection()) {
+            int maxUsers = 25;
+            try (PreparedStatement ps = con.prepareStatement("SELECT MaxUsers FROM tenants WHERE TenantID = ?")) {
+                ps.setInt(1, tenantId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        maxUsers = rs.getInt("MaxUsers");
+                    }
+                }
+            }
+
+            int activeUserCount = 0;
+            try (PreparedStatement ps = con.prepareStatement("SELECT COUNT(*) FROM employee_data WHERE TenantID = ? AND ACTIVE = TRUE")) {
+                ps.setInt(1, tenantId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        activeUserCount = rs.getInt(1);
+                    }
+                }
+            }
+            
+            if (activeUserCount >= maxUsers) {
+                logger.warning("Reactivation denied for TenantID " + tenantId + ". Limit of " + maxUsers + " reached.");
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                jsonResponse.put("success", false);
+                jsonResponse.put("error", "user_limit_exceeded");
+                jsonResponse.put("message", "You have reached your maximum of " + maxUsers + " active users. Please upgrade your plan to add more employees.");
+                response.getWriter().print(jsonResponse.toString());
+                return;
+            }
+
+            String sql = "UPDATE employee_data SET ACTIVE = TRUE, DeactivationReason = NULL, DeactivationDate = NULL WHERE EID = ? AND TenantID = ?";
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setInt(1, eidToReactivate);
+                ps.setInt(2, tenantId);
+                int rowsAffected = ps.executeUpdate();
+
+                if (rowsAffected > 0) {
+                    response.setStatus(HttpServletResponse.SC_OK);
+                    jsonResponse.put("success", true).put("message", "Employee successfully reactivated.");
+                } else {
+                    response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                    jsonResponse.put("success", false).put("error", "Employee not found or could not be reactivated.");
+                }
             }
         } catch (SQLException e) {
             logger.log(Level.SEVERE, "Database error during reactivation for EID: " + eidToReactivate, e);
-            response.sendRedirect(buildRedirectUrl(request, "employees.jsp", eidToReactivate, null, "A database error occurred during reactivation.", null));
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            jsonResponse.put("success", false).put("error", "A database error occurred during reactivation.");
         }
+        response.getWriter().print(jsonResponse.toString());
     }
 
     private int getNextTenantEmployeeNumber(Connection con, int tenantId) throws SQLException {
-       String sqlMax = "SELECT MAX(TenantEmployeeNumber) FROM EMPLOYEE_DATA WHERE TenantID = ?";
+       String sqlMax = "SELECT MAX(TenantEmployeeNumber) FROM employee_data WHERE TenantID = ?";
         try (PreparedStatement psMax = con.prepareStatement(sqlMax)) {
             psMax.setInt(1, tenantId);
             try (ResultSet rs = psMax.executeQuery()) {

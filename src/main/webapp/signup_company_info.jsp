@@ -2,9 +2,9 @@
 <%@ page import="java.net.URLEncoder, java.nio.charset.StandardCharsets, jakarta.servlet.http.HttpSession, java.sql.*, org.json.*, timeclock.db.DatabaseConnection" %>
 
 <%!
-    private String escapeHtml(String input) {
+private String escapeHtml(String input) {
         if (input == null) return "";
-        return input.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&#39;");
+return input.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&#39;");
     }
 %>
 <%
@@ -14,7 +14,8 @@
     String planName = "";
 
     if (priceId == null || priceId.trim().isEmpty()) {
-        priceId = "price_1RWNdXBtvyYfb2KWWt6p9F4X"; 
+        // Fallback to a default plan if no priceId is provided, though this shouldn't happen with the new index.jsp
+        priceId = "price_1S2mCSBtvyYfb2KWetkP2Tcf"; 
     }
 
     String sql = "SELECT planName, price, maxUsers, features FROM subscription_plans WHERE stripePriceId = ?";
@@ -58,13 +59,10 @@
         #sameAsCompanyAddress, #termsAgreement { width: 20px; height: 20px; margin-right: 10px; }
         #sameAsCompanyAddress:checked, #termsAgreement:checked { accent-color: #28a745; }
         
-        <%-- [FIX] Using the 'border' shorthand property for consistent thickness on all fields --%>
         input.is-invalid, select.is-invalid, .stripe-element.is-invalid {
-            border: 2px solid #dc3545 !important;
-        }
+            border: 2px solid #dc3545 !important; }
         input.is-valid, select.is-valid, .stripe-element.is-valid {
-            border: 2px solid #28a745 !important;
-        }
+            border: 2px solid #28a745 !important; }
 
         .terms-agreement { display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
     </style>
@@ -79,17 +77,18 @@
 
         <form action="SignupServlet" method="POST" id="companySignupForm" class="signup-form" novalidate>
             <input type="hidden" name="action" value="registerCompanyAdmin">
-             <input type="hidden" name="browserTimeZoneId" id="browserTimeZoneIdField" value="">
+            <input type="hidden" name="browserTimeZoneId" id="browserTimeZoneIdField" value="">
             <input type="hidden" name="stripePaymentMethodId" id="stripePaymentMethodId">
             <input type="hidden" name="appliedPromoCode" id="appliedPromoCode">
-            <input type="hidden" name="selectedPlan" value="<%= escapeHtml(planName) %>">
+            <%-- ## MODIFIED LINE ## - Passing stripePriceId instead of selectedPlan --%>
+            <input type="hidden" name="stripePriceId" value="<%= escapeHtml(priceId) %>">
 
             <fieldset><legend>1. Your Selected Plan</legend>
                 <div class="plan-confirmation-box">
                     <span class="plan-name"><%= plan.getString("name") %></span>
                     <span class="plan-price">$<%= String.format("%.2f", plan.getDouble("price")) %>/mo</span>
                     <span class="plan-features"><%= plan.getString("features") %></span>
-                     <a href="index.jsp#pricing" class="change-plan-link">Change Plan</a>
+                    <a href="index.jsp#pricing" class="change-plan-link">Change Plan</a>
                 </div>
             </fieldset>
 
@@ -102,7 +101,7 @@
                         <input type="tel" id="companyPhone" name="companyPhone" placeholder="(555) 555-5555" pattern="\(\d{3}\) \d{3}-\d{4}" title="Phone number must be in the format (555) 555-5555.">
                     </div>
                 </div>
-                 <div class="form-row">
+                   <div class="form-row">
                     <div class="form-group third-width"><label for="companyCity">City</label><input type="text" id="companyCity" name="companyCity" autocomplete="off"></div>
                     <div class="form-group third-width"><label for="companyState">State</label><select id="companyState" name="companyState" autocomplete="off"><option value="" selected disabled>Select a State</option><%@ include file="/WEB-INF/includes/states_options.jspf" %></select></div>
                     <div class="form-group third-width"><label for="companyZip">Zip Code</label><input type="text" id="companyZip" name="companyZip" autocomplete="off" pattern="\d{5}|\d{5}-\d{4}" title="Zip code must be 5 or 9 digits (e.g., 12345 or 12345-6789)."></div>
@@ -148,22 +147,22 @@
                     <div class="form-group">
                         <label for="card-number">Card Details <span class="required">*</span></label>
                         <div id="card-number" class="stripe-element"></div>
-                         <div class="stripe-elements-row">
+                          <div class="stripe-elements-row">
                             <div id="card-expiry" class="stripe-element"></div>
                             <div id="card-cvc" class="stripe-element"></div>
-                        </div>
+                         </div>
                      </div>
                 </fieldset>
             </div>
             
             <div id="card-errors" role="alert" class="error-message" style="display:none;"></div>
             
-            <div class="form-actions">
+             <div class="form-actions">
                 <div class="terms-agreement">
                      <input type="checkbox" id="termsAgreement" name="termsAgreement" required>
                      <label for="termsAgreement" class="terms-notice">
-                         I agree to the <a href="terms.jsp" target="_blank">Terms of Service</a> and <a href="privacy.jsp" target="_blank">Privacy Policy</a>.
-                     </label>
+                        I agree to the <a href="terms.jsp" target="_blank">Terms of Service</a> and <a href="privacy.jsp" target="_blank">Privacy Policy</a>.
+ </label>
                 </div>
                 <button type="submit" id="mainSubmitButton" class="btn btn-primary btn-large">Create Account <i class="fas fa-arrow-right"></i></button>
             </div>
@@ -171,7 +170,11 @@
     </div>
     
     <script src="https://js.stripe.com/v3/"></script>
-    <script> const appRootPath = "<%= request.getContextPath() %>"; </script>
+    
+    <script>
+        const STRIPE_PUBLISHABLE_KEY = "<%= System.getenv("STRIPE_PUBLISHABLE_KEY") %>";
+        const appRootPath = "<%= request.getContextPath() %>";
+    </script>
     <script src="js/signup_validation.js?v=<%= System.currentTimeMillis() %>"></script>
 </body>
 </html>

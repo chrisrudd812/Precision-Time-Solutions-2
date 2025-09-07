@@ -1,95 +1,134 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.sql.*, java.util.*, timeclock.db.DatabaseConnection" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Welcome to Precision Time Solutions!</title>
-    <link rel="stylesheet" href="css/landing-page.css?v=2">
+    <link rel="icon" href="<%= request.getContextPath() %>/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="css/landing-page.css?v=<%= System.currentTimeMillis() %>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <style>
-        .logo { display: flex; align-items: center; font-size: 1.5em; font-weight: 500; }
-        .logo-image { height: 200px; margin-right: 10px; }
-        .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
-    </style>
 </head>
 <body>
 
     <header class="landing-header">
         <div class="container">
             <div class="logo">
-                <img src="<%= request.getContextPath() %>/Images/logo2.png" alt="Precision Time Solutions Logo" class="logo-image">
-                Powerful, Flexible Time Tracking for your business. 
+                <img src="<%= request.getContextPath() %>/Images/logo2.png" alt="Precision Time Solutions Logo" class="logo-image-header">
+            </div>
+            <div class="header-title">
+                Precision Time Solutions
             </div>
             <nav class="landing-nav">
-                 <a href="login.jsp" class="nav-link login-link">Log In</a>
-                <a href="signup_company_info.jsp" class="nav-link signup-link-header btn btn-secondary">Sign Up</a>
+                 <a href="login.jsp" class="btn btn-secondary">Log In</a>
+                 <a href="#pricing" class="btn btn-primary">Sign Up</a>
             </nav>
         </div>
     </header>
 
     <main>
         <section class="hero-section">
-            <div class="container">
+             <div class="container">
                 <h1>Streamline Your Business with Smart Time Tracking</h1>
                 <p class="subtitle">Accurate, easy-to-use, and affordable online time clock solution for your team.</p>
+                <%-- [NEW] "View Pricing Plans" button that scrolls to the pricing section --%>
                 <div class="cta-buttons">
                     <a href="#pricing" class="btn btn-primary btn-large">View Pricing Plans</a>
                 </div>
             </div>
         </section>
-
-        <section id="pricing" class="pricing-section">
+        
+        <section class="features-section">
             <div class="container">
-                <h2>Simple, Transparent Pricing</h2>
-                <div class="pricing-grid">
-                    <div class="pricing-box">
-                        <h3>Starter Plan</h3>
-                        <p class="price"><span>$19.99</span>/month</p>
-                        <p>Perfect for small teams and startups.</p>
-                        <ul>
-                            <li><i class="fas fa-check"></i> Up to <strong>25</strong> Employees</li>
-                            <li><i class="fas fa-check"></i> Full Admin Dashboard</li>
-                            <li><i class="fas fa-check"></i> Comprehensive Reporting</li>
-                            <li><i class="fas fa-check"></i> Secure Data Storage</li>
-                        </ul>
-                        <a href="signup_company_info.jsp?priceId=price_1RWNdXBtvyYfb2KWWt6p9F4X" class="btn btn-primary btn-block">Sign Up Now</a>
-                    </div>
-                    <div class="pricing-box">
-                        <h3>Business Plan</h3>
-                        <p class="price"><span>$29.99</span>/month</p>
-                        <p>Ideal for growing businesses.</p>
-                        <ul>
-                            <li><i class="fas fa-check"></i> Up to <strong>50</strong> Employees</li>
-                            <li><i class="fas fa-check"></i> Full Admin Dashboard</li>
-                            <li><i class="fas fa-check"></i> Comprehensive Reporting</li>
-                            <li><i class="fas fa-check"></i> Secure Data Storage</li>
-                        </ul>
-                        <a href="signup_company_info.jsp?priceId=price_1RttGyBtvyYfb2KWNRui8ev1" class="btn btn-primary btn-block">Sign Up Now</a>
-                    </div>
-                    <div class="pricing-box">
-                        <h3>Pro Plan</h3>
-                        <p class="price"><span>$39.99</span>/month</p>
-                        <p>For established companies and large teams.</p>
-                        <ul>
-                            <li><i class="fas fa-check"></i> Up to <strong>100</strong> Employees</li>
-                            <li><i class="fas fa-check"></i> Full Admin Dashboard</li>
-                            <li><i class="fas fa-check"></i> Comprehensive Reporting</li>
-                            <li><i class="fas fa-check"></i> Secure Data Storage</li>
-                        </ul>
-                        <a href="signup_company_info.jsp?priceId=price_1RttIyBtvyYfb2KW86IvsAvX" class="btn btn-primary btn-block">Sign Up Now</a>
-                    </div>
+                <h2>Everything You Need, Nothing You Don't</h2>
+                <div class="features-grid">
+                    <div class="feature-item"><div class="feature-icon"><i class="fas fa-clock"></i></div><h3>Real-Time Tracking</h3><p>Employees can clock in and out from any authorized device, from anywhere with a single click.</p></div>
+                    <div class="feature-item"><div class="feature-icon"><i class="fas fa-calculator"></i></div><h3>Automated Calculations</h3><p>Overtime, double time, and PTO are calculated automatically, reducing payroll errors.</p></div>
+                    <div class="feature-item"><div class="feature-icon"><i class="fas fa-chart-bar"></i></div><h3>Insightful Reporting</h3><p>Generate detailed reports on employee hours, attendance and PTO.</p></div>
                 </div>
-                <p style="text-align:center; margin-top:10px; font-size:0.8em;">Note: Replace the `priceId` in the links above with your actual Price IDs from your Stripe Dashboard.</p>
             </div>
         </section>
-
-         <section class="final-cta-section">
+     
+        <section class="app-preview-section">
             <div class="container">
-                <h2>Ready to Simplify Your Time Tracking?</h2>
-                <a href="#pricing" class="btn btn-secondary btn-large">Choose Your Plan</a>
-             </div>
+                <h2>Simple and Intuitive Interface</h2>
+                <div class="preview-grid">
+                    <div class="preview-item">
+                        <img src="<%= request.getContextPath() %>/Images/employees_main.png" alt="Employee Management preview">
+                        <div class="preview-text"><h4>Employee Management</h4><p>Add, Edit and Delete employee details or Reset PINs all in one place.</p></div>
+                    </div>
+                    <div class="preview-item">
+                        <img src="<%= request.getContextPath() %>/Images/punches_edit.png" alt="Edit Punches preview">
+                        <div class="preview-text"><h4>Easy Timesheet Edits</h4><p>Administrators can easily review and edit employee timesheets with a clear, user-friendly interface.</p></div>
+                    </div>
+                    <div class="preview-item">
+                        <img src="<%= request.getContextPath() %>/Images/timecards_individual.png" alt="Time Clock preview">
+                        <div class="preview-text"><h4>Simple "Time Card" Interface</h4><p>Punching IN or OUT is as simple as clicking a button and details such as accrued PTO, schedule and department info, are available at a glance.</p></div>
+                    </div>
+                	<div class="preview-item">
+                        <img src="<%= request.getContextPath() %>/Images/settings_punch_restrictions.png" alt="Location (geofence) Preview">
+                        <div class="preview-text"><h4>Configure Punch Restrictions</h4><p>Restrict "Buddy Punching" with optional punch restrictions. Optional restrictions include Time / Lockout restrictions, Locations Restrictions (Geofencing), and Device Restrictioins.</p></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="pricing" class="pricing-section">
+            <div class="container">
+                <h2>Find the Perfect Plan for Your Business</h2>
+                
+                <%-- [NEW] Promotional banner for the free trial --%>
+                <div class="promo-banner">
+                    <i class="fas fa-tag"></i> Limited Time Offer: Get a <strong>30-day free trial</strong> with code <span class="promo-code">30FREE</span>!
+                </div>
+
+                <div class="pricing-grid">
+                    <%
+                        List<Map<String, Object>> plans = new ArrayList<>();
+                        String planSql = "SELECT planName, stripePriceId, price, features, maxUsers FROM subscription_plans ORDER BY price ASC";
+                        try (Connection conn = DatabaseConnection.getConnection();
+                             Statement stmt = conn.createStatement();
+                             ResultSet rs = stmt.executeQuery(planSql)) {
+                            while (rs.next()) {
+                                Map<String, Object> plan = new HashMap<>();
+                                String planName = rs.getString("planName");
+                                plan.put("name", planName);
+                                plan.put("priceId", rs.getString("stripePriceId"));
+                                plan.put("price", String.format("%.2f", rs.getDouble("price")));
+                                plan.put("maxUsers", rs.getInt("maxUsers"));
+                                plan.put("title", "Precision Time " + rs.getInt("maxUsers"));
+                                plan.put("description", "Time and Attendance Software for up to " + rs.getInt("maxUsers") + " employees.");
+                                if ("Starter".equals(planName)) {
+                                    plan.put("mostPopular", true);
+                                } else {
+                                    plan.put("mostPopular", false);
+                                }
+                                plans.add(plan);
+                            }
+                        } catch (Exception e) {
+                            out.println("<p style='color:red; text-align:center;'>Could not load pricing plans at this time.</p>");
+                            e.printStackTrace();
+                        }
+                        for (Map<String, Object> plan : plans) {
+                            boolean isMostPopular = (boolean) plan.get("mostPopular");
+                    %>
+                    <div class="pricing-box <%= isMostPopular ? "most-popular" : "" %>">
+                        <% if (isMostPopular) { %>
+                            <div class="popular-badge">Most Popular</div>
+                        <% } %>
+                        <img src="<%= request.getContextPath() %>/Images/logo2.png" alt="Logo" class="pricing-logo">
+                        <h3><%= plan.get("title") %></h3>
+                        <p class="description"><%= plan.get("description") %></p>
+                        <p class="price">$<%= plan.get("price") %><span>/ per month</span></p>
+                        <a href="signup_company_info.jsp?priceId=<%= plan.get("priceId") %>" class="btn btn-primary btn-block">Start Trial</a>
+                    </div>
+                    <%
+                        }
+                    %>
+                </div>
+            </div>
         </section>
     </main>
 
@@ -99,5 +138,16 @@
         </div>
     </footer>
 
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            if (window.location.hash) {
+                document.documentElement.style.scrollBehavior = 'auto';
+                setTimeout(function() {
+                    window.scrollTo(0, 0);
+                    document.documentElement.style.scrollBehavior = 'smooth';
+                }, 1);
+            }
+        });
+    </script>
 </body>
 </html>

@@ -5,87 +5,150 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contact Us</title>
-    <link rel="stylesheet" href="css/navbar.css">
-    <link rel="stylesheet" href="css/reports.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <%@ include file="/WEB-INF/includes/common-head.jspf" %>
+    <link rel="stylesheet" href="css/reports.css?v=<%= System.currentTimeMillis() %>">
+
     <style>
-        .content-area { max-width: 800px; margin: 30px auto; padding: 20px 40px; background: #fff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .content-area h1 { margin-top: 0; text-align: center; border-bottom: 1px solid #eee; padding-bottom: 15px; }
-        .content-area p { line-height: 1.6; }
-        
-        /* [FIX] New, more robust styles for a clean form layout */
-        .contact-form { margin-top: 20px; }
-        .form-group { margin-bottom: 20px; }
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            font-size: .95em;
+        /* --- Page Specific Styles --- */
+        .contact-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .contact-info {
+            text-align: center;
+        }
+        .contact-info h2 {
+            font-size: 1.4em;
+            color: #0f766e;
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        .contact-info p {
+            font-size: 0.95em;
             color: #475569;
+            line-height: 1.7;
+            max-width: 650px;
+            margin-left: auto;
+            margin-right: auto;
         }
-        .form-group input[type=text],
-        .form-group input[type=email],
-        .form-group textarea {
+        .contact-form-container {
             width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #cbd5e0;
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-size: 1em;
+            max-width: 600px;
+        }
+        #contactMessage {
+            height: 250px;
+            min-height: 150px;
+            width: 100%;
+        }
+        textarea {
             font-family: inherit;
+            font-size: .95em;
+            line-height: 1.5;
         }
-        .form-group input:focus, .form-group textarea:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+        /* File Input Styles */
+        .file-input-wrapper { 
+            border: 2px dashed #cbd5e0; 
+            border-radius: 6px; 
+            padding: 20px; 
+            text-align: center; 
+            cursor: pointer; 
+            background-color: #f8fafc; 
+            transition: background-color 0.2s, border-color 0.2s;
         }
-        .form-group textarea {
-            height: 180px;
-            resize: vertical;
+        .file-input-wrapper:hover {
+            background-color: #f1f5f9;
+            border-color: #94a3b8;
         }
-        .form-group button {
-            width: 100%;
-            min-width: 0;
+        #fileAttachment { display: none; }
+        #fileNameDisplay { margin-top: 10px; font-style: italic; color: #475569; }
+        /* Toggle Switch Styles */
+        .toggle-switch-container {
+            display: flex;
+            background-color: #e2e8f0;
+            border-radius: 20px;
+            padding: 4px;
+            margin-bottom: 25px;
+            position: relative;
+            user-select: none;
         }
-        
-        /* Styles for the submission status message div */
-        .form-status-message {
-            padding: 10px 15px; border-radius: 4px; margin-bottom: 20px; text-align: center;
-            border: 1px solid transparent; display: none;
+        .toggle-switch-container input[type="radio"] { display: none; }
+        .toggle-switch-container label {
+            flex: 1;
+            text-align: center;
+            padding: 8px 12px;
+            font-weight: 500;
+            color: #475569;
+            cursor: pointer;
+            z-index: 10;
+            transition: color 0.3s ease;
         }
-        .form-status-message.success { background-color: #d4edda; color: #155724; border-color: #c3e6cb; }
-        .form-status-message.error { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+        .toggle-switch-container input[type="radio"]:checked + label { color: #ffffff; }
+        .toggle-glider {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            height: calc(100% - 8px);
+            width: calc(50% - 4px);
+            background-color: #14b8a6;
+            border-radius: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            z-index: 5;
+        }
+        #requestTypeFeedback:checked ~ .toggle-glider { transform: translateX(100%); }
     </style>
 </head>
-<body>
+<body class="reports-page">
     <%@ include file="/WEB-INF/includes/navbar.jspf" %>
 
-    <div class="content-area parent-container">
-        <h1>Contact Support</h1>
-        <p>If you need assistance or have questions about the Time Clock application, please fill out the form below.</p>
-        <hr style="margin: 20px 0;">
+    <div class="parent-container">
+        <h1>Get In Touch</h1>
         
-        <div id="form-status-message"></div>
-        
-        <%-- [FIX] Restructured the form with div.form-group for proper alignment --%>
-        <form id="contactForm" class="contact-form" action="ContactServlet" method="post">
-            <div class="form-group">
-                <label for="contactSubject">Subject:</label>
-                <input type="text" id="contactSubject" name="contactSubject" required>
+        <div class="contact-section">
+            <div class="contact-info">
+                <h2>How can we help?</h2>
+                <p>Please select the nature of your inquiry, fill out the form, and attach a screenshot if applicable. We aim to respond to all support requests within 24-48 hours.</p>
             </div>
+            
+            <div class="contact-form-container">
+                <form id="contactForm" class="contact-form" action="ContactServlet" method="post" enctype="multipart/form-data">
+                    <div class="toggle-switch-container">
+                        <input type="radio" id="requestTypeSupport" name="requestType" value="support" checked>
+                        <label for="requestTypeSupport">Create Support Request</label>
+                        <input type="radio" id="requestTypeFeedback" name="requestType" value="feedback">
+                        <label for="requestTypeFeedback">Questions / Feedback</label>
+                        <div class="toggle-glider"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="contactSubject">Subject</label>
+                        <input type="text" id="contactSubject" name="contactSubject" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="contactMessage">Message</label>
+                        <textarea id="contactMessage" name="contactMessage" required></textarea>
+                    </div>
 
-            <div class="form-group">
-                <label for="contactMessage">Message:</label>
-                <textarea id="contactMessage" name="contactMessage" required></textarea>
+                    <div class="form-group">
+                        <label>Attach a Screenshot (Optional)</label>
+                        <label for="fileAttachment" class="file-input-wrapper">
+                            <div><i class="fas fa-cloud-upload-alt"></i> Click to browse or drag & drop a file</div>
+                            <div id="fileNameDisplay">No file selected</div>
+                        </label>
+                        <input type="file" id="fileAttachment" name="fileAttachment" accept="image/*,.pdf,.doc,.docx,.txt">
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" class="glossy-button text-blue" style="width: 100%;">
+                            <i class="fas fa-paper-plane"></i> Send Message
+                        </button>
+                    </div>
+                </form>
             </div>
-
-            <div class="form-group">
-                <button type="submit" class="glossy-button text-blue" style="margin-top: 10px;">
-                    <i class="fas fa-paper-plane"></i> Send Message
-                </button>
-            </div>
-            <p>Alternatively, you can email us directly at <a href="mailto:chrisrudd812@gmail.com">chrisrudd812@gmail.com</a></p>
-        </form>
+        </div>
     </div>
 
     <%@ include file="/WEB-INF/includes/notification-modals.jspf" %>

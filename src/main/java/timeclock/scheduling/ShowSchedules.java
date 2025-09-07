@@ -48,7 +48,7 @@ public class ShowSchedules {
 
         String sql = "SELECT NAME, SHIFT_START, LUNCH_START, LUNCH_END, SHIFT_END, " +
                      "DAYS_WORKED, AUTO_LUNCH, HRS_REQUIRED, LUNCH_LENGTH " +
-                     "FROM SCHEDULES WHERE TenantID = ? ORDER BY NAME ASC";
+                     "FROM schedules WHERE TenantID = ? ORDER BY NAME ASC";
         logger.info("[ShowSchedules] SQL: " + sql + " with TenantID: " + tenantId);
 
         try (Connection con = DatabaseConnection.getConnection();

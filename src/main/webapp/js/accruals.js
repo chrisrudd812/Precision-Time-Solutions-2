@@ -1,7 +1,7 @@
 // js/accruals.js
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("[ACCRUALS.JS] DOMContentLoaded: Script loaded.");
+    console.log("[accruals.JS] DOMContentLoaded: Script loaded.");
 
     // --- Helper Functions & Global Access ---
     const _showModal = showModal;
@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- State Variables ---
     let wizardOpenedAddModal = false;
     const appRoot = typeof window.appRootPath === 'string' ? window.appRootPath : "";
-    const companyNameToDisplayJS_Accruals = (typeof window.COMPANY_NAME_SIGNUP_JS_ACCRUALS !== 'undefined' && window.COMPANY_NAME_SIGNUP_JS_ACCRUALS) ? window.COMPANY_NAME_SIGNUP_JS_ACCRUALS : "your company";
+    const companyNameToDisplayJS_Accruals = (typeof window.COMPANY_NAME_SIGNUP_JS_accruals !== 'undefined' && window.COMPANY_NAME_SIGNUP_JS_accruals) ? window.COMPANY_NAME_SIGNUP_JS_accruals : "your company";
 
     // --- WIZARD HANDLING LOGIC ---
     const wizardStages = {
@@ -72,14 +72,14 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     function updateWizardModalView(stageKey) {
-        console.log(`[ACCRUALS.JS] updateWizardModalView called with stage: '${stageKey}'`);
+        console.log(`[accruals.JS] updateWizardModalView called with stage: '${stageKey}'`);
         if (!wizardGenericModal) {
-            console.error("[ACCRUALS.JS] Wizard modal element not found. Cannot display wizard.");
+            console.error("[accruals.JS] Wizard modal element not found. Cannot display wizard.");
             return;
         }
         const stageConfig = wizardStages[stageKey];
         if (!stageConfig) {
-            console.warn(`[ACCRUALS.JS] No configuration found for wizard stage: '${stageKey}'. Hiding modal.`);
+            console.warn(`[accruals.JS] No configuration found for wizard stage: '${stageKey}'. Hiding modal.`);
             _hideModal(wizardGenericModal);
             return;
         }
@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', function() {
             button.addEventListener('click', () => handleWizardAction(btnConfig.actionKey));
             if(wizardButtonRow) wizardButtonRow.appendChild(button);
         });
-        console.log("[ACCRUALS.JS] Wizard modal populated. Showing now.");
+        console.log("[accruals.JS] Wizard modal populated. Showing now.");
         _showModal(wizardGenericModal);
     }
 
@@ -283,13 +283,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- INITIALIZATION & URL PARAMETER HANDLING ---
     handleAdjustmentForm();
 
-    console.log(`[ACCRUALS.JS] Initializing Wizard check. Is in wizard mode? ${window.inWizardMode_Page}`);
+    console.log(`[accruals.JS] Initializing Wizard check. Is in wizard mode? ${window.inWizardMode_Page}`);
     if (window.inWizardMode_Page === true) {
         const urlParamsForWizard = new URLSearchParams(window.location.search);
         const justAdded = urlParamsForWizard.get('accrualAdded') === 'true';
         const currentStep = window.currentWizardStep_Page;
         
-        console.log(`[ACCRUALS.JS] Wizard context: justAdded=${justAdded}, currentStep='${currentStep}'`);
+        console.log(`[accruals.JS] Wizard context: justAdded=${justAdded}, currentStep='${currentStep}'`);
         
         const stage = justAdded ? "accruals_after_add_prompt" : (currentStep || "accruals_prompt");
         

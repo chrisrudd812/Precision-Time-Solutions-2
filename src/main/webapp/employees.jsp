@@ -8,7 +8,8 @@
 <%@ page import="java.text.DecimalFormat" %>
 
 <%!
-    private String escapeJspHtml(String input) { if (input == null) return ""; return input.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&#39;"); }
+    private String escapeJspHtml(String input) { if (input == null) return "";
+        return input.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&#39;"); }
     private String escapeForJavaScriptString(String input) { if (input == null) return ""; return input.replace("\\", "\\\\").replace("'", "\\'").replace("\"", "\\\"").replace("\r", "\\r").replace("\n", "\\n").replace("/", "\\/"); }
     private String buildJsonArray(List<Map<String, String>> dataList) {
         StringBuilder json = new StringBuilder("[");
@@ -19,7 +20,7 @@
                 int keyCount = 0;
                 for (Map.Entry<String, String> entry : item.entrySet()) {
                     json.append("\"").append(escapeForJavaScriptString(entry.getKey())).append("\":\"").append(escapeForJavaScriptString(entry.getValue())).append("\"");
-                     if (++keyCount < item.size()) json.append(",");
+                    if (++keyCount < item.size()) json.append(",");
                 }
                 json.append("}");
                 if (i < dataList.size() - 1) json.append(",");
@@ -39,12 +40,22 @@
     boolean inSetupWizardMode_JSP = false;
     String currentWizardStepForPage_JSP = null;
     String companyNameSignup_Employees = "Your Company";
+    String companyIdentifier_Employees = "";
     Integer adminEid = null; 
 
     if (currentSession != null) {
         tenantId = (Integer) currentSession.getAttribute("TenantID");
         Object companyNameObj = currentSession.getAttribute("CompanyNameSignup");
         if (companyNameObj instanceof String && !((String)companyNameObj).isEmpty()) { companyNameSignup_Employees = (String) companyNameObj; }
+        
+        Object companyIdObj = currentSession.getAttribute("GeneratedCompanyID");
+        if (companyIdObj instanceof String) { companyIdentifier_Employees = (String) companyIdObj; }
+
+
+        // ## DEBUG START: Log the state of the session attribute when the page renders ##
+        boolean isWizardAttributePresent = (currentSession.getAttribute("startSetupWizard") != null && ((Boolean)currentSession.getAttribute("startSetupWizard")));
+        System.out.println("--- WIZARD DEBUG (employees.jsp): Rendering page. Is 'startSetupWizard' present in session? " + isWizardAttributePresent + " ---");
+        // ## DEBUG END ##
 
         if (Boolean.TRUE.equals(currentSession.getAttribute("startSetupWizard"))) {
             inSetupWizardMode_JSP = true;
@@ -65,7 +76,8 @@
 
     List<Map<String, String>> departments = (tenantId != null) ? ShowReports.getDepartmentsForTenant(tenantId) : new ArrayList<>();
     List<Map<String, String>> schedules = (tenantId != null) ? ShowReports.getSchedulesForTenant(tenantId) : new ArrayList<>();
-    List<Map<String, String>> accrualPolicies = (tenantId != null) ? ShowReports.getAccrualPoliciesForTenant(tenantId) : new ArrayList<>();
+    List<Map<String, String>> accrualPolicies = (tenantId != null) ?
+    ShowReports.getAccrualPoliciesForTenant(tenantId) : new ArrayList<>();
     String employeeRowsHtml = (tenantId != null) ? ShowEmployees.showEmployees(tenantId) : "<tr><td colspan='12' class='report-error-row'>Invalid session.</td></tr>";
     String departmentsJson = buildJsonArray(departments);
     String schedulesJson = buildJsonArray(schedules);
@@ -84,11 +96,7 @@
     <style>
         .wizard-header { background-color: #004080; color: white; padding: 15px 20px; text-align: center; margin-bottom:20px; }
         .modal-content h2 { cursor: move; user-select: none; }
-        
-        <%-- [FIX] This CSS rule ensures the text inside the wizard modal has consistent padding. --%>
-        #wizardGenericModal .modal-content p {
-            padding: 10px 25px !important;
-        }
+        #wizardGenericModal .modal-content p { padding: 10px 25px !important; }
     </style>
 </head>
 <body class="reports-page">
@@ -104,9 +112,8 @@
     <div class="parent-container reports-container">
         <h1>Employee Management <% if(inSetupWizardMode_JSP) { %><span style="font-size: 0.8em; color: #555;">(Setup)</span><% } %></h1>
         
-        <%-- MODIFIED: Added standard message divs for JS to pick up --%>
         <% if (pageLevelSuccess != null && !pageLevelSuccess.isEmpty()) { %><div id="pageNotificationDiv_Success_Emp" class="page-message success-message"><%= escapeJspHtml(pageLevelSuccess) %></div><% } %>
-         <% if (pageLevelError != null && !pageLevelError.isEmpty()) { %><div id="pageNotificationDiv_Error_Emp" class="page-message error-message"><%= escapeJspHtml(pageLevelError) %></div><% } %>
+           <% if (pageLevelError != null && !pageLevelError.isEmpty()) { %><div id="pageNotificationDiv_Error_Emp" class="page-message error-message"><%= escapeJspHtml(pageLevelError) %></div><% } %>
         
         <div id="button-container" class="main-action-buttons">
             <button type="button" id="addEmployeeButton" class="glossy-button text-green"><i class="fas fa-user-plus"></i> Add Employee</button>
@@ -129,11 +136,11 @@
                              <th class="sortable" data-sort-type="string">Schedule</th>
                             <th class="sortable" data-sort-type="string">Supervisor</th>
                              <th class="sortable" data-sort-type="string">Permissions</th>
-                            <th class="sortable" data-sort-type="string">Email</th>
+                             <th class="sortable" data-sort-type="string">Email</th>
                              <th class="sortable" data-sort-type="date">Hire Date</th>
                             <th class="sortable" data-sort-type="string">Work Sched.</th>
                         </tr>
-                     </thead>
+                      </thead>
                     <tbody><%= employeeRowsHtml %></tbody>
                 </table>
             </div>
@@ -141,7 +148,7 @@
 
         <div id="employeeDetailsSection" style="display: none;">
             <h2>Selected Employee Details</h2>
-            <div class="details-grid">
+               <div class="details-grid">
                 <div class="detail-group">
                     <h3>Personal Information</h3>
                      <p><label>Employee ID:</label><span id="detailEID">--</span></p>
@@ -151,21 +158,21 @@
                     <p><label>City:</label><span id="detailCity">--</span></p>
                      <p><label>State:</label><span id="detailState">--</span></p>
                     <p><label>Zip:</label><span id="detailZip">--</span></p>
-                     <p><label>Phone:</label><span id="detailPhone">--</span></p>
+                          <p><label>Phone:</label><span id="detailPhone">--</span></p>
                     <p><label>E-mail:</label><span id="detailEmail">--</span></p>
                 </div>
                  <div class="detail-group">
                     <h3>Company Information</h3>
-                     <p><label>Department:</label><span id="detailDept">--</span></p>
+                       <p><label>Department:</label><span id="detailDept">--</span></p>
                     <p><label>Schedule:</label><span id="detailSchedule">--</span></p>
                     <p><label>Supervisor:</label><span id="detailSupervisor">--</span></p>
                      <p><label>Permissions:</label><span id="detailPermissions">--</span></p>
-                    <p><label>Hire Date:</label><span id="detailHireDate">--</span></p>
+                     <p><label>Hire Date:</label><span id="detailHireDate">--</span></p>
                      <p><label>Work Schedule:</label><span id="detailWorkSched">--</span></p>
                     <p><label>Wage Type:</label><span id="detailWageType">--</span></p>
                     <p><label>Wage:</label><span id="detailWage">--</span></p>
                 </div>
-                <div class="detail-group" id="accrualInfoGroup">
+                 <div class="detail-group" id="accrualInfoGroup">
                      <h3>Accrual Info</h3>
                     <p><label>Accrual Policy:</label><span id="detailAccrualPolicy">--</span></p>
                     <p><label>Vacation Hours:</label><span id="detailVacHours">--</span></p>
@@ -174,22 +181,36 @@
                     <form action="<%=request.getContextPath()%>/EmployeeInfoServlet" method="get" id="resetPasswordForm">
                         <input type="hidden" name="action" value="resetPassword">
                          <input type="hidden" name="eid" id="resetFormEid" value="">
-                         <button type="submit" id="btnResetPassword" class="glossy-button text-blue" disabled><i class="fas fa-key"></i> Reset PIN</button>
+                          <button type="submit" id="btnResetPassword" class="glossy-button text-blue" disabled><i class="fas fa-key"></i> Reset PIN</button>
                     </form>
                 </div>
             </div>
         </div>
     </div>
     
-    <%@ include file="/WEB-INF/includes/employees-modals.jspf" %>
-    <%@ include file="/WEB-INF/includes/notification-modals.jspf" %>
+     <%@ include file="/WEB-INF/includes/employees-modals.jspf" %>
+      <%@ include file="/WEB-INF/includes/notification-modals.jspf" %>
 
     <div id="deactivateConfirmModal" class="modal">
          <div class="modal-content" style="max-width: 500px;">
             <span class="close">&times;</span>
             <h2>Confirm Deactivation</h2>
             <p>Are you sure you want to deactivate <strong id="deactivateEmployeeName"></strong>?</p>
-             <p class="deactivate-note">This employee can be reactivated via Reports &gt; Employee Reports &gt; Inactive Employees.</p>
+            
+            <div class="form-item" style="padding: 0 25px 15px;">
+                <label for="deactivationReasonSelect" style="display:block; text-align:left; margin-bottom:5px;">Reason <span class="required-asterisk">*</span></label>
+                <select id="deactivationReasonSelect" name="deactivationReason" required style="width: 100%; height: 40px; font-size: 1em; border: 1px solid #cbd5e0; border-radius: 4px;">
+                    <option value="">-- Select a Reason --</option>
+                    <option value="Termination">Termination</option>
+                    <option value="Laid Off">Laid Off</option>
+                    <option value="Quit">Quit</option>
+                    <option value="Temporary Employee">Temporary Employee</option>
+                    <option value="Seasonal Worker">Seasonal Worker</option>
+                    <option value="Contractor">Contractor</option>
+                </select>
+            </div>
+
+              <p class="deactivate-note">This employee can be reactivated via Reports &gt; Employee Reports &gt; Inactive Employees.</p>
             <div class="button-row">
                 <button type="button" id="confirmDeactivateBtn" class="glossy-button text-red">Deactivate</button>
                 <button type="button" class="cancel-btn glossy-button text-grey">Cancel</button>
@@ -197,17 +218,17 @@
         </div>
     </div>
 
-    <div id="reactivateEmployeeModal" class="modal">
+     <div id="reactivateEmployeeModal" class="modal">
         <div class="modal-content" style="max-width: 500px;">
-              <span class="close">&times;</span>
+               <span class="close">&times;</span>
             <h2>Employee Exists</h2>
             <p style="text-align: center;padding-left: 20px;padding-right: 20px; ">An inactive employee with the email <strong id="reactivateEmail"></strong> already exists.</p>
             <p style="text-align: center;">Would you like to reactivate this employee's account?</p>
             <div class="button-row">
-                 <button type="button" id="confirmReactivateBtn" class="glossy-button text-green">Reactivate Employee</button>
+                  <button type="button" id="confirmReactivateBtn" class="glossy-button text-green">Reactivate Employee</button>
                 <button type="button" class="cancel-btn glossy-button text-grey">Cancel</button>
             </div>
-        </div>
+          </div>
     </div>
 
     <script>
@@ -216,10 +237,14 @@
         <% if (inSetupWizardMode_JSP && adminEid != null) { %>
             window.wizardAdminEid = <%= adminEid %>;
         <% } %>
+        window.companyNameSignup = "<%= escapeForJavaScriptString(companyNameSignup_Employees) %>";
+        window.companyIdentifier = "<%= escapeForJavaScriptString(companyIdentifier_Employees) %>";
         window.currentWizardStep_Page = "<%= escapeForJavaScriptString(currentWizardStepForPage_JSP) %>";
         window.departmentsData = JSON.parse('<%= departmentsJson %>');
         window.schedulesData = JSON.parse('<%= schedulesJson %>');
         window.accrualPoliciesData = JSON.parse('<%= accrualPoliciesJson %>');
+        
+        console.log('%c--- WIZARD DEBUG (employees.jsp): Page loaded. Client-side wizard mode flag (inSetupWizardMode_Page) is set to: <%= inSetupWizardMode_JSP %> ---', 'color: #ffc107; font-weight: bold;');
     </script>
     <%@ include file="/WEB-INF/includes/common-scripts.jspf" %>
     <script src="<%= request.getContextPath() %>/js/employees.js?v=<%= System.currentTimeMillis() %>"></script>

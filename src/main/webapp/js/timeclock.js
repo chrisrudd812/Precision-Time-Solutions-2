@@ -46,10 +46,6 @@ function getClientGeolocation() {
     });
 }
 
-/**
- * Gets a simple device type.
- * @returns {string} "Mobile Device" or "Desktop Device"
- */
 function getDeviceType() {
     const ua = navigator.userAgent;
     if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) {
@@ -156,10 +152,6 @@ function setupInactivityDetection() {
     }
 }
 
-/**
- * [FIX] This entire function has been rewritten to be smarter about
- * when it asks for the user's location.
- */
 async function handlePunchSubmit(event) {
     event.preventDefault();
     const form = event.target;
@@ -177,27 +169,17 @@ async function handlePunchSubmit(event) {
         }
     };
 
-    // This is the core function to gather all data and submit the form
     const executePunch = async (latitude, longitude) => {
         try {
-            // Get fingerprint
             const fingerprint = await getDeviceFingerprint();
             document.getElementById(form.id === "punchInForm" ? 'deviceFingerprintHash_IN' : 'deviceFingerprintHash_OUT').value = fingerprint;
-
-            // Set location data (which may be empty)
             document.getElementById(form.id === "punchInForm" ? 'latitude_IN' : 'latitude_OUT').value = latitude;
             document.getElementById(form.id === "punchInForm" ? 'longitude_IN' : 'longitude_OUT').value = longitude;
-
-            // Set timezone and device type
             const tzInput = document.getElementById(form.id === "punchInForm" ? 'browserTimeZoneId_IN' : 'browserTimeZoneId_OUT');
             if (tzInput) tzInput.value = Intl.DateTimeFormat().resolvedOptions().timeZone;
-            
             const deviceTypeInput = document.getElementById(form.id === "punchInForm" ? 'deviceType_IN' : 'deviceType_OUT');
             if (deviceTypeInput) deviceTypeInput.value = getDeviceType();
-
-            // All data is gathered, submit the form to the servlet
             form.submit();
-
         } catch (error) {
             console.error("Data gathering error:", error);
             showTimeclockNotificationModal("Could not gather all required data before punching: " + error.message, true);
@@ -205,23 +187,16 @@ async function handlePunchSubmit(event) {
         }
     };
 
-    // Use the variable from timeclock.jsp to decide the logic path
     if (typeof IS_LOCATION_RESTRICTION_ENABLED !== 'undefined' && IS_LOCATION_RESTRICTION_ENABLED) {
-        // --- BEHAVIOR IF RESTRICTION IS ON ---
-        // Location is required, so we must try to get it.
         try {
             const locationData = await getClientGeolocation();
-            // If we get here, location was successful. Proceed with the punch.
             executePunch(locationData.latitude, locationData.longitude);
         } catch (locError) {
-            // If it fails, show an error and STOP.
             console.error("Geo Err:", locError);
             showTimeclockNotificationModal(locError.message, true);
             restoreButton();
         }
     } else {
-        // --- BEHAVIOR IF RESTRICTION IS OFF ---
-        // Skip the location check entirely and submit the punch immediately with empty coordinates.
         executePunch("", "");
     }
 }
@@ -256,6 +231,31 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const punchOutForm = document.getElementById('punchOutForm');
     if (punchOutForm) punchOutForm.addEventListener('submit', handlePunchSubmit);
+
+    const btnPrintEmailSingle = document.getElementById('btnPrintEmailSingleTimecard');
+    const employeeSelect = document.getElementById('employeeSelect'); 
+
+    if (btnPrintEmailSingle && employeeSelect) {
+        btnPrintEmailSingle.addEventListener('click', function() {
+            // [DEBUG LOG]
+            console.log("[TimecardDebug] 'Print/Email' button clicked.");
+            
+            const eid = employeeSelect.value;
+            
+            // [DEBUG LOG]
+            console.log(`[TimecardDebug] EID read from dropdown is: '${eid}'`);
+            
+            if (eid && eid !== "0") {
+                const printUrl = `${app_contextPath}/PrintTimecardsServlet?filterType=single&filterValue=${eid}`;
+                // [DEBUG LOG]
+                console.log(`[TimecardDebug] Opening new tab with URL: ${printUrl}`);
+                window.open(printUrl, '_blank');
+            } else {
+                console.log("[TimecardDebug] No employee selected. Alerting user.");
+                alert("An employee must be selected from the dropdown to print or email their timecard.");
+            }
+        });
+    }
 
     const urlParams = new URLSearchParams(window.location.search);
     const messageParam = urlParams.get('message');

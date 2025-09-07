@@ -64,7 +64,7 @@ public class SetInitialPinServlet extends HttpServlet {
         Connection con = null;
         try {
             con = DatabaseConnection.getConnection();
-            String sql = "UPDATE EMPLOYEE_DATA SET PasswordHash = ?, RequiresPasswordChange = FALSE WHERE EID = ? AND TenantID = ?";
+            String sql = "UPDATE employee_data SET PasswordHash = ?, RequiresPasswordChange = FALSE WHERE EID = ? AND TenantID = ?";
             try (PreparedStatement pstmt = con.prepareStatement(sql)) {
                 pstmt.setString(1, hashedPin);
                 pstmt.setInt(2, eid);

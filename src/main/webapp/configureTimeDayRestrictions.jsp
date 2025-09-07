@@ -63,10 +63,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Configure Time/Day Punch Restrictions<% if(pageIsInWizardMode){ %> - Setup Wizard<% } %></title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/navbar.css?v=<%= System.currentTimeMillis() %>">
+    <%@ include file="/WEB-INF/includes/common-head.jspf" %>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/settings.css?v=<%= System.currentTimeMillis() %>">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/reports.css?v=<%= System.currentTimeMillis() %>">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         .config-container { padding: 20px;

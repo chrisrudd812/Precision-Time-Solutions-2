@@ -17,7 +17,7 @@ public class ShowAccruals {
 
     public static String showAccruals(int tenantId) {
         StringBuilder html = new StringBuilder();
-        String sql = "SELECT NAME, VACATION, SICK, PERSONAL FROM ACCRUALS WHERE TenantID = ? ORDER BY NAME ASC";
+        String sql = "SELECT NAME, VACATION, SICK, PERSONAL FROM accruals WHERE TenantID = ? ORDER BY NAME ASC";
 
         try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement pstmt = con.prepareStatement(sql)) {
@@ -54,7 +54,7 @@ public class ShowAccruals {
 
     public static List<Map<String, String>> getAccrualPoliciesForTenant(int tenantId) {
         List<Map<String, String>> policies = new ArrayList<>();
-        String sql = "SELECT NAME FROM ACCRUALS WHERE TenantID = ? ORDER BY NAME ASC";
+        String sql = "SELECT NAME FROM accruals WHERE TenantID = ? ORDER BY NAME ASC";
         try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement pstmt = con.prepareStatement(sql)) {
             pstmt.setInt(1, tenantId);
@@ -73,7 +73,7 @@ public class ShowAccruals {
 
     public static List<Map<String, String>> getEmployeesForTenant(int tenantId, boolean includeInactive) {
         List<Map<String, String>> employees = new ArrayList<>();
-        String sql = "SELECT EID, FIRST_NAME, LAST_NAME FROM EMPLOYEE_DATA WHERE TenantID = ?" +
+        String sql = "SELECT EID, FIRST_NAME, LAST_NAME FROM employee_data WHERE TenantID = ?" +
                      (includeInactive ? "" : " AND ACTIVE = TRUE") +
                      " ORDER BY LAST_NAME ASC, FIRST_NAME ASC";
         try (Connection con = DatabaseConnection.getConnection();

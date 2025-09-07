@@ -187,8 +187,8 @@ public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
             return;
         }
 
-        String sqlCheck = "SELECT NAME FROM SCHEDULES WHERE TenantID = ? AND LOWER(NAME) = LOWER(?)";
-        String sqlInsert = "INSERT INTO SCHEDULES (TenantID, NAME, SHIFT_START, LUNCH_START, LUNCH_END, SHIFT_END, DAYS_WORKED, AUTO_LUNCH, HRS_REQUIRED, LUNCH_LENGTH) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sqlCheck = "SELECT NAME FROM schedules WHERE TenantID = ? AND LOWER(NAME) = LOWER(?)";
+        String sqlInsert = "INSERT INTO schedules (TenantID, NAME, SHIFT_START, LUNCH_START, LUNCH_END, SHIFT_END, DAYS_WORKED, AUTO_LUNCH, HRS_REQUIRED, LUNCH_LENGTH) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection con = DatabaseConnection.getConnection()) {
             try (PreparedStatement psCheck = con.prepareStatement(sqlCheck)) {
@@ -257,9 +257,9 @@ public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
         }
         
         if (isAutoLunchOpen) {
-            sqlUpdate = "UPDATE SCHEDULES SET AUTO_LUNCH = TRUE, HRS_REQUIRED = ?, LUNCH_LENGTH = ? WHERE TenantID = ? AND NAME = ?";
+            sqlUpdate = "UPDATE schedules SET AUTO_LUNCH = TRUE, HRS_REQUIRED = ?, LUNCH_LENGTH = ? WHERE TenantID = ? AND NAME = ?";
         } else {
-            sqlUpdate = "UPDATE SCHEDULES SET SHIFT_START = ?, LUNCH_START = ?, LUNCH_END = ?, SHIFT_END = ?, " +
+            sqlUpdate = "UPDATE schedules SET SHIFT_START = ?, LUNCH_START = ?, LUNCH_END = ?, SHIFT_END = ?, " +
                         "DAYS_WORKED = ?, AUTO_LUNCH = ?, HRS_REQUIRED = ?, LUNCH_LENGTH = ? " +
                         "WHERE TenantID = ? AND NAME = ?";
         }
@@ -345,7 +345,7 @@ public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
         try (Connection con = DatabaseConnection.getConnection()) {
             con.setAutoCommit(false);
             
-            String updateEmployeesSql = "UPDATE EMPLOYEE_DATA SET SCHEDULE = ? WHERE TenantID = ? AND SCHEDULE = ?";
+            String updateEmployeesSql = "UPDATE employee_data SET SCHEDULE = ? WHERE TenantID = ? AND SCHEDULE = ?";
             int employeesReassigned;
             try (PreparedStatement psUpdateEmp = con.prepareStatement(updateEmployeesSql)) {
                 psUpdateEmp.setString(1, targetScheduleForReassignment);
@@ -354,7 +354,7 @@ public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
                 employeesReassigned = psUpdateEmp.executeUpdate();
             }
 
-            String deleteSql = "DELETE FROM SCHEDULES WHERE TenantID = ? AND NAME = ?";
+            String deleteSql = "DELETE FROM schedules WHERE TenantID = ? AND NAME = ?";
             try (PreparedStatement psDelete = con.prepareStatement(deleteSql)) {
                 psDelete.setInt(1, tenantId);
                 psDelete.setString(2, scheduleNameToDelete);

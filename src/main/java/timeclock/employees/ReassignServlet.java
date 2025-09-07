@@ -44,7 +44,7 @@ public class ReassignServlet extends HttpServlet {
             try {
                 // Fetch Departments
                 List<Map<String, String>> departments = new ArrayList<>();
-                String deptSql = "SELECT NAME FROM DEPARTMENTS WHERE TenantID = ? ORDER BY NAME ASC"; // Corrected TenantID
+                String deptSql = "SELECT NAME FROM departments WHERE TenantID = ? ORDER BY NAME ASC"; // Corrected TenantID
                 try (Connection conn = DatabaseConnection.getConnection();
                      PreparedStatement pstmt = conn.prepareStatement(deptSql)) {
                     pstmt.setInt(1, tenantId);
@@ -60,7 +60,7 @@ public class ReassignServlet extends HttpServlet {
 
                 // Fetch Schedules
                 List<Map<String, String>> schedules = new ArrayList<>();
-                String schedSql = "SELECT NAME FROM SCHEDULES WHERE TenantID = ? ORDER BY NAME ASC"; // Corrected TenantID
+                String schedSql = "SELECT NAME FROM schedules WHERE TenantID = ? ORDER BY NAME ASC"; // Corrected TenantID
                 try (Connection conn = DatabaseConnection.getConnection();
                      PreparedStatement pstmt = conn.prepareStatement(schedSql)) {
                     pstmt.setInt(1, tenantId);
@@ -76,7 +76,7 @@ public class ReassignServlet extends HttpServlet {
 
                 // Fetch Accrual Policies
                 List<Map<String, String>> accrualPolicies = new ArrayList<>();
-                String accrualSql = "SELECT NAME FROM ACCRUALS WHERE TenantID = ? ORDER BY NAME ASC"; // Corrected TenantID
+                String accrualSql = "SELECT NAME FROM accruals WHERE TenantID = ? ORDER BY NAME ASC"; // Corrected TenantID
                 try (Connection conn = DatabaseConnection.getConnection();
                      PreparedStatement pstmt = conn.prepareStatement(accrualSql)) {
                     pstmt.setInt(1, tenantId);

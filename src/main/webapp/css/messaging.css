@@ -1,0 +1,115 @@
+/* css/messaging.css */
+
+.messaging-description {
+    text-align: center;
+    font-size: 1em;
+    color: #475569;
+    margin-top: -15px;
+    margin-bottom: 25px;
+}
+
+.messaging-form-container {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 25px 30px;
+}
+
+/* Toggle Switch Styles */
+.toggle-switch-container {
+    display: flex;
+    background-color: #e2e8f0;
+    border-radius: 20px;
+    padding: 4px;
+    margin-bottom: 25px;
+    position: relative;
+    user-select: none;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.toggle-switch-container input[type="radio"] { display: none; }
+.toggle-switch-container label {
+    flex: 1;
+    text-align: center;
+    padding: 8px 12px;
+    font-weight: 500;
+    color: #475569;
+    cursor: pointer;
+    z-index: 10;
+    transition: color 0.3s ease;
+}
+.toggle-switch-container input[type="radio"]:checked + label { color: #ffffff; }
+.toggle-glider {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    height: calc(100% - 8px);
+    width: calc(50% - 4px);
+    background-color: #14b8a6;
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+    z-index: 5;
+}
+#deliveryTypeEmail:checked ~ .toggle-glider { transform: translateX(0); }
+#deliveryTypeLogin:checked ~ .toggle-glider { transform: translateX(100%); }
+
+
+#messagingForm .form-row {
+    display: flex;
+    gap: 20px;
+    align-items: flex-end;
+    margin-bottom: 20px;
+}
+
+#messagingForm .form-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 20px;
+}
+
+#messagingForm label {
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #334155;
+}
+
+#messagingForm select,
+#messagingForm input[type="text"],
+#messagingForm textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #cbd5e0;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-size: 1em;
+    font-family: inherit;
+    background-color: #fff;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+#messagingForm select:focus,
+#messagingForm input[type="text"]:focus,
+#messagingForm textarea:focus {
+    outline: none;
+    border-color: #14b8a6;
+    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.2);
+}
+
+#messagingForm textarea {
+    resize: vertical;
+    min-height: 150px;
+}
+
+#messagingForm .button-row {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 10px;
+    border-top: 1px solid #e2e8f0;
+}
+
+#sendMessageBtn {
+    min-width: 180px;
+}

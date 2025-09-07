@@ -20,7 +20,8 @@
 
         <jakartaee.platform.version>10.0.0</jakartaee.platform.version>
         <jstl.version>3.0.1</jstl.version>
-        <stripe.java.version>25.0.0</stripe.java.version> <mysql.connector.version>8.0.33</mysql.connector.version>
+        <stripe.java.version>25.0.0</stripe.java.version>
+        <mysql.connector.version>8.0.33</mysql.connector.version>
         <jbcrypt.version>0.4</jbcrypt.version>
         <org.json.version>20240303</org.json.version>
         <log4j.version>2.20.0</log4j.version>
@@ -75,7 +76,14 @@
     <version>2.0.3</version>
 </dependency>
 
-        <dependency><groupId>mysql</groupId><artifactId>mysql-connector-java</artifactId><version>${mysql.connector.version}</version></dependency>
+<dependency>
+        <groupId>com.itextpdf</groupId>
+        <artifactId>itext7-core</artifactId>
+        <version>7.2.5</version>
+        <type>pom</type>
+    </dependency>
+
+        <dependency><groupId>mysql</groupId><artifactId>mysql-connector-java</artifactId><version>8.0.28</version></dependency>
         <dependency><groupId>org.mindrot</groupId><artifactId>jbcrypt</artifactId><version>${jbcrypt.version}</version></dependency>
         <dependency><groupId>org.json</groupId><artifactId>json</artifactId><version>${org.json.version}</version></dependency>
         <dependency><groupId>com.fasterxml.jackson.core</groupId><artifactId>jackson-databind</artifactId><version>${jackson.version}</version></dependency>

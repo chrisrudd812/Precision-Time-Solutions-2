@@ -129,8 +129,8 @@ public class AddAndDeleteAccrualPoliciesServlet extends HttpServlet {
                     throw new NumberFormatException("Day counts cannot be negative.");
                 }
 
-                String sqlCheck = "SELECT NAME FROM ACCRUALS WHERE TenantID = ? AND LOWER(NAME) = LOWER(?)";
-                String sqlInsert = "INSERT INTO ACCRUALS (TenantID, NAME, VACATION, SICK, PERSONAL) VALUES (?, ?, ?, ?, ?)";
+                String sqlCheck = "SELECT NAME FROM accruals WHERE TenantID = ? AND LOWER(NAME) = LOWER(?)";
+                String sqlInsert = "INSERT INTO accruals (TenantID, NAME, VACATION, SICK, PERSONAL) VALUES (?, ?, ?, ?, ?)";
                 
                 try (Connection con = DatabaseConnection.getConnection()) {
                     try (PreparedStatement psCheck = con.prepareStatement(sqlCheck)) {
@@ -212,7 +212,7 @@ public class AddAndDeleteAccrualPoliciesServlet extends HttpServlet {
                     throw new NumberFormatException("Day counts cannot be negative.");
                 }
                 
-                String sqlUpdate = "UPDATE ACCRUALS SET VACATION = ?, SICK = ?, PERSONAL = ? WHERE NAME = ? AND TenantID = ?";
+                String sqlUpdate = "UPDATE accruals SET VACATION = ?, SICK = ?, PERSONAL = ? WHERE NAME = ? AND TenantID = ?";
                 try (Connection con = DatabaseConnection.getConnection(); PreparedStatement psUpdate = con.prepareStatement(sqlUpdate)) {
                     psUpdate.setInt(1, vacationDays);
                     psUpdate.setInt(2, sickDays);
@@ -270,7 +270,7 @@ public class AddAndDeleteAccrualPoliciesServlet extends HttpServlet {
                 employeesReassignedCount = pstmtReassign.executeUpdate();
             }
 
-            String deletePolicySql = "DELETE FROM ACCRUALS WHERE NAME = ? AND TenantID = ?";
+            String deletePolicySql = "DELETE FROM accruals WHERE NAME = ? AND TenantID = ?";
             try (PreparedStatement pstmtDelete = conn.prepareStatement(deletePolicySql)) {
                 pstmtDelete.setString(1, policyNameToDelete.trim());
                 pstmtDelete.setInt(2, tenantId);

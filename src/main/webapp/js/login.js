@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const browserTimeZoneInput = document.getElementById('browserTimeZone');
 
     const urlParams = new URLSearchParams(window.location.search);
-    const companyIdFromUrl = urlParams.get('companyIdentifier');
+    const companyIdFromUrl = urlParams.get('companyIdentifier') || urlParams.get('companyId'); // Also check for 'companyId'
     const adminEmailFromUrl = urlParams.get('adminEmail');
     const successMessageFromUrl = urlParams.get('message');
     const errorFromUrl = urlParams.get('error'); 
@@ -40,12 +40,19 @@ document.addEventListener('DOMContentLoaded', function() {
         emailField.value = adminEmailFromUrl;
     }
 
-    // *** BUG FIX: This function now prioritizes email focus after a logout ***
     function setInitialFocus() {
         const isModalVisible = notificationModalLogin && notificationModalLogin.classList.contains('modal-visible');
         if (isModalVisible) {
             const okButtonInModal = notificationModalLogin.querySelector('#okButtonNotificationModal');
             if (okButtonInModal) { okButtonInModal.focus(); return; }
+        }
+        
+        // [NEW] Check for the 'focus' parameter first for the welcome email link.
+        if (urlParams.get('focus') === 'email') {
+            if (emailField) {
+                emailField.focus();
+                return; // Prioritize this focus action
+            }
         }
         
         // If the user was just logged out, focus the email field.
@@ -110,7 +117,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (autoLogoutMessageReason && pageErrorMessageDiv) {
-        pageErrorMessageDiv.textContent = autoLogoutMessageReason; // No need to decode, browser handles it.
+        pageErrorMessageDiv.textContent = autoLogoutMessageReason;
         pageErrorMessageDiv.className = 'page-message info-message login-page-message'; 
         pageErrorMessageDiv.style.display = 'block';
     }

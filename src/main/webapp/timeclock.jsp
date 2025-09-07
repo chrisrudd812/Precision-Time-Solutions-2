@@ -90,7 +90,6 @@
     double totalRegularHours = 0.0, totalOvertimeHours = 0.0, totalDoubleTimeHours = 0.0, periodTotalHours = 0.0;
     NumberFormat hoursFormatter = NumberFormat.getNumberInstance(Locale.US);
     hoursFormatter.setMinimumFractionDigits(2); hoursFormatter.setMaximumFractionDigits(2);
-
     if (globalEidForDisplay > 0 && pageError == null) {
         employeeInfo = ShowPunches.getEmployeeTimecardInfo(tenantId_timeclock, globalEidForDisplay);
         if (employeeInfo != null) {
@@ -158,19 +157,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Time Card<%= titleSuffix %></title>
     
-    <%-- [FIX START] This script block makes the location restriction setting available to timeclock.js --%>
     <script>
         const IS_LOCATION_RESTRICTION_ENABLED = <%= "true".equalsIgnoreCase(Configuration.getProperty(tenantId_timeclock, "RestrictByLocation", "false")) %>;
     </script>
-    <%-- [FIX END] --%>
     
+    <%@ include file="/WEB-INF/includes/common-head.jspf" %>
     <link rel="stylesheet" href="css/timeclock.css?v=<%= System.currentTimeMillis() %>">
-    <link rel="stylesheet" href="css/navbar.css?v=<%= System.currentTimeMillis() %>">
-    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs/dist/fp.min.js"></script>
 </head>
 <body>
@@ -180,17 +175,26 @@
     <% if (!reportMode) { %>
         <div id="main-clock-container"><jsp:include page="clock.html" /></div>
     <% } %>
-    <% if ("Administrator".equalsIgnoreCase(userPermissions_timeclock)) { %>
+    
+     <% if ("Administrator".equalsIgnoreCase(userPermissions_timeclock)) { %>
         <div class="employee-selector-container">
             <label for="employeeSelect">View Employee:</label>
             <select id="employeeSelect" name="eid_select" onchange="navigateToEmployee(this.value, <%= reportMode %>)">
                 <option value="0">-- Select Employee --</option>
                 <% for (Map<String, Object> emp : employeeDropdownList) { %>
-                   <option value="<%= emp.get("eid") %>" <%= ((Integer)emp.get("eid")).intValue() == globalEidForDisplay ? "selected" : "" %>><%= escapeHtml((String)emp.get("displayName")) %></option>
+                    <option value="<%= emp.get("eid") %>" <%= ((Integer)emp.get("eid")).intValue() == globalEidForDisplay ? "selected" : "" %>><%= escapeHtml((String)emp.get("displayName")) %></option>
                 <% } %>
             </select>
+            
+            <%-- [NEW] Print/Email button for single timecard view --%>
+            <% if (reportMode && globalEidForDisplay > 0) { %>
+                <button type="button" id="btnPrintEmailSingleTimecard" class="glossy-button text-purple">
+                    <i class="fas fa-print"></i> Print / Email Timecard
+                </button>
+            <% } %>
         </div>
     <% } %>
+    
     <div class="timecard-container">
         <div class="timecard" id="printableTimecardArea">
             <div class="timecard-header">
@@ -202,23 +206,24 @@
                 <div id="notification-bar" class="error-message"><%= escapeHtml(pageError) %></div>
             <% } %>
 
-            <% if (globalEidForDisplay > 0 && employeeInfo != null) { %>
+             <% if (globalEidForDisplay > 0 && employeeInfo != null) { %>
                 <div class="timecard-info">
                     <div class="info-left">
                         <div class="info-item"><strong>Employee ID:</strong> <span class="info-value"><%= tenantEmployeeNumberToDisplay != null ? tenantEmployeeNumberToDisplay : globalEidForDisplay %></span></div>
                         <div class="info-item"><strong>Employee:</strong> <span class="info-value"><%= employeeName %></span></div>
                         <div class="info-item"><strong>Department:</strong> <span class="info-value"><%= department %></span></div>
                         <div class="info-item"><strong>Supervisor:</strong> <span class="info-value"><%= supervisor %></span></div>
-                    </div>
+                     </div>
                     <div class="info-right">
                         <div class="info-item"><strong>Schedule:</strong> <span class="info-value"><%= scheduleName %></span></div>
                         <div class="info-item"><strong>Hours:</strong> <span class="info-value"><%= scheduleTimeStr %></span></div>
-                        <div class="info-item"><strong>Auto Lunch:</strong> <span class="info-value"><%= autoLunchStr %></span></div>
+                         <div class="info-item"><strong>Auto Lunch:</strong> <span class="info-value"><%= autoLunchStr %></span></div>
                         <div class="info-item"><strong>Wage Type:</strong> <span class="info-value"><%= wageTypeStr %></span></div>
                     </div>
                 </div>
             <% } %>
-            <div id="timecardTableContainer" class="table-container timecard-table-container">
+ 
+             <div id="timecardTableContainer" class="table-container timecard-table-container">
                 <table id="punches" class="punches timecard-table">
                     <thead><tr><th>Day</th><th>Date</th><th>IN</th><th>OUT</th><th>Total Hours</th><th>Punch Type</th></tr></thead>
                     <tbody><%= timeclockPunchTableBuilder.toString() %></tbody>
@@ -226,34 +231,34 @@
                     <tfoot>
                         <tr>
                             <td colspan="4" class="period-total-label">Period Totals:</td>
-                            <td class="period-total-value"><%= hoursFormatter.format(periodTotalHours) %></td>
+                             <td class="period-total-value"><%= hoursFormatter.format(periodTotalHours) %></td>
                             <td class="period-total-spacer"></td>
                         </tr>
                         <% if("Hourly".equalsIgnoreCase(wageTypeStr)) { %>
-                        <tr class="hours-breakdown-row">
+                         <tr class="hours-breakdown-row">
                             <td colspan="6" style="text-align:right; padding-right:10px;">(Reg: <%= hoursFormatter.format(totalRegularHours) %> | OT: <%= hoursFormatter.format(totalOvertimeHours) %> | DT: <%= hoursFormatter.format(totalDoubleTimeHours) %>)</td>
                         </tr>
                         <% } %>
                     </tfoot>
-                    <% } %>
+                     <% } %>
                 </table>
             </div>
              <% if(globalEidForDisplay > 0 && employeeInfo != null) { %>
                 <div class="accrual-balances">
                     <h3 class="accrual-title">Available Accrued Hours</h3>
-                    <div class="balance-item"> <span class="balance-label">Vacation:</span> <span class="balance-value"><%= hoursFormatter.format(vacationHours) %></span> </div>
+                     <div class="balance-item"> <span class="balance-label">Vacation:</span> <span class="balance-value"><%= hoursFormatter.format(vacationHours) %></span> </div>
                     <div class="balance-item"> <span class="balance-label">Sick:</span> <span class="balance-value"><%= hoursFormatter.format(sickHours) %></span> </div>
                     <div class="balance-item"> <span class="balance-label">Personal:</span> <span class="balance-value"><%= hoursFormatter.format(personalHours) %></span> </div>
                 </div>
-              <% } %>
+               <% } %>
              <% if (!reportMode && globalEidForDisplay > 0 && globalEidForDisplay == sessionEid_timeclock) { %>
                 <div class="punch-buttons">
                     <form id="punchInForm" method="post" action="PunchInAndOutServlet" style="display: contents;">
-                         <input type="hidden" name="punchAction" value="IN">
+                          <input type="hidden" name="punchAction" value="IN">
                         <input type="hidden" name="punchEID" value="<%= globalEidForDisplay %>">
                         <input type="hidden" name="deviceFingerprintHash" id="deviceFingerprintHash_IN" value="">
                         <input type="hidden" name="latitude" id="latitude_IN" value="">
-                         <input type="hidden" name="longitude" id="longitude_IN" value="">
+                          <input type="hidden" name="longitude" id="longitude_IN" value="">
                         <input type="hidden" name="browserTimeZoneId" id="browserTimeZoneId_IN" value="">
                         <input type="hidden" name="deviceType" id="deviceType_IN" value="">
                         <button type="submit" class="punch-button punch-in">PUNCH IN</button>
@@ -264,7 +269,7 @@
                         <input type="hidden" name="deviceFingerprintHash" id="deviceFingerprintHash_OUT" value="">
                         <input type="hidden" name="latitude" id="latitude_OUT" value="">
                         <input type="hidden" name="longitude" id="longitude_OUT" value="">
-                         <input type="hidden" name="browserTimeZoneId" id="browserTimeZoneId_OUT" value="">
+                          <input type="hidden" name="browserTimeZoneId" id="browserTimeZoneId_OUT" value="">
                         <input type="hidden" name="deviceType" id="deviceType_OUT" value="">
                         <button type="submit" class="punch-button punch-out">PUNCH OUT</button>
                     </form>

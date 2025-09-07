@@ -81,9 +81,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reassign Employees</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/navbar.css?v=<%= System.currentTimeMillis() %>">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/reports.css?v=<%= System.currentTimeMillis() %>">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <%@ include file="/WEB-INF/includes/common-head.jspf" %>
+    
     <style>
         .reassign-container { padding: 20px; max-width: 800px; margin: 20px auto; background-color:#fff; border-radius:8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .form-row { display: flex; flex-wrap: wrap; justify-content: space-between; margin-bottom: 20px; align-items: flex-end; gap: 15px;}

@@ -39,10 +39,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Configure Device Restrictions<% if(pageIsInWizardMode){ %> - Setup Wizard<% } %></title>
-    <link rel="stylesheet" href="<%= APP_CONTEXT_PATH_JSP %>/css/navbar.css?v=<%= System.currentTimeMillis() %>">
+    <%@ include file="/WEB-INF/includes/common-head.jspf" %>
     <link rel="stylesheet" href="<%= APP_CONTEXT_PATH_JSP %>/css/settings.css?v=<%= System.currentTimeMillis() %>">
-    <link rel="stylesheet" href="<%= APP_CONTEXT_PATH_JSP %>/css/reports.css?v=<%= System.currentTimeMillis() %>">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     
     <style>
         .config-container { max-width: 1000px; margin: 20px auto; }
@@ -78,7 +76,8 @@
                 <span class="status-indicator global-max-status"></span>
             </div>
         </div>
-        <p class="setting-info-bar">This limit applies to all employees. You can manage individual devices below by enabling or disabling them, editing their descriptions, or deleting them.</p>
+        <p class="setting-info-bar">This limit applies to all employees. You can manage individual devices below by enabling or disabling them, editing their descriptions, or deleting them.<br>
+        Devices are Auto Regisered when user punches In or Out for the first time using that device.</p>
 
         <div class="employee-list-scroll-container">
             <% if (employeeDeviceList.isEmpty() && pageLoadErrorMessage == null) { %>

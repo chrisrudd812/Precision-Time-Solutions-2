@@ -13,15 +13,12 @@ import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import timeclock.db.DatabaseConnection;
-// If you have Apache Commons Text for StringEscapeUtils, you can uncomment this.
-// import org.apache.commons.text.StringEscapeUtils; 
 
 public class ShowEmployees {
 
     private static final Logger logger = Logger.getLogger(ShowEmployees.class.getName());
     private static final DateTimeFormatter DATE_FORMAT_ISO = DateTimeFormatter.ISO_LOCAL_DATE; // yyyy-MM-dd
 
-    // Using a simpler HTML escape. Replace with StringEscapeUtils.escapeHtml4 if available and preferred.
     private static String escapeHtml(String input) {
         if (input == null) return "";
         return input.replace("&", "&amp;")
@@ -33,7 +30,6 @@ public class ShowEmployees {
 
     public static String showEmployees(int tenantId) {
         StringBuilder tableRows = new StringBuilder();
-        // Emp ID, First, Last, Dept, Sched, Super, Perm, Email, Hire, WorkSched, WageType, Wage
         final int VISIBLE_COLUMNS = 12; 
 
         if (tenantId <= 0) {
@@ -49,7 +45,7 @@ public class ShowEmployees {
                      "ADDRESS, CITY, STATE, ZIP, PHONE, EMAIL, ACCRUAL_POLICY, " +
                      "VACATION_HOURS, SICK_HOURS, PERSONAL_HOURS, HIRE_DATE, " +
                      "WORK_SCHEDULE, WAGE_TYPE, WAGE " +
-                     "FROM EMPLOYEE_DATA WHERE TenantID = ? AND ACTIVE = TRUE ORDER BY TenantEmployeeNumber ASC";
+                     "FROM employee_data WHERE TenantID = ? AND ACTIVE = TRUE ORDER BY TenantEmployeeNumber ASC";
 
         logger.info("[ShowEmployees] Fetching active employees for TenantID: " + tenantId);
 
@@ -87,8 +83,7 @@ public class ShowEmployees {
 
                     String displayHireDate = (hireDate != null) ? dateFormatDisplay.format(hireDate) : "";
                     String isoHireDate = (hireDate != null) ? hireDate.toLocalDate().format(DATE_FORMAT_ISO) : "";
-                    // logger.info("[ShowEmployees] For EID " + globalEid + ", HIRE_DATE from DB: " + hireDate + ", formatted isoHireDate for data attribute: '" + isoHireDate + "'");
-
+                    
                     String displayWage = currencyFormatter.format(wage);
                     String displayVac = hoursFormat.format(vacHours);
                     String displaySick = hoursFormat.format(sickHours);
@@ -113,7 +108,7 @@ public class ShowEmployees {
                             .append("\" data-sickhours=\"").append(displaySick)
                             .append("\" data-pershours=\"").append(displayPers)
                             .append("\" data-hiredate=\"").append(escapeHtml(displayHireDate)) 
-                            .append("\" data-iso-date=\"").append(escapeHtml(isoHireDate)).append("\"") // Important: Use data-iso-date for JS
+                            .append("\" data-iso-date=\"").append(escapeHtml(isoHireDate)).append("\"")
                             .append("\" data-workschedule=\"").append(escapeHtml(workSchedule != null ? workSchedule : "")) 
                             .append("\" data-wagetype=\"").append(escapeHtml(wageType != null ? wageType : ""))
                             .append("\" data-wage=\"").append(wage) 
@@ -139,23 +134,24 @@ public class ShowEmployees {
         } catch (SQLException e) {
             logger.log(Level.SEVERE, "[ShowEmployees] Error retrieving employees for TenantID: " + tenantId, e);
             tableRows.setLength(0); tableRows.append("<tr><td colspan='").append(VISIBLE_COLUMNS).append("' class='report-error-row'>Error: ").append(escapeHtml(e.getMessage())).append("</td></tr>");
-        } catch (Throwable t) { // Catch Throwable to include NoClassDefFoundError for StringEscapeUtils if it happens
+        } catch (Throwable t) { 
             logger.log(Level.SEVERE, "[ShowEmployees] Unexpected error or missing library in showEmployees for TenantID: " + tenantId, t);
-            tableRows.setLength(0); tableRows.append("<tr><td colspan='").append(VISIBLE_COLUMNS).append("' class='report-error-row'>An unexpected application error occurred. Check server logs (possibly missing library like Apache Commons Text).</td></tr>");
+            tableRows.setLength(0); tableRows.append("<tr><td colspan='").append(VISIBLE_COLUMNS).append("' class='report-error-row'>An unexpected application error occurred. Check server logs.</td></tr>");
         }
         return tableRows.toString();
     }
 
     public static String showInactiveEmployees(int tenantId) {
+        // --- ADDED: Versioned log message to confirm the new class is running ---
+        logger.info("[ShowEmployees.showInactiveEmployees] v2_debug_logging: Method entered for TenantID: " + tenantId);
+
         StringBuilder tableRows = new StringBuilder();
-        final int VISIBLE_COLUMNS = 12; 
+        final int VISIBLE_COLUMNS = 8; 
         if (tenantId <= 0) { return "<tr><td colspan='" + VISIBLE_COLUMNS + "' class='report-error-row'>Invalid tenant.</td></tr>"; }
         SimpleDateFormat dateFormatDisplay = new SimpleDateFormat("MM/dd/yyyy");
-        NumberFormat currencyFormatter = NumberFormat.getCurrencyInstance(Locale.US);
         
-        String sql = "SELECT EID, TenantEmployeeNumber, FIRST_NAME, LAST_NAME, DEPT, SCHEDULE, SUPERVISOR, PERMISSIONS, " +
-                     "EMAIL, HIRE_DATE, WORK_SCHEDULE, WAGE_TYPE, WAGE " +
-                     "FROM EMPLOYEE_DATA WHERE TenantID = ? AND ACTIVE = FALSE ORDER BY TenantEmployeeNumber ASC";
+        String sql = "SELECT EID, TenantEmployeeNumber, FIRST_NAME, LAST_NAME, DEPT, SCHEDULE, EMAIL, DeactivationReason, DeactivationDate " +
+                     "FROM employee_data WHERE TenantID = ? AND ACTIVE = FALSE ORDER BY DeactivationDate DESC, LAST_NAME ASC";
         
         try (Connection con = DatabaseConnection.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, tenantId);
@@ -166,31 +162,33 @@ public class ShowEmployees {
                     int globalEid = rs.getInt("EID"); 
                     Integer tenEmpNo = (Integer) rs.getObject("TenantEmployeeNumber");
                     String dEid = (tenEmpNo!=null && tenEmpNo>0) ? tenEmpNo.toString() : String.valueOf(globalEid);
-                    Date hD = rs.getDate("HIRE_DATE"); 
-                    String dHD = (hD!=null)?dateFormatDisplay.format(hD):"";
-                    String isoHD = (hD != null) ? hD.toLocalDate().format(DATE_FORMAT_ISO) : "";
-                    double wg = rs.getDouble("WAGE"); 
-                    String dWg = currencyFormatter.format(wg);
                     
-                    tableRows.append("<tr data-eid=\"").append(globalEid)
-                        .append("\" data-tenantemployeenumber=\"").append(escapeHtml(dEid))
-                        .append("\" data-firstname=\"").append(escapeHtml(rs.getString("FIRST_NAME") != null ? rs.getString("FIRST_NAME") : ""))
-                        .append("\" data-lastname=\"").append(escapeHtml(rs.getString("LAST_NAME") != null ? rs.getString("LAST_NAME") : ""))
-                        .append("\" data-iso-date=\"").append(escapeHtml(isoHD)).append("\"") // Added iso-date
-                        // Add other data attributes here if these rows become editable/interactive
-                        .append("\">");
+                    Date deactivationDate = rs.getDate("DeactivationDate");
+                    String displayDeactivationDate = (deactivationDate != null) ? dateFormatDisplay.format(deactivationDate) : "N/A";
+                    String deactivationReason = rs.getString("DeactivationReason");
+                    
+                    // --- NEW DEBUG LOGGING ---
+                    logger.info("[DEBUG] Processing Inactive EID: " + globalEid);
+                    logger.info("  - Col 1 (EID): " + dEid);
+                    logger.info("  - Col 2 (First Name): " + rs.getString("FIRST_NAME"));
+                    logger.info("  - Col 3 (Last Name): " + rs.getString("LAST_NAME"));
+                    logger.info("  - Col 4 (Dept): " + rs.getString("DEPT"));
+                    logger.info("  - Col 5 (Schedule): " + rs.getString("SCHEDULE"));
+                    logger.info("  - Col 6 (Email): " + rs.getString("EMAIL"));
+                    logger.info("  - Col 7 (Deactivation Date): " + displayDeactivationDate);
+                    logger.info("  - Col 8 (Deactivation Reason): " + deactivationReason);
+                    // --- END DEBUG LOGGING ---
+
+                    tableRows.append("<tr data-eid=\"").append(globalEid).append("\">");
                     tableRows.append("<td>").append(escapeHtml(dEid)).append("</td>");
                     tableRows.append("<td>").append(escapeHtml(rs.getString("FIRST_NAME"))).append("</td>");
                     tableRows.append("<td>").append(escapeHtml(rs.getString("LAST_NAME"))).append("</td>");
                     tableRows.append("<td>").append(escapeHtml(rs.getString("DEPT"))).append("</td>");
                     tableRows.append("<td>").append(escapeHtml(rs.getString("SCHEDULE"))).append("</td>");
-                    tableRows.append("<td>").append(escapeHtml(rs.getString("SUPERVISOR"))).append("</td>");
-                    tableRows.append("<td>").append(escapeHtml(rs.getString("PERMISSIONS"))).append("</td>");
                     tableRows.append("<td>").append(escapeHtml(rs.getString("EMAIL"))).append("</td>");
-                    tableRows.append("<td>").append(escapeHtml(dHD)).append("</td>");
-                    tableRows.append("<td>").append(escapeHtml(rs.getString("WORK_SCHEDULE"))).append("</td>");
-                    tableRows.append("<td>").append(escapeHtml(rs.getString("WAGE_TYPE"))).append("</td>");
-                    tableRows.append("<td style='text-align:right;'>").append(escapeHtml(dWg)).append("</td></tr>\n");
+                    tableRows.append("<td>").append(escapeHtml(displayDeactivationDate)).append("</td>");
+                    tableRows.append("<td>").append(escapeHtml(deactivationReason)).append("</td>");
+                    tableRows.append("</tr>\n");
                 }
                 if (!found) { tableRows.append("<tr><td colspan='").append(VISIBLE_COLUMNS).append("' class='report-message-row'>No inactive employees.</td></tr>"); }
             }

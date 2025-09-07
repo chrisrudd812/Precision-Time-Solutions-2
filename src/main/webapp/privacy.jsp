@@ -7,9 +7,7 @@
     <title>Privacy Policy - Precision Time Solutions</title>
     
     <%-- Include main CSS files for consistent styling --%>
-    <link rel="stylesheet" href="<%= request.getContextPath() %>/css/navbar.css?v=<%= System.currentTimeMillis() %>">
-    <link rel="stylesheet" href="<%= request.getContextPath() %>/css/reports.css?v=<%= System.currentTimeMillis() %>">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <%@ include file="/WEB-INF/includes/common-head.jspf" %>
 
     <style>
         /* Styles for a clean, readable content page */

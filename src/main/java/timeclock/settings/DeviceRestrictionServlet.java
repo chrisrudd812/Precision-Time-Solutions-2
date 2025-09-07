@@ -32,7 +32,7 @@ public class DeviceRestrictionServlet extends HttpServlet {
     private static final Logger logger = Logger.getLogger(DeviceRestrictionServlet.class.getName());
     private static final String GLOBAL_MAX_DEVICES_KEY = "MaxDevicesPerUserGlobal";
     private static final String DEFAULT_SYSTEM_MAX_DEVICES = "2";
-    private static final String WIZARD_RETURN_STEP_SETTINGS = "settings_setup";
+    private static final String WIZARD_RETURN_STEP_settings = "settings_setup";
 
     private Integer getTenantId(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
@@ -78,9 +78,9 @@ public class DeviceRestrictionServlet extends HttpServlet {
 
         if (session != null && Boolean.TRUE.equals(session.getAttribute("startSetupWizard"))) {
              String currentSessionWizardStep = (String) session.getAttribute("wizardStep");
-             if (WIZARD_RETURN_STEP_SETTINGS.equals(currentSessionWizardStep) || fromWizardContextOnGet) {
+             if (WIZARD_RETURN_STEP_settings.equals(currentSessionWizardStep) || fromWizardContextOnGet) {
                  actualWizardModeForJSP = true;
-                 wizardReturnStepForJSP = WIZARD_RETURN_STEP_SETTINGS;
+                 wizardReturnStepForJSP = WIZARD_RETURN_STEP_settings;
              }
         }
         request.setAttribute("pageIsInWizardMode", actualWizardModeForJSP);
@@ -164,7 +164,7 @@ public class DeviceRestrictionServlet extends HttpServlet {
         HttpSession session = request.getSession(false);
         if (session != null && Boolean.TRUE.equals(session.getAttribute("startSetupWizard"))) {
             String sessionWizardStep = (String) session.getAttribute("wizardStep");
-            if (WIZARD_RETURN_STEP_SETTINGS.equals(sessionWizardStep)){
+            if (WIZARD_RETURN_STEP_settings.equals(sessionWizardStep)){
                  fromWizardOnGet = true;
             }
             logger.info(logPrefix + "Wizard mode check: startSetupWizard=" + session.getAttribute("startSetupWizard") + ", sessionWizardStep='" + sessionWizardStep + "', fromWizardOnGet=" + fromWizardOnGet);
@@ -180,7 +180,7 @@ public class DeviceRestrictionServlet extends HttpServlet {
             request.setAttribute("pageLoadErrorMessage", "A critical database error occurred while preparing data: " + e.getMessage());
             // Set wizard attributes again so JSP can render error page correctly in wizard context
             request.setAttribute("pageIsInWizardMode", fromWizardOnGet); 
-            request.setAttribute("wizardReturnStepForJSP", fromWizardOnGet ? WIZARD_RETURN_STEP_SETTINGS : null);
+            request.setAttribute("wizardReturnStepForJSP", fromWizardOnGet ? WIZARD_RETURN_STEP_settings : null);
             request.setAttribute("employeeDeviceList", new ArrayList<>()); // Ensure empty list on error
             request.setAttribute("currentGlobalMaxDevices", DEFAULT_SYSTEM_MAX_DEVICES); // Reset to default
             request.getRequestDispatcher("/configureDeviceRestrictions.jsp").forward(request, response);
@@ -188,7 +188,7 @@ public class DeviceRestrictionServlet extends HttpServlet {
              logger.log(Level.SEVERE, logPrefix + "Unexpected error during page load dispatch.", eAll);
             request.setAttribute("pageLoadErrorMessage", "An unexpected error occurred: " + eAll.getMessage());
             request.setAttribute("pageIsInWizardMode", fromWizardOnGet);
-            request.setAttribute("wizardReturnStepForJSP", fromWizardOnGet ? WIZARD_RETURN_STEP_SETTINGS : null);
+            request.setAttribute("wizardReturnStepForJSP", fromWizardOnGet ? WIZARD_RETURN_STEP_settings : null);
             request.setAttribute("employeeDeviceList", new ArrayList<>());
             request.setAttribute("currentGlobalMaxDevices", DEFAULT_SYSTEM_MAX_DEVICES);
             request.getRequestDispatcher("/configureDeviceRestrictions.jsp").forward(request, response);
@@ -252,7 +252,7 @@ public class DeviceRestrictionServlet extends HttpServlet {
                     if (isRequestFromWizardFormForGlobalMax) {
                         String wizardReturnToStep = request.getParameter("wizardReturnStep");
                         String redirectUrl = request.getContextPath() + "/settings.jsp?setup_wizard=true&step=" +
-                                             encodeURL(wizardReturnToStep != null ? wizardReturnToStep : WIZARD_RETURN_STEP_SETTINGS) +
+                                             encodeURL(wizardReturnToStep != null ? wizardReturnToStep : WIZARD_RETURN_STEP_settings) +
                                              "&message=" + encodeURL(operationStatusMessage) +
                                              "&restrictionConfigured=deviceGlobal";
                         logger.info(logPrefix + "Wizard form post successful. Redirecting to: " + redirectUrl);
@@ -312,7 +312,7 @@ public class DeviceRestrictionServlet extends HttpServlet {
             HttpSession currentSession = request.getSession(false);
             if (currentSession != null && Boolean.TRUE.equals(currentSession.getAttribute("startSetupWizard"))) {
                 String sessionWizardStep = (String) currentSession.getAttribute("wizardStep");
-                 if (WIZARD_RETURN_STEP_SETTINGS.equals(sessionWizardStep)){ fromWizardContextForReload = true; }
+                 if (WIZARD_RETURN_STEP_settings.equals(sessionWizardStep)){ fromWizardContextForReload = true; }
             }
             try {
                 loadAndForward(request, response, tenantId, operationStatusMessage, fromWizardContextForReload);

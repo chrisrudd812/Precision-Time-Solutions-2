@@ -33,7 +33,7 @@ public class ShowDepartments {
             return "<tr><td colspan='" + numberOfColumns + "' class='report-error-row'>Invalid session or tenant context.</td></tr>";
         }
 
-        String sql = "SELECT NAME, DESCRIPTION, SUPERVISOR FROM DEPARTMENTS WHERE TenantID = ? ORDER BY NAME ASC";
+        String sql = "SELECT NAME, DESCRIPTION, SUPERVISOR FROM departments WHERE TenantID = ? ORDER BY NAME ASC";
         logger.info("[ShowDepartments] SQL Query: " + sql + " with TenantID: " + tenantId);
 
         try (Connection con = DatabaseConnection.getConnection();

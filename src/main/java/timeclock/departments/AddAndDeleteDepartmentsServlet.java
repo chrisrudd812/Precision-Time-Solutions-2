@@ -95,7 +95,7 @@ public class AddAndDeleteDepartmentsServlet extends HttpServlet {
         }
 
         try (Connection con = DatabaseConnection.getConnection()) {
-            String checkSql = "SELECT NAME FROM DEPARTMENTS WHERE TenantID = ? AND LOWER(NAME) = LOWER(?)";
+            String checkSql = "SELECT NAME FROM departments WHERE TenantID = ? AND LOWER(NAME) = LOWER(?)";
             try (PreparedStatement psCheck = con.prepareStatement(checkSql)) {
                 psCheck.setInt(1, tenantId);
                 psCheck.setString(2, departmentName.trim().toLowerCase());
@@ -109,7 +109,7 @@ public class AddAndDeleteDepartmentsServlet extends HttpServlet {
                 }
             }
 
-            String insertSql = "INSERT INTO DEPARTMENTS (TenantID, NAME, DESCRIPTION, SUPERVISOR) VALUES (?, ?, ?, ?)";
+            String insertSql = "INSERT INTO departments (TenantID, NAME, DESCRIPTION, SUPERVISOR) VALUES (?, ?, ?, ?)";
             try (PreparedStatement psInsert = con.prepareStatement(insertSql)) {
                 psInsert.setInt(1, tenantId);
                 psInsert.setString(2, departmentName.trim());
@@ -147,7 +147,7 @@ public class AddAndDeleteDepartmentsServlet extends HttpServlet {
             redirectUrl.append(separator).append("error=").append(encode("Cannot edit this department."));
         } else {
             try (Connection con = DatabaseConnection.getConnection()) {
-                String sql = "UPDATE DEPARTMENTS SET DESCRIPTION = ?, SUPERVISOR = ? WHERE TenantID = ? AND NAME = ?";
+                String sql = "UPDATE departments SET DESCRIPTION = ?, SUPERVISOR = ? WHERE TenantID = ? AND NAME = ?";
                 try (PreparedStatement ps = con.prepareStatement(sql)) {
                     ps.setString(1, isValid(newDescription) ? newDescription.trim() : null);
                     ps.setString(2, isValid(newSupervisor) ? newSupervisor.trim() : null);
@@ -185,7 +185,7 @@ public class AddAndDeleteDepartmentsServlet extends HttpServlet {
             try (Connection con = DatabaseConnection.getConnection()) {
                 con.setAutoCommit(false);
                 try {
-                    String reassignSql = "UPDATE EMPLOYEE_DATA SET DEPT = ? WHERE TenantID = ? AND DEPT = ?";
+                    String reassignSql = "UPDATE employee_data SET DEPT = ? WHERE TenantID = ? AND DEPT = ?";
                     int employeesReassigned;
                     try (PreparedStatement ps = con.prepareStatement(reassignSql)) {
                         ps.setString(1, reassignTo);
@@ -194,7 +194,7 @@ public class AddAndDeleteDepartmentsServlet extends HttpServlet {
                         employeesReassigned = ps.executeUpdate();
                     }
 
-                    String deleteSql = "DELETE FROM DEPARTMENTS WHERE TenantID = ? AND NAME = ?";
+                    String deleteSql = "DELETE FROM departments WHERE TenantID = ? AND NAME = ?";
                     try (PreparedStatement ps = con.prepareStatement(deleteSql)) {
                         ps.setInt(1, tenantId);
                         ps.setString(2, toDelete);

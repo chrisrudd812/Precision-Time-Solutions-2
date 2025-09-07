@@ -13,6 +13,16 @@ function saveSetting(element, valueToSave) {
     if (!key && element.id) key = element.id; 
     if (!key) { console.error("Save Setting Error: Element missing name/id:", element); return; }
 
+    // --- NEW FIX ---
+    // Do not attempt to save empty values for fields that require numbers on the backend.
+    if (key.includes("Threshold") || key.endsWith("Rate")) {
+        if (value === null || String(value).trim() === '') {
+            console.log(`[saveSetting] Skipped saving empty value for numeric key: ${key}`);
+            return; // Exit the function early
+        }
+    }
+    // --- END FIX ---
+
     if (element.type === 'checkbox' && valueToSave === undefined) {
         value = element.checked.toString();
     } else if (element.type === 'radio' && valueToSave === undefined) {

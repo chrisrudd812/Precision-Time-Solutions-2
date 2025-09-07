@@ -92,7 +92,7 @@
         Object userTimeZoneIdObj = punchesSession.getAttribute("userTimeZoneId");
         if (userTimeZoneIdObj instanceof String && ShowPunches.isValid((String)userTimeZoneIdObj)) {
             userTimeZoneId = (String) userTimeZoneIdObj;
-            jspPunchesLogger.info("[PUNCHES_JSP_TZ] Using userTimeZoneId from session: " + userTimeZoneId + " for Admin EID: " + adminEidForLog);
+            jspPunchesLogger.info("[punches_JSP_TZ] Using userTimeZoneId from session: " + userTimeZoneId + " for Admin EID: " + adminEidForLog);
         }
     }
 
@@ -100,27 +100,27 @@
         String tenantDefaultTz = Configuration.getProperty(tenantId, "DefaultTimeZone");
         if (ShowPunches.isValid(tenantDefaultTz)) {
             userTimeZoneId = tenantDefaultTz;
-            jspPunchesLogger.info("[PUNCHES_JSP_TZ] Using Tenant DefaultTimeZone from SETTINGS: " + userTimeZoneId + " for Admin EID: " + adminEidForLog + ", Tenant: " + tenantId);
+            jspPunchesLogger.info("[punches_JSP_TZ] Using Tenant DefaultTimeZone from settings: " + userTimeZoneId + " for Admin EID: " + adminEidForLog + ", Tenant: " + tenantId);
         } else {
             userTimeZoneId = DEFAULT_TENANT_FALLBACK_TIMEZONE;
-            jspPunchesLogger.info("[PUNCHES_JSP_TZ] Tenant DefaultTimeZone not set/invalid in DB. Using application default for tenant: " + userTimeZoneId + " for Admin EID: " + adminEidForLog + ", Tenant: " + tenantId);
+            jspPunchesLogger.info("[punches_JSP_TZ] Tenant DefaultTimeZone not set/invalid in DB. Using application default for tenant: " + userTimeZoneId + " for Admin EID: " + adminEidForLog + ", Tenant: " + tenantId);
         }
     }
 
     if (!ShowPunches.isValid(userTimeZoneId)) {
         userTimeZoneId = PACIFIC_TIME_FALLBACK;
-        jspPunchesLogger.warning("[PUNCHES_JSP_TZ] User/Tenant timezone not determined or invalid. Defaulting to system fallback (Pacific Time): " + userTimeZoneId + " for Admin EID: " + adminEidForLog);
+        jspPunchesLogger.warning("[punches_JSP_TZ] User/Tenant timezone not determined or invalid. Defaulting to system fallback (Pacific Time): " + userTimeZoneId + " for Admin EID: " + adminEidForLog);
     }
 
     try {
         ZoneId.of(userTimeZoneId);
     } catch (Exception e) {
-        jspPunchesLogger.log(Level.SEVERE, "[PUNCHES_JSP_TZ] CRITICAL: Invalid userTimeZoneId resolved: '" + userTimeZoneId + "'. Falling back to UTC. Admin EID: " + adminEidForLog, e);
+        jspPunchesLogger.log(Level.SEVERE, "[punches_JSP_TZ] CRITICAL: Invalid userTimeZoneId resolved: '" + userTimeZoneId + "'. Falling back to UTC. Admin EID: " + adminEidForLog, e);
         userTimeZoneId = "UTC";
         String tzErrorMsg = "A critical error occurred with timezone configuration. Displaying times in UTC. Please contact support.";
         pageError = (pageError == null || pageError.isEmpty()) ? tzErrorMsg : pageError + " " + tzErrorMsg;
     }
-    jspPunchesLogger.info("[PUNCHES_JSP_TZ] Punches.jsp final effective userTimeZoneId for display: " + userTimeZoneId + " for Admin EID: " + adminEidForLog);
+    jspPunchesLogger.info("[punches_JSP_TZ] Punches.jsp final effective userTimeZoneId for display: " + userTimeZoneId + " for Admin EID: " + adminEidForLog);
     
     StringBuilder punchTableHtmlBuilder = new StringBuilder();
     String employeeNameForDisplay = "N/A";
@@ -221,10 +221,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Employee Punches</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/navbar.css?v=<%= System.currentTimeMillis() %>">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/reports.css?v=<%= System.currentTimeMillis() %>">
+    <%@ include file="/WEB-INF/includes/common-head.jspf" %>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/punches.css?v=<%= System.currentTimeMillis() %>">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
 <body class="reports-page">
     <%@ include file="/WEB-INF/includes/navbar.jspf" %>

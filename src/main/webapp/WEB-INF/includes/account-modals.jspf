@@ -1,65 +1,89 @@
 <%-- /WEB-INF/includes/account-modals.jspf --%>
 
-<%-- Verify Admin Password Modal --%>
+<%-- ## NEW MODAL ADDED BELOW ## --%>
+<div id="lifetimeAccessModal" class="modal">
+    <div class="modal-content" style="max-width: 550px;">
+        <span class="close" data-close-modal>&times;</span>
+        <h2>Lifetime Subscription</h2>
+        <p style="text-align: center; font-size: 1.1em; color: #343a40; margin-bottom: 25px; padding: 0 25px; line-height: 1.6;">
+            You are on a lifetime free plan. There is nothing to cancel or upgrade.
+        </p>
+        <div class="button-row" style="justify-content: center;">
+            <button type="button" data-close-modal class="glossy-button text-blue">OK</button>
+        </div>
+    </div>
+</div>
+
+<div id="billingRequiredModal" class="modal">
+    <div class="modal-content" style="max-width: 550px;">
+        <span class="close" data-close-modal>&times;</span>
+        <h2>Subscription Inactive</h2>
+        <p id="billingRequiredModalMessage" style="text-align: center; font-size: 1.1em; color: #343a40; margin-bottom: 25px; padding: 0 25px; line-height: 1.6;">
+            Your subscription is inactive. Please update your billing information to restore full access.
+        </p>
+        <div class="button-row">
+            <button type="button" id="billingModalManageButton" class="glossy-button text-green"><i class="fas fa-credit-card"></i> Manage Subscription & Billing</button>
+            <button type="button" id="billingModalLogoutButton" class="cancel-btn glossy-button text-red" onclick="window.location.href='logout.jsp';">Logout</button>
+        </div>
+    </div>
+</div>
+
 <div id="verifyAdminPasswordModal" class="modal">
     <div class="modal-content">
         <span class="close" data-close-modal>&times;</span>
         <h2>Verify Administrator Credentials</h2>
-        <p style="font-size:0.9em; color:#555; margin-bottom:15px;">For security, please re-enter the Company Admin password.</p>
+        
+        <p style="text-align: center; font-size: 1em; color: #343a40; margin-bottom: 20px; padding: 0 25px;">For security, please re-enter the Company Admin password.</p>
+        
         <form id="verifyAdminPasswordForm" onsubmit="return false;">
-            <input type="hidden" id="verificationNextAction" value="">
+             <input type="hidden" id="verificationNextAction" value="">
             <div class="form-item">
                 <label for="verifyAdminEmail">Admin Email:</label>
                 <input type="email" id="verifyAdminEmail" readonly style="background-color: #e9ecef; cursor: not-allowed;">
             </div>
             <div class="form-item">
-                <label for="verifyAdminCurrentPassword">Password:<span style="color:red;">*</span></label>
+                 <label for="verifyAdminCurrentPassword">Password:<span style="color:red;">*</span></label>
                 <input type="password" id="verifyAdminCurrentPassword" required autofocus>
             </div>
             <div class="button-row">
                 <button type="submit" class="glossy-button text-green">Verify</button>
                 <button type="button" data-close-modal class="cancel-btn glossy-button text-red">Cancel</button>
-            </div>
+             </div>
         </form>
     </div>
 </div>
 
-<%-- Edit Company Details Modal --%>
 <div id="editCompanyDetailsModal" class="modal">
     <div class="modal-content" style="max-width: 650px;"> 
         <span class="close" data-close-modal>&times;</span> 
         <h2>Edit Company Details</h2> 
         <form id="updateCompanyDetailsForm" onsubmit="return false;"> 
             <div class="form-item"> <label for="editCompanyNameDisplay">Company Name:</label> <input type="text" id="editCompanyNameDisplay" name="companyNameDisplay" readonly disabled> </div> 
-            <div class="form-item"> <label for="editCompanyIdDisplay">Company ID:</label> <input type="text" id="editCompanyIdDisplay" name="companyIdDisplay" readonly disabled> </div> 
+             <div class="form-item"> <label for="editCompanyIdDisplay">Company ID:</label> <input type="text" id="editCompanyIdDisplay" name="companyIdDisplay" readonly disabled> </div> 
             <hr> 
-            <%-- FIX: Added validation pattern and title for the phone field. --%>
-            <div class="form-item"> <label for="editCompanyPhone">Company Phone:</label> <input type="tel" id="editCompanyPhone" name="companyPhone" maxlength="20" pattern="\(\d{3}\) \d{3}-\d{4}" title="Phone number must be in the format (555) 555-5555."> </div> 
+            <div class="form-item"> <label for="editCompanyPhone">Company Phone:</label> <input type="tel" id="editCompanyPhone" name="companyPhone" maxlength="20" pattern="^\(\d{3}\) \d{3}-\d{4}$" placeholder="(555) 555-5555" title="Phone number must be in the format (555) 555-5555."> </div> 
             <div class="form-item"> <label for="editCompanyAddress">Street Address:</label> <input type="text" id="editCompanyAddress" name="companyAddress" maxlength="255"> </div> 
             <div class="form-row"> 
-                <div class="form-item"> <label for="editCompanyCity">City:</label> <input type="text" id="editCompanyCity" name="companyCity" maxlength="100"> </div> 
-                <div class="form-item"> <label for="editCompanyState">State:</label> <select id="editCompanyState" name="companyState"> <option value="">Select State</option> <%@ include file="/WEB-INF/includes/states_options.jspf" %> </select> </div> 
+                 <div class="form-item"> <label for="editCompanyCity">City:</label> <input type="text" id="editCompanyCity" name="companyCity" maxlength="100"> </div> 
+                 <div class="form-item"> <label for="editCompanyState">State:</label> <select id="editCompanyState" name="companyState"> <option value="">Select State</option> <%@ include file="/WEB-INF/includes/states_options.jspf" %> </select> </div> 
             </div> 
             <div class="form-item"> 
                 <label for="editCompanyZip">Zip Code:</label> 
-                <%-- FIX: Added validation pattern and title for the zip code field. --%>
-                <input type="text" id="editCompanyZip" name="companyZip" maxlength="10" pattern="\d{5}(-\d{4})?" title="Zip code must be 5 or 9 digits (e.g., 12345 or 12345-6789)."> 
+                <input type="text" id="editCompanyZip" name="companyZip" style="max-width:48%"  maxlength="10" pattern="\d{5}(-\d{4})?" title="Zip code must be 5 or 9 digits (e.g., 12345 or 12345-6789)."> 
             </div> 
             
-            <%-- FIX: Added the link to change the admin password. --%>
             <div class="form-item" style="text-align: right; margin-top: 25px; padding-top: 15px; border-top: 1px solid #eee;">
                  <a href="change_company_admin_password.jsp">Need to change the Company Admin Password?</a>
             </div>
-            
+             
             <div class="button-row"> 
-                <button type="submit" class="glossy-button text-green"><i class="fas fa-save"></i> Update Details</button> 
+                 <button type="submit" class="glossy-button text-green"><i class="fas fa-save"></i> Update Details</button> 
                 <button type="button" data-close-modal class="cancel-btn glossy-button text-red"><i class="fas fa-times"></i> Cancel</button> 
             </div> 
         </form> 
     </div> 
 </div>
 
-<%-- Placeholder for Edit Account Login Modal --%>
 <div id="editAccountLoginModal" class="modal">
     <div class="modal-content" style="max-width: 550px;">
         <span class="close" data-close-modal>&times;</span>

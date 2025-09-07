@@ -29,7 +29,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- Stripe Initialization ---
     function initializeStripe() {
         try {
-            stripe = Stripe('pk_test_51RUHnpBtvyYfb2KWE9qJPWYzUdwurEUDf8W1VtxuV16ZJj8eJtCS8ubiNZI1W3XNikJa8XjjbiKp9f3dkzXRabkm009fB33jMV');
+            // *** MODIFICATION START ***
+            // Check if the publishable key was passed from the JSP file.
+            // If not, log an error and disable the payment form to prevent errors.
+            if (typeof STRIPE_PUBLISHABLE_KEY === 'undefined' || STRIPE_PUBLISHABLE_KEY === 'null' || STRIPE_PUBLISHABLE_KEY === '') {
+                console.error("CRITICAL: Stripe Publishable Key is not available from the server environment.");
+                displayClientSideError("Payment processing is currently unavailable. Please contact support.");
+                return; // Stop the initialization
+            }
+
+            // Use the key provided by the server via the JSP file
+            stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
+            // *** MODIFICATION END ***
+            
             const elements = stripe.elements();
             const style = { base: { fontSize: '16px', color: '#32325d', '::placeholder': { color: '#aab7c4' } } };
             
@@ -46,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
             addStripeValidationListener(cardCvcElement, 'card-cvc', 'cardCvc');
 
         } catch (e) {
-            console.error("Stripe.js has not loaded yet.");
+            console.error("Stripe.js has not loaded yet or another error occurred:", e);
         }
     }
 
@@ -238,6 +250,12 @@ document.addEventListener('DOMContentLoaded', function() {
             paymentFields.forEach(el => el.disabled = false);
             await submitDataToServer(formDataFree);
         } else {
+            // Check if stripe object is initialized before using it
+            if (!stripe) {
+                displayClientSideError("Payment system is not initialized. Please check your connection or contact support.");
+                setButtonState(false);
+                return;
+            }
             const { paymentMethod, error } = await stripe.createPaymentMethod({
                 type: 'card',
                 card: cardNumberElement,
@@ -306,7 +324,6 @@ document.addEventListener('DOMContentLoaded', function() {
             validateField(field);
         });
         
-        // [FIX] Apply initial invalid state to Stripe fields on page load
         if (!isFreePlan) {
             document.getElementById('card-number').classList.add('is-invalid');
             document.getElementById('card-expiry').classList.add('is-invalid');

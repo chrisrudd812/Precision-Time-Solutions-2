@@ -147,10 +147,8 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Payroll Processing</title>
-    <link rel="stylesheet" href="css/navbar.css?v=<%= System.currentTimeMillis() %>">
-    <link rel="stylesheet" href="css/reports.css?v=<%= System.currentTimeMillis() %>">
+    <%@ include file="/WEB-INF/includes/common-head.jspf" %>
     <link rel="stylesheet" href="css/payroll.css?v=<%= System.currentTimeMillis() %>">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
 <body class="reports-page">
     <%@ include file="/WEB-INF/includes/navbar.jspf" %>
@@ -166,7 +164,7 @@
         <% } %>
 
         <% if(dataReady) { %>
-            <p class="instructions"> Review payroll below. Run the 'Exception Report' first to check for missing punches before closing the pay period. ALL Exceptions must be resolved before other options become available and pay period can be closed.<br>
+            <p class="instructions"> Review payroll below. Run the 'Exception Report' first to check for missing punches before closing the pay period. <strong style="color:red">ALL Exceptions must be resolved before other options become available and pay period can be closed.</strong><br>
             Flow is designed to go left to right, completing any options before finally closing pay period. </p>
             <div id="payroll-table-container" class="table-container report-table-container">
                 <table id="payrollTable" class="report-table">
@@ -208,7 +206,7 @@
                     <i class="fas fa-print"></i> Print Payroll Summary
                 </button>
                 <button id="btnPrintAllTimeCards" type="button" class="glossy-button text-info full-width-button">
-                    <i class="fas fa-print"></i> Print All Time Cards
+                    <i class="fas fa-print"></i> Print / Email Time Cards
                 </button>
                 <form id="closePayPeriodForm" method="post" action="PayrollServlet" style="display: contents;">
                     <input type="hidden" name="action" value="closePayPeriod">

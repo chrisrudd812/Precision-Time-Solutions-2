@@ -1,58 +1,10 @@
 /**
  * reports.js
  * Handles fetching and displaying reports dynamically on reports.jsp
- * v15: Rewritten print function for multi-page reports.
  */
 
-// --- Draggable Modal Functionality ---
-function makeElementDraggable(elmnt, handle) {
-    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-    const dragHandle = handle || elmnt; 
-
-    if (dragHandle && typeof dragHandle.onmousedown !== 'undefined') {
-        dragHandle.onmousedown = dragMouseDown;
-        if (dragHandle.style) dragHandle.style.cursor = 'move';
-    } else {
-        console.warn("MakeElementDraggable: No valid drag handle provided or found for:", elmnt ? elmnt.id : "unknown element");
-        return;
-    }
-
-    function dragMouseDown(e) {
-        e = e || window.event;
-        let currentTarget = e.target;
-        while(currentTarget && currentTarget !== dragHandle) {
-            if (['INPUT', 'SELECT', 'BUTTON', 'TEXTAREA', 'A'].includes(currentTarget.tagName)) {
-                return;
-            }
-            currentTarget = currentTarget.parentNode;
-        }
-        e.preventDefault();
-        pos3 = e.clientX;
-        pos4 = e.clientY;
-        document.onmouseup = closeDragElement;
-        document.onmousemove = elementDrag;
-    }
-
-    function elementDrag(e) {
-        e = e || window.event;
-        e.preventDefault();
-        pos1 = pos3 - e.clientX;
-        pos2 = pos4 - e.clientY;
-        pos3 = e.clientX;
-        pos4 = e.clientY;
-        elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
-        elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
-    }
-
-    function closeDragElement() {
-        document.onmouseup = null;
-        document.onmousemove = null;
-    }
-}
-
-
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("Reports JS Loaded - v15 (Multi-page Print)");
+    console.log("Reports JS Loaded");
 
     const reportOutputDiv = document.getElementById('reportOutput');
     const loadingIndicator = document.getElementById('loadingIndicator');
@@ -60,6 +12,26 @@ document.addEventListener('DOMContentLoaded', function() {
     const reportDescriptionElement = document.getElementById('reportDescription');
     const reportActionsDiv = document.getElementById('reportActions');
     const printReportBtn = document.getElementById('printReportBtn');
+    const reportSpecificFiltersDiv = document.getElementById('reportSpecificFilters');
+    
+    const tardyReportFiltersHTML = `
+        <div id="tardyReportFilters" class="report-filters">
+            <label><input type="radio" name="tardyDateRange" value="period"> Current Pay Period</label>
+            <label><input type="radio" name="tardyDateRange" value="ytd"> Year-to-Date</label>
+            <label><input type="radio" name="tardyDateRange" value="all" checked> All Time</label>
+        </div>`;
+
+    const archiveReportFilters = document.getElementById('archiveReportFilters');
+    const applyArchiveFilterBtn = document.getElementById('applyArchiveFilterBtn');
+    const archiveStartDateInput = document.getElementById('archiveStartDate');
+    const archiveEndDateInput = document.getElementById('archiveEndDate');
+    
+    const reactivateEmployeeBtn = document.getElementById('reactivateEmployeeBtn');
+    let selectedInactiveRowElement = null;
+
+    const upgradePlanModal = document.getElementById('upgradePlanModal');
+    const upgradePlanMessage = document.getElementById('upgradePlanModalMessage');
+    const upgradePlanCancelBtn = document.getElementById('upgradePlanCancelBtn');
 
     const fixMissingPunchesBtnReports = document.getElementById('fixMissingPunchesBtnReports');
     const editPunchModalReports = document.getElementById('editPunchModalReports');
@@ -70,22 +42,11 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedReportExceptionRowElement = null;
     let currentReportExceptionData = {};
 
-    const notificationModal = document.getElementById("notificationModal");
-    const notificationCloseButton = document.getElementById("closeNotificationModal");
-    const notificationOkButton = document.getElementById("okButton");
+    const notificationModal = document.getElementById("notificationModalGeneral");
+    const notificationOkButton = document.getElementById("okButtonNotificationModalGeneral");
 
-    if (notificationModal && notificationModal.querySelector('.modal-content') && notificationModal.querySelector('.modal-content > h2')) {
-        if (notificationCloseButton) notificationCloseButton.addEventListener("click", function() { if (typeof hideModal === 'function') hideModal(notificationModal); });
-        if (notificationOkButton) notificationOkButton.addEventListener("click", function() { if (typeof hideModal === 'function') hideModal(notificationModal); });
-        window.addEventListener("click", function(event) { if (event.target === notificationModal) { if (typeof hideModal === 'function') hideModal(notificationModal); }});
-        makeElementDraggable(notificationModal.querySelector('.modal-content'), notificationModal.querySelector('.modal-content > h2'));
-    }
-
-    if (editPunchModalReports && editPunchModalReports.querySelector('.modal-content') && editPunchModalReports.querySelector('.modal-content > h2')) {
-        if (closeEditPunchModalReportsBtn) closeEditPunchModalReportsBtn.addEventListener('click', hideEditPunchModalReports);
-        if (cancelEditPunchReportsBtn) cancelEditPunchReportsBtn.addEventListener('click', hideEditPunchModalReports);
-        window.addEventListener('click', (event) => { if (event.target === editPunchModalReports) hideEditPunchModalReports(); });
-        makeElementDraggable(editPunchModalReports.querySelector('.modal-content'), editPunchModalReports.querySelector('.modal-content > h2'));
+    if (upgradePlanCancelBtn) {
+        upgradePlanCancelBtn.addEventListener('click', () => hideModal(upgradePlanModal));
     }
 
     if (editPunchFormReports) {
@@ -104,11 +65,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     const reportDescriptions = {
-        exception: "Shows punch records with missing OUT times for work-type punches within the current pay period. Click a row to select, then 'Fix Missing Punches'.",
-        tardy: "Summarizes employees marked as tardy or leaving early based on punch data.",
-        whosin: "Lists employees who are currently clocked IN based on the latest punch data for today.",
+        exception: "Shows punch records to date with missing OUT times for work-type punches within the current pay period (excluding today's punches). To edit now, click a row to select, then 'Fix Missing Punches'.",
+        tardy: "Summarizes employee's accumulated tardies (late punches or early outs) based on schedule data for the selected date range.",
+        whosin: "Lists employees who are currently clocked IN.",
         activeEmployees: "Lists all currently active employees with key contact and assignment information.",
-        inactiveEmployees: "Lists employees marked as inactive. Click a row to reactivate.",
+        inactiveEmployees: "Lists employees marked as inactive. Select a row and click 'Reactivate Employee' to restore their account.",
+        archivedPunches: "Search for historical punch records within a specific date range.",
         employeesByDept: "Lists active employees filtered by the selected department.",
         employeesBySched: "Lists active employees filtered by the selected schedule.",
         employeesBySup: "Lists active employees filtered by the selected supervisor.",
@@ -123,31 +85,61 @@ document.addEventListener('DOMContentLoaded', function() {
          tardy: `<thead><tr><th class="sortable" data-sort-type="number">EID</th><th class="sortable" data-sort-type="string">First Name</th><th class="sortable" data-sort-type="string">Last Name</th><th class="sortable" data-sort-type="number">Late Count</th><th class="sortable" data-sort-type="number">Early Out Count</th></tr></thead>`,
          whosin: `<thead><tr><th class="sortable" data-sort-type="number">EID</th><th class="sortable" data-sort-type="string">First Name</th><th class="sortable" data-sort-type="string">Last Name</th><th class="sortable" data-sort-type="string">Department</th><th class="sortable" data-sort-type="string">Schedule</th><th class="sortable" data-sort-type="string">Email</th></tr></thead>`,
          activeEmployees: employeeReportHeaders,
-         inactiveEmployees: employeeReportHeaders,
+         inactiveEmployees: `<thead><tr><th class="sortable" data-sort-type="number">EID</th><th class="sortable" data-sort-type="string">First Name</th><th class="sortable" data-sort-type="string">Last Name</th><th class="sortable" data-sort-type="string">Department</th><th class="sortable" data-sort-type="string">Schedule</th><th class="sortable" data-sort-type="string">Email</th><th class="sortable" data-sort-type="date">Date Deactivated</th><th class="sortable" data-sort-type="string">Reason</th></tr></thead>`,
          employeesByDept: employeeReportHeaders,
          employeesBySched: employeeReportHeaders,
          employeesBySup: employeeReportHeaders,
+         archivedPunches: `<thead><tr><th class="sortable" data-sort-type="number">EID</th><th class="sortable" data-sort-type="string">Employee Name</th><th class="sortable" data-sort-type="date">Date</th><th class="sortable" data-sort-type="string">IN</th><th class="sortable" data-sort-type="string">OUT</th><th class="sortable" data-sort-type="number">Total</th><th class="sortable" data-sort-type="string">Type</th></tr></thead>`,
          accrualBalance: `<thead><tr><th class="sortable" data-sort-type="number">EID</th><th class="sortable" data-sort-type="string">First Name</th><th class="sortable" data-sort-type="string">Last Name</th><th class="sortable" data-sort-type="number">Vacation Hours</th><th class="sortable" data-sort-type="number">Sick Hours</th><th class="sortable" data-sort-type="number">Personal Hours</th></tr></thead>`,
          systemAccess: `<thead><tr><th class="sortable" data-sort-type="number">EID</th><th class="sortable" data-sort-type="string">First Name</th><th class="sortable" data-sort-type="string">Last Name</th><th class="sortable" data-sort-type="string">Email</th></tr></thead>`
     };
 
-    const hideModal = window.hideModal || function(modalElement) { if(modalElement) modalElement.classList.remove('modal-visible'); };
-    const showModal = window.showModal || function(modalElement) { if(modalElement) modalElement.classList.add('modal-visible'); };
-    const showPageNotification = window.showPageNotification || function(message, isError) { alert((isError ? "Error: " : "Info: ") + message); };
-    const decodeHtmlEntities = window.decodeHtmlEntities || function(text) { const ta = document.createElement('textarea'); ta.innerHTML = text; return ta.value; };
-    const parseTimeTo24Hour = window.parseTimeTo24Hour || function(timeStr12hr) { return timeStr12hr; };
+    const { hideModal, showModal, showPageNotification, decodeHtmlEntities, parseTimeTo24Hour, applyDefaultSort, makeTableSortable } = window;
 
-
-    function loadReport(reportType, filterValue = null) {
+    window.loadReport = function(reportType, filterValue = null) {
         if (loadingIndicator) loadingIndicator.style.display = 'flex';
         if (reportActionsDiv) reportActionsDiv.style.display = 'none';
         if (fixMissingPunchesBtnReports) fixMissingPunchesBtnReports.style.display = 'none';
+        if (reactivateEmployeeBtn) reactivateEmployeeBtn.style.display = 'none';
         if (reportOutputDiv) reportOutputDiv.innerHTML = '';
+        
+        if (reportSpecificFiltersDiv) reportSpecificFiltersDiv.innerHTML = '';
+        if (archiveReportFilters) archiveReportFilters.style.display = 'none';
+
+        if (reportType === 'tardy') {
+            if (reportActionsDiv) reportActionsDiv.style.display = 'flex';
+            if (reportSpecificFiltersDiv) {
+                reportSpecificFiltersDiv.innerHTML = tardyReportFiltersHTML;
+            }
+            const tardyRadioButtons = document.querySelectorAll('input[name="tardyDateRange"]');
+            tardyRadioButtons.forEach(radio => {
+                radio.addEventListener('change', function() { if (this.checked) window.loadReport('tardy', this.value); });
+            });
+            const radioToCheck = document.querySelector(`input[name="tardyDateRange"][value="${filterValue || 'all'}"]`);
+            if (radioToCheck) radioToCheck.checked = true;
+
+        } else if (reportType === 'archivedPunches') {
+            if (archiveReportFilters) archiveReportFilters.style.display = 'flex';
+            if (reportActionsDiv) reportActionsDiv.style.display = 'flex';
+            if (printReportBtn) printReportBtn.style.display = 'none';
+            if (loadingIndicator) loadingIndicator.style.display = 'none';
+            if (reportOutputDiv) reportOutputDiv.innerHTML = `<p class="report-placeholder">Select a date range and click 'Apply' to view archived punches.</p>`;
+            if(reportTitleElement) reportTitleElement.textContent = "Archived Punches Report";
+            if(reportDescriptionElement) reportDescriptionElement.textContent = reportDescriptions.archivedPunches;
+            return; 
+        }
 
         const reportName = reportType.replace(/([A-Z])/g, ' $1').trim();
         let titleText = `${reportName.charAt(0).toUpperCase() + reportName.slice(1)} Report`;
-        if (filterValue) {
-             try { filterValue = decodeURIComponent(filterValue); } catch(e) { console.warn("Error decoding filterValue:", e); }
+        
+        if (reportType === 'tardy') {
+            const range = filterValue || 'all';
+            let rangeText = ' (All Time)';
+            if (range === 'ytd') rangeText = ' (Year-to-Date)';
+            if (range === 'period') rangeText = ' (Current Pay Period)';
+            titleText += rangeText;
+        } else if (filterValue) {
+             try { filterValue = decodeURIComponent(filterValue); } catch(e) {}
              if(reportType === 'employeesByDept') titleText = `Department: ${filterValue} - Employees`;
              else if(reportType === 'employeesBySched') titleText = `Schedule: ${filterValue} - Employees`;
              else if(reportType === 'employeesBySup') titleText = `Supervisor: ${filterValue} - Employees`;
@@ -160,53 +152,104 @@ document.addEventListener('DOMContentLoaded', function() {
         if (filterValue) params.append('filterValue', filterValue);
 
         fetch('ReportServlet', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' }, body: params })
-        .then(response => {
-            if (!response.ok) return response.text().then(text => { throw new Error(`Server Error: ${response.status} - ${text || response.statusText}`); });
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
+            // [DEBUG LOG] Log the entire object and the HTML received from the server
+            console.log('[TardyReportDebug] Received data object from ReportServlet:', data);
+            if (reportType === 'tardy') {
+                console.log('[TardyReportDebug] HTML received for Tardy Report:', data.html);
+            }
+
             if (loadingIndicator) loadingIndicator.style.display = 'none';
             if (data.success) {
                 if (data.html && data.html !== 'NO_EXCEPTIONS') {
-                    const tableHeadersHTML = reportHeaders[reportType] || `<thead><tr><th>Report Data</th></tr></thead>`;
-                    let tableClass = 'sortable'; 
-                    if (reportType === 'inactiveEmployees') tableClass += ' inactive-employees-table';
-                    if (reportType === 'exception') tableClass += ' exception-report-table-interactive';
-
-                    if(reportOutputDiv) {
-                        reportOutputDiv.innerHTML = `<div class="table-container report-table-container"><table class="report-table ${tableClass}" id="dynamicReportTable">${tableHeadersHTML}<tbody>${data.html}</tbody></table></div>`;
-                        const reportTable = reportOutputDiv.querySelector('#dynamicReportTable');
-                        if (reportTable && typeof makeTableSortable === 'function') {
-                            makeTableSortable(reportTable, { columnIndex: 0, ascending: true });
-                        }
-                        if (reportActionsDiv && printReportBtn) {
-                            printReportBtn.style.display = 'inline-flex';
-                            reportActionsDiv.style.display = 'flex';
-                        }
-                        if (reportType === 'exception' && fixMissingPunchesBtnReports) {
-                            fixMissingPunchesBtnReports.style.display = 'inline-flex';
-                            fixMissingPunchesBtnReports.disabled = true;
+                    const tableHeadersHTML = reportHeaders[reportType];
+                    const tableClass = reportType === 'exception' ? 'report-table exception-report-table-interactive' : 'report-table';
+                    const tableId = reportType === 'inactiveEmployees' ? 'inactiveEmployeesTable' : 'dynamicReportTable';
+                    reportOutputDiv.innerHTML = `<div class="table-container report-table-container"><table class="${tableClass}" id="${tableId}">${tableHeadersHTML}<tbody>${data.html}</tbody></table></div>`;
+                    
+                    const reportTable = document.getElementById(tableId);
+                    if (reportTable && typeof makeTableSortable === 'function') {
+                        makeTableSortable(reportTable);
+                        if (typeof applyDefaultSort === 'function') {
+                            applyDefaultSort(reportTable);
                         }
                     }
+
+                    if (reportActionsDiv) reportActionsDiv.style.display = 'flex';
+                    if (printReportBtn) printReportBtn.style.display = 'inline-flex';
+                    if (reportType === 'exception' && fixMissingPunchesBtnReports) {
+                        fixMissingPunchesBtnReports.style.display = 'inline-flex';
+                        fixMissingPunchesBtnReports.disabled = true;
+                    }
+                    if (reportType === 'inactiveEmployees' && reactivateEmployeeBtn) {
+                        reactivateEmployeeBtn.style.display = 'inline-flex';
+                        reactivateEmployeeBtn.disabled = true;
+                    }
+
                 } else {
-                    if(reportOutputDiv) reportOutputDiv.innerHTML = `<p class="report-message-row">${data.message || 'No records found.'}</p>`;
-                    if (reportActionsDiv && printReportBtn) { reportActionsDiv.style.display = 'flex'; printReportBtn.style.display = 'none';}
-                    if (fixMissingPunchesBtnReports) fixMissingPunchesBtnReports.style.display = 'none';
+                    reportOutputDiv.innerHTML = `<p class="report-message-row">${data.message || 'No records found.'}</p>`;
                 }
             } else {
-                if(reportOutputDiv) reportOutputDiv.innerHTML = `<p class="report-error-row">Error: ${data.message || 'Unknown server error.'}</p>`;
-                if (reportActionsDiv) reportActionsDiv.style.display = 'none';
+                reportOutputDiv.innerHTML = `<p class="report-error-row">Error: ${data.message || 'Unknown server error.'}</p>`;
             }
         })
         .catch(error => {
             if (loadingIndicator) loadingIndicator.style.display = 'none';
-            if(reportTitleElement) reportTitleElement.textContent = "Report Error";
-            if(reportDescriptionElement) reportDescriptionElement.textContent = "Could not load the requested report.";
-            if (reportActionsDiv) reportActionsDiv.style.display = 'none';
-            if (reportOutputDiv) reportOutputDiv.innerHTML = `<p class="report-error-row">Failed to load report: ${error.message}</p>`;
+            reportOutputDiv.innerHTML = `<p class="report-error-row">Failed to load report: ${error.message}</p>`;
         });
     }
 
+    function loadArchivedPunchesReport() {
+        const startDate = archiveStartDateInput.value;
+        const endDate = archiveEndDateInput.value;
+
+        if (!startDate || !endDate) { showPageNotification("Please select both a 'From' and 'To' date.", true); return; }
+        if (new Date(startDate) > new Date(endDate)) { showPageNotification("'From' date cannot be after 'To' date.", true); return; }
+
+        const params = new URLSearchParams({ reportType: 'archivedPunches', startDate, endDate });
+        
+        loadingIndicator.style.display = 'flex';
+        reportOutputDiv.innerHTML = '';
+        if (printReportBtn) printReportBtn.style.display = 'none';
+        
+        fetch('ReportServlet', { method: 'POST', body: params })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.html) {
+                        const tableHeadersHTML = reportHeaders['archivedPunches'];
+                        reportOutputDiv.innerHTML = `<div class="table-container report-table-container"><table class="report-table" id="dynamicReportTable">${tableHeadersHTML}<tbody>${data.html}</tbody></table></div>`;
+                        const reportTable = document.getElementById('dynamicReportTable');
+                        if (reportTable && typeof makeTableSortable === 'function') {
+                            makeTableSortable(reportTable);
+                            if (typeof applyDefaultSort === 'function') {
+                                applyDefaultSort(reportTable);
+                            }
+                        }
+                        if (printReportBtn) printReportBtn.style.display = 'inline-flex';
+                    } else {
+                        reportOutputDiv.innerHTML = `<p class="report-message-row">${data.message || 'No records found.'}</p>`;
+                    }
+                } else {
+                    reportOutputDiv.innerHTML = `<p class="report-error-row">Error: ${data.message || 'Unknown error.'}</p>`;
+                }
+            })
+            .catch(error => {
+                reportOutputDiv.innerHTML = `<p class="report-error-row">Failed to load report: ${error.message}</p>`;
+            })
+            .finally(() => {
+                loadingIndicator.style.display = 'none';
+            });
+    }
+
+    if (applyArchiveFilterBtn) {
+        applyArchiveFilterBtn.addEventListener('click', loadArchivedPunchesReport);
+    }
+    
+    if (closeEditPunchModalReportsBtn) closeEditPunchModalReportsBtn.addEventListener('click', hideEditPunchModalReports);
+    if (cancelEditPunchReportsBtn) cancelEditPunchReportsBtn.addEventListener('click', hideEditPunchModalReports);
+    
     function hideEditPunchModalReports() {
         if (editPunchModalReports) hideModal(editPunchModalReports);
         if (selectedReportExceptionRowElement) {
@@ -219,7 +262,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function populateEditPunchModalReports(data) {
         if (!editPunchModalReports || !data) { console.error("Reports.js: Cannot populate reports edit punch modal: missing elements or data."); return; }
-
         const nameDisplay = document.getElementById('reports_editPunchEmployeeName');
         const scheduleDisplay = document.getElementById('reports_editPunchScheduleInfo');
         const punchIdField = document.getElementById('reports_editPunchIdField');
@@ -227,10 +269,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const dateField = document.getElementById('reports_editDate');
         const inTimeField = document.getElementById('reports_editInTime');
         const outTimeField = document.getElementById('reports_editOutTime');
-
         if(nameDisplay) nameDisplay.textContent = data.employeeName || `EID: ${data.globalEid}`;
         if(scheduleDisplay) {
-            let scheduleText = `Schedule: ${data.scheduleName || 'N/A'}`;
+            let scheduleText = `${data.scheduleName || 'N/A'}`;
             if(data.shiftStart && data.shiftEnd && data.shiftStart.toLowerCase() !== 'n/a' && data.shiftEnd.toLowerCase() !== 'n/a'){
                 scheduleText += ` (${data.shiftStart} - ${data.shiftEnd})`;
             }
@@ -248,20 +289,16 @@ document.addEventListener('DOMContentLoaded', function() {
         if(dateField) dateField.value = formattedDate;
         if(inTimeField) inTimeField.value = parseTimeTo24Hour(data.inTime);
         if(outTimeField) outTimeField.value = ''; 
-
         setTimeout(()=> { if (outTimeField) outTimeField.focus(); }, 150);
     }
 
     function prepareAndShowEditPunchModalReports(exceptionData) {
-        console.log("Reports.js: Preparing Edit Punch Modal for EID:", exceptionData?.globalEid);
         if (!exceptionData || !exceptionData.globalEid) {
             showPageNotification("Cannot edit: Missing Employee ID from selected row.", true); return;
         }
         const globalEid = exceptionData.globalEid;
         const contextPath = (typeof appRootPath === 'string' && appRootPath) ? appRootPath : (window.location.pathname.substring(0, window.location.pathname.indexOf("/",2)) || "");
         const url = `${contextPath}/EmployeeInfoServlet?action=getScheduleInfo&eid=${globalEid}`;
-
-        console.log("Reports.js: Fetching schedule info:", url);
         fetch(url, {cache: 'no-store'})
             .then(response => {
                 if (!response.ok) return response.text().then(text => { throw new Error(`Schedule fetch failed: ${response.status}. ${text}`); });
@@ -275,22 +312,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else { throw new Error(scheduleData.message || 'Failed to get schedule data.'); }
             })
             .catch(error => {
-                console.error("Reports.js: Error preparing edit punch modal (reports):", error);
                 showPageNotification("Could not load details for editing punch: " + error.message, true);
             });
     }
 
     function handleEditPunchFormSubmitReports(event) {
         event.preventDefault();
-        if (!editPunchFormReports) { console.error("Reports.js: editPunchFormReports missing!"); return; }
-
+        if (!editPunchFormReports) { return; }
         const formData = new FormData(editPunchFormReports);
         const formBody = new URLSearchParams(formData);
-        console.log("Reports.js: Submitting Edited Punch (Reports):", formBody.toString());
-
         const submitButton = editPunchFormReports.querySelector('button[type="submit"]');
         if(submitButton) submitButton.disabled = true;
-
         fetch('AddEditAndDeletePunchesServlet', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' }, body: formBody })
         .then(response => {
             if (!response.ok) {
@@ -302,7 +334,6 @@ document.addEventListener('DOMContentLoaded', function() {
             return response.json();
         })
         .then(data => {
-            console.log("Reports.js: Edit Punch Save Response (Reports):", data);
             if (data.success) {
                 hideEditPunchModalReports();
                 showPageNotification(data.message || "Punch updated successfully!", false);
@@ -312,7 +343,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .catch(error => {
-            console.error("Reports.js: Error saving punch (fetch catch reports):", error);
             showPageNotification("Error saving punch: " + error.message, true);
         })
         .finally(() => { if(submitButton) submitButton.disabled = false; });
@@ -320,8 +350,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (reportOutputDiv) {
         reportOutputDiv.addEventListener('click', function(event) {
+            const inactiveTable = document.getElementById('inactiveEmployeesTable');
             const interactiveExceptionTable = event.target.closest('table.exception-report-table-interactive');
-            const inactiveTable = event.target.closest('table.inactive-employees-table');
+
+            if (inactiveTable && inactiveTable.contains(event.target)) {
+                const targetRow = event.target.closest('tr[data-eid]');
+                if (targetRow) {
+                    if (selectedInactiveRowElement && selectedInactiveRowElement !== targetRow) {
+                        selectedInactiveRowElement.classList.remove('selected');
+                    }
+                    targetRow.classList.toggle('selected');
+                    if (targetRow.classList.contains('selected')) {
+                        selectedInactiveRowElement = targetRow;
+                        if (reactivateEmployeeBtn) reactivateEmployeeBtn.disabled = false;
+                    } else {
+                        selectedInactiveRowElement = null;
+                        if (reactivateEmployeeBtn) reactivateEmployeeBtn.disabled = true;
+                    }
+                }
+                return;
+            }
 
             if (interactiveExceptionTable) {
                 const punchRow = event.target.closest('tr[data-punch-id]');
@@ -349,52 +397,72 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 return;
             }
-
-            if (inactiveTable) {
-                const targetRow = event.target.closest('tr[data-eid]');
-                if (targetRow) {
-                    const eid = targetRow.dataset.eid;
-                    const cells = targetRow.cells;
-                    const employeeName = (cells.length > 2) ? `${decodeHtmlEntities(cells[1].textContent)} ${decodeHtmlEntities(cells[2].textContent)}`.trim() : `EID ${eid}`;
-                    if (confirm(`Are you sure you want to reactivate employee ${employeeName} (EID: ${eid})?`)) {
-                        reactivateEmployee(eid);
-                    }
-                }
-                return;
-            }
         });
-    } else { console.error("Reports.js: #reportOutputDiv not found for event listeners."); }
+    }
 
     function reactivateEmployee(eid) {
-        console.log(`Reports.js: Attempting to reactivate employee EID: ${eid}`);
-        const params = new URLSearchParams();
-        params.append('action', 'reactivateEmployee');
-        params.append('eid', eid);
-        showPageNotification("Reactivating employee " + eid + "...", false);
-
-        fetch('AddEditAndDeleteEmployeesServlet', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' }, body: params })
+        const params = new URLSearchParams({ action: 'reactivateEmployee', eid: eid });
+        fetch('AddEditAndDeleteEmployeesServlet', { 
+            method: 'POST', 
+            headers: { 
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'X-Requested-With': 'XMLHttpRequest'
+            }, 
+            body: params 
+        })
         .then(response => {
-             if (response.ok && response.headers.get("Content-Type")?.includes("application/json")) { return response.json(); }
-             return response.text().then(text => { throw new Error(`Server error reactivating: ${response.status} - ${text||'No details'}`); });
+             const contentType = response.headers.get("content-type");
+             if (response.ok && contentType && contentType.indexOf("application/json") !== -1) {
+                 return response.json();
+             }
+             if ((response.status === 403 || response.status === 401) && contentType && contentType.indexOf("application/json") !== -1) {
+                 return response.json().then(errData => { throw errData; });
+             }
+             return response.text().then(text => { 
+                 throw new Error("Server response was not in the expected format. Your session may have expired.");
+             });
         })
         .then(data => {
-            console.log("Reports.js: Reactivate response:", data);
             if (data.success) {
                 showPageNotification(data.message || `Employee ${eid} reactivated successfully.`, false);
-                loadReport('inactiveEmployees');
-            } else { showPageNotification(`Error reactivating employee: ${data.error || 'Unknown server error.'}`, true); }
+                if(notificationOkButton) {
+                    notificationOkButton.addEventListener('click', function() {
+                        loadReport('inactiveEmployees');
+                    }, { once: true });
+                }
+            } else { 
+                throw new Error(data.error || 'Unknown server error.'); 
+            }
         })
         .catch(error => {
-            console.error('Reports.js: Error reactivating employee:', error);
-            showPageNotification(`Failed to reactivate employee: ${error.message}`, true);
+            if (error.error === 'user_limit_exceeded') {
+                if (upgradePlanMessage) upgradePlanMessage.textContent = error.message;
+                showModal(upgradePlanModal);
+            } else if (error.sessionExpired) {
+                window.location.href = 'login.jsp?error=Session+Expired';
+            }
+            else {
+                console.error('Reports.js: Error reactivating employee:', error);
+                showPageNotification(`Failed to reactivate employee: ${error.message}`, true);
+            }
+        });
+    }
+    
+    if (reactivateEmployeeBtn) {
+        reactivateEmployeeBtn.addEventListener('click', function() {
+            if (selectedInactiveRowElement && selectedInactiveRowElement.dataset.eid) {
+                const eid = selectedInactiveRowElement.dataset.eid;
+                reactivateEmployee(eid);
+            } else {
+                showPageNotification("Please select an employee to reactivate.", true);
+            }
         });
     }
 
     function printCurrentReport() {
-        console.log("Reports.js: printCurrentReport function called.");
         const title = reportTitleElement?.textContent || 'Report';
         const description = reportDescriptionElement?.textContent || '';
-        const reportTableElement = reportOutputDiv?.querySelector('#dynamicReportTable');
+        const reportTableElement = reportOutputDiv?.querySelector('.report-table');
         if (!reportTableElement) { showPageNotification("No report table content to print.", true); return; }
         
         const reportsCSSLink = document.querySelector('link[href^="css/reports.css"]');
@@ -412,7 +480,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 table.report-table { font-size: 9pt; }
                 table.report-table thead { display: table-header-group; }
                 table.report-table tbody tr { page-break-inside: avoid; }
-                .main-navbar, .report-actions, .filter-form, #button-container { display: none !important; }
+                .main-navbar, .report-actions, .filter-form, #button-container, .report-filters, #archiveReportFilters { display: none !important; }
             </style>
         `);
         printWindow.document.write('</head><body>');
@@ -433,15 +501,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 750);
     }
 
-
     if (printReportBtn) printReportBtn.addEventListener('click', printCurrentReport);
-
+    
     const urlParams = new URLSearchParams(window.location.search);
     const initialReport = urlParams.get('report');
     const initialFilterValue = urlParams.get('filterValue');
-
+    
     if (initialReport && reportHeaders.hasOwnProperty(initialReport)) {
-        loadReport(initialReport, initialFilterValue);
+        window.loadReport(initialReport, initialFilterValue);
     } else {
          if(reportTitleElement) reportTitleElement.textContent = "Select Report";
          if(reportDescriptionElement) reportDescriptionElement.textContent = "Choose a report from the 'Reports' menu in the navigation bar.";
@@ -452,4 +519,3 @@ document.addEventListener('DOMContentLoaded', function() {
          if(reportActionsDiv) reportActionsDiv.style.display = 'none';
     }
 });
-// End of reports.js

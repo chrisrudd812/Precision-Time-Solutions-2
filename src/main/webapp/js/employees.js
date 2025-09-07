@@ -65,7 +65,8 @@ document.addEventListener('DOMContentLoaded', function() {
             text1: "You have successfully configured your company and added your employees.",
             text2: "You can now manage your employees or visit our help center to learn more.",
             buttons: [
-                { id: "wizardGoToEmployees", text: "Go to Employee Management", class: "text-blue", action: "go_to_employees" },
+                { id: "wizardGoToEmployees", text: "Manage Employees", class: "text-blue", action: "go_to_employees" },
+                { id: "wizardSendWelcome", text: "Email PIN & Welcome Info", class: "text-green", action: "send_welcome" },
                 { id: "wizardGoToHelp", text: "Visit Help Center", class: "text-grey", action: "go_to_help" }
             ]
         }
@@ -89,25 +90,39 @@ document.addEventListener('DOMContentLoaded', function() {
         showModal(wizardModal);
     }
     
-	// [FIX] 'endWizard' function now accepts a URL parameter to redirect to.
-	function endWizard(redirectUrl = `${appRoot}/employees.jsp`) {
+	function endWizard(redirectUrl) {
+		console.log('%c[Wizard Debug] endWizard() called. Attempting to terminate wizard session on server...', 'color: #007bff; font-weight: bold;');
+		
 	    fetch(`${appRoot}/WizardStatusServlet`, {
 	        method: 'POST',
 	        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
 	        body: new URLSearchParams({ 'action': 'endWizard' })
 	    })
-	    .then(response => {
+	    .then(async response => {
+			const responseBody = await response.text();
+			console.log(`[Wizard Debug] Server responded with status: ${response.status}`);
+			console.log(`[Wizard Debug] Server response body: ${responseBody}`);
+			
 	        if (response.ok) {
-	            window.location.href = redirectUrl;
+				console.log('[Wizard Debug] Server response was OK. Proceeding with page reload/redirect.');
+	            if (redirectUrl) {
+	                window.location.href = redirectUrl;
+                } else {
+	                window.location.reload();
+	            }
 	        } else {
-	            // If ending the wizard fails, still redirect but maybe show an error.
-	            alert('Could not finalize setup. Redirecting...');
-	            window.location.href = redirectUrl;
+				console.error('[Wizard Debug] Server responded with an error.');
+	            alert('Could not finalize setup. The page will now reload.');
+	            window.location.reload();
 	        }
-	    });
+	    })
+        .catch(error => {
+            console.error('[Wizard Debug] Network error during fetch to end wizard:', error);
+            alert('A network error occurred. The page will now reload.');
+            window.location.reload();
+        });
 	}
 
-	// [FIX] 'handleWizardAction' now properly calls endWizard for both exit actions.
 	async function handleWizardAction(action) {
 	    _hideModal(wizardModal);
 	    if (action === 'confirm_admin') {
@@ -133,10 +148,31 @@ document.addEventListener('DOMContentLoaded', function() {
 	    } else if (action === 'finish_setup') {
 	        updateWizardView('setup_complete');
 	    } else if (action === 'go_to_employees') {
-	        endWizard(); // Calls with the default URL: /employees.jsp
+	        endWizard(); 
 	    } else if (action === 'go_to_help') {
-	        endWizard(`${appRoot}/help.jsp`); // Calls with the help page URL
-	    }
+	        endWizard(`${appRoot}/help.jsp`);
+	    } else if (action === 'send_welcome') {
+            // [FIX] Updated logic to build the enhanced welcome message and login link
+            const companyName = window.companyNameSignup || 'Your Company';
+            const companyId = window.companyIdentifier || '';
+
+            // Construct the full login link with pre-filled company ID and a focus flag
+            const loginLink = `${window.location.origin}${appRoot}/login.jsp?companyId=${encodeURIComponent(companyId)}&focus=email`;
+
+            const subject = `Welcome to ${companyName}!`;
+            const body = `Welcome to Precision Time Solutions!\n\n` +
+                         `To log in to the time and attendance system, please use the following link (we recommend bookmarking it for easy access):\n` +
+                         `${loginLink}\n\n` +
+                         `Your login details are:\n` +
+                         `- Company ID: ${companyId}\n` +
+                         `- Username: Your Email Address\n` +
+                         `- Temporary PIN: 1234\n\n` +
+                         `You will be required to change this PIN on your first login.`;
+
+            const params = new URLSearchParams({ action: 'welcome', subject, body });
+            const redirectUrl = `${appRoot}/messaging.jsp?${params.toString()}`;
+            endWizard(redirectUrl);
+        }
 	}
 
     function formatDateForInput(dateString) {
@@ -236,11 +272,8 @@ document.addEventListener('DOMContentLoaded', function() {
         editForm.querySelector('#editHireDate').value = formatDateForInput(data.hiredate);
         editForm.querySelector('#editPermissions').value = _decode(data.permissions);
         editForm.querySelector('#editSupervisor').value = _decode(data.supervisor);
-        
         editForm.querySelector('#editDepartment').value = _decode(data.dept || 'None');
-        
         editForm.querySelector('#editPayRate').value = (data.wage && parseFloat(data.wage) > 0) ? data.wage : '';
-        
         editForm.querySelector('#editSchedule').value = data.schedule || 'Open';
         editForm.querySelector('#editWorkSchedule').value = data.worksched || 'Full Time';
         editForm.querySelector('#editWageType').value = data.wagetype || 'Hourly';
@@ -327,17 +360,36 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!selectedEmployeeData) return;
         const employeeName = `${_decode(selectedRow.dataset.firstname)} ${_decode(selectedRow.dataset.lastname)}`;
         deactivateModal.querySelector('#deactivateEmployeeName').textContent = employeeName;
+        
+        const reasonSelect = deactivateModal.querySelector('#deactivationReasonSelect');
+        if (reasonSelect) {
+            reasonSelect.value = ''; 
+            reasonSelect.classList.remove('is-invalid');
+        }
+
         showModal(deactivateModal);
+        
         const confirmBtn = deactivateModal.querySelector('#confirmDeactivateBtn');
         const cancelBtn = deactivateModal.querySelector('.cancel-btn');
+
         const confirmHandler = () => {
+            const reason = reasonSelect ? reasonSelect.value : '';
+            if (!reason) {
+                if(reasonSelect) reasonSelect.classList.add('is-invalid');
+                showPageNotification("Please select a reason for deactivation.", true);
+                return;
+            }
+
             const form = new FormData();
             form.append('action', 'deactivateEmployee');
             form.append('eid', selectedEmployeeData.eid);
+            form.append('deactivationReason', reason); 
+
             fetch(`${appRoot}/AddEditAndDeleteEmployeesServlet`, { method: 'POST', body: new URLSearchParams(form) })
             .then(response => { if(response.redirected) { window.location.href = response.url; } else { window.location.reload(); } });
             _hideModal(deactivateModal);
         };
+        
         confirmBtn.onclick = confirmHandler;
         cancelBtn.onclick = () => _hideModal(deactivateModal);
     });
@@ -529,7 +581,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Standardized notification handling
     const successDiv = document.getElementById('pageNotificationDiv_Success_Emp');
     const errorDiv = document.getElementById('pageNotificationDiv_Error_Emp');
     if (successDiv && successDiv.textContent.trim()) {

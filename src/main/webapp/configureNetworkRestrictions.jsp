@@ -48,10 +48,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Configure Allowed Networks</title>
-    <link rel="stylesheet" href="<%= APP_CONTEXT_PATH_JSP %>/css/navbar.css?v=<%= System.currentTimeMillis() %>">
-    <link rel="stylesheet" href="<%= APP_CONTEXT_PATH_JSP %>/css/reports.css?v=<%= System.currentTimeMillis() %>"> 
+    <%@ include file="/WEB-INF/includes/common-head.jspf" %>
     <link rel="stylesheet" href="<%= APP_CONTEXT_PATH_JSP %>/css/configureNetworkRestrictions.css?v=<%= System.currentTimeMillis() %>">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
 <body class="reports-page">
 

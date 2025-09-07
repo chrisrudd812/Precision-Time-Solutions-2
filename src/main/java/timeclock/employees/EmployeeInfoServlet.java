@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.json.JSONObject; 
-import org.mindrot.jbcrypt.BCrypt; 
+import org.mindrot.jbcrypt.BCrypt;
 
 @WebServlet("/EmployeeInfoServlet")
 public class EmployeeInfoServlet extends HttpServlet {
@@ -103,7 +103,7 @@ public class EmployeeInfoServlet extends HttpServlet {
         // *** FIX: Changed PAY_RATE to WAGE to match database schema ***
         String sql = "SELECT EID, TenantEmployeeNumber, FIRST_NAME, LAST_NAME, DEPT, SCHEDULE, SUPERVISOR, " +
                      "PERMISSIONS, WORK_SCHEDULE, ADDRESS, CITY, STATE, ZIP, PHONE, EMAIL, HIRE_DATE, " +
-                     "WAGE_TYPE, WAGE, ACCRUAL_POLICY FROM EMPLOYEE_DATA WHERE EID = ? AND TenantID = ?";
+                     "WAGE_TYPE, WAGE, ACCRUAL_POLICY FROM employee_data WHERE EID = ? AND TenantID = ?";
 
         try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement pstmt = con.prepareStatement(sql)) {
@@ -157,7 +157,7 @@ public class EmployeeInfoServlet extends HttpServlet {
     private void handleResetPassword(HttpServletRequest request, HttpServletResponse response, int tenantId, int globalEid) throws IOException {
         String defaultPin = "1234";
         String defaultPinHash = BCrypt.hashpw(defaultPin, BCrypt.gensalt(12));
-        String sql = "UPDATE EMPLOYEE_DATA SET PasswordHash = ?, RequiresPasswordChange = TRUE WHERE EID = ? AND TenantID = ?";
+        String sql = "UPDATE employee_data SET PasswordHash = ?, RequiresPasswordChange = TRUE WHERE EID = ? AND TenantID = ?";
         try (Connection con = DatabaseConnection.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, defaultPinHash);
             ps.setInt(2, globalEid);

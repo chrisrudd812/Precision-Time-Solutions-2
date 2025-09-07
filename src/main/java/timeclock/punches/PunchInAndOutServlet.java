@@ -47,7 +47,7 @@ public class PunchInAndOutServlet extends HttpServlet {
     private Map<String, Object> getScheduleDetails(Connection con, int tenantId, int eid) throws SQLException {
         Map<String, Object> scheduleDetails = new HashMap<>();
         String sql = "SELECT s.SHIFT_START, s.SHIFT_END, s.DAYS_WORKED " +
-                     "FROM EMPLOYEE_DATA e LEFT JOIN SCHEDULES s ON e.TenantID = s.TenantID AND e.SCHEDULE = s.NAME " +
+                     "FROM employee_data e LEFT JOIN schedules s ON e.TenantID = s.TenantID AND e.SCHEDULE = s.NAME " +
                      "WHERE e.TenantID = ? AND e.EID = ?";
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, tenantId);
@@ -64,7 +64,7 @@ public class PunchInAndOutServlet extends HttpServlet {
     }
     
     private boolean hasOpenPunch(Connection con, int tenantId, int eid) throws SQLException {
-        String sql = "SELECT 1 FROM PUNCHES WHERE TenantID = ? AND EID = ? AND OUT_1 IS NULL AND PUNCH_TYPE IN ('User Initiated', 'Supervisor Override', 'Regular') LIMIT 1";
+        String sql = "SELECT 1 FROM punches WHERE TenantID = ? AND EID = ? AND OUT_1 IS NULL AND PUNCH_TYPE IN ('User Initiated', 'Supervisor Override', 'Regular') LIMIT 1";
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, tenantId);
             ps.setInt(2, eid);
@@ -310,7 +310,7 @@ public class PunchInAndOutServlet extends HttpServlet {
                     throw new Exception("You are already clocked in. Please clock out before clocking in again.");
                 }
 
-                String insertSql = "INSERT INTO PUNCHES (TenantID, EID, DATE, IN_1, PUNCH_TYPE, LATE) VALUES (?, ?, ?, ?, 'User Initiated', ?)";
+                String insertSql = "INSERT INTO punches (TenantID, EID, DATE, IN_1, PUNCH_TYPE, LATE) VALUES (?, ?, ?, ?, 'User Initiated', ?)";
                 try (PreparedStatement ps = con.prepareStatement(insertSql)) {
                     ps.setInt(1, tenantId);
                     ps.setInt(2, punchEID);
@@ -321,7 +321,7 @@ public class PunchInAndOutServlet extends HttpServlet {
                     else throw new SQLException("Failed to record punch.");
                 }
             } else if ("OUT".equals(punchAction)) {
-                String sql = "SELECT PUNCH_ID, IN_1 FROM PUNCHES WHERE TenantID = ? AND EID = ? AND OUT_1 IS NULL AND PUNCH_TYPE IN ('User Initiated', 'Supervisor Override', 'Regular') ORDER BY PUNCH_ID DESC LIMIT 1";
+                String sql = "SELECT PUNCH_ID, IN_1 FROM punches WHERE TenantID = ? AND EID = ? AND OUT_1 IS NULL AND PUNCH_TYPE IN ('User Initiated', 'Supervisor Override', 'Regular') ORDER BY PUNCH_ID DESC LIMIT 1";
                 try (PreparedStatement ps = con.prepareStatement(sql)) {
                     ps.setInt(1, tenantId);
                     ps.setInt(2, punchEID);
@@ -329,7 +329,7 @@ public class PunchInAndOutServlet extends HttpServlet {
                     if (rs.next()) {
                         long punchId = rs.getLong("PUNCH_ID");
                         Timestamp inTime = rs.getTimestamp("IN_1");
-                        String updateSql = "UPDATE PUNCHES SET OUT_1 = ?, EARLY_OUTS = ? WHERE PUNCH_ID = ?";
+                        String updateSql = "UPDATE punches SET OUT_1 = ?, EARLY_OUTS = ? WHERE PUNCH_ID = ?";
                         try (PreparedStatement psUpdate = con.prepareStatement(updateSql)) {
                             psUpdate.setTimestamp(1, punchTimestampUtc);
                             psUpdate.setBoolean(2, isEarlyOut);
@@ -340,7 +340,7 @@ public class PunchInAndOutServlet extends HttpServlet {
                             } else throw new SQLException("Failed to update punch record.");
                         }
                     } else {
-                        throw new Exception("No open work punch found to clock out against.");
+                    	isError = true; messageForRedirect = "No open work punch found to clock out against.";
                     }
                 }
             }

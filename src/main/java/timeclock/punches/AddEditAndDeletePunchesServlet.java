@@ -223,7 +223,7 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
             con = DatabaseConnection.getConnection();
             con.setAutoCommit(false);
             String originalPunchTypeDb = null; Double originalTotalHoursDb = null; int punchOwnerEid = -1;
-            String fetchSql = "SELECT PUNCH_TYPE, TOTAL, EID FROM PUNCHES WHERE PUNCH_ID = ? AND TenantID = ?";
+            String fetchSql = "SELECT PUNCH_TYPE, TOTAL, EID FROM punches WHERE PUNCH_ID = ? AND TenantID = ?";
             try (PreparedStatement psFetch = con.prepareStatement(fetchSql)) {
                 psFetch.setLong(1, punchId); psFetch.setInt(2, tenantId);
                 try (ResultSet rsFetch = psFetch.executeQuery()) {
@@ -240,7 +240,7 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
             String originalAccrualCol = getAccrualColumn(originalPunchTypeDb);
             if (originalAccrualCol != null && originalTotalHoursDb != null && originalTotalHoursDb > 0) {
                 logger.info("Restoring original accrual: " + originalTotalHoursDb + "h of '" + originalPunchTypeDb + "' to EID " + punchOwnerEid);
-                String restoreSql = "UPDATE EMPLOYEE_DATA SET " + originalAccrualCol + " = " + originalAccrualCol + " + ? WHERE EID = ? AND TenantID = ?";
+                String restoreSql = "UPDATE employee_data SET " + originalAccrualCol + " = " + originalAccrualCol + " + ? WHERE EID = ? AND TenantID = ?";
                 try (PreparedStatement psRestore = con.prepareStatement(restoreSql)) {
                     psRestore.setDouble(1, originalTotalHoursDb); psRestore.setInt(2, punchOwnerEid); psRestore.setInt(3, tenantId);
                     if (psRestore.executeUpdate() > 0) {
@@ -261,7 +261,7 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
                     newFinalTotalHoursForAccrual = Math.round(newFinalTotalHoursForAccrual * 100.0) / 100.0;
                 } catch (NumberFormatException e) { throw new SQLException("Invalid format for Total Hours: '" + totalHoursManualStr + "'."); }
                 newUtcDbDate = localPunchDate.atStartOfDay(userInputZoneId).toInstant().atZone(ZoneOffset.UTC).toLocalDate();
-                updatePunchSql = "UPDATE PUNCHES SET DATE = ?, IN_1 = NULL, OUT_1 = NULL, TOTAL = ?, PUNCH_TYPE = ? WHERE PUNCH_ID = ? AND TenantID = ? AND EID = ?";
+                updatePunchSql = "UPDATE punches SET DATE = ?, IN_1 = NULL, OUT_1 = NULL, TOTAL = ?, PUNCH_TYPE = ? WHERE PUNCH_ID = ? AND TenantID = ? AND EID = ?";
                 psUpdatePunch = con.prepareStatement(updatePunchSql);
                 psUpdatePunch.setDate(1, java.sql.Date.valueOf(newUtcDbDate));
                 setOptionalDouble(psUpdatePunch, 2, newFinalTotalHoursForAccrual);
@@ -286,7 +286,7 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
                 if (newUtcInTimestamp != null) { newUtcDbDate = newUtcInTimestamp.toInstant().atZone(ZoneOffset.UTC).toLocalDate(); }
                 else if (newUtcOutTimestamp != null) { newUtcDbDate = newUtcOutTimestamp.toInstant().atZone(ZoneOffset.UTC).toLocalDate(); }
                 else { newUtcDbDate = localPunchDate.atStartOfDay(userInputZoneId).toInstant().atZone(ZoneOffset.UTC).toLocalDate(); }
-                updatePunchSql = "UPDATE PUNCHES SET DATE = ?, IN_1 = ?, OUT_1 = ?, PUNCH_TYPE = ? WHERE PUNCH_ID = ? AND TenantID = ? AND EID = ?";
+                updatePunchSql = "UPDATE punches SET DATE = ?, IN_1 = ?, OUT_1 = ?, PUNCH_TYPE = ? WHERE PUNCH_ID = ? AND TenantID = ? AND EID = ?";
                 psUpdatePunch = con.prepareStatement(updatePunchSql);
                 psUpdatePunch.setDate(1, java.sql.Date.valueOf(newUtcDbDate));
                 setOptionalTimestamp(psUpdatePunch, 2, newUtcInTimestamp); setOptionalTimestamp(psUpdatePunch, 3, newUtcOutTimestamp);
@@ -299,16 +299,16 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
                 if (newUtcOutTimestamp.toInstant().isAfter(newUtcInTimestamp.toInstant())) {
                     ShowPunches.calculateAndUpdatePunchTotal(con, tenantId, punchOwnerEid, newUtcInTimestamp, newUtcOutTimestamp, punchId);
                 } else {
-                    String updateTotalToNullSql = "UPDATE PUNCHES SET TOTAL = NULL WHERE PUNCH_ID = ?";
+                    String updateTotalToNullSql = "UPDATE punches SET TOTAL = NULL WHERE PUNCH_ID = ?";
                     try (PreparedStatement psNullTotal = con.prepareStatement(updateTotalToNullSql)) { psNullTotal.setLong(1, punchId); psNullTotal.executeUpdate(); }
                 }
             } else if (!isNewTypeHoursOnly && (newUtcInTimestamp == null || newUtcOutTimestamp == null)) {
-                String updateTotalToNullSql = "UPDATE PUNCHES SET TOTAL = NULL WHERE PUNCH_ID = ?";
+                String updateTotalToNullSql = "UPDATE punches SET TOTAL = NULL WHERE PUNCH_ID = ?";
                 try (PreparedStatement psNullTotal = con.prepareStatement(updateTotalToNullSql)) { psNullTotal.setLong(1, punchId); psNullTotal.executeUpdate(); }
             }
             String newEffectiveAccrualCol = getAccrualColumn(newPunchType);
             if (newEffectiveAccrualCol != null && isNewTypeHoursOnly && newFinalTotalHoursForAccrual != null && newFinalTotalHoursForAccrual > 0) {
-                String deductSql = "UPDATE EMPLOYEE_DATA SET " + newEffectiveAccrualCol + " = " + newEffectiveAccrualCol + " - ? WHERE EID = ? AND TenantID = ?";
+                String deductSql = "UPDATE employee_data SET " + newEffectiveAccrualCol + " = " + newEffectiveAccrualCol + " - ? WHERE EID = ? AND TenantID = ?";
                 try (PreparedStatement psDeduct = con.prepareStatement(deductSql)) {
                     psDeduct.setDouble(1, newFinalTotalHoursForAccrual); psDeduct.setInt(2, punchOwnerEid); psDeduct.setInt(3, tenantId);
                     if(psDeduct.executeUpdate() > 0) {
@@ -398,7 +398,7 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
         Connection con = null;
         try {
             con = DatabaseConnection.getConnection(); con.setAutoCommit(false);
-            String insertSql = "INSERT INTO PUNCHES (TenantID, EID, DATE, IN_1, OUT_1, TOTAL, PUNCH_TYPE, OT, LATE, EARLY_OUTS) VALUES (?, ?, ?, ?, ?, ?, ?, 0.0, FALSE, FALSE)";
+            String insertSql = "INSERT INTO punches (TenantID, EID, DATE, IN_1, OUT_1, TOTAL, PUNCH_TYPE, OT, LATE, EARLY_OUTS) VALUES (?, ?, ?, ?, ?, ?, ?, 0.0, FALSE, FALSE)";
             long newPunchId = -1;
             try (PreparedStatement psInsert = con.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
                 psInsert.setInt(1, tenantId); psInsert.setInt(2, eid);
@@ -420,7 +420,7 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
                 } else { logger.warning("New timed punch ID " + newPunchId + " has OUT not after IN."); }
             }
             if (isHoursOnly && accrualColumn != null && finalTotalHoursForAccrual != null && finalTotalHoursForAccrual > 0) {
-                String updateSql = "UPDATE EMPLOYEE_DATA SET " + accrualColumn + " = " + accrualColumn + " - ? WHERE EID = ? AND TenantID = ?";
+                String updateSql = "UPDATE employee_data SET " + accrualColumn + " = " + accrualColumn + " - ? WHERE EID = ? AND TenantID = ?";
                 try (PreparedStatement psUpdate = con.prepareStatement(updateSql)) {
                     psUpdate.setDouble(1, finalTotalHoursForAccrual); psUpdate.setInt(2, eid); psUpdate.setInt(3, tenantId);
                     if (psUpdate.executeUpdate() == 0) logger.warning("Failed to update " + accrualColumn + " for EID " + eid);
@@ -477,7 +477,7 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
         }
 
         Connection con = null; int employeesAffected = 0; List<Integer> activeEmployeeIds = new ArrayList<>();
-        String fetchActiveEmployeesSql = "SELECT EID FROM EMPLOYEE_DATA WHERE TenantID = ? AND ACTIVE = TRUE";
+        String fetchActiveEmployeesSql = "SELECT EID FROM employee_data WHERE TenantID = ? AND ACTIVE = TRUE";
         try {
             con = DatabaseConnection.getConnection(); con.setAutoCommit(false);
             try (PreparedStatement psFetch = con.prepareStatement(fetchActiveEmployeesSql)) {
@@ -488,9 +488,9 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
                 response.sendRedirect("add_global_data.jsp?message=" + URLEncoder.encode("No active employees found to add global hours to.", StandardCharsets.UTF_8.name()));
                 return;
             }
-            String insertPunchSql = "INSERT INTO PUNCHES (TenantID, EID, DATE, IN_1, OUT_1, TOTAL, PUNCH_TYPE, OT, LATE, EARLY_OUTS) VALUES (?, ?, ?, NULL, NULL, ?, ?, 0.0, FALSE, FALSE)";
+            String insertPunchSql = "INSERT INTO punches (TenantID, EID, DATE, IN_1, OUT_1, TOTAL, PUNCH_TYPE, OT, LATE, EARLY_OUTS) VALUES (?, ?, ?, NULL, NULL, ?, ?, 0.0, FALSE, FALSE)";
             String accrualColumn = getAccrualColumn(punchType);
-            String updateAccrualSql = (accrualColumn != null) ? "UPDATE EMPLOYEE_DATA SET " + accrualColumn + " = " + accrualColumn + " - ? WHERE EID = ? AND TenantID = ?" : null;
+            String updateAccrualSql = (accrualColumn != null) ? "UPDATE employee_data SET " + accrualColumn + " = " + accrualColumn + " - ? WHERE EID = ? AND TenantID = ?" : null;
 
             try (PreparedStatement psInsert = con.prepareStatement(insertPunchSql);
                  PreparedStatement psUpdateAccrual = (updateAccrualSql != null) ? con.prepareStatement(updateAccrualSql) : null) {
@@ -543,7 +543,7 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
         try {
             con = DatabaseConnection.getConnection(); con.setAutoCommit(false);
             String originalPunchType = null; Double originalHours = null; int punchOwnerEid = -1;
-            String getSql = "SELECT EID, TOTAL, PUNCH_TYPE FROM PUNCHES WHERE PUNCH_ID = ? AND TenantID = ?";
+            String getSql = "SELECT EID, TOTAL, PUNCH_TYPE FROM punches WHERE PUNCH_ID = ? AND TenantID = ?";
             try (PreparedStatement psGet = con.prepareStatement(getSql)) {
                 psGet.setLong(1, punchId); psGet.setInt(2, tenantId);
                 try (ResultSet rs = psGet.executeQuery()) {
@@ -555,14 +555,14 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
             String accrualCol = getAccrualColumn(originalPunchType); boolean restoredAccrual = false;
             if (accrualCol != null && originalHours != null && originalHours > 0) {
                 logger.info("Restoring " + originalHours + " of '" + originalPunchType + "' to EID " + punchOwnerEid);
-                String restoreSql = "UPDATE EMPLOYEE_DATA SET " + accrualCol + " = " + accrualCol + " + ? WHERE EID = ? AND TenantID = ?";
+                String restoreSql = "UPDATE employee_data SET " + accrualCol + " = " + accrualCol + " + ? WHERE EID = ? AND TenantID = ?";
                 try (PreparedStatement psRestore = con.prepareStatement(restoreSql)) {
                     psRestore.setDouble(1, originalHours); psRestore.setInt(2, punchOwnerEid); psRestore.setInt(3, tenantId);
                     if (psRestore.executeUpdate() > 0) { restoredAccrual = true; logger.info("Accrual restored successfully for EID " + punchOwnerEid); }
                     else { logger.warning("Failed to restore accrual hours for EID " + punchOwnerEid + " (or no change needed)."); }
                 }
             }
-            String deleteSql = "DELETE FROM PUNCHES WHERE PUNCH_ID = ? AND TenantID = ?";
+            String deleteSql = "DELETE FROM punches WHERE PUNCH_ID = ? AND TenantID = ?";
             try (PreparedStatement psDel = con.prepareStatement(deleteSql)) {
                 psDel.setLong(1, punchId); psDel.setInt(2, tenantId);
                 int rowsDeleted = psDel.executeUpdate();

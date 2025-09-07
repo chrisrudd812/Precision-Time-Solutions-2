@@ -110,7 +110,7 @@ public class AccrualServlet extends HttpServlet {
 
             List<Integer> targetEids = new ArrayList<>();
             if (isGlobal) {
-                String sqlGetActive = "SELECT EID FROM EMPLOYEE_DATA WHERE ACTIVE = TRUE AND TenantID = ?";
+                String sqlGetActive = "SELECT EID FROM employee_data WHERE ACTIVE = TRUE AND TenantID = ?";
                 try (PreparedStatement ps = con.prepareStatement(sqlGetActive)) {
                     ps.setInt(1, tenantId);
                     try (ResultSet rs = ps.executeQuery()) {
@@ -128,10 +128,10 @@ public class AccrualServlet extends HttpServlet {
 
             String updateSql;
             if ("set".equals(adjustmentOperation)) {
-                updateSql = "UPDATE EMPLOYEE_DATA SET " + accrualColumnName + " = ? WHERE EID = ? AND TenantID = ?";
+                updateSql = "UPDATE employee_data SET " + accrualColumnName + " = ? WHERE EID = ? AND TenantID = ?";
             } else {
                 String sqlOperator = "subtract".equals(adjustmentOperation) ? "-" : "+";
-                updateSql = "UPDATE EMPLOYEE_DATA SET " + accrualColumnName + " = COALESCE(" + accrualColumnName + ", 0) " + sqlOperator + " ? WHERE EID = ? AND TenantID = ?";
+                updateSql = "UPDATE employee_data SET " + accrualColumnName + " = COALESCE(" + accrualColumnName + ", 0) " + sqlOperator + " ? WHERE EID = ? AND TenantID = ?";
             }
             
             int successfulUpdates = 0;

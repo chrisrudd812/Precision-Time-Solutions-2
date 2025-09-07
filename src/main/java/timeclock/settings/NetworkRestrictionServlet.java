@@ -29,7 +29,7 @@ import org.json.JSONObject; // For JSON responses
 public class NetworkRestrictionServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final Logger logger = Logger.getLogger(NetworkRestrictionServlet.class.getName());
-    private static final String WIZARD_RETURN_STEP_SETTINGS = "settings_setup"; // Target step on settings.jsp
+    private static final String WIZARD_RETURN_STEP_settings = "settings_setup"; // Target step on settings.jsp
 
     private Integer getTenantId(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
@@ -74,9 +74,9 @@ public class NetworkRestrictionServlet extends HttpServlet {
              String currentSessionWizardStep = (String) session.getAttribute("wizardStep");
              // If this page was reached from settings.jsp during wizard's "settings_setup" step
              // OR if it's another specific wizard step that should lead back to settings_setup for restrictions
-             if (WIZARD_RETURN_STEP_SETTINGS.equals(currentSessionWizardStep) || fromWizardContextOnGet) {
+             if (WIZARD_RETURN_STEP_settings.equals(currentSessionWizardStep) || fromWizardContextOnGet) {
                  actualWizardModeForJSP = true;
-                 wizardReturnStepForJSP = WIZARD_RETURN_STEP_SETTINGS; // This page always returns to settings_setup for now
+                 wizardReturnStepForJSP = WIZARD_RETURN_STEP_settings; // This page always returns to settings_setup for now
              }
         }
         request.setAttribute("pageIsInWizardMode", actualWizardModeForJSP);
@@ -143,7 +143,7 @@ public class NetworkRestrictionServlet extends HttpServlet {
         if (session != null && Boolean.TRUE.equals(session.getAttribute("startSetupWizard"))) {
             String sessionWizardStep = (String) session.getAttribute("wizardStep");
             // If we are coming to configure this as part of the settings_setup phase
-            if (WIZARD_RETURN_STEP_SETTINGS.equals(sessionWizardStep)){
+            if (WIZARD_RETURN_STEP_settings.equals(sessionWizardStep)){
                  fromWizardOnGet = true;
             }
              logger.info(logPrefix + "Wizard mode check: startSetupWizard=" + session.getAttribute("startSetupWizard") + ", sessionWizardStep='" + sessionWizardStep + "', fromWizardOnGet=" + fromWizardOnGet);
@@ -158,7 +158,7 @@ public class NetworkRestrictionServlet extends HttpServlet {
             logger.log(Level.SEVERE, logPrefix + "Unexpected error during page load dispatch.", e_all);
             request.setAttribute("pageLoadErrorMessage", "An unexpected error occurred: " + e_all.getMessage());
             request.setAttribute("pageIsInWizardMode", fromWizardOnGet);
-            request.setAttribute("wizardReturnStepForJSP", fromWizardOnGet ? WIZARD_RETURN_STEP_SETTINGS : null);
+            request.setAttribute("wizardReturnStepForJSP", fromWizardOnGet ? WIZARD_RETURN_STEP_settings : null);
             request.getRequestDispatcher("/configureNetworkRestrictions.jsp").forward(request, response);
         }
     }

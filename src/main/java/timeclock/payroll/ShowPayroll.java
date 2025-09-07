@@ -71,8 +71,8 @@ public class ShowPayroll {
         Map<Integer, Map<String, Object>> employeeMetaInfo = new HashMap<>();
         String sql = "SELECT e.EID, e.TenantEmployeeNumber, e.FIRST_NAME, e.LAST_NAME, e.WAGE_TYPE, e.WAGE, " +
                      "s.AUTO_LUNCH, s.HRS_REQUIRED, s.LUNCH_LENGTH " +
-                     "FROM EMPLOYEE_DATA e " +
-                     "LEFT JOIN SCHEDULES s ON e.TenantID = s.TenantID AND e.SCHEDULE = s.NAME " +
+                     "FROM employee_data e " +
+                     "LEFT JOIN schedules s ON e.TenantID = s.TenantID AND e.SCHEDULE = s.NAME " +
                      "WHERE e.TenantID = ? AND e.ACTIVE = TRUE ORDER BY e.LAST_NAME, e.FIRST_NAME";
 
         try (PreparedStatement ps = con.prepareStatement(sql)) {
@@ -103,7 +103,7 @@ public class ShowPayroll {
     private static Map<Integer, List<Map<String, Object>>> getPunchesForPeriod(Connection con, int tenantId, LocalDate periodStartDate, LocalDate periodEndDate) throws SQLException {
         Map<Integer, List<Map<String, Object>>> punchesByGlobalEid = new HashMap<>();
         String sql = "SELECT p.EID, p.PUNCH_ID, p.DATE AS PUNCH_UTC_DATE, p.IN_1 AS IN_UTC, p.OUT_1 AS OUT_UTC, p.TOTAL AS STORED_TOTAL, p.OT AS STORED_OT, p.PUNCH_TYPE " +
-                     "FROM PUNCHES p " +
+                     "FROM punches p " +
                      "WHERE p.TenantID = ? AND p.DATE BETWEEN ? AND ? " +
                      "ORDER BY p.EID, p.DATE, p.IN_1";
 
@@ -423,7 +423,7 @@ public class ShowPayroll {
         boolean foundExceptions = false;
 
         String sql = "SELECT p.PUNCH_ID, ed.EID, ed.TenantEmployeeNumber, ed.FIRST_NAME, ed.LAST_NAME, p.DATE AS PUNCH_TABLE_UTC_DATE, p.IN_1 AS IN_UTC " +
-                     "FROM EMPLOYEE_DATA ed JOIN PUNCHES p ON ed.TenantID = p.TenantID AND ed.EID = p.EID " +
+                     "FROM employee_data ed JOIN punches p ON ed.TenantID = p.TenantID AND ed.EID = p.EID " +
                      "WHERE p.TenantID = ? AND p.OUT_1 IS NULL AND ed.ACTIVE = TRUE AND p.DATE BETWEEN ? AND ? " +
                      "AND p.PUNCH_TYPE IN ('User Initiated', 'Supervisor Override', 'Sample Data', 'Regular') " +
                      "ORDER BY ed.LAST_NAME, ed.FIRST_NAME, p.DATE, p.IN_1";

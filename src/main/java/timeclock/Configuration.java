@@ -19,12 +19,12 @@ public class Configuration {
 
     private static final Logger logger = Logger.getLogger(Configuration.class.getName());
 
-    // --- SQL statements for the multi-tenant SETTINGS table ---
+    // --- SQL statements for the multi-tenant settings table ---
     private static final String GET_SQL =
-        "SELECT setting_value FROM SETTINGS WHERE setting_key = ? AND TenantID = ?";
+        "SELECT setting_value FROM settings WHERE setting_key = ? AND TenantID = ?";
 
     private static final String SAVE_SQL =
-        "INSERT INTO SETTINGS (TenantID, setting_key, setting_value) VALUES (?, ?, ?) " +
+        "INSERT INTO settings (TenantID, setting_key, setting_value) VALUES (?, ?, ?) " +
         "ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)";
 
     /**
