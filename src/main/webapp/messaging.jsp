@@ -9,16 +9,17 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>Messaging Center</title>
     <%@ include file="/WEB-INF/includes/common-head.jspf" %>
-    <link rel="stylesheet" href="css/reports.css?v=<%= System.currentTimeMillis() %>">
+    
     <link rel="stylesheet" href="css/messaging.css?v=<%= System.currentTimeMillis() %>">
 </head>
-<body class="reports-page">
+<body>
     <%@ include file="/WEB-INF/includes/navbar.jspf" %>
 
-    <div class="parent-container reports-container">
-        <h1>Messaging Center</h1>
+    <%-- MODIFIED: Updated container classes for consistency --%>
+    <div class="parent-container">
+        <h1><i class="fas fa-comments"></i> Messaging Center</h1>
 
-        <div class="report-display-area">
+        <div class="content-display-area">
             <p class="messaging-description">Send a message to employees via email or as a pop-up that will appear the next time they log in. Select a delivery method, recipient group, compose your message, and send.</p>
 
             <div class="messaging-form-container">
@@ -72,7 +73,9 @@
         </div>
     </div>
 
-    <%@ include file="/WEB-INF/includes/notification-modals.jspf" %>
+    <%-- MODIFIED: Changed include to the consolidated modals.jspf --%>
+    <%@ include file="/WEB-INF/includes/modals.jspf" %>
+    
     <%@ include file="/WEB-INF/includes/common-scripts.jspf" %>
     <script src="js/messaging.js?v=<%= System.currentTimeMillis() %>"></script>
 </body>

@@ -25,6 +25,9 @@ import java.util.logging.Logger;
 import timeclock.Configuration;
 import timeclock.db.DatabaseConnection;
 import timeclock.punches.ShowPunches;
+import timeclock.settings.StateOvertimeRules;
+import timeclock.settings.StateOvertimeRuleDetail;
+import timeclock.subscription.SubscriptionUtils;
 
 public class ShowPayroll {
 
@@ -69,7 +72,8 @@ public class ShowPayroll {
      */
     private static Map<Integer, Map<String, Object>> getAllActiveEmployeeMetaInfo(Connection con, int tenantId) throws SQLException {
         Map<Integer, Map<String, Object>> employeeMetaInfo = new HashMap<>();
-        String sql = "SELECT e.EID, e.TenantEmployeeNumber, e.FIRST_NAME, e.LAST_NAME, e.WAGE_TYPE, e.WAGE, " +
+        // --- MODIFIED: Added e.TimeZoneId and e.STATE to the SELECT statement ---
+        String sql = "SELECT e.EID, e.TenantEmployeeNumber, e.FIRST_NAME, e.LAST_NAME, e.WAGE_TYPE, e.WAGE, e.TimeZoneId, e.STATE, " +
                      "s.AUTO_LUNCH, s.HRS_REQUIRED, s.LUNCH_LENGTH " +
                      "FROM employee_data e " +
                      "LEFT JOIN schedules s ON e.TenantID = s.TenantID AND e.SCHEDULE = s.NAME " +
@@ -87,6 +91,9 @@ public class ShowPayroll {
                     empData.put("LastName", rs.getString("LAST_NAME"));
                     empData.put("WageType", rs.getString("WAGE_TYPE"));
                     empData.put("Wage", rs.getDouble("WAGE"));
+                    // --- MODIFIED: Fetch the new TimeZoneId and STATE fields ---
+                    empData.put("TimeZoneId", rs.getString("TimeZoneId"));
+                    empData.put("State", rs.getString("STATE"));
                     empData.put("AutoLunch", rs.getBoolean("AUTO_LUNCH"));
                     Object hrObj = rs.getObject("HRS_REQUIRED"); empData.put("HoursRequired", hrObj != null ? ((Number)hrObj).doubleValue() : null);
                     Object llObj = rs.getObject("LUNCH_LENGTH"); empData.put("LunchLength", llObj != null ? ((Number)llObj).intValue() : null);
@@ -132,26 +139,18 @@ public class ShowPayroll {
         List<Map<String, Object>> payrollResults = new ArrayList<>();
         
         try (Connection con = DatabaseConnection.getConnection()) {
-            // Step 1: Get metadata for ALL active employees first.
             Map<Integer, Map<String, Object>> employeeMetaInfo = getAllActiveEmployeeMetaInfo(con, tenantId);
-            
-            // Step 2: Get all punches for the period.
             Map<Integer, List<Map<String, Object>>> punchesByEid = getPunchesForPeriod(con, tenantId, payPeriodStartDate, payPeriodEndDate);
             
             if (employeeMetaInfo.isEmpty()) {
-                return payrollResults; // No active employees to process
+                return payrollResults;
             }
             
-            // --- Fetch Configuration ---
-            String tenantProcessingTimeZoneIdStr = Configuration.getProperty(tenantId, "DefaultTimeZone", SCHEDULE_DEFAULT_ZONE_ID_STR);
-            ZoneId processingZone;
-            try {
-                if (!ShowPunches.isValid(tenantProcessingTimeZoneIdStr)) throw new Exception("Tenant DefaultTimeZone is invalid.");
-                processingZone = ZoneId.of(tenantProcessingTimeZoneIdStr);
-            } catch (Exception e) {
-                processingZone = ZoneId.of(SCHEDULE_DEFAULT_ZONE_ID_STR); // Hard fallback
-                logger.log(Level.WARNING, "Invalid Tenant DefaultTimeZone '" + tenantProcessingTimeZoneIdStr + "'. Using fallback: " + processingZone, e);
-            }
+            String tenantDefaultTimeZoneId = Configuration.getProperty(tenantId, "DefaultTimeZone", SCHEDULE_DEFAULT_ZONE_ID_STR);
+            
+            // Check if tenant has Pro plan for state-based overtime
+            boolean hasProPlan = SubscriptionUtils.hasProPlan(tenantId);
+            String overtimeType = Configuration.getProperty(tenantId, "OvertimeType", "manual"); // manual, company_state, employee_state
 
             boolean configWeeklyOtEnabled = "true".equalsIgnoreCase(Configuration.getProperty(tenantId, "Overtime", "true"));
             double configStandardOtRateMultiplier = Double.parseDouble(Configuration.getProperty(tenantId, "OvertimeRate", "1.5"));
@@ -161,14 +160,62 @@ public class ShowPayroll {
             double configDoubleTimeThreshold = Double.parseDouble(Configuration.getProperty(tenantId, "OvertimeDoubleTimeThreshold", "12.0"));
             String configFirstDayOfWeekSetting = Configuration.getProperty(tenantId, "FirstDayOfWeek", "SUNDAY").toUpperCase(Locale.ENGLISH);
 
-            // --- Process Each Employee ---
             for (Map.Entry<Integer, Map<String, Object>> empMetaEntry : employeeMetaInfo.entrySet()) {
                 int globalEID = empMetaEntry.getKey();
                 Map<String, Object> empInfo = empMetaEntry.getValue();
                 List<Map<String, Object>> employeePunches = punchesByEid.getOrDefault(globalEID, new ArrayList<>());
 
+                // --- MODIFIED: Use the employee's specific time zone, with fallbacks ---
+                String employeeTimeZoneIdStr = (String) empInfo.get("TimeZoneId");
+                ZoneId employeeProcessingZone;
+                try {
+                    if (!ShowPunches.isValid(employeeTimeZoneIdStr)) throw new Exception("Employee TimeZoneId is null or invalid.");
+                    employeeProcessingZone = ZoneId.of(employeeTimeZoneIdStr);
+                } catch (Exception e) {
+                    employeeProcessingZone = ZoneId.of(tenantDefaultTimeZoneId); // Fallback to tenant default
+                }
+
                 String wageType = (String) empInfo.getOrDefault("WageType", "Hourly");
                 double wage = (Double) empInfo.getOrDefault("Wage", 0.0);
+                String employeeState = (String) empInfo.get("State");
+                
+                // Get state-specific overtime rules based on overtime type setting
+                StateOvertimeRuleDetail stateRules = null;
+                logger.info("[StateOT_DEBUG] TenantID: " + tenantId + ", hasProPlan: " + hasProPlan + ", overtimeType: " + overtimeType + ", employeeState: " + employeeState + ", EID: " + globalEID);
+                if (hasProPlan && "employee_state".equals(overtimeType) && employeeState != null && !employeeState.trim().isEmpty()) {
+                    stateRules = StateOvertimeRules.getRulesForState(employeeState);
+                    if (stateRules != null) {
+                        logger.info("[StateOT] Applying employee state-based overtime rules for employee in state: " + employeeState + " (TenantID: " + tenantId + ")");
+                    } else {
+                        logger.info("[StateOT_DEBUG] No state rules found for state: " + employeeState);
+                    }
+                } else {
+                    logger.info("[StateOT_DEBUG] State-based OT not applied - hasProPlan: " + hasProPlan + ", overtimeType: " + overtimeType + ", employeeState: " + employeeState);
+                }
+                
+                // Use state rules if available, otherwise use FLSA standards for employee_state mode
+                boolean effectiveDailyOtEnabled, effectiveDoubleTimeEnabled;
+                double effectiveDailyOtThreshold, effectiveDoubleTimeThreshold;
+                
+                if (stateRules != null) {
+                    // Use state-specific rules
+                    effectiveDailyOtEnabled = stateRules.isDailyOTEnabled();
+                    effectiveDailyOtThreshold = stateRules.getDailyOTThreshold();
+                    effectiveDoubleTimeEnabled = stateRules.isDoubleTimeEnabled();
+                    effectiveDoubleTimeThreshold = stateRules.getDoubleTimeThreshold();
+                } else if (hasProPlan && "employee_state".equals(overtimeType)) {
+                    // Use FLSA standards for states without special rules in employee_state mode
+                    effectiveDailyOtEnabled = false;
+                    effectiveDailyOtThreshold = 0.0;
+                    effectiveDoubleTimeEnabled = false;
+                    effectiveDoubleTimeThreshold = 0.0;
+                } else {
+                    // Use tenant configuration for other modes
+                    effectiveDailyOtEnabled = configDailyOtEnabled;
+                    effectiveDailyOtThreshold = configDailyOtThreshold;
+                    effectiveDoubleTimeEnabled = configDoubleTimeEnabled;
+                    effectiveDoubleTimeThreshold = configDoubleTimeThreshold;
+                }
 
                 Map<LocalDate, Double> dailyAggregatedWorkHours = new LinkedHashMap<>();
                 double periodTotalPaidNonWorkHours = 0.0;
@@ -197,7 +244,8 @@ public class ShowPayroll {
 
                     if (isPunchTypeConsideredWorkForOT(punchType)) {
                         if (iI != null && hoursForThisEntry > 0) {
-                            LocalDate punchDate = ZonedDateTime.ofInstant(iI, processingZone).toLocalDate();
+                            // --- MODIFIED: Use the employee-specific zone to determine the date ---
+                            LocalDate punchDate = ZonedDateTime.ofInstant(iI, employeeProcessingZone).toLocalDate();
                             dailyAggregatedWorkHours.put(punchDate, dailyAggregatedWorkHours.getOrDefault(punchDate, 0.0) + hoursForThisEntry);
                         }
                     } else if (isHoursOnlyType(punchType)) {
@@ -222,13 +270,13 @@ public class ShowPayroll {
                         double todaysOt = 0;
                         double todaysDt = 0;
 
-                        if (configDoubleTimeEnabled && todaysReg > configDoubleTimeThreshold) {
-                            todaysDt = todaysReg - configDoubleTimeThreshold;
-                            todaysReg = configDoubleTimeThreshold;
+                        if (effectiveDoubleTimeEnabled && todaysReg > effectiveDoubleTimeThreshold) {
+                            todaysDt = todaysReg - effectiveDoubleTimeThreshold;
+                            todaysReg = effectiveDoubleTimeThreshold;
                         }
-                        if (configDailyOtEnabled && todaysReg > configDailyOtThreshold) {
-                            todaysOt = todaysReg - configDailyOtThreshold;
-                            todaysReg = configDailyOtThreshold;
+                        if (effectiveDailyOtEnabled && todaysReg > effectiveDailyOtThreshold) {
+                            todaysOt = todaysReg - effectiveDailyOtThreshold;
+                            todaysReg = effectiveDailyOtThreshold;
                         }
                         dailyRegHours.put(date, todaysReg);
                         dailyOtHours.put(date, todaysOt);

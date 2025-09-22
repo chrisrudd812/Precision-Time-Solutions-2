@@ -1,29 +1,32 @@
 /* === css/add_global_data.css === */
-/* Styles specific to the Add Global Data page, relying on reports.css for base styles. */
 
-.intro-paragraph {
-    text-align: center;
-    margin-bottom: 25px;
-    color: #475569;
-    font-size: 1em;
-    max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-/* Container for the form to center it on the page */
+/* Container for the form to center it and give it a card-like appearance */
 .form-container {
-	min-width: 300px;
     max-width: 500px;
-    margin: 20px auto;
+    margin: 20px auto; /* Adds vertical spacing and centers the block horizontally */
+    padding: 25px 30px;
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
 }
 
-/* Spacing for the submit button */
-.form-container .button-row {
-    margin-top: 25px;
+/* Style for the instructional text above the form */
+.form-instructions {
     text-align: center;
+    color: #475569;
+    margin-top: 0;
+    margin-bottom: 25px;
+    font-size: 1.05em;
+    line-height: 1.6;
 }
 
-button {
-	    min-width: 300px;
-} 
+.form-item {
+    margin-bottom: 1.2rem;
+}
+
+/* Make the submit button full-width and add spacing */
+.submit-button {
+    margin-top: 15px;
+    width: 100%;
+}

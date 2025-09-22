@@ -11,11 +11,11 @@
 <%@ page import="java.util.logging.Level" %>
 
 <%!
-private static final Logger jspAccountLogger = Logger.getLogger("account_jsp");
+    private static final Logger jspAccountLogger = Logger.getLogger("account_jsp");
 
     private String escapeJspHtml(String input) {
         if (input == null) return "";
-return input.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&#39;");
+        return input.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&#39;");
     }
 
     private String escapeForJavaScriptString(String input) {
@@ -24,12 +24,11 @@ return input.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").rep
     }
 
     private static class CompanyDisplayInfo {
-        String companyName = "N/A"; String companyIdentifier = "N/A";
-        String adminEmail = "N/A";
-        String companyPhone = "N/A"; 
-         String companyAddress = "N/A"; String companyCity = "N/A";    
-        String companyState = "N/A"; String companyZip = "N/A";
-        String primaryAdminFullName = "N/A";
+        String companyName = ""; String companyIdentifier = "";
+        String adminEmail = ""; String companyPhone = ""; 
+        String companyAddress = ""; String companyCity = "";    
+        String companyState = ""; String companyZip = "";
+        String primaryAdminFullName = "";
     }
 
     private CompanyDisplayInfo getCompanyDisplayDetails(Integer tenantId) {
@@ -51,7 +50,7 @@ return input.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").rep
                     info.companyState = rsTenant.getString("State");
                     info.companyZip = rsTenant.getString("ZipCode");
                     
-                    if (info.adminEmail != null && !info.adminEmail.trim().isEmpty() && !"N/A".equals(info.adminEmail)) {
+                    if (info.adminEmail != null && !info.adminEmail.trim().isEmpty()) {
                         try (PreparedStatement pstmtAdminName = conn.prepareStatement(sqlAdminName)) {
                             pstmtAdminName.setInt(1, tenantId);
                             pstmtAdminName.setString(2, info.adminEmail.trim());
@@ -103,106 +102,65 @@ return input.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").rep
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Account Settings - Precision Time Solutions</title>
     <%@ include file="/WEB-INF/includes/common-head.jspf" %>
-    <style>
-        body.reports-page { background-image: url("Images/background2.png"); }
-        
-        .reports-page .parent-container {
-            background-color: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-            padding: 0 !important;
-        }
-
-		.form-item {padding-top:10px;}
-        .content-area.account-page-container { max-width: 800px; margin: 3% auto; padding: 25px 30px; background: #fff;
-        border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); opacity: 0.93; }
-        .content-area h1 { text-align: center; color: #333; font-weight: 400; font-size: 2.2em; border-bottom: 1px solid #e0e0e0; padding-bottom: 15px; margin-top: 0; margin-bottom: 30px; }
-        .account-section { margin-bottom: 30px; }
-        .account-section h2 { font-size: 1.45em; color: #005A9C; margin-bottom: 18px; font-weight: 500; padding-bottom: 8px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
-        .account-section ul { list-style: none; padding-left: 5px; margin-top: 0; }
-        .account-section ul li { margin-bottom: 12px; font-size: 1.0em; color: #444; display: flex; align-items: flex-start; }
-        .account-section ul li i.fas { margin-right: 12px; color: #007bff; width: 20px; text-align: center; font-size: 1.1em; margin-top: 3px; }
-        .info-label { font-weight: 500; color: #333; min-width: 180px; display: inline-block; }
-        .info-value { color: #555; }
-        .edit-details-btn { font-size: 0.7em; padding: 5px 10px; }
-        .page-message { padding: 10px 15px; margin: -10px auto 20px auto; border-radius: 4px; text-align: center; }
-        .success-message { background-color: #d4edda; color: #155724; border:1px solid #c3e6cb; }
-        .error-message { background-color: #f8d7da; color: #721c24; border:1px solid #f5c6cb; }
-        .info-message { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
-        #verifyAdminPasswordForm .form-item { margin-bottom: 18px; }
-    </style>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/account.css?v=<%= System.currentTimeMillis() %>">
 </head>
-<body class="reports-page">
+<body class="account-page">
     <%@ include file="/WEB-INF/includes/navbar.jspf" %>
     <div class="parent-container">
-        <div class="content-area account-page-container"> 
-            <h1>Account Settings</h1>
-            
-            <div id="subscriptionStatusMessage" style="display: none;"></div>
-            
-            <% if (pageSuccessMessage != null) { %><div class="page-message success-message"><%= escapeJspHtml(pageSuccessMessage) %></div><% } %>
-            <% if (pageErrorMessage != null) { %><div class="page-message error-message"><%= escapeJspHtml(pageErrorMessage) %></div><% } %>
-            
-            <div class="account-section">
-                <h2>Company Details <button type="button" id="editCompanyDetailsBtn" class="glossy-button text-orange edit-details-btn"><i class="fas fa-edit"></i> Edit</button></h2>
-                <ul>
-                      <li><i class="fas fa-briefcase"></i><span class="info-label">Company Name:</span> <span class="info-value"><%= escapeJspHtml(companyInfo.companyName) %></span></li>
-                    <li><i class="fas fa-hashtag"></i><span class="info-label">Company ID:</span> <span class="info-value"><%= escapeJspHtml(companyInfo.companyIdentifier) %></span></li>
-                    <li><i class="fas fa-phone-alt"></i><span class="info-label">Company Phone:</span> <span class="info-value"><%= escapeJspHtml(companyInfo.companyPhone) %></span></li>
-                </ul>
-             </div>
-            
-            <div class="account-section">
-                <h2>Account Management</h2>
-                <ul>
-                    <li><i class="fas fa-user-circle"></i><span class="info-label">Your Login Email:</span> <span class="info-value"><%= escapeJspHtml((loggedInUserEmail != null && !loggedInUserEmail.isEmpty()) ? loggedInUserEmail : companyInfo.adminEmail) %></span></li>
-                    <li><i class="fas fa-envelope-open-text"></i><span class="info-label">Company Admin Email:</span> <span class="info-value"><%= escapeJspHtml(companyInfo.adminEmail) %></span></li>
-                </ul>
-            </div>
-            
-            <div class="account-section">
-                 <h2>Subscription</h2>
-                 <p style="padding-left: 5px; margin-top: -10px; color: #444;">Manage your subscription plan, view invoices, and update your payment method via our secure billing portal.</p>
-                <div style="padding-left: 5px; margin-top: 15px;">
-                    <button type="button" id="manageBillingBtn" class="glossy-button text-blue" autofocus><i class="fas fa-credit-card"></i> Manage Subscription & Billing</button>
-                     <form id="stripePortalForm" action="StripePortalServlet" method="POST" style="display:none;"></form>
-                 </div>
+        <h1><i class="fas fa-user-cog"></i> Account Settings</h1>
+        
+        <div id="subscriptionStatusMessage" style="display: none;"></div>
+        
+        <% if (pageSuccessMessage != null) { %><div class="page-message success-message"><%= escapeJspHtml(pageSuccessMessage) %></div><% } %>
+        <% if (pageErrorMessage != null) { %><div class="page-message error-message"><%= escapeJspHtml(pageErrorMessage) %></div><% } %>
+        
+        <div class="details-section">
+            <h2>Company Details <button type="button" id="editCompanyDetailsBtn" class="glossy-button text-orange"><i class="fas fa-edit"></i> Edit</button></h2>
+            <ul>
+                <li><i class="fas fa-briefcase"></i><span class="info-label">Company Name:</span> <span class="info-value"><%= escapeJspHtml(companyInfo.companyName) %></span></li>
+                <li><i class="fas fa-hashtag"></i><span class="info-label">Company ID:</span> <span class="info-value"><%= escapeJspHtml(companyInfo.companyIdentifier) %></span></li>
+                <%-- MODIFIED: Added full address display and IDs for JS updates --%>
+                <li><i class="fas fa-map-marker-alt"></i><span class="info-label">Address:</span> <span id="displayCompanyAddress" class="info-value"><%= escapeJspHtml(companyInfo.companyAddress) %>, <%= escapeJspHtml(companyInfo.companyCity) %>, <%= escapeJspHtml(companyInfo.companyState) %> <%= escapeJspHtml(companyInfo.companyZip) %></span></li>
+                <li><i class="fas fa-phone-alt"></i><span class="info-label">Company Phone:</span> <span id="displayCompanyPhone" class="info-value"><%= escapeJspHtml(companyInfo.companyPhone) %></span></li>
+            </ul>
+        </div>
+        
+        <div class="details-section">
+            <h2>Account Management</h2>
+            <ul>
+                <li><i class="fas fa-user-circle"></i><span class="info-label">Your Login Email:</span> <span class="info-value"><%= escapeJspHtml((loggedInUserEmail != null && !loggedInUserEmail.isEmpty()) ? loggedInUserEmail : companyInfo.adminEmail) %></span></li>
+                <li><i class="fas fa-envelope-open-text"></i><span class="info-label">Company Admin Email:</span> <span class="info-value"><%= escapeJspHtml(companyInfo.adminEmail) %></span></li>
+            </ul>
+        </div>
+        
+        <div class="details-section">
+            <h2>Subscription</h2>
+            <p class="section-description">Manage your subscription plan, view invoices, and update your payment method via our secure billing portal.</p>
+            <p class="section-description note"><strong>Note:</strong> Subscription and billing can only be managed by the primary company administrator.</p>
+            <div style="padding-left: 5px; margin-top: 15px;">
+                <button type="button" id="manageBillingBtn" class="glossy-button text-blue" autofocus><i class="fas fa-credit-card"></i> Manage Subscription & Billing</button>
+                <form id="stripePortalForm" action="StripePortalServlet" method="POST" style="display:none;"></form>
             </div>
         </div>
     </div>
 
     <%@ include file="/WEB-INF/includes/account-modals.jspf" %>
-    <div id="notificationModalGeneral" class="modal">
-        <div class="modal-content" style="max-width: 480px;">
-            <span class="close" data-close-modal>&times;</span>
-             <h2 id="notificationModalGeneralTitle">Notification</h2>
-            <p id="notificationModalGeneralMessage" style="padding: 15px 20px; text-align: center; line-height:1.6;"></p>
-            <div class="button-row" style="justify-content: center;">
-                <button type="button" data-close-modal class="glossy-button text-blue">OK</button>
-            </div>
-        </div>
-    </div>
+    <%@ include file="/WEB-INF/includes/modals.jspf" %>
 
     <%@ include file="/WEB-INF/includes/common-scripts.jspf" %>
     
     <script type="text/javascript">
         <%
-            // Get billing modal flags from the session
             boolean showBillingModal = (accountSession != null && accountSession.getAttribute("showBillingModal") != null && (Boolean) accountSession.getAttribute("showBillingModal"));
             String billingModalMessage = (accountSession != null) ? (String) accountSession.getAttribute("billingModalMessage") : "Your subscription requires attention.";
             if (billingModalMessage == null) billingModalMessage = "Your subscription requires attention.";
-            
-            // ## NEW: Get the subscription status for the lifetime plan check ##
             String subscriptionStatus = (accountSession != null) ? (String) accountSession.getAttribute("SubscriptionStatus") : "";
 
-            // Remove attributes to prevent the modal from showing up again on refresh
             if (accountSession != null) {
                 accountSession.removeAttribute("showBillingModal");
                 accountSession.removeAttribute("billingModalMessage");
             }
         %>
-
-        // Pass Java variables to global JavaScript variables for account.js
         var shouldShowBillingModal = <%= showBillingModal %>;
         var billingMessage = "<%= escapeForJavaScriptString(billingModalMessage) %>";
         var currentSubscriptionStatus = "<%= escapeForJavaScriptString(subscriptionStatus) %>";

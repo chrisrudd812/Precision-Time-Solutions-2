@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function fetchOptions(type) {
         if (optionsCache[type]) {
-            updateTargetSelect(optionsCache[type]);
+            updateTargetSelect(optionsCache[type], type);
             return;
         }
 
@@ -29,19 +29,32 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 if (data.success) {
                     optionsCache[type] = data.options;
-                    updateTargetSelect(data.options);
+                    updateTargetSelect(data.options, type);
                 } else {
-                    showPageNotification(data.message || 'Error fetching options.', true);
+                    showPageNotification(data.message || 'Error fetching options.', 'error');
                 }
             })
             .catch(error => {
-                showPageNotification('A network error occurred while fetching options.', true);
+                showPageNotification('A network error occurred while fetching options.', 'error');
                 console.error('Error:', error);
             });
     }
 
-    function updateTargetSelect(options) {
+    /**
+     * MODIFIED: This function now adds a placeholder option to the dropdown.
+     * @param {Array} options The list of options to populate.
+     * @param {string} type The type of recipient (e.g., 'department', 'individual').
+     */
+    function updateTargetSelect(options, type) {
         recipientTargetSelect.innerHTML = '';
+        
+        // Add a disabled, selected placeholder option first
+        const placeholder = document.createElement('option');
+        placeholder.value = ""; // Empty value will fail 'required' validation
+        const typeText = type === 'individual' ? 'Employee' : type.charAt(0).toUpperCase() + type.slice(1);
+        placeholder.textContent = `-- Select a ${typeText} --`;
+        recipientTargetSelect.appendChild(placeholder);
+
         if (options && options.length > 0) {
             options.forEach(option => {
                 const opt = document.createElement('option');
@@ -56,9 +69,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedType = this.value;
         if (selectedType === 'all') {
             targetSelectionContainer.style.display = 'none';
+            // MODIFIED: Ensure the target select is not required when hidden
+            recipientTargetSelect.required = false;
         } else {
             targetSelectionContainer.style.display = 'block';
-            recipientTargetLabel.textContent = `Select ${selectedType.charAt(0).toUpperCase() + selectedType.slice(1)}:`;
+            const typeText = selectedType === 'individual' ? 'Employee' : selectedType.charAt(0).toUpperCase() + selectedType.slice(1);
+            recipientTargetLabel.textContent = `Select ${typeText}:`;
+            // MODIFIED: Ensure the target select IS required when visible
+            recipientTargetSelect.required = true;
             fetchOptions(selectedType);
         }
     });
@@ -80,15 +98,15 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                showPageNotification(data.message || 'Message sent successfully!', false, null, "Message Sent");
+                showPageNotification(data.message || 'Message sent successfully!', 'success', null, "Message Sent");
                 messagingForm.reset();
-                targetSelectionContainer.style.display = 'none';
+                recipientTypeSelect.dispatchEvent(new Event('change'));
             } else {
-                showPageNotification(data.message || 'Failed to send message.', true, null, "Send Error");
+                showPageNotification(data.message || 'Failed to send message.', 'error', null, "Send Error");
             }
         })
         .catch(error => {
-            showPageNotification('A network error occurred. Could not send message.', true, null, "Network Error");
+            showPageNotification('A network error occurred. Could not send message.', 'error', null, "Network Error");
             console.error('Error:', error);
         })
         .finally(() => {
@@ -106,20 +124,15 @@ document.addEventListener('DOMContentLoaded', function() {
             messageSubject.value = decodeURIComponent(subject);
         }
         if (body) {
-            // Replace encoded newlines with actual newlines for the textarea
             messageBody.value = decodeURIComponent(body).replace(/\\n/g, '\n');
         }
         
-        // --- NEW LOGIC ADDED HERE ---
-        // Automatically set the delivery type to 'email'
         document.getElementById('deliveryTypeEmail').checked = true;
         deliveryTypeInput.value = 'email'; 
-        // --- END OF NEW LOGIC ---
 
         recipientTypeSelect.value = 'all';
         recipientTypeSelect.dispatchEvent(new Event('change'));
         
-        // Clean the URL so the parameters don't stick around on refresh
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 });

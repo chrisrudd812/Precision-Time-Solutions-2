@@ -1,29 +1,37 @@
-# Compiled class files and build outputs
+# Compiled class files
 *.class
-/target/
-/build/
+target/
+build/
 
-# Package files
-*.jar
-*.war
-*.ear
-
-# Log files
-*.log
-/logs/
-
-# Eclipse IDE settings
+# Eclipse files
+.metadata
+.settings/
 .project
 .classpath
-.settings/
 
-# OS-generated files (macOS, Windows)
+# Server files
+Servers/
+
+# Database files
+*.db
+*.lck
+TimeclockDB/
+
+# Logs
+*.log
+
+# OS files
 .DS_Store
 Thumbs.db
 
-# Sensitive configuration files (add any other sensitive files here)
-config.properties
+# IDE files
+*.swp
+*.swo
+*~
 
-#Other Files
-Stripe Secret API Key.txt
+# Maven
+.m2/
 
+# Temporary files
+*.tmp
+*.temp

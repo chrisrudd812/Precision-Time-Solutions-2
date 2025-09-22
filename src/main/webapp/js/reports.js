@@ -31,33 +31,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const upgradePlanModal = document.getElementById('upgradePlanModal');
     const upgradePlanMessage = document.getElementById('upgradePlanModalMessage');
-    const upgradePlanCancelBtn = document.getElementById('upgradePlanCancelBtn');
 
     const fixMissingPunchesBtnReports = document.getElementById('fixMissingPunchesBtnReports');
     const editPunchModalReports = document.getElementById('editPunchModalReports');
     const editPunchFormReports = document.getElementById('editPunchFormReports');
-    const closeEditPunchModalReportsBtn = document.getElementById('closeEditPunchModalReports');
-    const cancelEditPunchReportsBtn = document.getElementById('reports_cancelEditPunch');
 
     let selectedReportExceptionRowElement = null;
     let currentReportExceptionData = {};
 
-    const notificationModal = document.getElementById("notificationModalGeneral");
-    const notificationOkButton = document.getElementById("okButtonNotificationModalGeneral");
-
-    if (upgradePlanCancelBtn) {
-        upgradePlanCancelBtn.addEventListener('click', () => hideModal(upgradePlanModal));
-    }
+    const { hideModal, showModal, showPageNotification, decodeHtmlEntities, parseTimeTo24Hour, applyDefaultSort, makeTableSortable } = window;
 
     if (editPunchFormReports) {
         editPunchFormReports.addEventListener('submit', handleEditPunchFormSubmitReports);
     }
 
+    // Add cancel button event listener for reports edit modal
+    document.querySelector('#editPunchModalReports .cancel-btn')?.addEventListener('click', () => {
+        hideEditPunchModalReports();
+    });
+
     if (fixMissingPunchesBtnReports) {
         fixMissingPunchesBtnReports.addEventListener('click', () => {
             if (!selectedReportExceptionRowElement || !currentReportExceptionData.globalEid) {
-                if (typeof showPageNotification === 'function') showPageNotification("Please select an exception row to edit.", true);
-                else alert("Please select an exception row to edit.");
+                showPageNotification("Please select an exception row to edit.", 'error');
                 return;
             }
             prepareAndShowEditPunchModalReports(currentReportExceptionData);
@@ -65,8 +61,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     const reportDescriptions = {
-        exception: "Shows punch records to date with missing OUT times for work-type punches within the current pay period (excluding today's punches). To edit now, click a row to select, then 'Fix Missing Punches'.",
-        tardy: "Summarizes employee's accumulated tardies (late punches or early outs) based on schedule data for the selected date range.",
+        exception: "Shows punch records with missing OUT times within the current pay period. To edit, click a row to select, then click 'Fix Missing Punches'.",
+        tardy: "Summarizes employees' accumulated tardies (late punches or early outs) based on schedule data for the selected date range.",
         whosin: "Lists employees who are currently clocked IN.",
         activeEmployees: "Lists all currently active employees with key contact and assignment information.",
         inactiveEmployees: "Lists employees marked as inactive. Select a row and click 'Reactivate Employee' to restore their account.",
@@ -94,7 +90,17 @@ document.addEventListener('DOMContentLoaded', function() {
          systemAccess: `<thead><tr><th class="sortable" data-sort-type="number">EID</th><th class="sortable" data-sort-type="string">First Name</th><th class="sortable" data-sort-type="string">Last Name</th><th class="sortable" data-sort-type="string">Email</th></tr></thead>`
     };
 
-    const { hideModal, showModal, showPageNotification, decodeHtmlEntities, parseTimeTo24Hour, applyDefaultSort, makeTableSortable } = window;
+    /**
+     * Finds cells marked by the server as empty and updates their text content.
+     */
+    function highlightMissingPunches() {
+        const reportTable = reportOutputDiv.querySelector('.report-table');
+        if (!reportTable) return;
+        const emptyCells = reportTable.querySelectorAll('tbody td.empty-cell');
+        emptyCells.forEach(cell => {
+            cell.textContent = 'Missing Punch';
+        });
+    }
 
     window.loadReport = function(reportType, filterValue = null) {
         if (loadingIndicator) loadingIndicator.style.display = 'flex';
@@ -154,12 +160,6 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch('ReportServlet', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' }, body: params })
         .then(response => response.json())
         .then(data => {
-            // [DEBUG LOG] Log the entire object and the HTML received from the server
-            console.log('[TardyReportDebug] Received data object from ReportServlet:', data);
-            if (reportType === 'tardy') {
-                console.log('[TardyReportDebug] HTML received for Tardy Report:', data.html);
-            }
-
             if (loadingIndicator) loadingIndicator.style.display = 'none';
             if (data.success) {
                 if (data.html && data.html !== 'NO_EXCEPTIONS') {
@@ -168,6 +168,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     const tableId = reportType === 'inactiveEmployees' ? 'inactiveEmployeesTable' : 'dynamicReportTable';
                     reportOutputDiv.innerHTML = `<div class="table-container report-table-container"><table class="${tableClass}" id="${tableId}">${tableHeadersHTML}<tbody>${data.html}</tbody></table></div>`;
                     
+                    if (reportType === 'exception') {
+                        highlightMissingPunches();
+                    }
+
                     const reportTable = document.getElementById(tableId);
                     if (reportTable && typeof makeTableSortable === 'function') {
                         makeTableSortable(reportTable);
@@ -204,8 +208,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const startDate = archiveStartDateInput.value;
         const endDate = archiveEndDateInput.value;
 
-        if (!startDate || !endDate) { showPageNotification("Please select both a 'From' and 'To' date.", true); return; }
-        if (new Date(startDate) > new Date(endDate)) { showPageNotification("'From' date cannot be after 'To' date.", true); return; }
+        if (!startDate || !endDate) { showPageNotification("Please select both a 'From' and 'To' date.", 'error'); return; }
+        if (new Date(startDate) > new Date(endDate)) { showPageNotification("'From' date cannot be after 'To' date.", 'error'); return; }
 
         const params = new URLSearchParams({ reportType: 'archivedPunches', startDate, endDate });
         
@@ -247,9 +251,6 @@ document.addEventListener('DOMContentLoaded', function() {
         applyArchiveFilterBtn.addEventListener('click', loadArchivedPunchesReport);
     }
     
-    if (closeEditPunchModalReportsBtn) closeEditPunchModalReportsBtn.addEventListener('click', hideEditPunchModalReports);
-    if (cancelEditPunchReportsBtn) cancelEditPunchReportsBtn.addEventListener('click', hideEditPunchModalReports);
-    
     function hideEditPunchModalReports() {
         if (editPunchModalReports) hideModal(editPunchModalReports);
         if (selectedReportExceptionRowElement) {
@@ -286,7 +287,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         if(punchIdField) punchIdField.value = data.punchId || '';
         if(employeeIdField) employeeIdField.value = data.globalEid || '';
-        if(dateField) dateField.value = formattedDate;
+        if(dateField) {
+            if (window.PAY_PERIOD_START && window.PAY_PERIOD_END) {
+                dateField.min = window.PAY_PERIOD_START;
+                dateField.max = window.PAY_PERIOD_END;
+            }
+            dateField.value = formattedDate;
+        }
         if(inTimeField) inTimeField.value = parseTimeTo24Hour(data.inTime);
         if(outTimeField) outTimeField.value = ''; 
         setTimeout(()=> { if (outTimeField) outTimeField.focus(); }, 150);
@@ -294,7 +301,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function prepareAndShowEditPunchModalReports(exceptionData) {
         if (!exceptionData || !exceptionData.globalEid) {
-            showPageNotification("Cannot edit: Missing Employee ID from selected row.", true); return;
+            showPageNotification("Cannot edit: Missing Employee ID from selected row.", 'error'); return;
         }
         const globalEid = exceptionData.globalEid;
         const contextPath = (typeof appRootPath === 'string' && appRootPath) ? appRootPath : (window.location.pathname.substring(0, window.location.pathname.indexOf("/",2)) || "");
@@ -312,7 +319,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else { throw new Error(scheduleData.message || 'Failed to get schedule data.'); }
             })
             .catch(error => {
-                showPageNotification("Could not load details for editing punch: " + error.message, true);
+                showPageNotification("Could not load details for editing punch: " + error.message, 'error');
             });
     }
 
@@ -336,14 +343,13 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             if (data.success) {
                 hideEditPunchModalReports();
-                showPageNotification(data.message || "Punch updated successfully!", false);
-                loadReport('exception'); 
+                showPageNotification(data.message || "Punch updated successfully!", 'success', () => loadReport('exception'));
             } else {
-                showPageNotification("Error saving punch: " + (data.error || "Unknown error."), true);
+                showPageNotification("Error saving punch: " + (data.error || "Unknown error."), 'error');
             }
         })
         .catch(error => {
-            showPageNotification("Error saving punch: " + error.message, true);
+            showPageNotification("Error saving punch: " + error.message, 'error');
         })
         .finally(() => { if(submitButton) submitButton.disabled = false; });
     }
@@ -424,12 +430,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(data => {
             if (data.success) {
-                showPageNotification(data.message || `Employee ${eid} reactivated successfully.`, false);
-                if(notificationOkButton) {
-                    notificationOkButton.addEventListener('click', function() {
-                        loadReport('inactiveEmployees');
-                    }, { once: true });
-                }
+                showPageNotification(data.message || `Employee ${eid} reactivated successfully.`, 'success', () => loadReport('inactiveEmployees'));
             } else { 
                 throw new Error(data.error || 'Unknown server error.'); 
             }
@@ -443,7 +444,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             else {
                 console.error('Reports.js: Error reactivating employee:', error);
-                showPageNotification(`Failed to reactivate employee: ${error.message}`, true);
+                showPageNotification(`Failed to reactivate employee: ${error.message}`, 'error');
             }
         });
     }
@@ -454,7 +455,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const eid = selectedInactiveRowElement.dataset.eid;
                 reactivateEmployee(eid);
             } else {
-                showPageNotification("Please select an employee to reactivate.", true);
+                showPageNotification("Please select an employee to reactivate.", 'error');
             }
         });
     }
@@ -463,20 +464,20 @@ document.addEventListener('DOMContentLoaded', function() {
         const title = reportTitleElement?.textContent || 'Report';
         const description = reportDescriptionElement?.textContent || '';
         const reportTableElement = reportOutputDiv?.querySelector('.report-table');
-        if (!reportTableElement) { showPageNotification("No report table content to print.", true); return; }
+        if (!reportTableElement) { showPageNotification("No report table content to print.", 'error'); return; }
         
-        const reportsCSSLink = document.querySelector('link[href^="css/reports.css"]');
-        const cssPath = reportsCSSLink ? reportsCSSLink.href : 'css/reports.css';
+        const commonCSSLink = document.querySelector('link[href^="css/common.css"]');
+        const cssPath = commonCSSLink ? commonCSSLink.href : 'css/common.css';
         
         const printWindow = window.open('', '_blank', 'width=1100,height=850,scrollbars=yes,resizable=yes');
-        if (!printWindow) { showPageNotification("Could not open print window. Please check popup blocker settings.", true); return; }
+        if (!printWindow) { showPageNotification("Could not open print window. Please check popup blocker settings.", 'error'); return; }
 
         printWindow.document.write('<html><head><title>Print - ' + decodeHtmlEntities(title) + '</title>');
         printWindow.document.write('<link rel="stylesheet" href="' + cssPath + '">');
         printWindow.document.write(`
             <style>
                 body { margin: 20px; background-color: #fff !important; }
-                .report-table-container { max-height: none !important; overflow-y: visible !important; border: 1px solid #ccc !important; }
+                .table-container { max-height: none !important; overflow-y: visible !important; border: 1px solid #ccc !important; }
                 table.report-table { font-size: 9pt; }
                 table.report-table thead { display: table-header-group; }
                 table.report-table tbody tr { page-break-inside: avoid; }
@@ -495,7 +496,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 printWindow.focus();
                 printWindow.print();
             } catch (e) {
-                showPageNotification("Printing failed: " + e.message, true);
+                showPageNotification("Printing failed: " + e.message, 'error');
                 try { printWindow.close(); } catch (e2) {}
             }
         }, 750);

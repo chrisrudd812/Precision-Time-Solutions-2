@@ -95,6 +95,8 @@
         <% } %>
 
         <% if (pageError == null) { %>
+            <h4 style="color: #6c757d; margin: 7px auto 10px auto; font-size: 0.9em; text-align: center;"><span class="instruction-text">💡 Select a row to view period details</span></h4>
+            
             <div class="report-display-area" style="padding-top:10px;">
                 <div class="table-container report-table-container">
                     <table id="historyTable" 
@@ -141,7 +143,7 @@
                     </table>
                 </div>
             </div>
-
+            
             <%-- MODIFIED Button Container --%>
             <div id="button-container" class="payroll-history-actions">
                 <div class="action-left">

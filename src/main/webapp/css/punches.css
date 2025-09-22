@@ -39,7 +39,7 @@
     margin-top: 20px;
     margin-bottom: 10px;
     text-align: center;
-    color: #0f766e;
+    color: #ffffff;
     font-size: 1.3em;
 }
 
@@ -77,4 +77,22 @@
 */
 .report-display-area:has(.punches-table-container) {
     flex-grow: 0;
+}
+
+/* Pronounced hover effect for clickable table rows */
+#punchesTable tbody tr[data-punch-id]:hover {
+    background-color: #e0f2fe !important;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    transition: all 0.2s ease;
+}
+
+/* Hide navbar when opened from payroll */
+.no-navbar .navbar {
+    display: none !important;
+}
+
+.no-navbar .parent-container {
+    margin-top: 0 !important;
+    padding-top: 20px;
 }

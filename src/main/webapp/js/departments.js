@@ -1,49 +1,55 @@
 // js/departments.js
-
 document.addEventListener('DOMContentLoaded', function() {
     
-    // --- Helper Functions & Global Access ---
-    // These now correctly reference the functions from commonUtils.js
-    const _showModal = showModal;
-    const _hideModal = hideModal;
-    const _decode = decodeHtmlEntities;
+    const _showModal = window.showModal;
+    const _hideModal = window.hideModal;
+    const _decode = window.decodeHtmlEntities;
     const appRoot = window.appRootPath || "";
 
-    // --- Element Selectors ---
+    // References to page content that needs to be hidden/shown during the wizard
+    const wizardHeader = document.querySelector('.wizard-header');
+    const parentContainer = document.querySelector('.parent-container');
+
     const addBtn = document.getElementById('addDepartmentButton');
     const editBtn = document.getElementById('editDepartmentButton');
     const deleteBtn = document.getElementById('deleteDepartmentButton');
     const tableBody = document.getElementById('departmentsTable')?.querySelector('tbody');
 
-    // Modal Selectors
     const addModal = document.getElementById('addDepartmentModal');
     const editModal = document.getElementById('editDepartmentModal');
     const deleteModal = document.getElementById('deleteAndReassignDeptModal');
     const addForm = document.getElementById('addDepartmentForm');
     const editForm = document.getElementById('editDepartmentForm');
     const deleteForm = document.getElementById('deleteDepartmentForm');
-    const notificationModal = document.getElementById('notificationModalGeneral');
-
-    // --- WIZARD-SPECIFIC SELECTORS ---
+    
     const wizardModal = document.getElementById('wizardGenericModal');
     const wizardTitle = document.getElementById('wizardGenericModalTitle');
     const wizardText1 = document.getElementById('wizardGenericModalText1');
     const wizardText2 = document.getElementById('wizardGenericModalText2');
     const wizardButtons = document.getElementById('wizardGenericModalButtonRow');
 
-    // --- State ---
     let selectedRow = null;
     let wizardOpenedAddModal = false;
 
-    // --- WIZARD LOGIC ---
+    function showPageNotification(message, isError = false, callback = null, title = null, options = {}) {
+        if (window.showPageNotification) {
+            const type = isError ? 'error' : 'success';
+            window.showPageNotification(message, type, callback, title, options);
+        } else {
+            alert((isError ? "Error: " : "Success: ") + message);
+        }
+    }
+    
+    // --- Wizard Specific Logic ---
+
     const wizardStages = {
         "departments_initial": {
             title: "Setup: Departments",
             text1: `Let's set up departments for <strong>${_decode(window.companyName)}</strong>.`,
             text2: "You can add some now, or proceed to the next step. Departments can always be managed later.",
             buttons: [
-                { id: "wizardAddDept", text: "Add Departments", class: "text-green", action: "open_add" },
-                { id: "wizardNext", text: "Next: Schedules", class: "text-blue", action: "next_step" }
+                { id: "wizardAddDept", text: "<i class='fas fa-plus-circle'></i> Add Departments", class: "text-green", action: "open_add" },
+                { id: "wizardNext", text: "Next: Schedules <i class='fas fa-arrow-right'></i>", class: "text-blue", action: "next_step" }
             ]
         },
         "departments_after_add": {
@@ -51,38 +57,55 @@ document.addEventListener('DOMContentLoaded', function() {
             text1: "Great! You've added a department.",
             text2: "Would you like to add another, or proceed to schedule setup?",
             buttons: [
-                { id: "wizardAddAnother", text: "Add Another", class: "text-green", action: "open_add" },
-                { id: "wizardNextAfterAdd", text: "Next: Schedules", class: "text-blue", action: "next_step" }
+                { id: "wizardAddAnother", text: "<i class='fas fa-plus-circle'></i> Add Another", class: "text-green", action: "open_add" },
+                { id: "wizardNextAfterAdd", text: "Next: Schedules <i class='fas fa-arrow-right'></i>", class: "text-blue", action: "next_step" }
             ]
         }
     };
 
-    function updateWizardView(stageKey) {
-        if (!wizardModal) return;
-        const stage = wizardStages[stageKey];
-        if (!stage) { _hideModal(wizardModal); return; }
+    function setMainContentVisibility(visible) {
+        if (wizardHeader) wizardHeader.style.display = visible ? 'block' : 'none';
+        if (parentContainer) parentContainer.style.display = visible ? 'flex' : 'none';
+    }
 
-        wizardTitle.textContent = stage.title;
+    function updateWizardView(stageKey) {
+        if (!wizardModal || !wizardTitle) return; // defensive check
+        const stage = wizardStages[stageKey];
+        if (!stage) { 
+            _hideModal(wizardModal);
+            setMainContentVisibility(true);
+            return; 
+        }
+
+        setMainContentVisibility(false);
+
+        const titleSpan = wizardTitle.querySelector('span');
+        if (titleSpan) titleSpan.textContent = stage.title;
+
         wizardText1.innerHTML = stage.text1;
         wizardText2.innerHTML = stage.text2;
         wizardButtons.innerHTML = '';
         stage.buttons.forEach(btn => {
             const button = document.createElement('button');
             button.id = btn.id;
+            button.type = 'button';
             button.className = `glossy-button ${btn.class}`;
             button.innerHTML = btn.text;
-            button.addEventListener('click', () => handleWizardAction(btn.action));
+            button.addEventListener('click', () => handleWizardAction(btn.action, button));
             wizardButtons.appendChild(button);
         });
         _showModal(wizardModal);
     }
 
-    function handleWizardAction(action) {
-        _hideModal(wizardModal);
+    function handleWizardAction(action, buttonElement) {
         if (action === 'open_add') {
+            _hideModal(wizardModal);
             wizardOpenedAddModal = true;
+            setMainContentVisibility(true);
             openAddModal();
         } else if (action === 'next_step') {
+            buttonElement.disabled = true;
+            buttonElement.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Proceeding...";
             advanceWizardToServerAndRedirect("schedules_prompt", "scheduling.jsp");
         }
     }
@@ -98,10 +121,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.success) {
                 window.location.href = `${appRoot}/${nextPage}?setup_wizard=true&step=${encodeURIComponent(serverNextStep)}`;
             } else {
-                showPageNotification(data.error || 'Could not proceed.', true, notificationModal);
+                showPageNotification(data.error || 'Could not proceed.', true, null, 'Error');
             }
         })
-        .catch(err => showPageNotification('Network error. Please try again.', true, notificationModal));
+        .catch(err => showPageNotification('Network error. Please try again.', true, null, 'Error'));
     }
     
     function hideAddModalAndHandleWizard() {
@@ -112,11 +135,12 @@ document.addEventListener('DOMContentLoaded', function() {
             updateWizardView(nonDefaultRows > 0 ? "departments_after_add" : "departments_initial");
         }
     }
+    
+    // --- Standard Page Logic ---
 
-    // --- Core Page Logic ---
     function selectRow(row) {
-        if (row && row.dataset.name.toLowerCase() === 'none') {
-            showPageNotification("'None' is a system default and cannot be edited or deleted.", false, notificationModal);
+        if (row && row.dataset.name && row.dataset.name.toLowerCase() === 'none') {
+            showPageNotification("'None' is a system default and cannot be edited or deleted.", true, null, "Action Denied");
             if (selectedRow) selectedRow.classList.remove('selected');
             selectedRow = null;
         } else {
@@ -125,19 +149,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 row.classList.add('selected');
                 selectedRow = row;
             } else {
-                selectedRow = null; // Deselect
+                selectedRow = null;
             }
         }
         toggleActionButtons();
     }
 
     function toggleActionButtons() {
+        if (!editBtn || !deleteBtn) return;
         const isRowSelected = selectedRow !== null;
         editBtn.disabled = !isRowSelected;
         deleteBtn.disabled = !isRowSelected;
     }
 
     function openAddModal() {
+        if (!addModal || !addForm) return;
         addForm.reset();
         if (window.inWizardMode_Page) {
             let hiddenInput = addForm.querySelector('input[name="setup_wizard"]');
@@ -150,17 +176,11 @@ document.addEventListener('DOMContentLoaded', function() {
             hiddenInput.value = 'true';
         }
         _showModal(addModal);
-        
-        setTimeout(() => {
-            const deptNameInput = addForm.querySelector('#addDeptName');
-            if (deptNameInput) {
-                deptNameInput.focus();
-            }
-        }, 150);
+        setTimeout(() => addForm.querySelector('#addDeptName')?.focus(), 150);
     }
 
     function openEditModal() {
-        if (!selectedRow) return;
+        if (!selectedRow || !editModal || !editForm) return;
         const data = selectedRow.dataset;
         editForm.querySelector('#originalDeptName').value = data.name;
         editForm.querySelector('#editDeptNameDisplay').value = _decode(data.name);
@@ -170,11 +190,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function openDeleteModal() {
-        if (!selectedRow) return;
+        if (!selectedRow || !deleteModal) return;
         const deptName = selectedRow.dataset.name;
         deleteModal.querySelector('#deleteReassignModalMessage').innerHTML = `Delete department: <strong>${_decode(deptName)}</strong>.`;
         const select = deleteModal.querySelector('#targetReassignDeptSelect');
-        select.innerHTML = '';
+        select.innerHTML = '<option value="">-- Select a Department --</option>';
+    
         window.allAvailableDepartmentsForReassign.forEach(d => {
             if (d.name !== deptName) {
                 select.add(new Option(_decode(d.name), d.name));
@@ -182,65 +203,50 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         _showModal(deleteModal);
     }
-
+    
     // --- Event Listeners ---
-    addBtn.addEventListener('click', () => {
-        if (window.inWizardMode_Page) {
-            updateWizardView('departments_initial');
-        } else {
-            openAddModal();
-        }
+
+    if (addBtn) addBtn.addEventListener('click', openAddModal);
+    if(editBtn) editBtn.addEventListener('click', openEditModal);
+    if(deleteBtn) deleteBtn.addEventListener('click', openDeleteModal);
+    if(tableBody) tableBody.addEventListener('click', e => selectRow(e.target.closest('tr')));
+
+    addModal?.querySelectorAll('.cancel-btn').forEach(el => el.addEventListener('click', hideAddModalAndHandleWizard));
+    editModal?.querySelectorAll('.cancel-btn').forEach(el => el.addEventListener('click', () => _hideModal(editModal)));
+    deleteModal?.querySelectorAll('.cancel-btn').forEach(el => el.addEventListener('click', () => _hideModal(deleteModal)));
+    
+    wizardModal?.querySelector('.close')?.addEventListener('click', () => {
+        _hideModal(wizardModal);
+        setMainContentVisibility(true);
     });
-
-    editBtn.addEventListener('click', openEditModal);
-    deleteBtn.addEventListener('click', openDeleteModal);
-    tableBody?.addEventListener('click', e => selectRow(e.target.closest('tr')));
-
-    // Modal close/cancel listeners
-    addModal.querySelectorAll('.close, .cancel-btn').forEach(el => el.addEventListener('click', hideAddModalAndHandleWizard));
-    editModal.querySelectorAll('.close, .cancel-btn').forEach(el => el.addEventListener('click', () => _hideModal(editModal)));
-    deleteModal.querySelectorAll('.close, .cancel-btn').forEach(el => el.addEventListener('click', () => _hideModal(deleteModal)));
-    notificationModal.querySelectorAll('.close, #okButtonNotificationModalGeneral').forEach(el => el.addEventListener('click', () => _hideModal(notificationModal)));
-    wizardModal?.querySelector('.close')?.addEventListener('click', () => _hideModal(wizardModal));
-
-    deleteModal.querySelector('#confirmDeleteAndReassignBtn')?.addEventListener('click', () => {
-        if (!selectedRow) return;
+    
+    deleteModal?.querySelector('#confirmDeleteAndReassignBtn')?.addEventListener('click', () => {
+        if (!selectedRow || !deleteForm) return;
+        const targetDept = deleteModal.querySelector('#targetReassignDeptSelect').value;
+        if (!targetDept) {
+            showPageNotification('You must select a department to reassign employees to.', true, null, 'Selection Required');
+            return;
+        }
         deleteForm.querySelector('#hiddenDeleteDepartmentName').value = selectedRow.dataset.name;
-        deleteForm.querySelector('#hiddenTargetDepartmentForReassignment').value = deleteModal.querySelector('#targetReassignDeptSelect').value;
+        deleteForm.querySelector('#hiddenTargetDepartmentForReassignment').value = targetDept;
         deleteForm.submit();
     });
     
-    addForm.addEventListener('submit', function(event) {
+    addForm?.addEventListener('submit', function(event) {
         event.preventDefault(); 
-
         const newDeptNameInput = addForm.querySelector('#addDeptName');
-        if (!newDeptNameInput) {
-            addForm.submit(); 
-            return;
-        }
-        
         const newDeptName = newDeptNameInput.value.trim().toLowerCase();
-        
         const isDuplicate = window.allAvailableDepartmentsForReassign.some(dept => dept.name.trim().toLowerCase() === newDeptName);
-
         if (isDuplicate) {
-            showPageNotification(`A department named "${newDeptNameInput.value.trim()}" already exists. Please choose a different name.`, true, notificationModal);
+            showPageNotification(`A department named "<strong>${newDeptNameInput.value.trim()}</strong>" already exists.`, true, null, "Duplicate Name");
         } else {
             addForm.submit();
         }
     });
 
-    // --- INITIALIZATION ---
+    // --- Page Initialization ---
     if (window.inWizardMode_Page) {
         const stage = window.itemJustAdded_Page ? 'departments_after_add' : 'departments_initial';
         updateWizardView(stage);
-    }
-
-    // MODIFIED: This logic now checks if the wizard is active before showing the notification
-    const successNotificationDiv = document.querySelector('.page-message.success-message');
-    if (successNotificationDiv && successNotificationDiv.textContent.trim() && !window.inWizardMode_Page) {
-        const message = successNotificationDiv.innerHTML;
-        successNotificationDiv.style.display = 'none'; // Hide the original div
-        showPageNotification(message, false, notificationModal, "Success");
     }
 });

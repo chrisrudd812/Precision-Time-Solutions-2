@@ -27,11 +27,18 @@
                    .replace("'", "&#39;");
     }
      private String escapeForJavaScriptString(String input) {
-         if (input == null) return "";
+        if (input == null) return "";
         return input.replace("\\", "\\\\").replace("\"", "\\\"").replace("'", "\\'").replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t");
     }
 %>
 <%
+    // This is the smart flag set by LoginServlet. No changes here.
+    boolean locationCheckIsRequired = Boolean.TRUE.equals(session.getAttribute("locationCheckIsRequired"));
+
+    // These variables capture the punch status from the URL for the debug script block at the bottom.
+    String punchMessage = request.getParameter("message");
+    String punchError = request.getParameter("error");
+
     String pageError = null;
     HttpSession currentSession_timeclock = request.getSession(false);
     Integer tenantId_timeclock = null;
@@ -155,28 +162,29 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Time Card<%= titleSuffix %></title>
-    
-    <script>
-        const IS_LOCATION_RESTRICTION_ENABLED = <%= "true".equalsIgnoreCase(Configuration.getProperty(tenantId_timeclock, "RestrictByLocation", "false")) %>;
-    </script>
+    <title>Time Clock<%= titleSuffix %></title>
     
     <%@ include file="/WEB-INF/includes/common-head.jspf" %>
+    
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    
     <link rel="stylesheet" href="css/timeclock.css?v=<%= System.currentTimeMillis() %>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
+    
     <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs/dist/fp.min.js"></script>
 </head>
-<body>
+<body class="timeclock-page">
     <% if ("Administrator".equalsIgnoreCase(userPermissions_timeclock)) { %>
          <%@ include file="/WEB-INF/includes/navbar.jspf" %>
-    <% } %>
+    <% } 
+    %>
     <% if (!reportMode) { %>
         <div id="main-clock-container"><jsp:include page="clock.html" /></div>
     <% } %>
     
-     <% if ("Administrator".equalsIgnoreCase(userPermissions_timeclock)) { %>
+    <% if ("Administrator".equalsIgnoreCase(userPermissions_timeclock)) { %>
         <div class="employee-selector-container">
             <label for="employeeSelect">View Employee:</label>
             <select id="employeeSelect" name="eid_select" onchange="navigateToEmployee(this.value, <%= reportMode %>)">
@@ -186,7 +194,6 @@
                 <% } %>
             </select>
             
-            <%-- [NEW] Print/Email button for single timecard view --%>
             <% if (reportMode && globalEidForDisplay > 0) { %>
                 <button type="button" id="btnPrintEmailSingleTimecard" class="glossy-button text-purple">
                     <i class="fas fa-print"></i> Print / Email Timecard
@@ -213,11 +220,11 @@
                         <div class="info-item"><strong>Employee:</strong> <span class="info-value"><%= employeeName %></span></div>
                         <div class="info-item"><strong>Department:</strong> <span class="info-value"><%= department %></span></div>
                         <div class="info-item"><strong>Supervisor:</strong> <span class="info-value"><%= supervisor %></span></div>
-                     </div>
+                    </div>
                     <div class="info-right">
                         <div class="info-item"><strong>Schedule:</strong> <span class="info-value"><%= scheduleName %></span></div>
                         <div class="info-item"><strong>Hours:</strong> <span class="info-value"><%= scheduleTimeStr %></span></div>
-                         <div class="info-item"><strong>Auto Lunch:</strong> <span class="info-value"><%= autoLunchStr %></span></div>
+                        <div class="info-item"><strong>Auto Lunch:</strong> <span class="info-value"><%= autoLunchStr %></span></div>
                         <div class="info-item"><strong>Wage Type:</strong> <span class="info-value"><%= wageTypeStr %></span></div>
                     </div>
                 </div>
@@ -227,38 +234,39 @@
                 <table id="punches" class="punches timecard-table">
                     <thead><tr><th>Day</th><th>Date</th><th>IN</th><th>OUT</th><th>Total Hours</th><th>Punch Type</th></tr></thead>
                     <tbody><%= timeclockPunchTableBuilder.toString() %></tbody>
-                    <% if(globalEidForDisplay > 0 && employeeInfo != null) { %>
+                    <% 
+                    if(globalEidForDisplay > 0 && employeeInfo != null) { %>
                     <tfoot>
                         <tr>
                             <td colspan="4" class="period-total-label">Period Totals:</td>
-                             <td class="period-total-value"><%= hoursFormatter.format(periodTotalHours) %></td>
+                            <td class="period-total-value"><%= hoursFormatter.format(periodTotalHours) %></td>
                             <td class="period-total-spacer"></td>
                         </tr>
                         <% if("Hourly".equalsIgnoreCase(wageTypeStr)) { %>
-                         <tr class="hours-breakdown-row">
+                        <tr class="hours-breakdown-row">
                             <td colspan="6" style="text-align:right; padding-right:10px;">(Reg: <%= hoursFormatter.format(totalRegularHours) %> | OT: <%= hoursFormatter.format(totalOvertimeHours) %> | DT: <%= hoursFormatter.format(totalDoubleTimeHours) %>)</td>
                         </tr>
                         <% } %>
                     </tfoot>
-                     <% } %>
+                    <% } %>
                 </table>
             </div>
              <% if(globalEidForDisplay > 0 && employeeInfo != null) { %>
                 <div class="accrual-balances">
-                    <h3 class="accrual-title">Available Accrued Hours</h3>
-                     <div class="balance-item"> <span class="balance-label">Vacation:</span> <span class="balance-value"><%= hoursFormatter.format(vacationHours) %></span> </div>
+                    <h3 class="accrual-title">Accrued PTO Hours</h3>
+                    <div class="balance-item"> <span class="balance-label">Vacation:</span> <span class="balance-value"><%= hoursFormatter.format(vacationHours) %></span> </div>
                     <div class="balance-item"> <span class="balance-label">Sick:</span> <span class="balance-value"><%= hoursFormatter.format(sickHours) %></span> </div>
                     <div class="balance-item"> <span class="balance-label">Personal:</span> <span class="balance-value"><%= hoursFormatter.format(personalHours) %></span> </div>
                 </div>
-               <% } %>
+             <% } %>
              <% if (!reportMode && globalEidForDisplay > 0 && globalEidForDisplay == sessionEid_timeclock) { %>
                 <div class="punch-buttons">
                     <form id="punchInForm" method="post" action="PunchInAndOutServlet" style="display: contents;">
-                          <input type="hidden" name="punchAction" value="IN">
+                        <input type="hidden" name="punchAction" value="IN">
                         <input type="hidden" name="punchEID" value="<%= globalEidForDisplay %>">
                         <input type="hidden" name="deviceFingerprintHash" id="deviceFingerprintHash_IN" value="">
                         <input type="hidden" name="latitude" id="latitude_IN" value="">
-                          <input type="hidden" name="longitude" id="longitude_IN" value="">
+                        <input type="hidden" name="longitude" id="longitude_IN" value="">
                         <input type="hidden" name="browserTimeZoneId" id="browserTimeZoneId_IN" value="">
                         <input type="hidden" name="deviceType" id="deviceType_IN" value="">
                         <button type="submit" class="punch-button punch-in">PUNCH IN</button>
@@ -269,15 +277,24 @@
                         <input type="hidden" name="deviceFingerprintHash" id="deviceFingerprintHash_OUT" value="">
                         <input type="hidden" name="latitude" id="latitude_OUT" value="">
                         <input type="hidden" name="longitude" id="longitude_OUT" value="">
-                          <input type="hidden" name="browserTimeZoneId" id="browserTimeZoneId_OUT" value="">
+                        <input type="hidden" name="browserTimeZoneId" id="browserTimeZoneId_OUT" value="">
                         <input type="hidden" name="deviceType" id="deviceType_OUT" value="">
                         <button type="submit" class="punch-button punch-out">PUNCH OUT</button>
                     </form>
-               </div>
+                </div>
             <% } %>
         </div>
     </div>
     
+    <%-- NEW: Logout button for non-admin users --%>
+    <% if ("User".equalsIgnoreCase(userPermissions_timeclock)) { %>
+        <div class="user-logout-container">
+            <a href="<%= request.getContextPath() %>/LogoutServlet" class="logout-button-user">
+                <i class="fas fa-sign-out-alt"></i> Log Out
+            </a>
+        </div>
+    <% } %>
+
     <div id="notificationModal" class="modal">
         <div class="modal-content">
             <span class="close-button" id="closeNotificationModal">&times;</span>
@@ -289,12 +306,58 @@
         </div>
     </div>
 
-    <script type="text/javascript">
+	<script type="text/javascript">
+        const locationCheckIsTrulyRequired = <%= locationCheckIsRequired %>;
+        
+     // ADD THIS LINE FOR DEBUGGING
+        console.log("DEBUG: Client-side flag 'locationCheckIsTrulyRequired' is set to:", locationCheckIsTrulyRequired);        
+        
+        
         const currentUserPermissions_tc = "<%= escapeForJavaScriptString(userPermissions_timeclock) %>";
         const sessionTimeoutDuration_Js = <%= currentSession_timeclock.getMaxInactiveInterval() %>;
         const app_contextPath = "<%= request.getContextPath() %>";
     </script>
-    <script src="js/timeclock.js?v=<%= System.currentTimeMillis() %>"></script>
     <%@ include file="/WEB-INF/includes/common-scripts.jspf" %>
+    
+    <%-- The script file that DEFINES functions must be loaded BEFORE any script that CALLS them. --%>
+    <script src="js/timeclock.js?v=<%= System.currentTimeMillis() %>"></script>
+    
+    <%-- This debugging script will now run AFTER timeclock.js is loaded. --%>
+    <script>
+        console.log("DEBUG: Page bottom script running.");
+        (function() {
+            console.log("DEBUG: IIFE (Immediately Invoked Function Expression) is executing.");
+            const message = "<%= punchMessage != null ? escapeForJavaScriptString(punchMessage) : "" %>";
+            const error = "<%= punchError != null ? escapeForJavaScriptString(punchError) : "" %>";
+            
+            console.log("DEBUG: Value of 'error' parameter from URL:", error);
+            console.log("DEBUG: Value of 'message' parameter from URL:", message);
+
+            if (error) {
+                console.log("DEBUG: 'error' condition is true. Attempting to call showTimeclockNotificationModal.");
+                if (typeof showTimeclockNotificationModal === 'function') {
+                    showTimeclockNotificationModal(error, true);
+                } else {
+                    console.error("FATAL DEBUG ERROR: showTimeclockNotificationModal function is NOT defined!");
+                }
+            } else if (message) {
+                console.log("DEBUG: 'message' condition is true. Attempting to call showTimeclockNotificationModal.");
+                 if (typeof showTimeclockNotificationModal === 'function') {
+                    showTimeclockNotificationModal(message, false);
+                } else {
+                    console.error("FATAL DEBUG ERROR: showTimeclockNotificationModal function is NOT defined!");
+                }
+            }
+
+            if ((message || error) && window.history.replaceState) {
+                console.log("DEBUG: Cleaning URL parameters.");
+                const url = new URL(window.location);
+                url.searchParams.delete('message');
+                url.searchParams.delete('error');
+                url.searchParams.delete('punchStatus');
+                window.history.replaceState({path: url.href}, '', url.href);
+            }
+        })();
+    </script>
 </body>
 </html>

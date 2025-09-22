@@ -149,7 +149,7 @@
                         </table>
                     </div>
                     <div class="accrual-balances">
-                         <h3 class="accrual-title">Available Accrued Hours</h3>
+                         <h3 class="accrual-title">Accrued PTO Hours</h3>
                         <div class="balance-item">
                             <span class="balance-label">Vacation:</span>
                              <span class="balance-value"><%= escapeJspHtml((String)cardData.getOrDefault("formattedVacation", "0.00")) %></span>

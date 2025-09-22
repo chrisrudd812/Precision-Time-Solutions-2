@@ -32,7 +32,7 @@
     String companyIdentifierRepop = request.getParameter("companyIdentifier");
     String adminEmailRepop = request.getParameter("adminEmail");
     String messageType = request.getParameter("msgType");
-    String autoLogoutMessage = request.getParameter("autoLogoutMessage");
+    String autoLogoutMessage = request.getParameter("reason"); // Corrected to match servlet and JS
 %>
 <!DOCTYPE html>
 <html lang="en">
@@ -48,7 +48,7 @@
     <div class="login-container">
         <div class="login-header">
             <a href="index.jsp" class="logo-link">
-                 <img src="<%= request.getContextPath() %>/Images/logo2.png" style="height:350px" alt="Precision Time Solutions Logo" class="logo-image">
+                 <img src="<%= request.getContextPath() %>/Images/logo.png" style="height:350px" alt="Precision Time Solutions Logo" class="logo-image">
             </a>
             <h1>Admin & Employee Login</h1>
         </div>
@@ -57,49 +57,53 @@
             <p class="error-message login-page-message" id="loginErrorMessage"><%= errorMessage.replace("<", "&lt;").replace(">", "&gt;") %></p>
         <% } %>
         <% if (autoLogoutMessage != null && !autoLogoutMessage.isEmpty()) { %>
-            <p class="info-message login-page-message" id="autoLogoutInfoMessage"><%= autoLogoutMessage.replace("<", "&lt;").replace(">", "&gt;") %></p>
+             <p class="page-message info-message login-page-message" id="autoLogoutInfoMessage"><%= autoLogoutMessage.replace("<", "&lt;").replace(">", "&gt;") %></p>
         <% } %>
 
         <form action="LoginServlet" method="POST" id="loginForm" class="login-form">
              <input type="hidden" id="browserTimeZone" name="browserTimeZone" value="">
             <div class="form-group">
                 <label for="companyIdentifier">Company ID <span class="required">*</span></label>
-                 <input type="text" id="companyIdentifier" name="companyIdentifier"
+                <input type="text" id="companyIdentifier" name="companyIdentifier"
                        value="<%= (companyIdentifierRepop != null ? companyIdentifierRepop.replace("\"", "&quot;") : "") %>"
                        autocomplete="organization"
                        required>
             </div>
             <div class="form-group">
                 <label for="email">Email Address <span class="required">*</span></label>
-                   <input type="email" id="email" name="email"
+                <input type="email" id="email" name="email"
                        value="<%= (adminEmailRepop != null ? adminEmailRepop.replace("\"", "&quot;") : "") %>"
                        autocomplete="email" required>
             </div>
             <div class="form-group">
-                   <label for="password">PIN <span class="required">*</span></label>
+                <label for="password">PIN <span class="required">*</span></label>
                 <input type="password" id="password" name="password" autocomplete="current-password" required>
             </div>
             <div class="form-actions">
                 <button type="submit" class="glossy-button text-blue login-submit-button">
-                      <i class="fas fa-sign-in-alt"></i> Log In
+                    <i class="fas fa-sign-in-alt"></i> Log In
                 </button>
             </div>
         </form>
         <p class="signup-redirect">Don't have a company account? <a href="signup_company_info.jsp">Sign Up Here</a></p>
     </div>
 
+    <%-- MODIFIED: Modal structure updated to match the site's standard --%>
     <div id="notificationModal" class="modal">
         <div class="modal-content">
-            <span class="close" id="closeNotificationModal">&times;</span>
-            <h2 id="notificationModalTitle">Notification</h2>
-            <div id="notificationMessage" class="signup-success-message" style="text-align: left; padding: 15px 20px; line-height:1.6;">
-                <%-- JS will populate this --%>
+            <div class="modal-header">
+                <h2 id="notificationModalTitle">
+                    <i class="fas fa-info-circle"></i> <span>Notification</span>
+                </h2>
             </div>
-            <div class="button-row notification-button-row" style="justify-content: space-around; padding-top: 15px; padding-bottom: 20px;">
-                <button type="button" id="copyCompanyIdButton" class="glossy-button text-blue" style="display:none; flex-grow:1; margin: 0 5px;">
+            <div class="modal-body">
+                <p id="notificationMessage"></p>
+            </div>
+            <div class="button-row notification-button-row">
+                <button type="button" id="copyCompanyIdButton" class="glossy-button text-blue" style="display:none;">
                     <i class="fas fa-copy"></i> Copy Company ID
                  </button>
-                 <button type="button" id="okButtonNotificationModal" class="glossy-button text-green" style="flex-grow:1; margin: 0 5px;">OK</button>
+                <button type="button" id="okButtonNotificationModal" class="glossy-button text-green">OK</button>
             </div>
         </div>
     </div>

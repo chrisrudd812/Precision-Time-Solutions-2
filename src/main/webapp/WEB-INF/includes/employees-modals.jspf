@@ -2,123 +2,175 @@
 
 <%-- Add Employee Modal --%>
 <div id="addEmployeeModal" class="modal">
-    <div class="modal-content wide-modal">
-        <span class="close">&times;</span>
-        <h2>Add New Employee</h2>
+    <div class="modal-content wide-modal modal-form-green-state">
         <form id="addEmployeeForm" action="<%= request.getContextPath() %>/AddEditAndDeleteEmployeesServlet" method="post" autocomplete="off">
             <input type="hidden" name="action" value="addEmployee">
-            <% if (inSetupWizardMode_JSP) { %><input type="hidden" name="setup_wizard" value="true"><% } %>
-            
-            <fieldset class="form-section">
-                <legend>Personal Information</legend>
-                <div class="form-row">
-                    <div class="form-item"><label for="addFirstName">First Name <span class="required-asterisk">*</span></label><input type="text" id="addFirstName" name="firstName" required autocomplete="new-password"></div>
-                    <div class="form-item"><label for="addLastName">Last Name <span class="required-asterisk">*</span></label><input type="text" id="addLastName" name="lastName" required autocomplete="new-password"></div>
+            <% if(inSetupWizardMode_JSP) { %><input type="hidden" name="setup_wizard" value="true"><% } %>
+            <div class="modal-header">
+                <h2 class="modal-title-success"><i class="fas fa-user-plus"></i> <span>Add New Employee</span></h2>
+            </div>
+            <div class="modal-body">
+                <div class="form-body-container">
+                    <div class="form-row">
+                        <div class="form-item"><label for="addFirstName">First Name <span class="required-asterisk">*</span></label><input type="text" id="addFirstName" name="firstName" required autocomplete="new-password"></div>
+                        <div class="form-item"><label for="addLastName">Last Name <span class="required-asterisk">*</span></label><input type="text" id="addLastName" name="lastName" required autocomplete="new-password"></div>
+                    </div>
+                    <div class="form-item"><label for="addAddress">Address</label><input type="text" id="addAddress" name="address" autocomplete="new-password"></div>
+                    <div class="form-row">
+                         <div class="form-item"><label for="addCity">City</label><input type="text" id="addCity" name="city" autocomplete="new-password"></div>
+                        <div class="form-item">
+                            <label for="addState">State <span class="required-asterisk">*</span></label>
+                            <select id="addState" name="state" required></select>
+                        </div>
+                        <div class="form-item"><label for="addZip">Zip</label><input type="text" id="addZip" name="zip" autocomplete="new-password" pattern="\d{5}|\d{5}-\d{4}" title="Zip code must be 5 or 9 digits (e.g., 12345 or 12345-6789)."></div>
+                    </div>
+                      <div class="form-row">
+                        <div class="form-item"><label for="addPhone">Phone</label><input type="tel" id="addPhone" name="addEmployeePhone" placeholder="(555) 555-5555" pattern="^\(\d{3}\) \d{3}-\d{4}$" title="Phone number must be in the format (555) 555-5555."></div>
+                        <div class="form-item"><label for="addEmail">Email (this will be their username) <span class="required-asterisk">*</span></label><input type="email" id="addEmail" name="email" required autocomplete="new-password"></div>
+                     </div>
                 </div>
-                <div class="form-item" style="margin-bottom: 18px;"><label for="addAddress">Address</label><input type="text" id="addAddress" name="address" autocomplete="new-password"></div>
-                <div class="form-row">
-                    <div class="form-item third-width"><label for="addCity">City</label><input type="text" id="addCity" name="city" autocomplete="new-password"></div>
-                    <div class="form-item third-width"><label for="addState">State</label><select id="addState" name="state"></select></div>
-                    <div class="form-item third-width"><label for="addZip">Zip</label><input type="text" id="addZip" name="zip" autocomplete="new-password" pattern="\d{5}|\d{5}-\d{4}" title="Zip code must be 5 or 9 digits (e.g., 12345 or 12345-6789)."></div>
-                </div>
-                 <div class="form-row" style="margin-bottom: 0;">
-                    <%-- MODIFIED: Anchored regex to ensure full number is required --%>
-                    <div class="form-item"><label for="addPhone">Phone</label><input type="tel" id="addPhone" name="addEmployeePhone" placeholder="(555) 555-5555" pattern="^\(\d{3}\) \d{3}-\d{4}$" title="Phone number must be in the format (555) 555-5555."></div>
-                    <div class="form-item"><label for="addEmail">Email (this will be their username) <span class="required-asterisk">*</span></label><input type="email" id="addEmail" name="email" required autocomplete="new-password"></div>
-                </div>
-            </fieldset>
-
-            <fieldset class="form-section">
-                <legend>Company Information</legend>
-                 <div class="form-row">
-                    <div class="form-item"><label for="addHireDate">Hire Date <span class="required-asterisk">*</span></label><input type="date" id="addHireDate" name="hireDate" required></div>
-                    <div class="form-item">
-                        <label for="addPermissions">Permissions <span class="required-asterisk">*</span></label>
-                        <select id="addPermissions" name="permissionsDropDown" required></select>
-                        <small style="font-size: 0.8em; color: #6c757d; margin-top: 4px;">'User' can only clock in/out. 'Administrator' has full access.</small>
+                
+                <div class="form-body-container">
+                     <div class="form-row">
+                        <div class="form-item"><label for="addHireDate">Hire Date <span class="required-asterisk">*</span></label><input type="date" id="addHireDate" name="hireDate" required></div>
+                        <div class="form-item">
+                            <label for="addPermissions">Permissions <span class="required-asterisk">*</span></label>
+                            <select id="addPermissions" name="permissionsDropDown" required></select>
+                             <small style="font-size: 0.8em; color: #6c757d; margin-top: 4px;">'User' can only clock in/out. 'Administrator' has full access.</small>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-item"><label for="addDepartment">Department</label><select id="addDepartment" name="departmentsDropDown"></select></div>
+                        <div class="form-item"><label for="addSupervisor">Supervisor</label><input type="text" id="addSupervisor" name="supervisor" autocomplete="new-password"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-item"><label for="addSchedule">Schedule</label><select id="addSchedule" name="schedulesDropDown"></select></div>
+                        <div class="form-item"><label for="addAccrualPolicy">Accrual Policy</label><select id="addAccrualPolicy" name="accrualsDropDown"></select></div>
                     </div>
                 </div>
-                <div class="form-row">
-                    <div class="form-item"><label for="addDepartment">Department</label><select id="addDepartment" name="departmentsDropDown"></select></div>
-                    <div class="form-item"><label for="addSupervisor">Supervisor</label><input type="text" id="addSupervisor" name="supervisor" autocomplete="new-password"></div>
+
+                <div class="form-body-container">
+                     <div class="form-item"><label for="addWorkSchedule">Work Schedule <span class="required-asterisk">*</span></label><select id="addWorkSchedule" name="workScheduleDropDown" required></select></div>
+                    <div class="form-row">
+                        <div class="form-item"><label for="addWageType">Wage Type <span class="required-asterisk">*</span></label><select id="addWageType" name="wageTypeDropDown" required></select></div>
+                        <div class="form-item"><label for="addPayRate">Wage <span class="required-asterisk">*</span></label><div class="input-with-prefix"><span class="input-prefix">$</span><input type="number" id="addPayRate" name="wage" step="0.01" min="0" placeholder="Hourly or Annual" required autocomplete="new-password"></div></div>
+                    </div>
                 </div>
-                <div class="form-row" style="margin-bottom: 0;">
-                    <div class="form-item"><label for="addSchedule">Schedule</label><select id="addSchedule" name="schedulesDropDown"></select></div>
-                    <div class="form-item"><label for="addAccrualPolicy">Accrual Policy</label><select id="addAccrualPolicy" name="accrualsDropDown"></select></div>
-                </div>
-            </fieldset>
-            
-            <fieldset class="form-section">
-                <legend>Wage Information</legend>
-                <div class="form-item" style="margin-bottom: 18px;"><label for="addWorkSchedule">Work Schedule <span class="required-asterisk">*</span></label><select id="addWorkSchedule" name="workScheduleDropDown" required></select></div>
-                <div class="form-row" style="margin-bottom: 0;">
-                    <div class="form-item"><label for="addWageType">Wage Type <span class="required-asterisk">*</span></label><select id="addWageType" name="wageTypeDropDown" required></select></div>
-                    <div class="form-item"><label for="addPayRate">Wage <span class="required-asterisk">*</span></label><input type="number" id="addPayRate" name="wage" step="0.01" min="0" required autocomplete="new-password"></div>
-                </div>
-            </fieldset>
-            <div class="button-row"><button type="submit" class="glossy-button text-green">Submit</button><button type="button" class="cancel-btn glossy-button text-red">Cancel</button></div>
+            </div>
+            <div class="button-row">
+                <button type="submit" class="glossy-button text-green"><i class="fas fa-check"></i> Submit</button>
+                <button type="button" class="cancel-btn glossy-button text-red"><i class="fas fa-times"></i> Cancel</button>
+            </div>
         </form>
     </div>
 </div>
 
 <%-- Edit Employee Modal --%>
 <div id="editEmployeeModal" class="modal">
-    <div class="modal-content wide-modal">
-         <span class="close">&times;</span>
-        <h2>Edit Employee</h2>
+    <div class="modal-content wide-modal modal-form-yellow-state">
         <form id="editEmployeeForm" action="<%= request.getContextPath() %>/AddEditAndDeleteEmployeesServlet" method="post" autocomplete="off">
             <input type="hidden" name="action" value="editEmployee">
             <input type="hidden" id="editEmployeeId" name="eid">
-            <input type="hidden" id="adminVerifyStep" name="admin_verify_step" value="false">
-            
-            <fieldset class="form-section">
-                <legend>Personal Information</legend>
-                <div class="form-row">
-                    <div class="form-item"><label for="editFirstName">First Name <span class="required-asterisk">*</span></label><input type="text" id="editFirstName" name="firstName" required autocomplete="new-password"></div>
-                    <div class="form-item"><label for="editLastName">Last Name <span class="required-asterisk">*</span></label><input type="text" id="editLastName" name="lastName" required autocomplete="new-password"></div>
-                </div>
-                <div class="form-item" style="margin-bottom: 18px;"><label for="editAddress">Address</label><input type="text" id="editAddress" name="address" autocomplete="new-password"></div>
-                <div class="form-row">
-                    <div class="form-item third-width"><label for="editCity">City</label><input type="text" id="editCity" name="city" autocomplete="new-password"></div>
-                    <div class="form-item third-width"><label for="editState">State</label><select id="editState" name="state"></select></div>
-                    <div class="form-item third-width"><label for="editZip">Zip</label><input type="text" id="editZip" name="zip" autocomplete="new-password" pattern="\d{5}|\d{5}-\d{4}" title="Zip code must be 5 or 9 digits (e.g., 12345 or 12345-6789)."></div>
-                </div>
-                 <div class="form-row" style="margin-bottom: 0;">
-                    <%-- MODIFIED: Anchored regex to ensure full number is required --%>
-                    <div class="form-item"><label for="editPhone">Phone</label><input type="tel" id="editPhone" name="editEmployeePhone" placeholder="(555) 555-5555" pattern="^\(\d{3}\) \d{3}-\d{4}$" title="Phone number must be in the format (555) 555-5555."></div>
-                    <div class="form-item"><label for="editEmail">Email <span class="required-asterisk">*</span></label><input type="email" id="editEmail" name="email" required autocomplete="new-password"></div>
-                </div>
-            </fieldset>
-
-            <fieldset class="form-section">
-                <legend>Company Information</legend>
-                 <div class="form-row">
-                    <div class="form-item"><label for="editHireDate">Hire Date <span class="required-asterisk">*</span></label><input type="date" id="editHireDate" name="hireDate" required></div>
-                    <div class="form-item">
-                        <label for="editPermissions">Permissions <span class="required-asterisk">*</span></label>
-                        <select id="editPermissions" name="permissionsDropDown" required></select>
-                        <small style="font-size: 0.8em; color: #6c757d; margin-top: 4px;">'User' can only clock in/out. 'Administrator' has full access.</small>
+            <div class="modal-header">
+                <h2 class="modal-title-warning"><i class="fas fa-user-edit"></i> <span>Edit Employee</span></h2>
+            </div>
+            <div class="modal-body">
+                <div class="form-body-container">
+                    <div class="form-row">
+                         <div class="form-item"><label for="editFirstName">First Name <span class="required-asterisk">*</span></label><input type="text" id="editFirstName" name="firstName" required autocomplete="new-password"></div>
+                        <div class="form-item"><label for="editLastName">Last Name <span class="required-asterisk">*</span></label><input type="text" id="editLastName" name="lastName" required autocomplete="new-password"></div>
+                    </div>
+                    <div class="form-item"><label for="editAddress">Address</label><input type="text" id="editAddress" name="address" autocomplete="new-password"></div>
+                     <div class="form-row">
+                        <div class="form-item"><label for="editCity">City</label><input type="text" id="editCity" name="city" autocomplete="new-password"></div>
+                        <div class="form-item">
+                             <label for="editState">State <span class="required-asterisk">*</span></label>
+                            <select id="editState" name="state" required></select>
+                        </div>
+                        <div class="form-item"><label for="editZip">Zip</label><input type="text" id="editZip" name="zip" autocomplete="new-password" pattern="\d{5}|\d{5}-\d{4}" title="Zip code must be 5 or 9 digits (e.g., 12345 or 12345-6789)."></div>
+                    </div>
+                     <div class="form-row">
+                        <div class="form-item"><label for="editPhone">Phone</label><input type="tel" id="editPhone" name="editEmployeePhone" placeholder="(555) 555-5555" pattern="^\(\d{3}\) \d{3}-\d{4}$" title="Phone number must be in the format (555) 555-5555."></div>
+                         <div class="form-item"><label for="editEmail">Email <span class="required-asterisk">*</span></label><input type="email" id="editEmail" name="email" required autocomplete="new-password"></div>
                     </div>
                 </div>
-                <div class="form-row">
-                    <div class="form-item"><label for="editDepartment">Department</label><select id="editDepartment" name="departmentsDropDown"></select></div>
-                    <div class="form-item"><label for="editSupervisor">Supervisor</label><input type="text" id="editSupervisor" name="supervisor" autocomplete="new-password"></div>
+
+                <div class="form-body-container">
+                     <div class="form-row">
+                         <div class="form-item"><label for="editHireDate">Hire Date <span class="required-asterisk">*</span></label><input type="date" id="editHireDate" name="hireDate" required></div>
+                        <div class="form-item">
+                            <label for="editPermissions">Permissions <span class="required-asterisk">*</span></label>
+                             <select id="editPermissions" name="permissionsDropDown" required></select>
+                            <small style="font-size: 0.8em; color: #6c757d; margin-top: 4px;">'User' can only clock in/out. 'Administrator' has full access.</small>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-item"><label for="editDepartment">Department</label><select id="editDepartment" name="departmentsDropDown"></select></div>
+                        <div class="form-item"><label for="editSupervisor">Supervisor</label><input type="text" id="editSupervisor" name="supervisor" autocomplete="new-password"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-item"><label for="editSchedule">Schedule</label><select id="editSchedule" name="schedulesDropDown"></select></div>
+                        <div class="form-item"><label for="editAccrualPolicy">Accrual Policy</label><select id="editAccrualPolicy" name="accrualsDropDown"></select></div>
+                    </div>
                 </div>
-                <div class="form-row" style="margin-bottom: 0;">
-                    <div class="form-item"><label for="editSchedule">Schedule</label><select id="editSchedule" name="schedulesDropDown"></select></div>
-                    <div class="form-item"><label for="editAccrualPolicy">Accrual Policy</label><select id="editAccrualPolicy" name="accrualsDropDown"></select></div>
+                
+                <div class="form-body-container">
+                    <div class="form-item"><label for="editWorkSchedule">Work Schedule <span class="required-asterisk">*</span></label><select id="editWorkSchedule" name="workScheduleDropDown" required></select></div>
+                    <div class="form-row">
+                        <div class="form-item"><label for="editWageType">Wage Type <span class="required-asterisk">*</span></label><select id="editWageType" name="wageTypeDropDown" required></select></div>
+                         <div class="form-item"><label for="editPayRate">Wage <span class="required-asterisk">*</span></label><div class="input-with-prefix"><span class="input-prefix">$</span><input type="number" id="editPayRate" name="wage" step="0.01" min="0" placeholder="Hourly or Annual" required autocomplete="new-password"></div></div>
+                    </div>
                 </div>
-            </fieldset>
-            
-            <fieldset class="form-section">
-                <legend>Wage Information</legend>
-                <div class="form-item" style="margin-bottom: 18px;"><label for="editWorkSchedule">Work Schedule <span class="required-asterisk">*</span></label><select id="editWorkSchedule" name="workScheduleDropDown" required></select></div>
-                <div class="form-row" style="margin-bottom: 0;">
-                    <div class="form-item"><label for="editWageType">Wage Type <span class="required-asterisk">*</span></label><select id="editWageType" name="wageTypeDropDown" required></select></div>
-                    <div class="form-item"><label for="editPayRate">Wage <span class="required-asterisk">*</span></label><input type="number" id="editPayRate" name="wage" step="0.01" min="0" required autocomplete="new-password"></div>
-                </div>
-            </fieldset>
-             <div class="button-row"><button type="submit" class="glossy-button text-green">Save Changes</button><button type="button" class="cancel-btn glossy-button text-red">Cancel</button></div>
+            </div>
+            <div class="button-row">
+                 <%-- MODIFIED: Changed text-orange to text-green --%>
+                 <button type="submit" class="glossy-button text-green"><i class="fas fa-save"></i> Save Changes</button>
+                 <% if(!inSetupWizardMode_JSP) { %><button type="button" class="cancel-btn glossy-button text-red"><i class="fas fa-times"></i> Cancel</button><% } %>
+            </div>
         </form>
     </div>
+</div>
+
+<div id="deactivateConfirmModal" class="modal modal-state-error">
+     <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h2 class="modal-title-error"><i class="fas fa-user-times"></i> <span>Confirm Deactivation</span></h2>
+        </div>
+        <div class="modal-body">
+            <p>Are you sure you want to deactivate <strong id="deactivateEmployeeName"></strong>?</p>
+            <div class="form-item">
+                <label for="deactivationReasonSelect">Reason <span class="required-asterisk">*</span></label>
+                <select id="deactivationReasonSelect" name="deactivationReason" required>
+                    <option value="">-- Select a Reason --</option>
+                    <option value="Termination">Termination</option>
+                    <option value="Laid Off">Laid Off</option>
+                    <option value="Quit">Quit</option>
+                    <option value="Temporary Employee">Temporary Employee</option>
+                    <option value="Seasonal Worker">Seasonal Worker</option>
+                    <option value="Contractor">Contractor</option>
+                </select>
+            </div>
+            <p style="font-size: 0.9em; margin-top: 1rem; color: #475569;">This employee can be reactivated via Reports &gt; Employee Reports &gt; Inactive Employees.</p>
+        </div>
+        <div class="button-row">
+            <button type="button" id="confirmDeactivateBtn" class="glossy-button text-red"><i class="fas fa-exclamation-triangle"></i> Deactivate</button>
+            <button type="button" class="cancel-btn glossy-button text-red">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<div id="reactivateEmployeeModal" class="modal modal-state-success">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+             <h2 class="modal-title-success"><i class="fas fa-user-check"></i> <span>Employee Exists</span></h2>
+        </div>
+        <div class="modal-body">
+            <p>An inactive employee with the email <strong id="reactivateEmail"></strong> already exists.</p>
+            <p>Would you like to reactivate this employee's account?</p>
+        </div>
+        <div class="button-row">
+           <button type="button" id="confirmReactivateBtn" class="glossy-button text-green">Reactivate Employee</button>
+            <button type="button" class="cancel-btn glossy-button text-red">Cancel</button>
+        </div>
+     </div>
 </div>

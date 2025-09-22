@@ -1,38 +1,36 @@
 <%-- /WEB-INF/includes/accruals-modals.jspf --%>
-<%-- This file contains the HTML for the Add, Edit, and Delete/Reassign modals for accrual policies. --%>
 
 <%-- Add Accrual Policy Modal --%>
 <div id="addAccrualModal" class="modal">
-    <div class="modal-content">
-        <span class="close" data-close-modal-id="addAccrualModal">&times;</span>
-        <h2>Add Accrual Policy</h2>
+    <div class="modal-content modal-form-green-state">
         <form id="addAccrualForm" action="<%= request.getContextPath() %>/AddAndDeleteAccrualPoliciesServlet" method="post">
             <input type="hidden" name="action" value="addAccrual">
             <% if(inSetupWizardMode_JSP) { %><input type="hidden" name="setup_wizard" value="true"><% } %>
-            
-            <fieldset class="form-section">
-                <legend>Policy Name <span class="required-asterisk">*</span></legend>
-                <input type="text" id="addAccrualName" name="addAccrualName" required maxlength="50">
-            </fieldset>
-            <fieldset class="form-section">
-                <%-- MODIFIED: Removed required asterisk --%>
-                <legend>Annual Vacation Days</legend>
-                <%-- MODIFIED: Removed 'required' attribute --%>
-                <input type="number" id="addVacationDays" name="addVacationDays" value="0" min="0" step="1">
-            </fieldset>
-            <fieldset class="form-section">
-                <%-- MODIFIED: Removed required asterisk --%>
-                <legend>Annual Sick Days</legend>
-                <%-- MODIFIED: Removed 'required' attribute --%>
-                <input type="number" id="addSickDays" name="addSickDays" value="0" min="0" step="1">
-            </fieldset>
-            <fieldset class="form-section">
-                <%-- MODIFIED: Removed required asterisk --%>
-                <legend>Annual Personal Days</legend>
-                <%-- MODIFIED: Removed 'required' attribute --%>
-                <input type="number" id="addPersonalDays" name="addPersonalDays" value="0" min="0" step="1">
-            </fieldset>
-
+            <div class="modal-header">
+                <h2 class="modal-title-success"><i class="fas fa-plus-circle"></i> <span>Add Accrual Policy</span></h2>
+            </div>
+            <div class="modal-body">
+                <div class="form-body-container">
+                    <div class="form-item">
+                        <label for="addAccrualName">Policy Name <span class="required-asterisk">*</span></label>
+                        <input type="text" id="addAccrualName" name="addAccrualName" required maxlength="50">
+                    </div>
+                </div>
+                <div class="form-body-container">
+                    <div class="form-item">
+                        <label for="addVacationDays">Annual Vacation Days</label>
+                        <input type="number" id="addVacationDays" name="addVacationDays" value="0" min="0" step="1">
+                    </div>
+                    <div class="form-item">
+                        <label for="addSickDays">Annual Sick Days</label>
+                        <input type="number" id="addSickDays" name="addSickDays" value="0" min="0" step="1">
+                    </div>
+                    <div class="form-item">
+                        <label for="addPersonalDays">Annual Personal Days</label>
+                        <input type="number" id="addPersonalDays" name="addPersonalDays" value="0" min="0" step="1">
+                    </div>
+                </div>
+            </div>
             <div class="button-row">
                 <button type="submit" class="glossy-button text-green">Submit</button>
                 <button type="button" class="cancel-btn glossy-button text-red">Cancel</button>
@@ -43,34 +41,37 @@
 
 <%-- Edit Accrual Policy Modal --%>
 <div id="editAccrualModal" class="modal">
-    <div class="modal-content">
-        <span class="close" data-close-modal-id="editAccrualModal">&times;</span>
-        <h2>Edit Accrual Policy</h2>
+    <div class="modal-content modal-form-yellow-state">
         <form id="editAccrualForm" action="<%= request.getContextPath() %>/AddAndDeleteAccrualPoliciesServlet" method="post">
             <input type="hidden" name="action" value="editAccrual">
             <input type="hidden" id="originalAccrualName" name="originalAccrualName">
-
-            <fieldset class="form-section">
-                <legend>Policy Name</legend>
-                <input type="text" id="editAccrualName" name="editAccrualName" required readonly style="background-color: #e9ecef; cursor: not-allowed;" title="Policy name cannot be changed.">
-            </fieldset>
-            <fieldset class="form-section">
-                <legend>Annual Vacation Days</legend>
-                <%-- MODIFIED: Removed 'required' attribute for consistency --%>
-                <input type="number" id="editVacationDays" name="editVacationDays" value="0" min="0" step="1">
-            </fieldset>
-            <fieldset class="form-section">
-                <legend>Annual Sick Days</legend>
-                <%-- MODIFIED: Removed 'required' attribute for consistency --%>
-                <input type="number" id="editSickDays" name="editSickDays" value="0" min="0" step="1">
-            </fieldset>
-            <fieldset class="form-section">
-                <legend>Annual Personal Days</legend>
-                <%-- MODIFIED: Removed 'required' attribute for consistency --%>
-                <input type="number" id="editPersonalDays" name="editPersonalDays" value="0" min="0" step="1">
-            </fieldset>
-
+            <div class="modal-header">
+                <h2 class="modal-title-warning"><i class="fas fa-edit"></i> <span>Edit Accrual Policy</span></h2>
+            </div>
+            <div class="modal-body">
+                <div class="form-body-container">
+                    <div class="form-item">
+                        <label for="editAccrualName">Policy Name</label>
+                        <input type="text" id="editAccrualName" name="editAccrualName" required readonly style="background-color: #e9ecef; cursor: not-allowed;" title="Policy name cannot be changed.">
+                    </div>
+                </div>
+                <div class="form-body-container">
+                    <div class="form-item">
+                        <label for="editVacationDays">Annual Vacation Days</label>
+                        <input type="number" id="editVacationDays" name="editVacationDays" value="0" min="0" step="1">
+                    </div>
+                    <div class="form-item">
+                        <label for="editSickDays">Annual Sick Days</label>
+                        <input type="number" id="editSickDays" name="editSickDays" value="0" min="0" step="1">
+                    </div>
+                    <div class="form-item">
+                        <label for="editPersonalDays">Annual Personal Days</label>
+                        <input type="number" id="editPersonalDays" name="editPersonalDays" value="0" min="0" step="1">
+                    </div>
+                </div>
+            </div>
             <div class="button-row">
+                <%-- MODIFIED: Changed button class from text-orange to text-green --%>
                 <button type="submit" class="glossy-button text-green">Save Changes</button>
                 <button type="button" class="cancel-btn glossy-button text-red">Cancel</button>
             </div>
@@ -79,20 +80,22 @@
 </div>
 
 <%-- Delete and Reassign Accrual Policy Modal --%>
-<div id="deleteAndReassignAccrualModal" class="modal">
+<div id="deleteAndReassignAccrualModal" class="modal modal-state-error">
     <div class="modal-content">
-        <span class="close" data-close-modal-id="deleteAndReassignAccrualModal">&times;</span>
-        <h2>Delete & Reassign Policy</h2>
-        
-        <div class="modal-body-content">
-            <p id="deleteReassignAccrualModalMessage"></p>
-            <label for="targetReassignAccrualSelect">Reassign employees to:</label>
-            <select id="targetReassignAccrualSelect" name="targetAccrualPolicyForReassignment"></select>
+        <div class="modal-header">
+            <h2 class="modal-title-error"><i class="fas fa-exclamation-triangle"></i> <span>Delete & Reassign Policy</span></h2>
         </div>
-
+        <div class="modal-body">
+            <p id="deleteReassignAccrualModalMessage"></p>
+            <p style="font-size: 0.9em; color: #475569; margin-top: -1em; margin-bottom: 1.5em;">
+               To delete this policy, you must reassign any employees currently assigned to it.
+            </p>
+            <label for="targetReassignAccrualSelect" style="display: block; text-align: left; margin-bottom: 0.5em;">Reassign employees to: <span class="required-asterisk">*</span></label>
+            <select id="targetReassignAccrualSelect" name="targetAccrualPolicyForReassignment" style="width: 100%;" required></select>
+        </div>
         <div class="button-row">
-            <button type="button" id="confirmDeleteAndReassignAccrualBtn" class="glossy-button text-red">Confirm Delete</button>
-            <button type="button" class="cancel-btn glossy-button text-grey">Cancel</button>
+            <button type="button" id="confirmDeleteAndReassignAccrualBtn" class="glossy-button text-green">Confirm Delete</button>
+            <button type="button" class="cancel-btn glossy-button text-red">Cancel</button>
         </div>
     </div>
 </div>

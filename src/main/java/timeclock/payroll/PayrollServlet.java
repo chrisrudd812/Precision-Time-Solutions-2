@@ -10,6 +10,9 @@ import jakarta.servlet.http.HttpSession;
 import timeclock.Configuration;
 import timeclock.db.DatabaseConnection;
 import timeclock.punches.ShowPunches;
+import timeclock.settings.StateOvertimeRules;
+import timeclock.settings.StateOvertimeRuleDetail;
+import timeclock.subscription.SubscriptionUtils;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -401,6 +404,10 @@ public class PayrollServlet extends HttpServlet {
     }
 
     private boolean updatePunchOtForPeriod(Connection con, int tenantId, LocalDate startDate, LocalDate endDate, ZoneId scheduleZone) throws SQLException {
+        // Check if tenant has Pro plan for state-based overtime
+        boolean hasProPlan = SubscriptionUtils.hasProPlan(tenantId);
+        String overtimeType = Configuration.getProperty(tenantId, "OvertimeType", "manual");
+        
         boolean weeklyOtEnabled = "true".equalsIgnoreCase(Configuration.getProperty(tenantId, "Overtime", "true"));
         boolean dailyOtEnabled = "true".equalsIgnoreCase(Configuration.getProperty(tenantId, "OvertimeDaily", "false"));
         double dailyThreshold = Double.parseDouble(Configuration.getProperty(tenantId, "OvertimeDailyThreshold", "8.0"));
@@ -411,7 +418,7 @@ public class PayrollServlet extends HttpServlet {
         double seventhDayDTThreshold = Double.parseDouble(Configuration.getProperty(tenantId, "OvertimeSeventhDayDTThreshold", "8.0"));
         String firstDayOfWeekSetting = Configuration.getProperty(tenantId, "FirstDayOfWeek", "SUNDAY").toUpperCase(Locale.ENGLISH);
 
-        String punchesSql = "SELECT p.PUNCH_ID,p.EID,p.DATE AS PUNCH_UTC_DATE,p.IN_1 AS IN_UTC,p.OUT_1 AS OUT_UTC,p.PUNCH_TYPE, s.AUTO_LUNCH,s.HRS_REQUIRED,s.LUNCH_LENGTH FROM punches p JOIN employee_data e ON p.EID=e.EID AND p.TenantID=e.TenantID LEFT JOIN schedules s ON e.SCHEDULE=s.NAME AND e.TenantID=s.TenantID WHERE p.TenantID=? AND e.ACTIVE=TRUE AND e.WAGE_TYPE='Hourly' AND p.DATE BETWEEN ? AND ? ORDER BY p.EID,p.DATE,p.IN_1";
+        String punchesSql = "SELECT p.PUNCH_ID,p.EID,p.DATE AS PUNCH_UTC_DATE,p.IN_1 AS IN_UTC,p.OUT_1 AS OUT_UTC,p.PUNCH_TYPE, s.AUTO_LUNCH,s.HRS_REQUIRED,s.LUNCH_LENGTH,e.STATE FROM punches p JOIN employee_data e ON p.EID=e.EID AND p.TenantID=e.TenantID LEFT JOIN schedules s ON e.SCHEDULE=s.NAME AND e.TenantID=s.TenantID WHERE p.TenantID=? AND e.ACTIVE=TRUE AND e.WAGE_TYPE='Hourly' AND p.DATE BETWEEN ? AND ? ORDER BY p.EID,p.DATE,p.IN_1";
         Map<Integer, List<Map<String, Object>>> punchesByEidMap = new HashMap<>();
         try (PreparedStatement psP = con.prepareStatement(punchesSql)) {
             psP.setInt(1, tenantId); psP.setDate(2, Date.valueOf(startDate)); psP.setDate(3, Date.valueOf(endDate));
@@ -425,6 +432,7 @@ public class PayrollServlet extends HttpServlet {
                     pD.put("AutoLunch", rs.getBoolean("s.AUTO_LUNCH"));
                     Object hrObj = rs.getObject("s.HRS_REQUIRED"); pD.put("HoursRequired", hrObj != null ? ((Number)hrObj).doubleValue() : null);
                     Object llObj = rs.getObject("s.LUNCH_LENGTH"); pD.put("LunchLength", llObj != null ? ((Number)llObj).intValue() : null);
+                    pD.put("EmployeeState", rs.getString("e.STATE"));
                     punchesByEidMap.computeIfAbsent(eid, k -> new ArrayList<>()).add(pD);
                 }
             }
@@ -437,6 +445,50 @@ public class PayrollServlet extends HttpServlet {
                 Map<LocalDate, Double> dailyWorkHours = new HashMap<>();
                 Map<LocalDate, Double> dailyDtHoursProcessed = new HashMap<>();
                 Map<LocalDate, Double> dailyOtHoursProcessed = new HashMap<>();
+                
+                // Get employee's state for Pro plan users
+                String employeeState = null;
+                if (!punches.isEmpty()) {
+                    employeeState = (String) punches.get(0).get("EmployeeState");
+                }
+                
+                // Get state-specific overtime rules based on overtime type setting
+                StateOvertimeRuleDetail stateRules = null;
+                logger.info("[StateOT_DEBUG] PayrollServlet - TenantID: " + tenantId + ", hasProPlan: " + hasProPlan + ", overtimeType: " + overtimeType + ", employeeState: " + employeeState);
+                if (hasProPlan && "employee_state".equals(overtimeType) && employeeState != null && !employeeState.trim().isEmpty()) {
+                    stateRules = StateOvertimeRules.getRulesForState(employeeState);
+                    if (stateRules != null) {
+                        logger.info("[StateOT] Applying employee state-based overtime rules for employee in state: " + employeeState + " (TenantID: " + tenantId + ")");
+                    } else {
+                        logger.info("[StateOT_DEBUG] PayrollServlet - No state rules found for state: " + employeeState);
+                    }
+                } else {
+                    logger.info("[StateOT_DEBUG] PayrollServlet - State-based OT not applied - hasProPlan: " + hasProPlan + ", overtimeType: " + overtimeType + ", employeeState: " + employeeState);
+                }
+                
+                // Use state rules if available, otherwise use FLSA standards for employee_state mode
+                boolean effectiveDailyOtEnabled, effectiveDoubleTimeEnabled;
+                double effectiveDailyThreshold, effectiveDoubleTimeThreshold;
+                
+                if (stateRules != null) {
+                    // Use state-specific rules
+                    effectiveDailyOtEnabled = stateRules.isDailyOTEnabled();
+                    effectiveDailyThreshold = stateRules.getDailyOTThreshold();
+                    effectiveDoubleTimeEnabled = stateRules.isDoubleTimeEnabled();
+                    effectiveDoubleTimeThreshold = stateRules.getDoubleTimeThreshold();
+                } else if (hasProPlan && "employee_state".equals(overtimeType)) {
+                    // Use FLSA standards for states without special rules in employee_state mode
+                    effectiveDailyOtEnabled = false;
+                    effectiveDailyThreshold = 0.0;
+                    effectiveDoubleTimeEnabled = false;
+                    effectiveDoubleTimeThreshold = 0.0;
+                } else {
+                    // Use tenant configuration for other modes
+                    effectiveDailyOtEnabled = dailyOtEnabled;
+                    effectiveDailyThreshold = dailyThreshold;
+                    effectiveDoubleTimeEnabled = doubleTimeEnabled;
+                    effectiveDoubleTimeThreshold = doubleTimeThreshold;
+                }
 
                 for (Map<String, Object> punch : punches) {
                     Instant iI = (Instant) punch.get("In"); Instant oI = (Instant) punch.get("Out");
@@ -471,10 +523,10 @@ public class PayrollServlet extends HttpServlet {
                         LocalDate punchDateInScheduleZone = ZonedDateTime.ofInstant(inInstant, scheduleZone).toLocalDate();
                         double remainingHoursInPunch = calculatedTotalHours;
 
-                        if (doubleTimeEnabled && dailyWorkHours.getOrDefault(punchDateInScheduleZone,0.0) > doubleTimeThreshold) {
+                        if (effectiveDoubleTimeEnabled && dailyWorkHours.getOrDefault(punchDateInScheduleZone,0.0) > effectiveDoubleTimeThreshold) {
                             double dayTotal = dailyWorkHours.get(punchDateInScheduleZone);
                             double alreadyProcessedDt = dailyDtHoursProcessed.getOrDefault(punchDateInScheduleZone, 0.0);
-                            double potentialDtForDay = Math.max(0, dayTotal - doubleTimeThreshold - alreadyProcessedDt);
+                            double potentialDtForDay = Math.max(0, dayTotal - effectiveDoubleTimeThreshold - alreadyProcessedDt);
                             double dtAppliedToThisPunch = Math.min(remainingHoursInPunch, potentialDtForDay);
                             if (dtAppliedToThisPunch > 0) {
                                 punchDtHours += dtAppliedToThisPunch;
@@ -483,10 +535,10 @@ public class PayrollServlet extends HttpServlet {
                             }
                         }
 
-                        if (dailyOtEnabled && dailyWorkHours.getOrDefault(punchDateInScheduleZone,0.0) > dailyThreshold) {
+                        if (effectiveDailyOtEnabled && dailyWorkHours.getOrDefault(punchDateInScheduleZone,0.0) > effectiveDailyThreshold) {
                             double dayTotalAfterDtConsideration = dailyWorkHours.get(punchDateInScheduleZone) - dailyDtHoursProcessed.getOrDefault(punchDateInScheduleZone,0.0);
                             double alreadyProcessedOt = dailyOtHoursProcessed.getOrDefault(punchDateInScheduleZone, 0.0);
-                            double potentialOtForDay = Math.max(0, dayTotalAfterDtConsideration - dailyThreshold - alreadyProcessedOt);
+                            double potentialOtForDay = Math.max(0, dayTotalAfterDtConsideration - effectiveDailyThreshold - alreadyProcessedOt);
                             double otAppliedToThisPunch = Math.min(remainingHoursInPunch, potentialOtForDay);
                             if (otAppliedToThisPunch > 0) {
                                 punchOtHours += otAppliedToThisPunch;

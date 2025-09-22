@@ -21,12 +21,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
+import java.util.Enumeration;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @WebServlet("/AddEditAndDeleteEmployeesServlet")
 public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
-
     private static final long serialVersionUID = 1L;
     private static final Logger logger = Logger.getLogger(AddEditAndDeleteEmployeesServlet.class.getName());
 
@@ -39,28 +39,40 @@ public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
     private boolean isValid(String s) { return s != null && !s.trim().isEmpty(); }
 
     private void ensureDefaultLookupsExist(Connection con, int tenantId) throws SQLException {
-        logger.info("Ensuring default lookups exist for TenantID: " + tenantId);
         String[] sqlCommands = {
             "INSERT IGNORE INTO departments (TenantID, NAME, DESCRIPTION) VALUES (?, 'None', 'Default for unassigned employees')",
             "INSERT IGNORE INTO schedules (TenantID, NAME) VALUES (?, 'Open')",
             "INSERT IGNORE INTO accruals (TenantID, NAME) VALUES (?, 'None')"
         };
-
         for (String sql : sqlCommands) {
             try (PreparedStatement ps = con.prepareStatement(sql)) {
                 ps.setInt(1, tenantId);
                 ps.executeUpdate();
             }
         }
-        logger.info("Default lookup check complete for TenantID: " + tenantId);
     }
     
-    private String buildRedirectUrl(HttpServletRequest request, String page, int eid, String message, String error, String wizardAction) throws IOException {
+    private String buildRedirectUrlWithParams(HttpServletRequest request, String page, String error) throws IOException {
+        StringBuilder url = new StringBuilder(request.getContextPath() + "/" + page + "?reopenModal=add&error=" + URLEncoder.encode(error, StandardCharsets.UTF_8.name()));
+        Enumeration<String> paramNames = request.getParameterNames();
+        while (paramNames.hasMoreElements()) {
+            String paramName = paramNames.nextElement();
+            if (!"action".equals(paramName) && !"error".equals(paramName)) {
+                url.append("&").append(paramName).append("=").append(URLEncoder.encode(request.getParameter(paramName), StandardCharsets.UTF_8.name()));
+            }
+        }
+        return url.toString();
+    }
+
+    private String buildRedirectUrl(HttpServletRequest request, String page, int eid, String message, String error, String wizardAction, boolean itemAddedInWizard) throws IOException {
         StringBuilder url = new StringBuilder(request.getContextPath() + "/" + page);
         StringBuilder params = new StringBuilder();
-
+        
         if (isValid(wizardAction)) {
-            params.append(params.length() > 0 ? "&" : "").append("setup_wizard=true&step=").append(wizardAction);
+            params.append("setup_wizard=true&step=").append(URLEncoder.encode(wizardAction, StandardCharsets.UTF_8.name()));
+        }
+        if (itemAddedInWizard) {
+            params.append(params.length() > 0 ? "&" : "").append("empAdded=true");
         }
         if (eid > 0) {
             params.append(params.length() > 0 ? "&" : "").append("eid=").append(eid);
@@ -71,7 +83,6 @@ public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
         if (error != null) {
             params.append(params.length() > 0 ? "&" : "").append("error=").append(URLEncoder.encode(error, StandardCharsets.UTF_8.name()));
         }
-
         if (params.length() > 0) {
             url.append("?").append(params);
         }
@@ -81,44 +92,45 @@ public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
     private void rollback(Connection con) {
         if (con != null) {
             try { 
-                if (!con.getAutoCommit()) { 
-                    logger.warning("Transaction is being rolled back.");
-                    con.rollback(); 
-                } 
+                if (!con.getAutoCommit()) { con.rollback(); } 
             }
             catch (SQLException e) { logger.log(Level.SEVERE, "Transaction rollback failed!", e); }
         }
     }
     
+    private String getTimeZoneForState(String stateCode) {
+        if (stateCode == null || stateCode.trim().isEmpty()) { return "America/New_York"; }
+        switch (stateCode.trim().toUpperCase()) {
+            case "CA": case "WA": case "OR": case "NV": return "America/Los_Angeles";
+            case "MT": case "WY": case "CO": case "UT": case "ID": case "NM": return "America/Denver";
+            case "AZ": return "America/Phoenix";
+            case "ND": case "SD": case "NE": case "KS": case "OK": case "TX":
+            case "MN": case "IA": case "MO": case "AR": case "LA": case "WI":
+            case "IL": case "MS": case "AL": case "TN": case "KY": return "America/Chicago";
+            case "MI": case "IN": case "OH": case "PA": case "NY": case "VT":
+            case "NH": case "ME": case "MA": case "RI": case "CT": case "NJ":
+            case "DE": case "MD": case "WV": case "VA": case "NC": case "SC":
+            case "GA": case "DC": case "FL": return "America/New_York";
+            case "AK": return "America/Anchorage";
+            case "HI": return "Pacific/Honolulu";
+            default: return "America/New_York";
+        }
+    }
+
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         request.setCharacterEncoding(StandardCharsets.UTF_8.name());
         HttpSession session = request.getSession(false);
         Integer tenantId = getTenantIdFromSession(session);
-
         if (tenantId == null) {
-            String requestedWithHeader = request.getHeader("X-Requested-With");
-            boolean isAjax = "XMLHttpRequest".equals(requestedWithHeader);
-            
-            if (isAjax) {
-                response.setContentType("application/json");
-                response.setCharacterEncoding("UTF-8");
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 401
-                response.getWriter().print("{\"success\": false, \"error\": \"Session expired. Please log in again.\", \"sessionExpired\": true}");
-            } else {
-                response.sendRedirect(request.getContextPath() + "/login.jsp?error=Session+expired.");
-            }
+            response.sendRedirect(request.getContextPath() + "/login.jsp?error=Session+expired.");
             return;
         }
-
         String action = request.getParameter("action");
-        logger.info("AddEditAndDeleteEmployeesServlet received POST action: " + action);
-        
         if ("editEmployee".equals(action) && "true".equalsIgnoreCase(request.getParameter("admin_verify_step"))) {
             editEmployeeAsJson(request, response, tenantId, session);
             return;
         }
-        
         try {
             switch (action != null ? action.trim() : "") {
                 case "addEmployee":
@@ -134,60 +146,56 @@ public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
                     reactivateEmployee(request, response, tenantId);
                     break;
                 default:
-                    logger.warning("Invalid action specified: " + action);
-                    response.sendRedirect(buildRedirectUrl(request, "employees.jsp", -1, null, "Invalid action specified.", null));
+                    response.sendRedirect(buildRedirectUrl(request, "employees.jsp", -1, null, "Invalid action specified.", null, false));
                     break;
             }
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Top-level error processing employee POST action '" + action + "'", e);
-            response.sendRedirect(buildRedirectUrl(request, "employees.jsp", -1, null, "A critical server error occurred.", null));
+            response.sendRedirect(buildRedirectUrl(request, "employees.jsp", -1, null, "A critical server error occurred.", null, false));
         }
     }
 
     private void addEmployee(HttpServletRequest request, HttpServletResponse response, int tenantId, HttpSession session) throws IOException {
         String firstName = request.getParameter("firstName");
         String lastName = request.getParameter("lastName");
-        String email = request.getParameter("email").trim().toLowerCase();
+        String email = request.getParameter("email");
         String hireDateStr = request.getParameter("hireDate");
+        String state = request.getParameter("state");
+        String permissions = request.getParameter("permissionsDropDown");
+
+        if (!isValid(firstName) || !isValid(lastName) || !isValid(email) || !isValid(hireDateStr) || !isValid(state)) {
+            String errorMsg = "First Name, Last Name, Email, Hire Date, and State are required fields.";
+            response.sendRedirect(buildRedirectUrlWithParams(request, "employees.jsp", errorMsg));
+            return;
+        }
+        String finalEmail = email.trim().toLowerCase();
         
         Connection con = null;
         try {
             con = DatabaseConnection.getConnection(); 
             con.setAutoCommit(false);
             
-            // --- NEW USER LIMIT CHECK ---
-            int maxUsers = 25; // Default value
+            int maxUsers = 25;
             try (PreparedStatement ps = con.prepareStatement("SELECT MaxUsers FROM tenants WHERE TenantID = ?")) {
                 ps.setInt(1, tenantId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        maxUsers = rs.getInt("MaxUsers");
-                    }
-                }
+                try (ResultSet rs = ps.executeQuery()) { if (rs.next()) maxUsers = rs.getInt("MaxUsers"); }
             }
-
             int activeUserCount = 0;
             try (PreparedStatement ps = con.prepareStatement("SELECT COUNT(*) FROM employee_data WHERE TenantID = ? AND ACTIVE = TRUE")) {
                 ps.setInt(1, tenantId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        activeUserCount = rs.getInt(1);
-                    }
-                }
+                try (ResultSet rs = ps.executeQuery()) { if (rs.next()) activeUserCount = rs.getInt(1); }
             }
-            
             if (activeUserCount >= maxUsers) {
-                logger.warning("Add Employee denied for TenantID " + tenantId + ". Limit of " + maxUsers + " reached.");
-                String errorMsg = "user_limit_exceeded:You have reached your maximum of " + maxUsers + " active users. Please upgrade your plan to add more employees.";
-                response.sendRedirect(buildRedirectUrl(request, "employees.jsp", -1, null, errorMsg, null));
-                return; // Stop execution
+                String errorMsg = "user_limit_exceeded:You have reached your maximum of " + maxUsers + " active users.";
+                response.sendRedirect(buildRedirectUrl(request, "employees.jsp", -1, null, errorMsg, null, false));
+                return;
             }
-            // --- END USER LIMIT CHECK ---
             
             ensureDefaultLookupsExist(con, tenantId);
             
-            String sqlIns = "INSERT INTO employee_data (TenantID,TenantEmployeeNumber,FIRST_NAME,LAST_NAME,DEPT,SCHEDULE,SUPERVISOR,PERMISSIONS,ADDRESS,CITY,STATE,ZIP,PHONE,EMAIL,ACCRUAL_POLICY,HIRE_DATE,WORK_SCHEDULE,WAGE_TYPE,WAGE,PasswordHash,RequiresPasswordChange,ACTIVE) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,TRUE)";
+            String sqlIns = "INSERT INTO employee_data (TenantID,TenantEmployeeNumber,FIRST_NAME,LAST_NAME,DEPT,SCHEDULE,SUPERVISOR,PERMISSIONS,ADDRESS,CITY,STATE,ZIP,PHONE,EMAIL,ACCRUAL_POLICY,HIRE_DATE,WORK_SCHEDULE,WAGE_TYPE,WAGE,PasswordHash,RequiresPasswordChange,ACTIVE,TimeZoneId) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,TRUE,?)";
             try (PreparedStatement psAdd = con.prepareStatement(sqlIns, Statement.RETURN_GENERATED_KEYS)) {
+                String timeZoneId = getTimeZoneForState(state);
                 int tenEmpNo = getNextTenantEmployeeNumber(con, tenantId);
                 psAdd.setInt(1, tenantId);
                 psAdd.setInt(2, tenEmpNo);
@@ -196,205 +204,278 @@ public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
                 psAdd.setString(5, request.getParameter("departmentsDropDown"));
                 psAdd.setString(6, request.getParameter("schedulesDropDown"));
                 psAdd.setString(7, request.getParameter("supervisor"));
-                psAdd.setString(8, request.getParameter("permissionsDropDown"));
+                psAdd.setString(8, permissions);
                 psAdd.setString(9, request.getParameter("address"));
                 psAdd.setString(10, request.getParameter("city"));
-                psAdd.setString(11, request.getParameter("state"));
+                psAdd.setString(11, state);
                 psAdd.setString(12, request.getParameter("zip"));
                 psAdd.setString(13, request.getParameter("addEmployeePhone"));
-                psAdd.setString(14, email);
+                psAdd.setString(14, finalEmail);
                 psAdd.setString(15, request.getParameter("accrualsDropDown"));
                 psAdd.setDate(16, Date.valueOf(LocalDate.parse(hireDateStr)));
                 psAdd.setString(17, request.getParameter("workScheduleDropDown"));
                 psAdd.setString(18, request.getParameter("wageTypeDropDown"));
-                
                 String wageStr = request.getParameter("wage");
-                if (isValid(wageStr)) {
-                    psAdd.setDouble(19, Double.parseDouble(wageStr.replace(',', '.')));
-                } else {
-                    psAdd.setDouble(19, 0.0);
-                }
-                
+                psAdd.setDouble(19, isValid(wageStr) ? Double.parseDouble(wageStr.replace(',', '.')) : 0.0);
                 psAdd.setString(20, BCrypt.hashpw("1234", BCrypt.gensalt(12)));
                 psAdd.setBoolean(21, true);
+                psAdd.setString(22, timeZoneId);
 
                 if (psAdd.executeUpdate() > 0) {
                     int newGlobalEid = -1;
                     try (ResultSet gK = psAdd.getGeneratedKeys()) { if (gK.next()) newGlobalEid = gK.getInt(1); }
                     con.commit();
-                    logger.info("Successfully added and committed new employee.");
-                    String successMessage = "Employee " + firstName.trim() + " " + lastName.trim() + " added.";
+                    
+                    String successMessage = String.format("Employee %s %s (#%d) added successfully.", 
+                                                          firstName.trim(), lastName.trim(), tenEmpNo);
+                    
                     boolean inWizard = "true".equals(request.getParameter("setup_wizard"));
-                    String wizardRedirectAction = null;
                     if (inWizard) {
+                        // DEBUG: Print what's happening
+                        System.out.println("DEBUG: Setting wizard step to after_add_employee_prompt, redirecting with empAdded=true");
+                        
                         session.setAttribute("wizardStep", "after_add_employee_prompt");
-                        wizardRedirectAction = "after_add_employee_prompt";
+                        String wizardRedirectAction = "after_add_employee_prompt";
+                        String redirectUrl = buildRedirectUrl(request, "employees.jsp", newGlobalEid, successMessage, null, wizardRedirectAction, true);
+                        redirectUrl += "&lastAddedPerms=" + URLEncoder.encode(permissions, StandardCharsets.UTF_8.name());
+                        
+                        System.out.println("DEBUG: Final redirect URL: " + redirectUrl);
+                        response.sendRedirect(redirectUrl);
+                    } else {
+                        response.sendRedirect(buildRedirectUrl(request, "employees.jsp", newGlobalEid, successMessage, null, null, false));
                     }
-                    response.sendRedirect(buildRedirectUrl(request, "employees.jsp", newGlobalEid, successMessage, null, wizardRedirectAction));
                 } else { 
                     throw new SQLException("Add employee failed, no rows affected."); 
                 }
             }
         } catch (SQLException e) { 
             rollback(con); 
-            if (e.getMessage() != null && e.getMessage().toLowerCase().contains("duplicate entry") && e.getMessage().contains("uq_employee_email_tenant")) {
-                String checkInactiveSql = "SELECT EID, ACTIVE FROM employee_data WHERE TenantID = ? AND EMAIL = ?";
-                try (Connection checkCon = DatabaseConnection.getConnection();
-                     PreparedStatement psCheck = checkCon.prepareStatement(checkInactiveSql)) {
+            if (e.getMessage() != null && e.getMessage().toLowerCase().contains("duplicate entry")) {
+                String checkActiveSql = "SELECT EID, ACTIVE, FIRST_NAME, LAST_NAME FROM employee_data WHERE TenantID = ? AND EMAIL = ?";
+                try (Connection checkCon = DatabaseConnection.getConnection(); PreparedStatement psCheck = checkCon.prepareStatement(checkActiveSql)) {
                     psCheck.setInt(1, tenantId);
-                    psCheck.setString(2, email);
+                    psCheck.setString(2, finalEmail);
                     try (ResultSet rs = psCheck.executeQuery()) {
-                        if (rs.next() && !rs.getBoolean("ACTIVE")) {
-                            int inactiveEid = rs.getInt("EID");
-                            String redirectUrl = buildRedirectUrl(request, "employees.jsp", 0, null, null, null);
-                            redirectUrl += (redirectUrl.contains("?") ? "&" : "?") + "reactivatePrompt=true&eid=" + inactiveEid + "&email=" + URLEncoder.encode(email, StandardCharsets.UTF_8.name());
-                            response.sendRedirect(redirectUrl);
-                            return;
+                        if (rs.next()) {
+                            if (rs.getBoolean("ACTIVE")) {
+                                String errorMsg = "An active employee with this email address already exists.";
+                                response.sendRedirect(buildRedirectUrlWithParams(request, "employees.jsp", errorMsg));
+                            } else {
+                                int inactiveEid = rs.getInt("EID");
+                                String employeeName = rs.getString("FIRST_NAME") + " " + rs.getString("LAST_NAME");
+                                String redirectUrl = buildRedirectUrl(request, "employees.jsp", 0, null, null, null, false);
+                                redirectUrl += (redirectUrl.contains("?") ? "&" : "?") + "reactivatePrompt=true&eid=" + inactiveEid + "&email=" + URLEncoder.encode(finalEmail, StandardCharsets.UTF_8.name()) + "&name=" + URLEncoder.encode(employeeName, StandardCharsets.UTF_8.name());
+                                response.sendRedirect(redirectUrl);
+                            }
+                            return; 
                         }
                     }
-                } catch (SQLException checkEx) {
-                    logger.log(Level.WARNING, "Failed to check for inactive employee", checkEx);
+                } catch (Exception checkEx) {
+                    logger.log(Level.WARNING, "Failed during duplicate email check", checkEx);
                 }
             }
-            logger.log(Level.WARNING, "Error adding employee for TenantID " + tenantId, e);
-            response.sendRedirect(buildRedirectUrl(request, "employees.jsp", -1, null, "Error: Could not add employee. An active employee with this email may already exist, or a database error occurred.", null));
+            response.sendRedirect(buildRedirectUrl(request, "employees.jsp", -1, null, "A database error occurred.", null, false));
         } catch (Exception e) {
             rollback(con);
-            logger.log(Level.SEVERE, "Unexpected error adding employee for TenantID " + tenantId, e);
-            response.sendRedirect(buildRedirectUrl(request, "employees.jsp", -1, null, "An unexpected error occurred.", null));
+            response.sendRedirect(buildRedirectUrl(request, "employees.jsp", -1, null, "An unexpected error occurred.", null, false));
         } finally {
-            if (con != null) { try { con.close(); } catch (SQLException ex) { logger.log(Level.WARNING, "Error closing connection", ex); } }
+            if (con != null) { try { con.close(); } catch (SQLException ex) {} }
         }
     }
     
     private void editEmployeeAsRedirect(HttpServletRequest request, HttpServletResponse response, int tenantId, HttpSession session) throws IOException {
         String eidStr = request.getParameter("eid");
-        int globalEID = -1;
-        try {
-            globalEID = Integer.parseInt(eidStr);
-        } catch (NumberFormatException e) {
-            response.sendRedirect(buildRedirectUrl(request, "employees.jsp", -1, null, "Invalid Employee ID.", null));
+        String state = request.getParameter("state");
+        String email = request.getParameter("email");
+        String newPermissions = request.getParameter("permissionsDropDown");
+        if (!isValid(state)) {
+            response.sendRedirect(buildRedirectUrl(request, "employees.jsp", 0, null, "State is a required field.", null, false));
             return;
         }
-
+        int globalEID = -1;
+        try { globalEID = Integer.parseInt(eidStr); } catch (NumberFormatException e) {
+            response.sendRedirect(buildRedirectUrl(request, "employees.jsp", -1, null, "Invalid Employee ID.", null, false)); return;
+        }
         Connection con = null;
         try {
             con = DatabaseConnection.getConnection();
             con.setAutoCommit(false);
-
+            String currentPermissions = null;
+            String checkPermsSql = "SELECT Permissions FROM employee_data WHERE EID = ? AND TenantID = ?";
+            try (PreparedStatement psCheck = con.prepareStatement(checkPermsSql)) {
+                psCheck.setInt(1, globalEID);
+                psCheck.setInt(2, tenantId);
+                try (ResultSet rs = psCheck.executeQuery()) {
+                    if (rs.next()) currentPermissions = rs.getString("Permissions");
+                }
+            }
+            if ("Administrator".equalsIgnoreCase(currentPermissions) && !"Administrator".equalsIgnoreCase(newPermissions)) {
+                String countSql = "SELECT COUNT(*) FROM employee_data WHERE TenantID = ? AND ACTIVE = TRUE AND Permissions = 'Administrator'";
+                try (PreparedStatement psCount = con.prepareStatement(countSql)) {
+                    psCount.setInt(1, tenantId);
+                    try (ResultSet rsCount = psCount.executeQuery()) {
+                        if (rsCount.next() && rsCount.getInt(1) <= 1) {
+                            String errorMsg = "Action denied: Cannot remove administrator permissions from the only remaining administrator.";
+                            response.sendRedirect(buildRedirectUrl(request, "employees.jsp", globalEID, null, errorMsg, null, false));
+                            return;
+                        }
+                    }
+                }
+            }
             ensureDefaultLookupsExist(con, tenantId);
-
-            String sqlUpd = "UPDATE employee_data SET FIRST_NAME=?,LAST_NAME=?,DEPT=?,SCHEDULE=?,SUPERVISOR=?,PERMISSIONS=?,ADDRESS=?,CITY=?,STATE=?,ZIP=?,PHONE=?,EMAIL=?,ACCRUAL_POLICY=?,HIRE_DATE=?,WORK_SCHEDULE=?,WAGE_TYPE=?,WAGE=? WHERE EID=? AND TenantID=?";
+            String sqlUpd = "UPDATE employee_data SET FIRST_NAME=?,LAST_NAME=?,DEPT=?,SCHEDULE=?,SUPERVISOR=?,PERMISSIONS=?,ADDRESS=?,CITY=?,STATE=?,ZIP=?,PHONE=?,EMAIL=?,ACCRUAL_POLICY=?,HIRE_DATE=?,WORK_SCHEDULE=?,WAGE_TYPE=?,WAGE=?,TimeZoneId=? WHERE EID=? AND TenantID=?";
             try(PreparedStatement psU = con.prepareStatement(sqlUpd)) {
+                String timeZoneId = getTimeZoneForState(state);
                 psU.setString(1, request.getParameter("firstName").trim());
                 psU.setString(2, request.getParameter("lastName").trim());
                 psU.setString(3, request.getParameter("departmentsDropDown"));
                 psU.setString(4, request.getParameter("schedulesDropDown"));
                 psU.setString(5, request.getParameter("supervisor"));
-                psU.setString(6, request.getParameter("permissionsDropDown"));
+                psU.setString(6, newPermissions);
                 psU.setString(7, request.getParameter("address"));
                 psU.setString(8, request.getParameter("city"));
-                psU.setString(9, request.getParameter("state"));
+                psU.setString(9, state);
                 psU.setString(10, request.getParameter("zip"));
                 psU.setString(11, request.getParameter("editEmployeePhone"));
-                psU.setString(12, request.getParameter("email").trim().toLowerCase());
+                psU.setString(12, email.trim().toLowerCase());
                 psU.setString(13, request.getParameter("accrualsDropDown"));
                 psU.setDate(14, Date.valueOf(LocalDate.parse(request.getParameter("hireDate"))));
                 psU.setString(15, request.getParameter("workScheduleDropDown"));
                 psU.setString(16, request.getParameter("wageTypeDropDown"));
-                
                 String wageStr = request.getParameter("wage");
-                if (isValid(wageStr)) {
-                    psU.setDouble(17, Double.parseDouble(wageStr.replace(',', '.')));
-                } else {
-                    psU.setDouble(17, 0.0);
-                }
+                psU.setDouble(17, isValid(wageStr) ? Double.parseDouble(wageStr.replace(',', '.')) : 0.0);
+                psU.setString(18, timeZoneId);
+                psU.setInt(19, globalEID);
+                psU.setInt(20, tenantId);
                 
-                psU.setInt(18, globalEID);
-                psU.setInt(19, tenantId);
-                
-                int rowsAffected = psU.executeUpdate();
-                if (rowsAffected > 0) {
+                if (psU.executeUpdate() > 0) {
                     con.commit();
-                    logger.info("Successfully updated and committed employee EID: " + globalEID);
-                    response.sendRedirect(buildRedirectUrl(request, "employees.jsp", globalEID, "Employee updated successfully.", null, null));
+                    response.sendRedirect(buildRedirectUrl(request, "employees.jsp", globalEID, "Employee updated successfully.", null, null, false));
                 } else {
                     con.rollback();
-                    logger.warning("Update for employee EID " + globalEID + " affected 0 rows. Transaction rolled back.");
-                    response.sendRedirect(buildRedirectUrl(request, "employees.jsp", globalEID, null, "Update failed. Employee not found or no changes were made.", null));
+                    response.sendRedirect(buildRedirectUrl(request, "employees.jsp", globalEID, null, "Update failed.", null, false));
                 }
+            }
+        } catch (SQLException e) {
+            rollback(con);
+            if (e.getMessage() != null && e.getMessage().toLowerCase().contains("duplicate entry")) {
+                String checkActiveSql = "SELECT EID, ACTIVE, FIRST_NAME, LAST_NAME FROM employee_data WHERE TenantID = ? AND EMAIL = ?";
+                try (Connection checkCon = DatabaseConnection.getConnection(); PreparedStatement psCheck = checkCon.prepareStatement(checkActiveSql)) {
+                    psCheck.setInt(1, tenantId);
+                    psCheck.setString(2, email.trim().toLowerCase());
+                    try (ResultSet rs = psCheck.executeQuery()) {
+                        if (rs.next()) {
+                            if (rs.getBoolean("ACTIVE")) {
+                                String errorMsg = "An active employee with that email address already exists.";
+                                response.sendRedirect(buildRedirectUrl(request, "employees.jsp", globalEID, null, errorMsg, null, false));
+                            } else {
+                                String employeeName = rs.getString("FIRST_NAME") + " " + rs.getString("LAST_NAME");
+                                String errorMsg = "An inactive employee (" + employeeName + ") with that email address already exists.";
+                                response.sendRedirect(buildRedirectUrl(request, "employees.jsp", globalEID, null, errorMsg, null, false));
+                            }
+                            return;
+                        }
+                    }
+                } catch (Exception checkEx) {
+                    logger.log(Level.WARNING, "Failed during duplicate email check in edit", checkEx);
+                }
+                response.sendRedirect(buildRedirectUrl(request, "employees.jsp", globalEID, null, "An employee with that email address already exists.", null, false));
+            } else {
+                response.sendRedirect(buildRedirectUrl(request, "employees.jsp", globalEID, null, "A database error occurred while saving.", null, false));
             }
         } catch (Exception e) {
             rollback(con);
-            logger.log(Level.SEVERE, "Error editing employee EID: " + globalEID + ". Transaction rolled back.", e);
-            response.sendRedirect(buildRedirectUrl(request, "employees.jsp", globalEID, null, "An error occurred while saving.", null));
+            response.sendRedirect(buildRedirectUrl(request, "employees.jsp", globalEID, null, "An unexpected error occurred.", null, false));
         } finally {
-            if (con != null) { try { con.close(); } catch (SQLException ex) { logger.log(Level.WARNING, "Error closing connection", ex); } }
+            if (con != null) { try { con.close(); } catch (SQLException ex) {} }
         }
     }
 
     private void editEmployeeAsJson(HttpServletRequest request, HttpServletResponse response, int tenantId, HttpSession session) throws IOException {
+        String state = request.getParameter("state");
+        String email = request.getParameter("email");
+        String newPermissions = request.getParameter("permissionsDropDown");
+        if (!isValid(state)) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            response.getWriter().print("{\"success\": false, \"error\": \"State is a required field.\"}");
+            return;
+        }
         Connection con = null;
         PrintWriter out = response.getWriter();
         JSONObject jsonResponse = new JSONObject();
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
-        
         try {
             con = DatabaseConnection.getConnection();
             con.setAutoCommit(false);
-            
-            ensureDefaultLookupsExist(con, tenantId);
-            
             int globalEID = Integer.parseInt(request.getParameter("eid"));
-            String sqlUpd = "UPDATE employee_data SET FIRST_NAME=?,LAST_NAME=?,DEPT=?,SCHEDULE=?,SUPERVISOR=?,PERMISSIONS=?,ADDRESS=?,CITY=?,STATE=?,ZIP=?,PHONE=?,EMAIL=?,ACCRUAL_POLICY=?,HIRE_DATE=?,WORK_SCHEDULE=?,WAGE_TYPE=?,WAGE=? WHERE EID=? AND TenantID=?";
-
+            String currentPermissions = null;
+            String checkPermsSql = "SELECT Permissions FROM employee_data WHERE EID = ? AND TenantID = ?";
+            try (PreparedStatement psCheck = con.prepareStatement(checkPermsSql)) {
+                psCheck.setInt(1, globalEID);
+                psCheck.setInt(2, tenantId);
+                try (ResultSet rs = psCheck.executeQuery()) {
+                    if (rs.next()) currentPermissions = rs.getString("Permissions");
+                }
+            }
+            if ("Administrator".equalsIgnoreCase(currentPermissions) && !"Administrator".equalsIgnoreCase(newPermissions)) {
+                String countSql = "SELECT COUNT(*) FROM employee_data WHERE TenantID = ? AND ACTIVE = TRUE AND Permissions = 'Administrator'";
+                try (PreparedStatement psCount = con.prepareStatement(countSql)) {
+                    psCount.setInt(1, tenantId);
+                    try (ResultSet rsCount = psCount.executeQuery()) {
+                        if (rsCount.next() && rsCount.getInt(1) <= 1) {
+                            String errorMsg = "Action denied: Cannot remove administrator permissions from the only remaining administrator.";
+                            jsonResponse.put("success", false).put("error", errorMsg);
+                            out.print(jsonResponse.toString());
+                            return;
+                        }
+                    }
+                }
+            }
+            ensureDefaultLookupsExist(con, tenantId);
+            String sqlUpd = "UPDATE employee_data SET FIRST_NAME=?,LAST_NAME=?,DEPT=?,SCHEDULE=?,SUPERVISOR=?,PERMISSIONS=?,ADDRESS=?,CITY=?,STATE=?,ZIP=?,PHONE=?,EMAIL=?,ACCRUAL_POLICY=?,HIRE_DATE=?,WORK_SCHEDULE=?,WAGE_TYPE=?,WAGE=?,TimeZoneId=? WHERE EID=? AND TenantID=?";
             try (PreparedStatement psU = con.prepareStatement(sqlUpd)) {
+                String timeZoneId = getTimeZoneForState(state);
                 psU.setString(1, request.getParameter("firstName").trim());
                 psU.setString(2, request.getParameter("lastName").trim());
                 psU.setString(3, request.getParameter("departmentsDropDown"));
                 psU.setString(4, request.getParameter("schedulesDropDown"));
                 psU.setString(5, request.getParameter("supervisor"));
-                psU.setString(6, request.getParameter("permissionsDropDown"));
+                psU.setString(6, newPermissions);
                 psU.setString(7, request.getParameter("address"));
                 psU.setString(8, request.getParameter("city"));
-                psU.setString(9, request.getParameter("state"));
+                psU.setString(9, state);
                 psU.setString(10, request.getParameter("zip"));
                 psU.setString(11, request.getParameter("editEmployeePhone"));
-                psU.setString(12, request.getParameter("email").trim().toLowerCase());
+                psU.setString(12, email.trim().toLowerCase());
                 psU.setString(13, request.getParameter("accrualsDropDown"));
                 psU.setDate(14, Date.valueOf(LocalDate.parse(request.getParameter("hireDate"))));
                 psU.setString(15, request.getParameter("workScheduleDropDown"));
                 psU.setString(16, request.getParameter("wageTypeDropDown"));
-                
                 String wageStr = request.getParameter("wage");
-                if (isValid(wageStr)) {
-                    psU.setDouble(17, Double.parseDouble(wageStr.replace(',', '.')));
-                } else {
-                    psU.setDouble(17, 0.0);
-                }
-                
-                psU.setInt(18, globalEID);
-                psU.setInt(19, tenantId);
-
+                psU.setDouble(17, isValid(wageStr) ? Double.parseDouble(wageStr.replace(',', '.')) : 0.0);
+                psU.setString(18, timeZoneId);
+                psU.setInt(19, globalEID);
+                psU.setInt(20, tenantId);
                 if (psU.executeUpdate() > 0) {
                     con.commit();
-                    logger.info("Successfully updated and committed ADMIN employee EID: " + globalEID);
                     session.setAttribute("wizardStep", "prompt_add_employees");
                     jsonResponse.put("success", true).put("message", "Administrator details verified!");
                 } else {
                     con.rollback();
-                    logger.warning("Update for ADMIN employee EID " + globalEID + " affected 0 rows. Transaction rolled back.");
                     jsonResponse.put("success", false).put("error", "Update failed. Admin record not found.");
                 }
             }
+        } catch (SQLException e) {
+            rollback(con);
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            jsonResponse.put("success", false).put("error", "A database error occurred.");
         } catch (Exception e) {
             rollback(con);
-            logger.log(Level.SEVERE, "Error in editEmployeeAsJson. Transaction rolled back.", e);
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             jsonResponse.put("success", false).put("error", "Server Error: " + e.getMessage());
         } finally {
-            if (con != null) { try { con.close(); } catch (SQLException ex) { logger.log(Level.WARNING, "Error closing connection", ex); } }
+            if (con != null) { try { con.close(); } catch (SQLException ex) {} }
         }
         out.print(jsonResponse.toString());
     }
@@ -403,23 +484,16 @@ public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
         String eidStr = request.getParameter("eid");
         String deactivationReason = request.getParameter("deactivationReason");
         int eidToDeactivate = -1;
-        try {
-            eidToDeactivate = Integer.parseInt(eidStr);
-        } catch (NumberFormatException e) {
-            response.sendRedirect(buildRedirectUrl(request, "employees.jsp", -1, null, "Invalid Employee ID.", null));
-            return;
+        try { eidToDeactivate = Integer.parseInt(eidStr); } catch (NumberFormatException e) {
+            response.sendRedirect(buildRedirectUrl(request, "employees.jsp", -1, null, "Invalid Employee ID.", null, false)); return;
         }
-
         if (!isValid(deactivationReason)) {
-            response.sendRedirect(buildRedirectUrl(request, "employees.jsp", eidToDeactivate, null, "A reason for deactivation is required.", null));
-            return;
+            response.sendRedirect(buildRedirectUrl(request, "employees.jsp", eidToDeactivate, null, "A reason for deactivation is required.", null, false)); return;
         }
-
         try (Connection con = DatabaseConnection.getConnection()) {
             String checkSql = "SELECT Permissions FROM employee_data WHERE EID = ? AND TenantID = ? AND ACTIVE = TRUE";
             try (PreparedStatement psCheck = con.prepareStatement(checkSql)) {
-                psCheck.setInt(1, eidToDeactivate);
-                psCheck.setInt(2, tenantId);
+                psCheck.setInt(1, eidToDeactivate); psCheck.setInt(2, tenantId);
                 try (ResultSet rs = psCheck.executeQuery()) {
                     if (rs.next() && "Administrator".equalsIgnoreCase(rs.getString("Permissions"))) {
                         String countSql = "SELECT COUNT(*) FROM employee_data WHERE TenantID = ? AND ACTIVE = TRUE AND Permissions = 'Administrator'";
@@ -427,30 +501,26 @@ public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
                             psCount.setInt(1, tenantId);
                             try (ResultSet rsCount = psCount.executeQuery()) {
                                 if (rsCount.next() && rsCount.getInt(1) <= 1) {
-                                    String errorMsg = "Action denied: Cannot deactivate the only remaining administrator account.";
-                                    response.sendRedirect(buildRedirectUrl(request, "employees.jsp", eidToDeactivate, null, errorMsg, null));
-                                    return;
+                                    response.sendRedirect(buildRedirectUrl(request, "employees.jsp", eidToDeactivate, null, "Action denied: Cannot deactivate the only remaining administrator account.", null, false)); return;
                                 }
                             }
                         }
                     }
                 }
             }
-
             String deactivateSql = "UPDATE employee_data SET ACTIVE = FALSE, DeactivationReason = ?, DeactivationDate = CURDATE() WHERE EID = ? AND TenantID = ?";
             try (PreparedStatement psDeactivate = con.prepareStatement(deactivateSql)) {
                 psDeactivate.setString(1, deactivationReason);
                 psDeactivate.setInt(2, eidToDeactivate);
                 psDeactivate.setInt(3, tenantId);
                 if (psDeactivate.executeUpdate() > 0) {
-                    response.sendRedirect(buildRedirectUrl(request, "employees.jsp", -1, "Employee successfully deactivated.", null, null));
+                    response.sendRedirect(buildRedirectUrl(request, "employees.jsp", -1, "Employee successfully deactivated.", null, null, false));
                 } else {
-                    response.sendRedirect(buildRedirectUrl(request, "employees.jsp", eidToDeactivate, null, "Employee not found or already inactive.", null));
+                    response.sendRedirect(buildRedirectUrl(request, "employees.jsp", eidToDeactivate, null, "Employee not found or already inactive.", null, false));
                 }
             }
         } catch (SQLException e) {
-            logger.log(Level.SEVERE, "Database error during deactivation for EID: " + eidToDeactivate, e);
-            response.sendRedirect(buildRedirectUrl(request, "employees.jsp", eidToDeactivate, null, "A database error occurred.", null));
+            response.sendRedirect(buildRedirectUrl(request, "employees.jsp", eidToDeactivate, null, "A database error occurred.", null, false));
         }
     }
 
@@ -459,64 +529,53 @@ public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
         JSONObject jsonResponse = new JSONObject();
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
-        
         int eidToReactivate = -1;
-        try {
-            eidToReactivate = Integer.parseInt(eidStr);
-        } catch (NumberFormatException e) {
+        try { eidToReactivate = Integer.parseInt(eidStr); } catch (NumberFormatException e) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             jsonResponse.put("success", false).put("error", "Invalid Employee ID format.");
-            response.getWriter().print(jsonResponse.toString());
-            return;
+            response.getWriter().print(jsonResponse.toString()); return;
         }
-
         try (Connection con = DatabaseConnection.getConnection()) {
             int maxUsers = 25;
             try (PreparedStatement ps = con.prepareStatement("SELECT MaxUsers FROM tenants WHERE TenantID = ?")) {
                 ps.setInt(1, tenantId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        maxUsers = rs.getInt("MaxUsers");
-                    }
-                }
+                try (ResultSet rs = ps.executeQuery()) { if (rs.next()) maxUsers = rs.getInt("MaxUsers"); }
             }
-
             int activeUserCount = 0;
             try (PreparedStatement ps = con.prepareStatement("SELECT COUNT(*) FROM employee_data WHERE TenantID = ? AND ACTIVE = TRUE")) {
                 ps.setInt(1, tenantId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        activeUserCount = rs.getInt(1);
-                    }
-                }
+                try (ResultSet rs = ps.executeQuery()) { if (rs.next()) activeUserCount = rs.getInt(1); }
             }
-            
             if (activeUserCount >= maxUsers) {
-                logger.warning("Reactivation denied for TenantID " + tenantId + ". Limit of " + maxUsers + " reached.");
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                jsonResponse.put("success", false);
-                jsonResponse.put("error", "user_limit_exceeded");
-                jsonResponse.put("message", "You have reached your maximum of " + maxUsers + " active users. Please upgrade your plan to add more employees.");
-                response.getWriter().print(jsonResponse.toString());
-                return;
+                jsonResponse.put("success", false).put("error", "user_limit_exceeded").put("message", "You have reached your maximum of " + maxUsers + " active users.");
+                response.getWriter().print(jsonResponse.toString()); return;
             }
-
             String sql = "UPDATE employee_data SET ACTIVE = TRUE, DeactivationReason = NULL, DeactivationDate = NULL WHERE EID = ? AND TenantID = ?";
             try (PreparedStatement ps = con.prepareStatement(sql)) {
                 ps.setInt(1, eidToReactivate);
                 ps.setInt(2, tenantId);
-                int rowsAffected = ps.executeUpdate();
-
-                if (rowsAffected > 0) {
+                if (ps.executeUpdate() > 0) {
+                    // Get employee name for success message
+                    String employeeName = "Employee";
+                    try (PreparedStatement psName = con.prepareStatement("SELECT FIRST_NAME, LAST_NAME FROM employee_data WHERE EID = ? AND TenantID = ?")) {
+                        psName.setInt(1, eidToReactivate);
+                        psName.setInt(2, tenantId);
+                        try (ResultSet rsName = psName.executeQuery()) {
+                            if (rsName.next()) {
+                                employeeName = rsName.getString("FIRST_NAME") + " " + rsName.getString("LAST_NAME");
+                            }
+                        }
+                    }
                     response.setStatus(HttpServletResponse.SC_OK);
-                    jsonResponse.put("success", true).put("message", "Employee successfully reactivated.");
+                    jsonResponse.put("success", true).put("message", employeeName + " has been successfully reactivated.");
+                    jsonResponse.put("eid", eidToReactivate);
                 } else {
                     response.setStatus(HttpServletResponse.SC_NOT_FOUND);
                     jsonResponse.put("success", false).put("error", "Employee not found or could not be reactivated.");
                 }
             }
         } catch (SQLException e) {
-            logger.log(Level.SEVERE, "Database error during reactivation for EID: " + eidToReactivate, e);
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             jsonResponse.put("success", false).put("error", "A database error occurred during reactivation.");
         }

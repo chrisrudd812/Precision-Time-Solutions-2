@@ -1,0 +1,159 @@
+/* === css/configureTimeDayRestrictions.css === */
+
+.config-container {
+    padding: 20px;
+    max-width: 950px;
+    margin: 20px auto;
+}
+
+#timeDayRestrictionsForm {
+    display: flex;
+    flex-direction: column;
+    align-items: center; 
+}
+
+#timeDayRestrictionsForm > .setting-item,
+#timeDayRestrictionsForm > .day-restriction-block {
+     width: 100%;
+     max-width: 750px;
+}
+
+.setting-item { 
+    margin-bottom: 25px; 
+    padding-bottom: 25px; 
+    border-bottom: 1px solid #eee;
+}
+
+.setting-item.no-border {
+    border-bottom: none;
+    padding-bottom: 10px;
+}
+
+.setting-item:last-of-type { 
+    border-bottom: none;
+}
+
+.section-heading { 
+    font-size: 1.3em; 
+    color: #334155;
+    margin-bottom: 15px; 
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f0f0f0; 
+}
+
+.section-heading .fas, .section-heading .far { 
+    margin-right: 12px;
+    color: #16a34a;
+}
+
+.day-restriction-block { 
+    /* margin-bottom: 20px;  */
+    padding-bottom: 20px; 
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.day-restriction-block:last-child { 
+    border-bottom: none;
+}
+
+.day-header { 
+    font-size: 1.2em; 
+    font-weight: bold; 
+    color: #1e3a8a;
+    margin-bottom: 12px;
+}
+
+.day-settings-row { 
+    display: flex; 
+    flex-wrap: wrap; 
+    align-items: center; 
+    gap: 10px 30px;
+    margin-bottom: 10px;
+}
+
+.day-settings-row .toggle-group { 
+    display: flex; 
+    align-items: center; 
+    flex-basis: auto;
+    flex-shrink: 0; 
+}
+
+.day-settings-row .slider-label { 
+    margin-right: 10px; 
+    font-weight: normal; 
+    color: #333;
+}
+
+/* Override switch style for this page */
+.day-settings-row .switch {
+    width: 60px;
+    height: 26px;
+}
+.day-settings-row .slider:before {
+    height: 18px;
+    width: 18px;
+}
+.day-settings-row .switch input:checked + .slider:before {
+    transform: translateX(34px);
+}
+
+.time-inputs-group { 
+    display: flex; 
+    flex-direction: column; /* MODIFIED: Stack label above inputs */
+    align-items: flex-start;
+    gap: 8px; 
+    flex-grow: 1;
+}
+
+.time-window-label { 
+    font-size: 0.9em; 
+    color: #555; 
+    font-weight: 500; 
+    display: block; /* Ensure it takes its own line */
+}
+
+.time-input-pair-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.time-input-pair { 
+    display: flex; 
+    align-items: center;
+    gap: 5px; 
+    white-space: nowrap; 
+}
+
+.time-input-pair label { 
+    font-weight: normal; 
+    color: #555;
+    font-size:0.9em; 
+}
+
+.time-inputs-group input[type="time"] { 
+    padding: 7px 10px; 
+    border: 1px solid #ccc;
+    border-radius: 4px; 
+    width: 140px;
+    font-size: 0.9em; 
+    font-family: inherit; 
+}
+
+.time-inputs-group input[type="time"]:disabled { 
+    background-color: #e9ecef;
+    color: #6c757d; 
+    cursor: not-allowed; 
+    border-color: #ced4da; 
+}
+
+.form-actions { 
+    width: 100%;
+    max-width: 750px;
+    margin-top: 30px; 
+    padding-top: 20px;
+    border-top: 1px solid #ddd; 
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+}

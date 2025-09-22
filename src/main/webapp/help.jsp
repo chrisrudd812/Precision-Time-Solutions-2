@@ -19,7 +19,7 @@
             padding: 0;
             background-color: #f8f9fa;
             color: #343a40;
-            padding-top: 60px; /* Adjust for fixed navbar */
+            
         }
         
         .layout-container {
@@ -77,6 +77,64 @@
             box-sizing: border-box;
         }
 
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            nav#table-of-contents {
+                width: 220px;
+            }
+            main {
+                margin-left: 220px;
+                width: calc(100% - 220px);
+                padding: 15px 25px;
+            }
+            img {
+                max-width: 90% !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            nav#table-of-contents {
+                position: static;
+                width: 100%;
+                height: auto;
+                margin-bottom: 20px;
+            }
+            main {
+                margin-left: 0;
+                width: 100%;
+                padding: 10px 20px;
+            }
+            .layout-container {
+                flex-direction: column;
+            }
+            img {
+                max-width: 100% !important;
+                width: auto !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            main {
+                padding: 10px 15px;
+            }
+            section {
+                padding: 20px 15px;
+            }
+            h1 {
+                font-size: 2em;
+            }
+            h2 {
+                font-size: 1.5em;
+            }
+            nav#table-of-contents {
+                padding: 15px;
+            }
+            nav#table-of-contents ul li a {
+                padding: 8px 12px;
+                font-size: 0.9em;
+            }
+        }
+
         header {
             text-align: center;
             border-bottom: 2px solid #e9ecef;
@@ -124,6 +182,9 @@
             margin-top: 15px;
             margin-bottom: 15px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         blockquote {
@@ -142,7 +203,7 @@
 
     </style>
 </head>
-<body>
+<body class="reports-page">
     
     <%-- [FIX] This JSP include directive is now uncommented and will be processed by the server --%>
     <%@ include file="/WEB-INF/includes/navbar.jspf" %>
@@ -459,6 +520,6 @@
             </section>
         </main>
     </div>
-
+<%@ include file="/WEB-INF/includes/common-scripts.jspf" %>
 </body>
 </html>

@@ -2,10 +2,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link rel="icon" href="<%= request.getContextPath() %>/favicon.ico" type="image/x-icon">
-<link rel="icon" type="image/png" sizes="32x32" href="<%= request.getContextPath() %>/images/favicon.png">
-<link rel="apple-touch-icon" href="<%= request.getContextPath() %>/images/apple-touch-icon.png">
+<link rel="icon" href="${pageContext.request.contextPath}/favicon.ico" type="image/x-icon">
+<link rel="icon" type="image/png" sizes="32x32" href="${pageContext.request.contextPath}/images/favicon.png">
+<link rel="apple-touch-icon" href="${pageContext.request.contextPath}/images/apple-touch-icon.png">
 
-<link rel="stylesheet" href="<%= request.getContextPath() %>/css/navbar.css?v=<%= System.currentTimeMillis() %>">
-<link rel="stylesheet" href="<%= request.getContextPath() %>/css/reports.css?v=<%= System.currentTimeMillis() %>">
+<%-- MODIFIED: All paths now use the contextPath for reliability --%>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/common.css?v=<%= System.currentTimeMillis() %>">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/navbar.css?v=<%= System.currentTimeMillis() %>">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/reports.css?v=<%= System.currentTimeMillis() %>">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/modals.css?v=<%= System.currentTimeMillis() %>">
+
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">

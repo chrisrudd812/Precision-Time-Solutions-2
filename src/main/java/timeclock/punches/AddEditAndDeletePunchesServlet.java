@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpSession;
 import timeclock.Configuration;
 import timeclock.db.DatabaseConnection;
 import timeclock.punches.ShowPunches;
+import timeclock.payroll.PayrollServlet;
 
 
 import java.io.IOException;
@@ -324,6 +325,7 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
             if (accrualAdjusted) {
                 successMsg += " Accrual balance adjusted.";
             }
+            successMsg += " Overtime will be recalculated during payroll processing.";
             sendJsonResponse(response, HttpServletResponse.SC_OK, true, successMsg, null);
 
         } catch (SQLException e_sql) {

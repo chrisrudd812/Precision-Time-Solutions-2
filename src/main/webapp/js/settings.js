@@ -1,4 +1,4 @@
-// settings.js
+// js/settings.js
 
 // --- START: State Overtime Rules Data ---
 const FLSA_DEFAULTS = { key: "FLSA", dailyOTEnabled: false, dailyOTThreshold: 8.0, doubleTimeEnabled: false, doubleTimeThreshold: 12.0, standardOTRate: "1.5", weeklyOTThreshold: 40, seventhDayOTEnabled: false, seventhDayOTThreshold: 8.0, seventhDayDTThreshold: 8.0, notes: "Follows Federal FLSA: Overtime at 1.5x pay after 40 hours in a workweek. No daily or 7th day overtime requirement under FLSA." };
@@ -13,15 +13,12 @@ function saveSetting(element, valueToSave) {
     if (!key && element.id) key = element.id; 
     if (!key) { console.error("Save Setting Error: Element missing name/id:", element); return; }
 
-    // --- NEW FIX ---
-    // Do not attempt to save empty values for fields that require numbers on the backend.
     if (key.includes("Threshold") || key.endsWith("Rate")) {
         if (value === null || String(value).trim() === '') {
             console.log(`[saveSetting] Skipped saving empty value for numeric key: ${key}`);
-            return; // Exit the function early
+            return;
         }
     }
-    // --- END FIX ---
 
     if (element.type === 'checkbox' && valueToSave === undefined) {
         value = element.checked.toString();
@@ -43,13 +40,8 @@ function saveSetting(element, valueToSave) {
     }
 
     if (statusElement) {
-        statusElement.textContent = 'Saving...'; statusElement.className = 'save-status visible';
-        let isSpecialGroup = element.name && (element.name.includes('Rate') || element.name.includes('PayPeriodType') || element.name.includes('GracePeriod') || element.name === 'OvertimeRuleMode' || element.name === 'OvertimeState' || element.name === 'FirstDayOfWeek' || element.name === 'PayPeriodStartDate');
-        if (element.id && (element.id.includes('Threshold') || element.id.includes('StartDate'))) isSpecialGroup = true;
-        if (key === 'PayPeriodEndDate') isSpecialGroup = true;
-        if (element.type === 'checkbox') statusElement.classList.add('checkbox-status');
-        else if (isSpecialGroup) { statusElement.classList.add('radio-group-status'); }
-        statusElement.classList.remove('error', 'info');
+        statusElement.textContent = 'Saving...';
+        statusElement.className = 'save-status visible saving';
     }
 
     const formData = new URLSearchParams();
@@ -65,19 +57,17 @@ function saveSetting(element, valueToSave) {
     .then(result => {
          if (statusElement) {
              let baseClass = 'save-status visible';
-             if (statusElement.classList.contains('checkbox-status')) baseClass += ' checkbox-status';
-             if (statusElement.classList.contains('radio-group-status')) baseClass += ' radio-group-status';
              if (result.ok && result.body === 'OK') {
-                 statusElement.textContent = 'Saved!'; statusElement.className = baseClass;
+                 statusElement.textContent = 'Saved!';
+                 statusElement.className = `${baseClass} success`;
              } else {
-                 let errorMsg = result.body && result.body.startsWith('Error:') ? result.body.substring(6).trim() : (result.body || `Save failed. Status: ${result.status}`);
-                 statusElement.textContent = errorMsg; statusElement.className = baseClass + ' error';
+                 let errorMsg = result.body && result.body.startsWith('Error:') ? result.body.substring(6).trim() : (result.body || `Save failed.`);
+                 statusElement.textContent = errorMsg;
+                 statusElement.className = `${baseClass} error`;
                  console.error("Error saving " + key + ":", errorMsg);
              }
              setTimeout(() => {
                 statusElement.className = 'save-status';
-                if (baseClass.includes('checkbox-status')) statusElement.classList.add('checkbox-status');
-                if (baseClass.includes('radio-group-status')) statusElement.classList.add('radio-group-status');
             }, 3000);
          } else if (!result.ok || result.body !== 'OK') {
              console.error("Error saving " + key + " (no status element):", result.body || result.status);
@@ -86,10 +76,8 @@ function saveSetting(element, valueToSave) {
     .catch(error => {
         console.error('Network Error saving setting:', key, error);
         if (statusElement) {
-            let baseClass = 'save-status visible error';
-            if (statusElement.classList.contains('checkbox-status')) baseClass += ' checkbox-status';
-            if (statusElement.classList.contains('radio-group-status')) baseClass += ' radio-group-status';
-            statusElement.textContent = 'Network Error!'; statusElement.className = baseClass;
+            statusElement.textContent = 'Network Error!';
+            statusElement.className = 'save-status visible error';
         }
     });
 }
@@ -117,16 +105,14 @@ function toggleThresholdInput(enableCheckbox, thresholdInputId, detailsBlockId =
 document.addEventListener('DOMContentLoaded', function() {
     console.log("Settings Page DOMContentLoaded");
 
-    // --- Element References ---
     const payPeriodTypeSelect = document.getElementById('payPeriodType'), firstDayOfWeekSelect = document.getElementById('firstDayOfWeek'), payPeriodStartDateInput = document.getElementById('payPeriodStartDate'), payPeriodEndDateDisplaySpan = document.getElementById('payPeriodEndDateDisplay');
     const firstDayOfWeekBlock = document.getElementById('firstDayOfWeekBlock'), payPeriodStartDateBlock = document.getElementById('payPeriodStartDateBlock'), payPeriodEndDateBlock = document.getElementById('payPeriodEndDateBlock'); 
     const firstDayOfWeekNote = document.getElementById('firstDayOfWeekNote');
     const gracePeriodSelect = document.getElementById('gracePeriod');
-    const otModeManualRadio = document.getElementById('otModeManual'), otModeAutoRadio = document.getElementById('otModeAuto'), autoStateOvertimeSection = document.getElementById('autoStateOvertimeSection'), overtimeStateSelect = document.getElementById('overtimeStateSelect'), manualOvertimeSettingsDiv = document.getElementById('manualOvertimeSettings'), stateSpecificNotesDisplay = document.getElementById('stateSpecificNotesDisplay');
+    const otTypeManualRadio = document.getElementById('otTypeManual'), otTypeCompanyStateRadio = document.getElementById('otTypeCompanyState'), otTypeEmployeeStateRadio = document.getElementById('otTypeEmployeeState'), autoStateOvertimeSection = document.getElementById('autoStateOvertimeSection'), overtimeStateSelect = document.getElementById('overtimeStateSelect'), manualOvertimeSettingsDiv = document.getElementById('manualOvertimeSettings'), stateSpecificNotesDisplay = document.getElementById('stateSpecificNotesDisplay');
     const overtimeRateRadios = document.querySelectorAll('input[type="radio"][name="OvertimeRate"]'), overtimeDailyCheckbox = document.getElementById('overtimeDaily'), overtimeDailyThresholdInput = document.getElementById('overtimeDailyThreshold'), overtimeDoubleTimeEnabledCheckbox = document.getElementById('overtimeDoubleTimeEnabled'), overtimeDoubleTimeThresholdInput = document.getElementById('overtimeDoubleTimeThreshold');
     const overtimeSeventhDayEnabledCheckbox = document.getElementById('overtimeSeventhDayEnabled'), seventhDayOTDetailsBlock = document.getElementById('seventhDayOTDetailsBlock'), overtimeSeventhDayOTThresholdInput = document.getElementById('overtimeSeventhDayOTThreshold'), overtimeSeventhDayDTThresholdInput = document.getElementById('overtimeSeventhDayDTThreshold');
     
-    // --- Populate State Dropdown ---
     if (overtimeStateSelect) {
         usStates.forEach(state => {
             const option = document.createElement('option');
@@ -135,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-	function calculateAndDisplayPayPeriodEndDate() {
+	function calculateAndDisplayPayPeriodEndDate(shouldSave = false) {
 	    if (!payPeriodTypeSelect || !payPeriodStartDateInput || !payPeriodEndDateDisplaySpan || !firstDayOfWeekSelect) return;
 	    
 	    const periodType = payPeriodTypeSelect.value;
@@ -144,10 +130,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	    let startDate, endDate;
 	    let newStartDateSet = false;
 
-        // --- MODIFIED: This function now correctly uses UTC getters to prevent timezone errors ---
 	    const toISODateString = (date) => {
-            // Using getUTC methods ensures the date is formatted based on its UTC value,
-            // which matches how it was created with new Date(Date.UTC(...)). This prevents off-by-one day errors.
 	        return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
 	    };
 
@@ -159,8 +142,10 @@ document.addEventListener('DOMContentLoaded', function() {
 	        const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 	        payPeriodStartDateInput.value = todayISO;
 	        payPeriodEndDateDisplaySpan.textContent = today.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
-	        saveSetting(payPeriodStartDateInput);
-	        saveSetting({ name: "PayPeriodEndDate", type: "hidden" }, todayISO);
+	        if (shouldSave) {
+                saveSetting(payPeriodStartDateInput);
+                saveSetting({ name: "PayPeriodEndDate", type: "hidden" }, todayISO);
+            }
 	        return; 
 	    } else {
 	        firstDayOfWeekBlock.style.display = 'flex';
@@ -179,7 +164,6 @@ document.addEventListener('DOMContentLoaded', function() {
 	                endDate = new Date(Date.UTC(today.getFullYear(), today.getMonth(), 15));
 	            } else {
 	                startDate = new Date(Date.UTC(today.getFullYear(), today.getMonth(), 16));
-                    // The '0' day of the next month gives the last day of the current month
 	                endDate = new Date(Date.UTC(today.getFullYear(), today.getMonth() + 1, 0));
 	            }
 	            payPeriodStartDateInput.value = toISODateString(startDate);
@@ -193,7 +177,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	            newStartDateSet = true;
 	            break;
 
-	        default: // Weekly, Bi-Weekly
+	        default:
 	            if (!startDateStr) {
 	                payPeriodEndDateDisplaySpan.textContent = "Set Start Date";
 	                return;
@@ -204,7 +188,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	                payPeriodEndDateDisplaySpan.textContent = "Invalid Start";
 	                return;
 	            }
-	            endDate = new Date(startDate.getTime()); // Use getTime() to clone correctly
+	            endDate = new Date(startDate.getTime());
 	            if (periodType === "Weekly") {
 	                endDate.setUTCDate(startDate.getUTCDate() + 6);
 	            } else if (periodType === "Bi-Weekly") {
@@ -213,13 +197,15 @@ document.addEventListener('DOMContentLoaded', function() {
 	            break;
 	    }
 
-	    if (newStartDateSet) {
+	    if (newStartDateSet && shouldSave) {
 	        saveSetting(payPeriodStartDateInput);
 	    }
 
 	    payPeriodEndDateDisplaySpan.textContent = endDate.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC' });
-	    const endDateToSave = toISODateString(endDate);
-	    saveSetting({ name: "PayPeriodEndDate", type: "hidden" }, endDateToSave);
+	    if (shouldSave) {
+            const endDateToSave = toISODateString(endDate);
+            saveSetting({ name: "PayPeriodEndDate", type: "hidden" }, endDateToSave);
+        }
 	}
     
     function updateManualFieldsFromState(stateCode, saveDerivedSettings = false) {
@@ -234,13 +220,19 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
 
+        // *** THIS IS THE FIX: Added a helper function to safely format numbers ***
+        const formatThreshold = (value) => (value !== null && typeof value !== 'undefined') ? value.toFixed(1) : '';
+
         applyAndSave(overtimeDailyCheckbox, rules.dailyOTEnabled);
-        applyAndSave(overtimeDailyThresholdInput, rules.dailyOTEnabled ? rules.dailyOTThreshold.toFixed(1) : '');
+        applyAndSave(overtimeDailyThresholdInput, rules.dailyOTEnabled ? formatThreshold(rules.dailyOTThreshold) : '');
+        
         applyAndSave(overtimeDoubleTimeEnabledCheckbox, rules.doubleTimeEnabled);
-        applyAndSave(overtimeDoubleTimeThresholdInput, rules.doubleTimeEnabled ? rules.doubleTimeThreshold.toFixed(1) : '');
+        applyAndSave(overtimeDoubleTimeThresholdInput, rules.doubleTimeEnabled ? formatThreshold(rules.doubleTimeThreshold) : '');
+        
         applyAndSave(overtimeSeventhDayEnabledCheckbox, rules.seventhDayOTEnabled);
-        applyAndSave(overtimeSeventhDayOTThresholdInput, rules.seventhDayOTEnabled ? rules.seventhDayOTThreshold.toFixed(1) : '');
-        applyAndSave(overtimeSeventhDayDTThresholdInput, rules.seventhDayOTEnabled ? rules.seventhDayDTThreshold.toFixed(1) : '');
+        applyAndSave(overtimeSeventhDayOTThresholdInput, rules.seventhDayOTEnabled ? formatThreshold(rules.seventhDayOTThreshold) : '');
+        applyAndSave(overtimeSeventhDayDTThresholdInput, rules.seventhDayOTEnabled ? formatThreshold(rules.seventhDayDTThreshold) : '');
+        
         if (stateSpecificNotesDisplay) stateSpecificNotesDisplay.innerHTML = rules.notes.replace(/\n/g, "<br>");
         
         const rateToSet = String(rules.standardOTRate || "1.5");
@@ -255,9 +247,18 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateOvertimeModeUI() {
-        const isManualMode = otModeManualRadio && otModeManualRadio.checked;
-        if (autoStateOvertimeSection) autoStateOvertimeSection.style.display = isManualMode ? 'none' : 'block';
+        const isManualMode = otTypeManualRadio && otTypeManualRadio.checked;
+        const isCompanyStateMode = otTypeCompanyStateRadio && otTypeCompanyStateRadio.checked;
+        const isEmployeeStateMode = otTypeEmployeeStateRadio && otTypeEmployeeStateRadio.checked;
+        const isStateMode = isCompanyStateMode || isEmployeeStateMode;
+        
+        if (autoStateOvertimeSection) autoStateOvertimeSection.style.display = isStateMode ? 'block' : 'none';
         if (manualOvertimeSettingsDiv) manualOvertimeSettingsDiv.style.opacity = isManualMode ? 1 : 0.6;
+        
+        // Disable state dropdown for employee state mode
+        if (overtimeStateSelect) {
+            overtimeStateSelect.disabled = isEmployeeStateMode;
+        }
         
         const allManualInputs = document.querySelectorAll('#manualOvertimeSettings input, #manualOvertimeSettings select');
         allManualInputs.forEach(el => {
@@ -279,37 +280,33 @@ document.addEventListener('DOMContentLoaded', function() {
         if(payPeriodStartDateInput) payPeriodStartDateInput.value = window.settingsConfig.payPeriodStartDate;
         if(gracePeriodSelect) gracePeriodSelect.value = window.settingsConfig.gracePeriod;
         
-        if (window.settingsConfig.overtimeRuleMode === "AutoByState") {
-            if(otModeAutoRadio) otModeAutoRadio.checked = true;
+        if (window.settingsConfig.overtimeType === "company_state") {
+            if(otTypeCompanyStateRadio) otTypeCompanyStateRadio.checked = true;
+        } else if (window.settingsConfig.overtimeType === "employee_state") {
+            if(otTypeEmployeeStateRadio) otTypeEmployeeStateRadio.checked = true;
         } else { 
-            if(otModeManualRadio) otModeManualRadio.checked = true;
+            if(otTypeManualRadio) otTypeManualRadio.checked = true;
         }
 
         if (overtimeStateSelect) overtimeStateSelect.value = window.settingsConfig.overtimeState || "FLSA";
 
         updateOvertimeModeUI(); 
         
-        if (window.inWizardMode_Page && otModeAutoRadio && otModeAutoRadio.checked) {
-            updateManualFieldsFromState(overtimeStateSelect.value, true); 
-        }
-        
-        calculateAndDisplayPayPeriodEndDate();
+        calculateAndDisplayPayPeriodEndDate(window.inWizardMode_Page); // Save during wizard mode
     }
 
-    // --- Initialize and Attach Listeners ---
     initializePage();
 
     [payPeriodTypeSelect, firstDayOfWeekSelect, payPeriodStartDateInput].forEach(el => {
-        if(el) el.addEventListener('change', () => { saveSetting(el); calculateAndDisplayPayPeriodEndDate(); });
+        if(el) el.addEventListener('change', () => { 
+            saveSetting(el); 
+            calculateAndDisplayPayPeriodEndDate(true); 
+        });
     });
     
-    if (gracePeriodSelect) {
-        gracePeriodSelect.addEventListener('change', function() {
-            saveSetting(this);
-        });
-    }
+    if (gracePeriodSelect) gracePeriodSelect.addEventListener('change', () => saveSetting(gracePeriodSelect));
     
-    [otModeManualRadio, otModeAutoRadio].forEach(el => {
+    [otTypeManualRadio, otTypeCompanyStateRadio, otTypeEmployeeStateRadio].forEach(el => {
         if(el) el.addEventListener('change', () => { if(el.checked) { saveSetting(el); updateOvertimeModeUI(); }});
     });
 

@@ -1,30 +1,43 @@
 /* === css/employees.css === */
 
-/* Inherits base styles from reports.css */
+body.employees-page .parent-container {
+    max-width: 85%;
+    background-color: transparent;
+}
 
-/* Make the main container conform to the table height */
 .report-display-area:has(#employeesTable) {
     min-height: 0;
     flex-grow: 0;
+    overflow: hidden;
 }
-
 
 #reportOutput_employees.report-table-container {
-    max-height: 28vh;
+    max-height: 45vh;
 }
 
+/* Light yellow color for instruction text */
+.parent-container h4[style*="color: #6c757d"],
+.instruction-text {
+    color: #f59e0b !important;
+    text-align: center !important;
+    margin: 7px auto 0 auto !important;
+    font-size: 0.9em !important;
+}
 
 #button-container.main-action-buttons button.glossy-button {
-    flex: 1 1 auto; 
-    min-width: 160px; 
-    max-width: 32%;   
+    flex: 1 1 auto;
+    min-width: 200px;
+    max-width: 32%;
 }
 
 #employeesTable thead th {
     white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: inherit;
 }
 
-/* Re-instated column-specific widths to prevent wrapping */
 #employeesTable th:nth-child(1), #employeesTable td:nth-child(1) { min-width: 60px; text-align: center; }
 #employeesTable th:nth-child(2), #employeesTable td:nth-child(2) { min-width: 120px; }
 #employeesTable th:nth-child(3), #employeesTable td:nth-child(3) { min-width: 120px; }
@@ -36,73 +49,360 @@
 #employeesTable th:nth-child(9), #employeesTable td:nth-child(9) { min-width: 120px; text-align: center; }
 #employeesTable th:nth-child(10), #employeesTable td:nth-child(10) { min-width: 120px; text-align: center; }
 
-/* Hide the last two columns (Wage Type and Wage) */
 #employeesTable th:nth-child(11), #employeesTable td:nth-child(11),
 #employeesTable th:nth-child(12), #employeesTable td:nth-child(12) {
     display: none;
 }
 
-/* --- Employee Details Section --- */
+/* Modal scrollable content */
+#addEmployeeModal .modal-content,
+#editEmployeeModal .modal-content {
+    max-height: 90vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+#addEmployeeModal .modal-content::-webkit-scrollbar,
+#editEmployeeModal .modal-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+#addEmployeeModal .modal-content::-webkit-scrollbar-track,
+#editEmployeeModal .modal-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+#addEmployeeModal .modal-content::-webkit-scrollbar-thumb,
+#editEmployeeModal .modal-content::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+#addEmployeeModal .modal-content::-webkit-scrollbar-thumb:hover,
+#editEmployeeModal .modal-content::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+    .details-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px;
+    }
+}
+
+
+
+@media (max-width: 900px) {
+    body.employees-page .parent-container {
+        max-width: 95%;
+        padding: 15px;
+    }
+    
+    .details-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .detail-group:nth-child(3),
+    .detail-group:nth-child(4) {
+        grid-column: auto;
+        max-width: none;
+        justify-self: auto;
+        margin: 0;
+    }
+    
+    #employeeDetailsSection {
+        padding: 15px;
+        margin: 20px 0 0 0;
+    }
+    
+    .detail-group h3 {
+        padding: 10px 12px;
+        font-size: 0.85em;
+    }
+    
+    .detail-group .detail-content {
+        padding: 10px 12px;
+    }
+}
+
+@media (max-width: 768px) {
+    #button-container.main-action-buttons {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    #button-container.main-action-buttons button.glossy-button {
+        min-width: 100%;
+        max-width: 100%;
+    }
+    
+    #reportOutput_employees.report-table-container {
+        max-height: 40vh;
+    }
+    
+    #employeesTable {
+        font-size: 0.85em;
+    }
+    
+    #employeesTable th,
+    #employeesTable td {
+        padding: 8px 4px;
+        min-width: auto;
+    }
+    
+    #employeeDetailsSection {
+        padding: 12px;
+    }
+    
+    #employeeDetailsSection h2 {
+        font-size: 1em;
+        padding: 10px 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    #employeesTable th:nth-child(n+6),
+    #employeesTable td:nth-child(n+6) {
+        display: none;
+    }
+    
+    #employeesTable th:nth-child(4),
+    #employeesTable td:nth-child(4),
+    #employeesTable th:nth-child(5),
+    #employeesTable td:nth-child(5) {
+        font-size: 0.8em;
+    }
+    
+    .detail-group .detail-content {
+        padding: 8px 10px;
+    }
+    
+    .detail-group .detail-content strong {
+        font-size: 0.8em;
+        margin-bottom: 2px;
+    }
+    
+    .detail-group .detail-content .detail-value {
+        font-size: 0.85em;
+        line-height: 1.3;
+    }
+}
+
 #employeeDetailsSection {
-    width: 100%; margin: 30px 0 20px 0; padding: 15px;
+    width: 100%; margin: 25px 0 0 0; padding: 20px;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
-    background: linear-gradient(to bottom, #f8fafc, #f0fdfa);
-    box-sizing: border-box; 
-    box-shadow: 0 2px 4px rgba(0,0,0,0.07);
+    background: #ffffff;
+    box-sizing: border-box;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
+
 #employeeDetailsSection h2 {
-    text-align: center; margin-top: 0; margin-bottom: 25px; 
-    color: #1e293b;
-    border-bottom: 1px solid #99f6e4;
-    padding-bottom: 15px;
-    font-size: 1.5em; font-weight: 600; 
-    text-shadow: none;
-}
-.details-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-.detail-group { padding: 20px; box-sizing: border-box; border: 1px solid #e2e8f0; border-radius: 6px; background-color: #ffffff; display: flex; flex-direction: column; text-align: center; }
-.details-grid > .detail-group:nth-child(1), .details-grid > .detail-group:nth-child(2) { align-self: stretch; }
-
-.detail-group#accrualInfoGroup { 
-    grid-column: span 1; 
+    text-align: center; margin: 0 0 20px 0;
+    color: #065f46;
+    font-size: 1.1em; font-weight: 600;
+    padding: 12px 16px;
+    background: linear-gradient(to bottom, #f0fdf4, #e6fcf5);
+    border-radius: 6px;
+    border: 1px solid #d1fae5;
 }
 
-.detail-group h3 { margin-top: 0; margin-bottom: 18px; color: #0f766e; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; font-size: 1.1em; width: 100%; font-weight: 600; text-align:center; }
-.detail-group p { margin: 0 auto 10px auto; font-size: 0.9em; line-height: 1.6; display: grid; grid-template-columns: auto 1fr; text-align: left; gap: 5px 8px; align-items: baseline; width: 95%; max-width: 320px; }
-.detail-group p:last-child { margin-bottom: 0; }
-.detail-group p label { font-weight: 600; color: #475569; text-align: right; padding-right: 5px; white-space: nowrap; }
-.detail-group p span { color: #1e293b; word-wrap: break-word; word-break: break-all; text-align: left; }
-#btnResetPassword.glossy-button { min-width: 220px; }
+.details-grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+    gap: 16px; 
+}
 
-#accrualInfoGroup #resetPasswordForm {
+.detail-group { 
+    padding: 0; 
+    border: 1px solid #e5e7eb; 
+    border-radius: 6px; 
+    background-color: #ffffff; 
+    display: flex; 
+    flex-direction: column;
+    min-height: fit-content;
+}
+
+.detail-group .detail-content {
+    padding: 12px 16px;
+    flex-grow: 1;
+}
+
+.detail-group .detail-content p {
+    margin: 0 0 8px 0;
+    font-size: 0.9em;
+    line-height: 1.4;
+    color: #374151;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.detail-group .detail-content p:last-child {
+    margin-bottom: 0;
+}
+
+.detail-group .detail-content strong {
+    color: #1f2937;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.detail-group .detail-content .detail-value {
+    color: #4b5563;
+    font-weight: normal;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+}
+
+.detail-group h3 { 
+    margin: 0 0 0 0; 
+    color: #065f46; 
+    font-size: 0.9em; 
+    font-weight: 600; 
+    text-align: center;
+    padding: 12px 16px;
+    background: linear-gradient(to bottom, #f0fdf4, #e6fcf5);
+    border-radius: 6px 6px 0 0;
+    border-bottom: 1px solid #d1fae5;
+}
+
+.detail-group .detail-content {
+    padding: 12px;
+    flex-grow: 1;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.detail-group .detail-content p { 
+    margin: 0 0 6px 0; 
+    font-size: 0.9em; 
+    line-height: 1.4; 
+    display: flex;
+    justify-content: center;
+    align-items: baseline;
+    gap: 6px;
+}
+
+@media (max-width: 600px) {
+    .detail-group .detail-content p {
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+    }
+    
+    .detail-group .detail-content p label {
+        margin-bottom: 2px;
+    }
+}
+
+.detail-group .detail-content p:last-child {
+    margin-bottom: 0;
+}
+
+.detail-group .detail-content p label { 
+    font-weight: 600; 
+    color: #4b5563; 
+    font-size: 0.85em;
+    flex-shrink: 0;
+}
+
+.detail-group .detail-content p span { 
+    color: #1f2937; 
+    word-wrap: break-word;
+    font-size: 0.9em;
+    font-weight: 400;
+}
+
+.detail-group:nth-child(4) .detail-content {
+    display: flex;
+    flex-direction: column;
+}
+
+#securityGroup {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+#securityGroup form {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+#securityGroup .security-item {
+    padding: 12px;
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    text-align: center;
+    margin: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+#securityGroup .security-item h4 {
+    margin: auto;
+    font-size: 0.85em;
+    font-weight: 600;
+    color: #374151;
+}
+
+#securityGroup .security-item .security-description {
+    font-size: 0.8em;
+    color: #6b7280;
+    margin-bottom: 12px;
+    line-height: 1.3;
+}
+
+#securityGroup .security-item .security-status {
+    font-size: 0.8em;
+    font-weight: 600;
+}
+
+#btnResetPassword.glossy-button { 
+    width: 100%;
+    font-size: 0.85em;
+    padding: 8px 12px;
     margin-top: auto;
-    padding-top: 20px;
 }
 
-/* --- Modal Styling --- */
 .modal-content .form-row .form-item.third-width {
     flex: 1 1 0;
     min-width: calc(33.333% - 11px);
 }
-
-#deactivateConfirmModal .modal-content p {
-    padding: 10px 25px 5px 25px;
-    text-align: center;
-    line-height: 1.6;
-}
-#deactivateConfirmModal .modal-content p.deactivate-note {
-    padding-top: 5px;
-    padding-bottom: 15px;
-    font-size: 0.9em;
-}
-
 .modal-content input[type="date"] {
     font-family: inherit;
     font-size: 0.95em;
     color: #343a40;
 }
 
-/* Form validation styles */
+#deactivateConfirmModal .modal-body {
+    padding-top: 10px;
+    padding-bottom: 15px;
+}
+#deactivateConfirmModal .modal-body p {
+    padding: 0 10px 5px 10px;
+    text-align: center;
+    line-height: 1.6;
+}
+#deactivateConfirmModal .modal-body .deactivate-note {
+    padding-top: 5px;
+    padding-bottom: 15px;
+    font-size: 0.9em;
+}
+
 .modal-content input.is-valid,
 .modal-content select.is-valid {
     border: 1px solid #22c55e !important;
@@ -111,8 +411,6 @@
 .modal-content select.is-invalid {
     border: 2px solid #ef4444 !important;
 }
-
-/* Focus "glow" styles that don't cover the validation borders */
 .modal-content input:focus,
 .modal-content select:focus {
     outline: none;
@@ -130,7 +428,36 @@
     box-shadow: 0 0 0 0.2rem rgba(34, 197, 94, 0.25);
 }
 
-/* [NEW] Make the edit employee modal taller to prevent scrolling */
-#editEmployeeModal .modal-content {
+/* MODIFIED: Increased max-height to 95vh to fit all content */
+#editEmployeeModal .modal-content,
+#addEmployeeModal .modal-content {
+    display: flex;
+    flex-direction: column;
     max-height: 95vh;
+}
+#editEmployeeModal .modal-body,
+#addEmployeeModal .modal-body {
+    overflow-y: auto;
+    flex-grow: 1;
+    overscroll-behavior: contain;
+}
+
+/* Input with prefix styling for wage fields */
+.input-with-prefix {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-prefix {
+    position: absolute;
+    left: 12px;
+    color: #6b7280;
+    font-weight: 500;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.input-with-prefix input {
+    padding-left: 28px !important;
 }

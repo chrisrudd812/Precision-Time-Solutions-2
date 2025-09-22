@@ -66,23 +66,13 @@ public class SignupServlet extends HttpServlet {
     }
 
     private void registerCompanyAndAdmin(HttpServletRequest request, HttpServletResponse response, JSONObject jsonResponse) {
-        // -- DEBUG LOGGING ADDED --
-        logger.info("SignupServlet: Starting registerCompanyAndAdmin process...");
         HttpSession session = request.getSession(true);
         String appliedPromoCode = request.getParameter("appliedPromoCode");
-        
-        // ## MODIFIED LINE ## - Getting stripePriceId directly
         String priceId = request.getParameter("stripePriceId");
-        
-        // ## MODIFIED LINE ## - Updated logger
-        logger.info("SignupServlet: Selected Price ID: " + priceId + ", Promo Code: " + appliedPromoCode);
         
         Connection con = null;
         try {
-            // -- DEBUG LOGGING ADDED --
-            logger.info("SignupServlet: Attempting to get database connection...");
             con = DatabaseConnection.getConnection();
-            logger.info("SignupServlet: Database connection successful.");
             con.setAutoCommit(false); 
             
             Integer promoCodeId = null;
@@ -90,8 +80,6 @@ public class SignupServlet extends HttpServlet {
             Long trialDays = null;
             
             if (appliedPromoCode != null && !appliedPromoCode.trim().isEmpty()) {
-                // -- DEBUG LOGGING ADDED --
-                logger.info("SignupServlet: Validating promo code in database: " + appliedPromoCode);
                 String promoSql = "SELECT PromoCodeID, DiscountType, DiscountValue FROM promo_codes WHERE Code = ? AND IsEnabled = TRUE";
                 try(PreparedStatement psPromo = con.prepareStatement(promoSql)) {
                     psPromo.setString(1, appliedPromoCode);
@@ -99,38 +87,23 @@ public class SignupServlet extends HttpServlet {
                     if(rsPromo.next()) {
                         promoCodeId = rsPromo.getInt("PromoCodeID");
                         discountType = rsPromo.getString("DiscountType");
-                        logger.info("SignupServlet: Promo code is valid. Type: " + discountType);
                         if ("TRIAL".equals(discountType)) {
                             trialDays = (long) rsPromo.getInt("DiscountValue");
                         }
                     } else {
-                         // -- DEBUG LOGGING ADDED --
-                        logger.warning("SignupServlet: Submitted promo code is invalid or has expired: " + appliedPromoCode);
                         throw new Exception("Submitted promo code is invalid or has expired.");
                     }
                 }
             }
 
             if ("LIFETIME".equals(discountType)) {
-                // -- DEBUG LOGGING ADDED --
-                logger.info("SignupServlet: Lifetime promo code detected. Creating lifetime plan tenant.");
                 createTenantAndAdminFromRequest(con, request, session, promoCodeId, "Active - Lifetime Promo", null, null);
                 con.commit();
-                logger.info("SignupServlet: Lifetime tenant created and committed successfully.");
                 session.setAttribute("wizardStep", "initialPinSetRequired");
                 jsonResponse.put("success", true).put("action_required", false)
                     .put("redirect_url", request.getContextPath() + "/set_initial_pin.jsp");
             } else {
-                // -- DEBUG LOGGING ADDED --
-                logger.info("SignupServlet: Proceeding with standard paid subscription flow.");
                 validateRequiredParameter(request, "stripePaymentMethodId");
-                
-                // ## REMOVED BLOCK ## - No longer need to look up priceId from plan name
-                // String priceId = getPriceIdForPlan(con, selectedPlan);
-                // if (priceId == null) {
-                //     throw new Exception("Invalid subscription plan name provided: " + selectedPlan);
-                // }
-
                 Customer customer = createStripeCustomer(request);
                 SubscriptionCreateParams.Builder subParamsBuilder = SubscriptionCreateParams.builder()
                     .setCustomer(customer.getId())
@@ -141,7 +114,6 @@ public class SignupServlet extends HttpServlet {
                             .build()
                     )
                     .addAllExpand(List.of("latest_invoice.payment_intent", "pending_setup_intent"));
-
 
                 if ("TRIAL".equals(discountType) && trialDays != null && trialDays > 0) {
                     subParamsBuilder.setTrialPeriodDays(trialDays);
@@ -170,21 +142,12 @@ public class SignupServlet extends HttpServlet {
                 } else { throw new Exception("Unhandled subscription status: " + subStatus); }
             }
         } catch (Exception e) {
-            // -- DEBUG LOGGING ADDED --
-            logger.severe("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-            logger.log(Level.SEVERE, "SignupServlet: CRITICAL ERROR in registerCompanyAndAdmin", e);
-            logger.severe("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-            if (con != null) { try { con.rollback(); logger.warning("SignupServlet: Transaction rolled back."); } catch (SQLException ex) { logger.log(Level.WARNING, "Rollback failed", ex); } }
+            logger.log(Level.SEVERE, "CRITICAL ERROR in registerCompanyAndAdmin", e);
+            if (con != null) { try { con.rollback(); } catch (SQLException ex) { logger.log(Level.WARNING, "Rollback failed", ex); } }
             jsonResponse.put("success", false).put("error", "A critical server error occurred. Please check the server logs.");
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         } finally {
-            if (con != null) { 
-                try { 
-                    con.close();
-                    // -- DEBUG LOGGING ADDED --
-                    logger.info("SignupServlet: Database connection closed successfully.");
-                } catch (SQLException ex) { /* ignore */ } 
-            }
+            if (con != null) { try { con.close(); } catch (SQLException ex) { /* ignore */ } }
         }
     }
 
@@ -243,8 +206,6 @@ public class SignupServlet extends HttpServlet {
     }
 
     private void createTenantAndAdminFromRequest(Connection con, HttpServletRequest request, HttpSession session, Integer appliedPromoCodeID, String subscriptionStatus, String stripeCustomerId, Subscription stripeSubscription) throws SQLException, Exception {
-        // -- DEBUG LOGGING ADDED --
-        logger.info("SignupServlet: Entering createTenantAndAdminFromRequest...");
         String companyName = request.getParameter("companyName");
         String adminFirstName = request.getParameter("adminFirstName");
         String adminLastName = request.getParameter("adminLastName");
@@ -262,7 +223,11 @@ public class SignupServlet extends HttpServlet {
         String stripePriceId = null;
         int maxUsers = 25;
 
-        if (stripeSubscription != null) {
+        // Special handling for Altman55 promo code - override to 100 users
+        String appliedPromoCode = request.getParameter("appliedPromoCode");
+        if ("Altman55".equalsIgnoreCase(appliedPromoCode)) {
+            maxUsers = 100;
+        } else if (stripeSubscription != null) {
             stripeSubscriptionId = stripeSubscription.getId();
             currentPeriodEnd = new Timestamp(stripeSubscription.getCurrentPeriodEnd() * 1000L);
             stripePriceId = stripeSubscription.getItems().getData().get(0).getPrice().getId();
@@ -274,8 +239,6 @@ public class SignupServlet extends HttpServlet {
 
         String insertTenantSql = "INSERT INTO tenants (CompanyName, CompanyIdentifier, AdminEmail, AdminPasswordHash, PhoneNumber, Address, City, State, ZipCode, DefaultTimeZone, StripeCustomerID, SubscriptionStatus, StripeSubscriptionID, AppliedPromoCodeID, CurrentPeriodEnd, StripePriceID, MaxUsers) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
         int generatedTenantId = -1;
-        // -- DEBUG LOGGING ADDED --
-        logger.info("SignupServlet: About to INSERT new tenant: " + companyName);
         try (PreparedStatement psT = con.prepareStatement(insertTenantSql, Statement.RETURN_GENERATED_KEYS)) {
             psT.setString(1, companyName.trim());
             psT.setString(2, localCompanyIdentifier);
@@ -300,7 +263,6 @@ public class SignupServlet extends HttpServlet {
                 else throw new SQLException("Tenant creation failed, no ID obtained.");
             }
         }
-        logger.info("SignupServlet: Tenant INSERT successful. New TenantID: " + generatedTenantId);
 
         if (appliedPromoCodeID != null) {
             String updatePromoSql = "UPDATE promo_codes SET CurrentUses = CurrentUses + 1 WHERE PromoCodeID = ?";
@@ -309,19 +271,13 @@ public class SignupServlet extends HttpServlet {
                 psUpdate.executeUpdate();
             }
         }
-        // -- DEBUG LOGGING ADDED --
-        logger.info("SignupServlet: Calling createDefaultEntities for TenantID: " + generatedTenantId);
         createDefaultEntities(con, generatedTenantId);
-        
-        // -- DEBUG LOGGING ADDED --
-        logger.info("SignupServlet: Calling initializeDefaultSettings for TenantID: " + generatedTenantId);
         initializeDefaultSettings(con, generatedTenantId);
         
-        String insertAdminSql="INSERT INTO employee_data (TenantID,TenantEmployeeNumber,FIRST_NAME,LAST_NAME,EMAIL,PERMISSIONS,HIRE_DATE,PasswordHash,RequiresPasswordChange,ACTIVE,DEPT,ACCRUAL_POLICY) VALUES (?,?,?,?,?,?,?,?,TRUE,TRUE,?,?)";
+        // --- MODIFIED: Added STATE to the INSERT statement for the admin ---
+        String insertAdminSql="INSERT INTO employee_data (TenantID,TenantEmployeeNumber,FIRST_NAME,LAST_NAME,EMAIL,PERMISSIONS,HIRE_DATE,PasswordHash,RequiresPasswordChange,ACTIVE,DEPT,ACCRUAL_POLICY,STATE) VALUES (?,?,?,?,?,?,?,?,TRUE,TRUE,?,?,?)";
         int adminTenantEmpNo = getNextTenantEmployeeNumber(con,generatedTenantId);
         int generatedAdminEID = -1;
-        // -- DEBUG LOGGING ADDED --
-        logger.info("SignupServlet: About to INSERT new admin user...");
         try(PreparedStatement psAdm=con.prepareStatement(insertAdminSql,Statement.RETURN_GENERATED_KEYS)){
              psAdm.setInt(1,generatedTenantId); 
              psAdm.setInt(2,adminTenantEmpNo); 
@@ -332,11 +288,12 @@ public class SignupServlet extends HttpServlet {
              psAdm.setDate(7,Date.valueOf(LocalDate.now())); 
              psAdm.setNull(8, Types.VARCHAR);
              psAdm.setString(9, "None"); 
-             psAdm.setString(10, "None"); 
+             psAdm.setString(10, "None");
+             // --- MODIFIED: Set the STATE parameter ---
+             psAdm.setString(11, companyState);
             psAdm.executeUpdate();
             try(ResultSet gk=psAdm.getGeneratedKeys()){ if(gk.next()) generatedAdminEID=gk.getInt(1); else throw new SQLException("Admin creation failed."); }
         }
-        logger.info("SignupServlet: Admin user INSERT successful.");
         
         session.setAttribute("TenantID", generatedTenantId); 
         session.setAttribute("EID", generatedAdminEID); 
@@ -369,6 +326,12 @@ public class SignupServlet extends HttpServlet {
         Timestamp currentPeriodEnd = new Timestamp(stripeSubscription.getCurrentPeriodEnd() * 1000L);
         String stripePriceId = stripeSubscription.getItems().getData().get(0).getPrice().getId();
         int maxUsers = getMaxUsersForPriceId(con, stripePriceId);
+        
+        // Special handling for Altman55 promo code - override to 100 users
+        String appliedPromoCode = formData.get("appliedPromoCode");
+        if ("Altman55".equalsIgnoreCase(appliedPromoCode)) {
+            maxUsers = 100;
+        }
         
         String localCompanyIdentifier = generateCompanyIdentifierFromName(con, companyName.trim());
         String hashedPassword = BCrypt.hashpw(rawAdminPassword, BCrypt.gensalt(12));
@@ -404,7 +367,8 @@ public class SignupServlet extends HttpServlet {
         createDefaultEntities(con, generatedTenantId);
         initializeDefaultSettings(con, generatedTenantId);
         
-        String insertAdminSql="INSERT INTO employee_data (TenantID,TenantEmployeeNumber,FIRST_NAME,LAST_NAME,EMAIL,PERMISSIONS,HIRE_DATE,PasswordHash,RequiresPasswordChange,ACTIVE,DEPT,ACCRUAL_POLICY) VALUES (?,?,?,?,?,?,?,?,TRUE,TRUE,?,?)";
+        // --- MODIFIED: Added STATE to the INSERT statement for the admin ---
+        String insertAdminSql="INSERT INTO employee_data (TenantID,TenantEmployeeNumber,FIRST_NAME,LAST_NAME,EMAIL,PERMISSIONS,HIRE_DATE,PasswordHash,RequiresPasswordChange,ACTIVE,DEPT,ACCRUAL_POLICY,STATE) VALUES (?,?,?,?,?,?,?,?,TRUE,TRUE,?,?,?)";
         int adminTenantEmpNo = getNextTenantEmployeeNumber(con,generatedTenantId);
         int generatedAdminEID = -1;
         try(PreparedStatement psAdm=con.prepareStatement(insertAdminSql,Statement.RETURN_GENERATED_KEYS)){
@@ -417,7 +381,9 @@ public class SignupServlet extends HttpServlet {
              psAdm.setDate(7,Date.valueOf(LocalDate.now())); 
              psAdm.setNull(8, Types.VARCHAR);
              psAdm.setString(9, "None"); 
-             psAdm.setString(10, "None"); 
+             psAdm.setString(10, "None");
+             // --- MODIFIED: Set the STATE parameter ---
+             psAdm.setString(11, companyState);
             psAdm.executeUpdate();
             try(ResultSet gk=psAdm.getGeneratedKeys()){ if(gk.next()) generatedAdminEID=gk.getInt(1); else throw new SQLException("Admin creation failed."); }
         }
@@ -437,25 +403,14 @@ public class SignupServlet extends HttpServlet {
     }
     
     private void createDefaultEntities(Connection con, int tenantId) throws SQLException {
-        // -- DEBUG LOGGING ADDED --
-        logger.info("SignupServlet/createDefaultEntities: Creating default department...");
         String deptSql = "INSERT INTO departments (TenantID, NAME, DESCRIPTION, SUPERVISOR) VALUES (?, ?, ?, ?)";
         try(PreparedStatement psD = con.prepareStatement(deptSql)){ psD.setInt(1, tenantId); psD.setString(2, "None"); psD.setNull(3, Types.VARCHAR); psD.setNull(4, Types.VARCHAR); psD.executeUpdate(); }
-        logger.info("SignupServlet/createDefaultEntities: Default department created.");
-
-        // -- DEBUG LOGGING ADDED --
-        logger.info("SignupServlet/createDefaultEntities: Creating default schedules...");
         String schedSql = "INSERT INTO schedules (TenantID, NAME, AUTO_LUNCH, HRS_REQUIRED, LUNCH_LENGTH) VALUES (?, ?, ?, ?, ?)";
         try(PreparedStatement psS_Open = con.prepareStatement(schedSql)){ psS_Open.setInt(1, tenantId); psS_Open.setString(2, "Open"); psS_Open.setBoolean(3, false); psS_Open.setInt(4, 0); psS_Open.setInt(5, 0); psS_Open.executeUpdate(); }
         try(PreparedStatement psS_Auto = con.prepareStatement(schedSql)){ psS_Auto.setInt(1, tenantId); psS_Auto.setString(2, "Open w/ Auto Lunch"); psS_Auto.setBoolean(3, true); psS_Auto.setInt(4, 6); psS_Auto.setInt(5, 30); psS_Auto.executeUpdate(); }
-        logger.info("SignupServlet/createDefaultEntities: Default schedules created.");
-
-        // -- DEBUG LOGGING ADDED --
-        logger.info("SignupServlet/createDefaultEntities: Creating default accrual policies...");
         String accrualSql = "INSERT INTO accruals (TenantID, NAME, VACATION, SICK, PERSONAL) VALUES (?, ?, ?, ?, ?)";
         try(PreparedStatement psA_None = con.prepareStatement(accrualSql)){ psA_None.setInt(1, tenantId); psA_None.setString(2, "None"); psA_None.setInt(3, 0); psA_None.setInt(4, 0); psA_None.setInt(5, 0); psA_None.executeUpdate(); }
         try(PreparedStatement psA_Std = con.prepareStatement(accrualSql)){ psA_Std.setInt(1, tenantId); psA_Std.setString(2, "Standard"); psA_Std.setInt(3, 5); psA_Std.setInt(4, 5); psA_Std.setInt(5, 0); psA_Std.executeUpdate(); }
-        logger.info("SignupServlet/createDefaultEntities: Default accrual policies created.");
     }
     
     private void initializeDefaultSettings(Connection con, int tenantId) throws SQLException {
@@ -572,7 +527,7 @@ public class SignupServlet extends HttpServlet {
         tempFormData.put("companyZip", request.getParameter("companyZip"));
         tempFormData.put("browserTimeZoneId", request.getParameter("browserTimeZoneId"));
         tempFormData.put("appliedPromoCode", request.getParameter("appliedPromoCode"));
-        tempFormData.put("stripePriceId", request.getParameter("stripePriceId")); // Changed from selectedPlan
+        tempFormData.put("stripePriceId", request.getParameter("stripePriceId"));
         session.setAttribute("temp_signup_original_form_data", tempFormData);
     }
     
@@ -583,12 +538,8 @@ public class SignupServlet extends HttpServlet {
         }
     }
     
-    // ## REMOVED METHOD ## - This method is no longer needed
-    // private String getPriceIdForPlan(Connection con, String planName) throws SQLException { ... }
-    
     private int getMaxUsersForPriceId(Connection con, String priceId) throws Exception {
         if (priceId == null || priceId.trim().isEmpty()) {
-            // Default for lifetime/promo plans without a priceId
             return 25;
         }
         String sql = "SELECT maxUsers FROM subscription_plans WHERE stripePriceId = ?";

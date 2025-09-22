@@ -20,6 +20,8 @@ import jakarta.mail.util.ByteArrayDataSource;
 import jakarta.servlet.http.Part;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.Base64;
+
 
 public class EmailService {
 
@@ -29,8 +31,30 @@ public class EmailService {
         return sendEmail(to, subject, body, null);
     }
 
+
+    
+    private static String createStyledEmailBody(String content) {
+        return "<!DOCTYPE html>" +
+               "<html><head><meta charset='UTF-8'><title>Precision Time Solutions</title></head>" +
+               "<body style='margin:0;padding:0;font-family:Arial,sans-serif;background-color:#ffffff;width:100%;'>" +
+               "<div style='width:100%;background-color:#ffffff;'>" +
+               "<div style='background:linear-gradient(135deg,rgba(59,130,246,0.1),rgba(16,185,129,0.1));" +
+               "padding:40px 30px 30px 30px;border-bottom:3px solid #16a34a;width:100%;box-sizing:border-box;'>" +
+               "<h1 style='color:#065f46;margin:0;font-size:24px;font-weight:600;text-align:center;'>Precision Time Solutions</h1>" +
+               "<p style='color:#6b7280;margin:0;font-size:14px;text-align:center;'>Professional Time & Attendance Management</p>" +
+               "</div>" +
+               "<div style='padding:30px;line-height:1.6;color:#374151;width:100%;box-sizing:border-box;'>" +
+               content.replace("\n", "<br>") +
+               "</div>" +
+               "<div style='background-color:#f9fafb;padding:20px 30px;border-top:1px solid #e5e7eb;text-align:center;width:100%;box-sizing:border-box;'>" +
+               "<p style='margin:0;font-size:12px;color:#6b7280;'>" +
+               "© 2024 Precision Time Solutions. All rights reserved.<br>" +
+               "<a href='https://precisiontimesolutions.com' style='color:#16a34a;text-decoration:none;'>" +
+               "precisiontimesolutions.com</a></p>" +
+               "</div></div></body></html>";
+    }
+
     public static boolean sendEmail(String to, String subject, String body, Part filePart) {
-        // [FIX] Using your exact environment variable names
         final String smtpUser = System.getenv("SMTP_USER");
         final String smtpPass = System.getenv("SMTP_PASSWORD");
         final String smtpFrom = System.getenv("SMTP_FROM_ADDRESS");
@@ -62,21 +86,24 @@ public class EmailService {
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
             message.setSubject(subject);
 
-            if (filePart == null || filePart.getSize() == 0) {
-                message.setContent(body.replace("\n", "<br>"), "text/html; charset=utf-8");
-            } else {
-                Multipart multipart = new MimeMultipart();
-                BodyPart messageBodyPart = new MimeBodyPart();
-                messageBodyPart.setContent(body.replace("\n", "<br>"), "text/html; charset=utf-8");
-                multipart.addBodyPart(messageBodyPart);
-
+            String styledBody = createStyledEmailBody(body);
+            Multipart multipart = new MimeMultipart();
+            
+            // Add HTML content
+            BodyPart messageBodyPart = new MimeBodyPart();
+            messageBodyPart.setContent(styledBody, "text/html; charset=utf-8");
+            multipart.addBodyPart(messageBodyPart);
+            
+            // Add file attachment if provided
+            if (filePart != null && filePart.getSize() > 0) {
                 BodyPart attachmentBodyPart = new MimeBodyPart();
                 ByteArrayDataSource dataSource = new ByteArrayDataSource(filePart.getInputStream(), filePart.getContentType());
                 attachmentBodyPart.setDataHandler(new DataHandler(dataSource));
                 attachmentBodyPart.setFileName(filePart.getSubmittedFileName());
                 multipart.addBodyPart(attachmentBodyPart);
-                message.setContent(multipart);
             }
+            
+            message.setContent(multipart);
 
             Transport.send(message);
             logger.info("Email sent successfully to " + to);
@@ -123,7 +150,15 @@ public class EmailService {
         }
 
         message.setSubject(subject);
-        message.setContent(body.replace("\n", "<br>"), "text/html; charset=utf-8");
+        
+        Multipart multipart = new MimeMultipart();
+        
+        // Add HTML content
+        BodyPart messageBodyPart = new MimeBodyPart();
+        messageBodyPart.setContent(createStyledEmailBody(body), "text/html; charset=utf-8");
+        multipart.addBodyPart(messageBodyPart);
+        
+        message.setContent(multipart);
 
         logger.info("Attempting to send bulk email to " + recipients.size() + " recipients via " + smtpHost);
         Transport.send(message);
@@ -165,10 +200,12 @@ public class EmailService {
 
             Multipart multipart = new MimeMultipart();
 
+            // Add HTML content
             BodyPart messageBodyPart = new MimeBodyPart();
-            messageBodyPart.setContent(body.replace("\n", "<br>"), "text/html; charset=utf-8");
+            messageBodyPart.setContent(createStyledEmailBody(body), "text/html; charset=utf-8");
             multipart.addBodyPart(messageBodyPart);
 
+            // Add file attachment if provided
             if (attachmentData != null && attachmentData.length > 0) {
                 BodyPart attachmentBodyPart = new MimeBodyPart();
                 ByteArrayDataSource dataSource = new ByteArrayDataSource(attachmentData, "application/pdf");

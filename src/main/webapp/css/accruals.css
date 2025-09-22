@@ -1,8 +1,7 @@
 /* === css/accruals.css === */
-/* Contains styles specific only to the Accruals page */
 
-/* Fix table container height so it sizes to its content */
-.report-display-area:has(#accrualsTable) {
+/* Fix table container height */
+.content-display-area:has(#accrualsTable) {
     min-height: 0;
     flex-grow: 0;
 }
@@ -10,40 +9,17 @@
     max-height: 20vh; 
 }
 
-/* Make required asterisk red */
-.required-asterisk { 
-    color: #dc3545 !important; 
-}
-
-/* Clean up styling for the Delete & Reassign modal's content body */
-#deleteAndReassignAccrualModal .modal-body-content {
-    padding: 15px 25px;
-}
-#deleteAndReassignAccrualModal .modal-body-content p {
-    margin-top: 0;
-    margin-bottom: 1.2em;
-    font-size: 1em;
-    color: #343a40;
-    line-height: 1.5;
-}
-#deleteAndReassignAccrualModal .modal-body-content label {
-    display: block;
-    margin-bottom: 0.5em;
-    font-weight: 500;
-}
-
-/* --- Accrual Adjustment Form Styles --- */
+/* --- Accrual Adjustment Form Styles (Preserved) --- */
 #adjustAccrualBalanceSection {
     width: 100%; 
     margin-top: 30px;
     box-sizing: border-box;
-    background: linear-gradient(to bottom, #f8fafc, #f0fdfa); /* MODIFIED: New theme gradient */
-    border: 1px solid #e2e8f0; /* MODIFIED: Softer border */
+    background: linear-gradient(to bottom, #f8fafc, #f0fdfa);
+    border: 1px solid #e2e8f0;
     border-radius: 8px;
     padding: 20px 25px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.07);
 }
-
 .manage-accrual-form-outer-box {
     width: 100%; 
     max-width: none; 
@@ -54,44 +30,39 @@
     border-radius: 0;
     box-shadow: none;
 }
-
 .manage-accrual-form-outer-box h2 {
     text-align: center; 
-    color: #1e293b; /* MODIFIED: Dark charcoal */
+    color: #1e293b;
     font-size: 1.4em;
     margin-top: 0; margin-bottom: 10px; padding: 0 20px 10px 20px;
-    border-bottom: 1px solid #99f6e4; /* MODIFIED: Light Teal accent */
+    border-bottom: 1px solid #99f6e4;
 }
 .manage-accrual-form-outer-box p.page-description {
     text-align: center; 
     font-size: 0.95em; 
-    color: #475569; /* MODIFIED: Medium Gray */
+    color: #475569;
     margin-bottom: 20px; 
     line-height: 1.5;
     padding: 0 20px;
 }
-
 .form-elements-gradient-wrapper {
     padding: 25px 30px; 
-    background: #ffffff; /* MODIFIED: White background for contrast */
+    background: #ffffff;
     border-top: 1px solid #e2e8f0;
     border-bottom: 1px solid #e2e8f0;
     margin: 0;
     border-radius: 6px;
 }
-
 #adjustAccrualBalanceForm {
     border: none !important;
     padding: 0;
     margin: 0;
 }
-
 #adjustmentFormFieldset {
     border: none;
     padding: 0;
     margin: 0;
 }
-
 .scope-selection-top {
     display: flex; align-items: center;
     justify-content: flex-start; 
@@ -104,23 +75,20 @@
     color: #475569; 
     font-size: 0.95em;
 }
-
 .switch { position: relative; display: inline-block; width: 50px; height: 28px; vertical-align: middle; }
 .switch input { opacity: 0; width: 0; height: 0; }
 .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; }
 .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; }
-input:checked + .slider { background-color: #14b8a6; } /* MODIFIED: Teal */
-input:focus + .slider { box-shadow: 0 0 1px #14b8a6; } /* MODIFIED: Teal */
+input:checked + .slider { background-color: #14b8a6; }
+input:focus + .slider { box-shadow: 0 0 1px #14b8a6; }
 input:checked + .slider:before { transform: translateX(22px); }
 .slider.round { border-radius: 28px; }
 .slider.round:before { border-radius: 50%; }
-
 .form-elements-gradient-wrapper .form-item { margin-bottom: 18px; text-align: left; }
 .form-elements-gradient-wrapper .form-item label {
     display: block; margin-bottom: 6px; font-weight: 500;
     font-size: 0.9em; color: #1e293b; 
 }
-
 .form-elements-gradient-wrapper .form-item input[type="number"],
 .form-elements-gradient-wrapper .form-item select {
     width: 100%; padding: 8px 12px; border: 1px solid #cbd5e0; 
@@ -131,7 +99,6 @@ input:checked + .slider:before { transform: translateX(22px); }
 .form-elements-gradient-wrapper .form-item select:focus {
     border-color: #3b82f6; box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25); outline: none;
 }
-
 .form-elements-gradient-wrapper .form-row {
     display: flex; flex-wrap: wrap; gap: 25px; align-items: flex-end; 
     margin-bottom: 18px;
@@ -139,13 +106,12 @@ input:checked + .slider:before { transform: translateX(22px); }
 .form-elements-gradient-wrapper .form-row .form-item {
     flex: 1; min-width: calc(50% - 15px); margin-bottom: 0; 
 }
-
 .form-elements-gradient-wrapper .radio-group {
     display: flex; gap: 15px; align-items: center; flex-wrap: wrap; padding-top: 5px;
 }
 .form-elements-gradient-wrapper .radio-group input[type="radio"] {
     margin-right: 4px; 
-    accent-color: #14b8a6; /* MODIFIED: Teal */
+    accent-color: #14b8a6;
     transform: scale(1.2); 
     vertical-align: middle;
 }
@@ -154,7 +120,6 @@ input:checked + .slider:before { transform: translateX(22px); }
     cursor: pointer; padding-right: 10px; display: inline-flex; align-items: center;
     color: #475569; 
 }
-
 .manage-accrual-form-outer-box .button-row { 
     text-align: center; 
     margin-top: 10px; 

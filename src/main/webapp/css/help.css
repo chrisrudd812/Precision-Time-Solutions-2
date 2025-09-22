@@ -1,8 +1,5 @@
 /* css/help.css */
 
-body.help-page { /* Optional: Add class="help-page" to body in help.jsp */
-    /* Keep general body styles from main CSS */
-}
 
 .help-container {
     /* Inherits centering from parent-container */

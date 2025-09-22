@@ -163,6 +163,14 @@ document.addEventListener('DOMContentLoaded', function() {
             validateField(billingCity);
             validateField(billingState);
             validateField(billingZip);
+            
+            // Check if all required billing fields are valid, then focus on card details
+            if (billingAddress.checkValidity() && billingCity.checkValidity() && 
+                billingState.checkValidity() && billingZip.checkValidity()) {
+                if (cardNumberElement) {
+                    cardNumberElement.focus();
+                }
+            }
         } else {
             billingAddress.value = '';
             billingCity.value = '';

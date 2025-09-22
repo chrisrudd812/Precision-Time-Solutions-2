@@ -1,4 +1,5 @@
 <%-- /WEB-INF/includes/common-scripts.jspf --%>
+<%@ page import="jakarta.servlet.http.HttpSession" %>
 
 <script src="${pageContext.request.contextPath}/js/commonUtils.js?v=<%= System.currentTimeMillis() %>"></script>
 <script src="${pageContext.request.contextPath}/js/navbar.js?v=<%= System.currentTimeMillis() %>"></script>

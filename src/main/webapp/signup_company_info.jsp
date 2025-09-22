@@ -2,9 +2,9 @@
 <%@ page import="java.net.URLEncoder, java.nio.charset.StandardCharsets, jakarta.servlet.http.HttpSession, java.sql.*, org.json.*, timeclock.db.DatabaseConnection" %>
 
 <%!
-private String escapeHtml(String input) {
+    private String escapeHtml(String input) {
         if (input == null) return "";
-return input.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&#39;");
+        return input.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&#39;");
     }
 %>
 <%
@@ -14,7 +14,6 @@ return input.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").rep
     String planName = "";
 
     if (priceId == null || priceId.trim().isEmpty()) {
-        // Fallback to a default plan if no priceId is provided, though this shouldn't happen with the new index.jsp
         priceId = "price_1S2mCSBtvyYfb2KWetkP2Tcf"; 
     }
 
@@ -45,34 +44,16 @@ return input.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").rep
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Create Company Account - Precision Time Solutions</title>
+    <%@ include file="/WEB-INF/includes/common-head.jspf" %>
     <link rel="stylesheet" href="css/signup.css?v=<%= System.currentTimeMillis() %>">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-    
-    <style>
-        .stripe-element { box-sizing: border-box; height: 40px; padding: 10px 12px; border: 1px solid #ccc; border-radius: 4px; background-color: white; }
-        .stripe-elements-row { display: flex; gap: 10px; margin-top: 10px; }
-        .stripe-elements-row > div { flex: 1; }
-        .promo-container { display: flex; gap: 10px; align-items: flex-start; }
-        .promo-container .form-group { flex-grow: 1; margin-bottom: 0; }
-        .form-check { margin-bottom: 15px; display: flex; align-items: center; }
-        #sameAsCompanyAddress, #termsAgreement { width: 20px; height: 20px; margin-right: 10px; }
-        #sameAsCompanyAddress:checked, #termsAgreement:checked { accent-color: #28a745; }
-        
-        input.is-invalid, select.is-invalid, .stripe-element.is-invalid {
-            border: 2px solid #dc3545 !important; }
-        input.is-valid, select.is-valid, .stripe-element.is-valid {
-            border: 2px solid #28a745 !important; }
-
-        .terms-agreement { display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
-    </style>
 </head>
 <body>
-    <div class="signup-container">
-        <div class="signup-header"><h1>Create Your Company Account</h1></div>
+    <div class="parent-container signup-container">
+        <h1><i class="fas fa-user-plus"></i> Create Your Company Account</h1>
 
         <% if (errorMessage != null && !errorMessage.isEmpty()) { %>
-             <div class="error-message"><%= escapeHtml(errorMessage) %></div>
+             <div class="page-message error-message"><%= escapeHtml(errorMessage) %></div>
         <% } %>
 
         <form action="SignupServlet" method="POST" id="companySignupForm" class="signup-form" novalidate>
@@ -80,91 +61,120 @@ return input.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").rep
             <input type="hidden" name="browserTimeZoneId" id="browserTimeZoneIdField" value="">
             <input type="hidden" name="stripePaymentMethodId" id="stripePaymentMethodId">
             <input type="hidden" name="appliedPromoCode" id="appliedPromoCode">
-            <%-- ## MODIFIED LINE ## - Passing stripePriceId instead of selectedPlan --%>
             <input type="hidden" name="stripePriceId" value="<%= escapeHtml(priceId) %>">
 
-            <fieldset><legend>1. Your Selected Plan</legend>
+            <h4 class="section-heading"><i class="fas fa-check-circle"></i> Your Selected Plan</h4>
+            <div class="form-body-container">
                 <div class="plan-confirmation-box">
-                    <span class="plan-name"><%= plan.getString("name") %></span>
-                    <span class="plan-price">$<%= String.format("%.2f", plan.getDouble("price")) %>/mo</span>
-                    <span class="plan-features"><%= plan.getString("features") %></span>
-                    <a href="index.jsp#pricing" class="change-plan-link">Change Plan</a>
-                </div>
-            </fieldset>
-
-            <fieldset><legend>2. Company Information</legend>
-                <div class="form-group"><label for="companyName">Company Name <span class="required">*</span></label><input type="text" id="companyName" name="companyName" required autofocus></div>
-                <div class="form-row">
-                    <div class="form-group half-width"><label for="companyAddress">Street Address</label><input type="text" id="companyAddress" name="companyAddress" autocomplete="off"></div>
-                    <div class="form-group half-width">
-                         <label for="companyPhone">Company Phone</label>
-                        <input type="tel" id="companyPhone" name="companyPhone" placeholder="(555) 555-5555" pattern="\(\d{3}\) \d{3}-\d{4}" title="Phone number must be in the format (555) 555-5555.">
+                    <div class="plan-header">
+                        <div class="plan-badge">
+                            <i class="fas fa-star"></i>
+                            <span class="plan-name"><%= plan.getString("name").equals("Starter") ? "Basic" : plan.getString("name") %></span>
+                        </div>
+                        <span class="plan-price">$<%= String.format("%.2f", plan.getDouble("price")) %><span class="price-period">/month</span></span>
+                    </div>
+                    <div class="plan-details">
+                        <span class="plan-features"><%
+                            String displayName = plan.getString("name").equals("Starter") ? "Basic" : plan.getString("name");
+                            String features = "";
+                            if (displayName.equals("Basic")) {
+                                features = "Up to 25 Active Users, Basic Reporting, Email Support, Payroll Processing and PTO Tracking";
+                            } else if (displayName.equals("Business")) {
+                                features = "Everything from Basic plus: Up to 50 Active Employees, Messaging Module, Additional Reports";
+                            } else if (displayName.equals("Pro")) {
+                                features = "Everything from Business plus: Up to 100 Active Employees, Multi-State Operations with Location-Based Overtime";
+                            } else {
+                                features = plan.getString("features");
+                            }
+                        %><%= features %></span>
+                        <a href="index.jsp#pricing" class="change-plan-link"><i class="fas fa-edit"></i> Change Plan</a>
                     </div>
                 </div>
-                   <div class="form-row">
-                    <div class="form-group third-width"><label for="companyCity">City</label><input type="text" id="companyCity" name="companyCity" autocomplete="off"></div>
-                    <div class="form-group third-width"><label for="companyState">State</label><select id="companyState" name="companyState" autocomplete="off"><option value="" selected disabled>Select a State</option><%@ include file="/WEB-INF/includes/states_options.jspf" %></select></div>
-                    <div class="form-group third-width"><label for="companyZip">Zip Code</label><input type="text" id="companyZip" name="companyZip" autocomplete="off" pattern="\d{5}|\d{5}-\d{4}" title="Zip code must be 5 or 9 digits (e.g., 12345 or 12345-6789)."></div>
-                </div>
-            </fieldset>
+            </div>
 
-            <fieldset><legend>3. Your Administrator Account</legend>
+            <h4 class="section-heading"><i class="fas fa-building"></i> Company Information</h4>
+            <div class="form-body-container">
+                <div class="form-row">
+                    <div class="form-group half-width"><label for="companyName">Company Name <span class="required">*</span></label><input type="text" id="companyName" name="companyName" required autofocus></div>
+                    <div class="form-group half-width">
+                        <label for="companyPhone">Company Phone</label>
+                        <input type="tel" id="companyPhone" name="companyPhone" placeholder="(555) 555-5555" pattern="^\(\d{3}\) \d{3}-\d{4}$" title="Phone number must be in the format (555) 555-5555.">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group address-field"><label for="companyAddress">Street Address</label><input type="text" id="companyAddress" name="companyAddress" autocomplete="off"></div>
+                    <div class="form-group city-field"><label for="companyCity">City</label><input type="text" id="companyCity" name="companyCity" autocomplete="off"></div>
+                    <div class="form-group state-field"><label for="companyState">State</label><select id="companyState" name="companyState" autocomplete="off"><option value="" selected disabled>Select a State</option><%@ include file="/WEB-INF/includes/states_options.jspf" %></select></div>
+                    <div class="form-group zip-field"><label for="companyZip">Zip Code</label><input type="text" id="companyZip" name="companyZip" autocomplete="off" pattern="\d{5}|\d{5}-\d{4}" title="Zip code must be 5 or 9 digits (e.g., 12345 or 12345-6789)."></div>
+                </div>
+            </div>
+
+            <h4 class="section-heading"><i class="fas fa-user-shield"></i> Your Administrator Account</h4>
+            <div class="form-body-container">
                 <div class="form-row">
                     <div class="form-group half-width"><label for="adminFirstName">First Name <span class="required">*</span></label><input type="text" id="adminFirstName" name="adminFirstName" required></div>
                     <div class="form-group half-width"><label for="adminLastName">Last Name <span class="required">*</span></label><input type="text" id="adminLastName" name="adminLastName" required></div>
                 </div>
-                 <div class="form-group"><label for="adminEmail">Email Address (this will be your login) <span class="required">*</span></label><input type="email" id="adminEmail" name="adminEmail" required></div>
+                <div class="form-group"><label for="adminEmail">Email Address (this will be your login) <span class="required">*</span></label><input type="email" id="adminEmail" name="adminEmail" required></div>
                 <div class="form-row">
-                    <div class="form-group half-width"><label for="adminPassword">Password (min 8 characters) <span class="required">*</span></label><input type="password" id="adminPassword" name="adminPassword" required minlength="8"></div>
+                    <div class="form-group half-width"><label for="adminPassword">Create Company Admin Password <span class="required">*</span></label><input type="password" id="adminPassword" name="adminPassword" required></div>
                     <div class="form-group half-width"><label for="adminConfirmPassword">Confirm Password <span class="required">*</span></label><input type="password" id="adminConfirmPassword" name="adminConfirmPassword" required></div>
                 </div>
-            </fieldset>
+            </div>
 
-            <fieldset><legend>4. Have a Promo Code?</legend>
+            <h4 class="section-heading"><i class="fas fa-tag"></i> Have a Promo Code?</h4>
+            <div class="form-body-container">
                 <div class="promo-container">
                     <div class="form-group">
                         <label for="promoCodeInput" class="sr-only">Promo Code</label>
                         <input type="text" id="promoCodeInput" placeholder="Enter code">
-                     </div>
-                    <button type="button" id="validatePromoButton" class="btn btn-primary" disabled>Apply</button>
+                    </div>
+                    <button type="button" id="validatePromoButton" class="glossy-button text-blue" disabled>Apply</button>
                 </div>
                 <div id="promo-status" class="promo-status"></div>
-            </fieldset>
+            </div>
 
             <div id="payment-section">
-                <fieldset><legend>5. Payment Information</legend>
-                    <div class="form-group"><label for="cardholderName">Name on Card <span class="required">*</span></label><input type="text" id="cardholderName" name="cardholderName" required></div>
+                <h4 class="section-heading"><i class="fas fa-credit-card"></i> Payment Information</h4>
+                <div class="form-body-container">
+                    <div class="form-row">
+                        <div class="form-group third-width"><label for="cardholderName">Name on Card <span class="required">*</span></label><input type="text" id="cardholderName" name="cardholderName" required></div>
+                        <div class="form-group third-width">
+                            <label for="card-number">Card Number <span class="required">*</span></label>
+                            <div id="card-number" class="stripe-element"></div>
+                        </div>
+                        <div class="form-group third-width">
+                            <label>Expiry & CVC <span class="required">*</span></label>
+                            <div class="stripe-elements-row">
+                                <div id="card-expiry" class="stripe-element"></div>
+                                <div id="card-cvc" class="stripe-element"></div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" id="sameAsCompanyAddress">
-                         <label class="form-check-label" for="sameAsCompanyAddress">Billing address is the same as company address</label>
+                        <label class="form-check-label" for="sameAsCompanyAddress">Billing address is the same as company address</label>
                     </div>
-                    <div class="form-group"><label for="billingAddress">Billing Address <span class="required">*</span></label><input type="text" id="billingAddress" name="billingAddress" required></div>
-                     <div class="form-row">
-                         <div class="form-group third-width"><label for="billingCity">City <span class="required">*</span></label><input type="text" id="billingCity" name="billingCity" required></div>
-                        <div class="form-group third-width"><label for="billingState">State <span class="required">*</span></label><select id="billingState" name="billingState" required><option value="" selected disabled>Select a State</option><%@ include file="/WEB-INF/includes/states_options.jspf" %></select></div>
-                        <div class="form-group third-width"><label for="billingZip">Zip <span class="required">*</span></label><input type="text" id="billingZip" name="billingZip" required pattern="\d{5}|\d{5}-\d{4}" title="Zip code must be 5 or 9 digits (e.g., 12345 or 12345-6789)."></div>
-                     </div>
-                    <div class="form-group">
-                        <label for="card-number">Card Details <span class="required">*</span></label>
-                        <div id="card-number" class="stripe-element"></div>
-                          <div class="stripe-elements-row">
-                            <div id="card-expiry" class="stripe-element"></div>
-                            <div id="card-cvc" class="stripe-element"></div>
-                         </div>
-                     </div>
-                </fieldset>
+                    <div class="form-row">
+                        <div class="form-group address-field"><label for="billingAddress">Billing Address <span class="required">*</span></label><input type="text" id="billingAddress" name="billingAddress" required></div>
+                        <div class="form-group city-field"><label for="billingCity">City <span class="required">*</span></label><input type="text" id="billingCity" name="billingCity" required></div>
+                        <div class="form-group state-field"><label for="billingState">State <span class="required">*</span></label><select id="billingState" name="billingState" required><option value="" selected disabled>Select a State</option><%@ include file="/WEB-INF/includes/states_options.jspf" %></select></div>
+                        <div class="form-group zip-field"><label for="billingZip">Zip <span class="required">*</span></label><input type="text" id="billingZip" name="billingZip" required pattern="\d{5}|\d{5}-\d{4}" title="Zip code must be 5 or 9 digits (e.g., 12345 or 12345-6789)."></div>
+                    </div>
+
+                </div>
             </div>
             
-            <div id="card-errors" role="alert" class="error-message" style="display:none;"></div>
+            <div id="card-errors" role="alert" class="page-message error-message" style="display:none; margin-top: 20px;"></div>
             
              <div class="form-actions">
                 <div class="terms-agreement">
-                     <input type="checkbox" id="termsAgreement" name="termsAgreement" required>
+                     <input class="form-check-input" type="checkbox" id="termsAgreement" name="termsAgreement" required>
                      <label for="termsAgreement" class="terms-notice">
-                        I agree to the <a href="terms.jsp" target="_blank">Terms of Service</a> and <a href="privacy.jsp" target="_blank">Privacy Policy</a>.
- </label>
+                        I agree to the <a href="terms.jsp" tabindex="-1" target="_blank">Terms of Service</a> and <a href="privacy.jsp" tabindex="-1" target="_blank">Privacy Policy</a>.
+                     </label>
                 </div>
-                <button type="submit" id="mainSubmitButton" class="btn btn-primary btn-large">Create Account <i class="fas fa-arrow-right"></i></button>
+                <button type="submit" id="mainSubmitButton" class="glossy-button text-green" style="width:100%; height: 45px; font-size: 1.1em;">Create Account <i class="fas fa-arrow-right"></i></button>
             </div>
          </form>
     </div>

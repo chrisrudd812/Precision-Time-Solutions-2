@@ -1,27 +1,24 @@
-// js/navbar.js - v3
-// Correctly handles both top-level dropdowns and nested flyout menus.
-
+// js/navbar.js - v8 (Click-Only Navigation)
 document.addEventListener('DOMContentLoaded', function() {
-    // Select all items that can contain a dropdown, both top-level and nested
+    
+    const mainNavbar = document.querySelector('.main-navbar');
+    
+    function adjustBodyPadding() {
+        if (mainNavbar) {
+            const navbarHeight = mainNavbar.offsetHeight;
+            document.body.style.paddingTop = navbarHeight + 'px';
+        }
+    }
+    
+    adjustBodyPadding();
+    window.addEventListener('resize', adjustBodyPadding);
+
     const allDropdownTriggers = document.querySelectorAll('.main-navbar .dropdown, .main-navbar .sub-dropdown-trigger');
 
     allDropdownTriggers.forEach(trigger => {
-        // --- Desktop Hover Logic ---
-        trigger.addEventListener('mouseenter', function() {
-            if (window.innerWidth > 992) {
-                this.classList.add('is-open');
-            }
-        });
-
-        trigger.addEventListener('mouseleave', function() {
-            if (window.innerWidth > 992) {
-                this.classList.remove('is-open');
-            }
-        });
-
-        // --- Mobile/Tablet Click Logic ---
         const button = trigger.querySelector('.dropbtn, .sub-dropbtn');
         if (button) {
+            // Click handler for mobile (hamburger menu)
             button.addEventListener('click', function(event) {
                 if (window.innerWidth <= 992) {
                     if (this.getAttribute('href') === 'javascript:void(0);') {
@@ -30,28 +27,33 @@ document.addEventListener('DOMContentLoaded', function() {
                     event.stopPropagation();
 
                     const parentLi = this.parentElement;
-                    const wasOpen = parentLi.classList.contains('is-open');
-
-                    // Close all other dropdowns at the same level as the one being opened
                     const parentUl = parentLi.parentElement;
-                    parentUl.querySelectorAll('.is-open').forEach(sibling => {
+                    parentUl.querySelectorAll(':scope > .is-open').forEach(sibling => {
                         if (sibling !== parentLi) {
                            sibling.classList.remove('is-open');
                         }
                     });
                     
-                    // Toggle the current dropdown
-                    if (!wasOpen) {
-                        parentLi.classList.add('is-open');
-                    } else {
-                        parentLi.classList.remove('is-open');
-                    }
+                    parentLi.classList.toggle('is-open');
+                }
+            });
+            
+            // Hover handlers for desktop
+            trigger.addEventListener('mouseenter', function() {
+                if (window.innerWidth > 992) {
+                    this.classList.add('is-open');
+                }
+            });
+            
+            trigger.addEventListener('mouseleave', function() {
+                if (window.innerWidth > 992) {
+                    this.classList.remove('is-open');
                 }
             });
         }
     });
 
-    // --- Global Click Listener to Close All Menus ---
+    // Global click listener to close ALL open menus when clicking outside
     document.addEventListener('click', function(event) {
         if (!event.target.closest('.main-navbar')) {
             document.querySelectorAll('.main-navbar .is-open').forEach(openDropdown => {
@@ -59,5 +61,30 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
+	
+	// Hamburger Menu Logic
+	const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+	const navbarLinks = document.querySelector('.navbar-links');
 
+	if (mobileMenuToggle && navbarLinks) {
+	    mobileMenuToggle.addEventListener('click', function(e) {
+	        e.stopPropagation();
+	        navbarLinks.classList.toggle('mobile-open');
+	        document.body.classList.toggle('menu-is-open');
+	    });
+
+	    document.addEventListener('click', function(event) {
+	        if (!event.target.closest('.main-navbar') && navbarLinks.classList.contains('mobile-open')) {
+	            navbarLinks.classList.remove('mobile-open');
+	            document.body.classList.remove('menu-is-open');
+	        }
+	    });
+
+	    window.addEventListener('resize', function() {
+	        if (window.innerWidth > 992) {
+	            navbarLinks.classList.remove('mobile-open');
+	            document.body.classList.remove('menu-is-open');
+	        }
+	    });
+	}
 });

@@ -1,12 +1,8 @@
 // js/commonUtils.js
 
 let currentMaxZIndex = 10080;
+let notificationCallback = null;
 
-/**
- * Parses a 12-hour time string (e.g., "05:30:00 PM") into a 24-hour format ("17:30:00").
- * @param {string} timeStr12hr The 12-hour format time string.
- * @returns {string} The time in 24-hour format, or an empty string if parsing fails.
- */
 function parseTimeTo24Hour(timeStr12hr) {
     if (!timeStr12hr || String(timeStr12hr).trim() === '' || String(timeStr12hr).toLowerCase().includes('missing') || String(timeStr12hr).toLowerCase() === "n/a") return '';
     timeStr12hr = String(timeStr12hr).trim();
@@ -37,27 +33,29 @@ function parseTimeTo24Hour(timeStr12hr) {
         return '';
     }
 }
-// Expose the function globally
 window.parseTimeTo24Hour = parseTimeTo24Hour;
 
 
 function showToast(message, type = 'info') {
-    const container = document.getElementById('toast-container');
+    const container = document.getElementById('toast-notification-container');
     if (!container) {
         console.error('Toast container not found!');
         alert((type === 'error' ? "Error: " : "Success: ") + message);
         return;
     }
     const toast = document.createElement('div');
-    toast.className = `toast-notification ${type}`;
+    toast.className = `toast-notification toast-${type}`;
     toast.textContent = message;
     container.appendChild(toast);
-    requestAnimationFrame(() => { toast.classList.add('show'); });
+    requestAnimationFrame(() => {
+        toast.classList.add('show');
+    });
     setTimeout(() => {
         toast.classList.remove('show');
-        setTimeout(() => { if (toast.parentNode) toast.remove(); }, 300);
+        setTimeout(() => { if (toast.parentNode) toast.remove(); }, 500);
     }, 3500);
 }
+window.showToast = showToast;
 
 function decodeHtmlEntities(encodedString) {
     if (encodedString === null || typeof encodedString === 'undefined' || String(encodedString).toLowerCase() === 'null') { return ''; }
@@ -69,6 +67,7 @@ function decodeHtmlEntities(encodedString) {
         return String(encodedString); 
     }
 }
+window.decodeHtmlEntities = decodeHtmlEntities;
 
 function showModal(modalElement) {
     if (modalElement && typeof modalElement.classList !== 'undefined') {
@@ -86,6 +85,7 @@ function showModal(modalElement) {
         console.error("[DEBUG] FATAL: showModal received an invalid or null element.");
     }
 }
+window.showModal = showModal;
 
 function hideModal(modalElement) {
     if (modalElement && typeof modalElement.classList !== 'undefined') {
@@ -103,33 +103,124 @@ function hideModal(modalElement) {
         }, 300);
     }
 }
+window.hideModal = hideModal;
 
-function showPageNotification(message, isError = false, modalInstance = null, titleText = "Notification") { 
-    const modalToUse = modalInstance || document.getElementById("notificationModalGeneral");
-    const msgElem = modalToUse ? modalToUse.querySelector('#notificationModalGeneralMessage') : null;
-    const modalTitleElem = modalToUse ? modalToUse.querySelector('#notificationModalGeneralTitle') : null;
-
-    if (!modalToUse || !msgElem) {
-        alert((isError ? "Error: " : "Notification: ") + message);
+function showPageNotification(message, type = 'success', callback = null, title = null, options = {}) {
+    const notificationModal = document.getElementById('notificationModalGeneral');
+    if (!notificationModal) {
+        alert((type === 'error' ? "Error: " : "Success: ") + message);
         return;
     }
-    if(modalTitleElem) modalTitleElem.textContent = titleText;
-    msgElem.innerHTML = message;
-    showModal(modalToUse); 
-	modalToUse.querySelector('#okButtonNotificationModalGeneral')?.focus();
+
+    const okBtn = document.getElementById('okButtonNotificationModalGeneral');
+    const customBtn = document.getElementById('customButtonNotificationModalGeneral');
+    const notificationTitle = document.getElementById('notificationModalGeneralTitle');
+    const notificationMessage = document.getElementById('notificationModalGeneralMessage');
+    const modalTitleSpan = notificationTitle.querySelector('span');
+    const modalTitleIcon = notificationTitle.querySelector('i');
+
+    // Reset styles and state
+    notificationModal.classList.remove('modal-state-success', 'modal-state-error', 'modal-state-warning', 'modal-form-blue-state');
+    notificationTitle.classList.remove('modal-title-success', 'modal-title-error', 'modal-title-warning', 'modal-title-info');
+    okBtn.classList.remove('text-green', 'text-red', 'text-grey', 'text-orange', 'text-blue');
+    modalTitleIcon.className = 'fas';
+    customBtn.style.display = 'none';
+    okBtn.textContent = 'OK';
+
+    switch (type) {
+        case 'error':
+            modalTitleSpan.textContent = title || 'Error';
+            notificationModal.classList.add('modal-state-error');
+            notificationTitle.classList.add('modal-title-error');
+            modalTitleIcon.classList.add('fa-exclamation-triangle');
+            okBtn.classList.add('text-red');
+            break;
+        case 'info':
+            modalTitleSpan.textContent = title || 'Information';
+            notificationModal.classList.add('modal-form-blue-state');
+            notificationTitle.classList.add('modal-title-info');
+            modalTitleIcon.classList.add('fa-info-circle');
+            okBtn.classList.add('text-blue');
+            break;
+        default:
+            modalTitleSpan.textContent = title || 'Success';
+            notificationModal.classList.add('modal-state-success');
+            notificationTitle.classList.add('modal-title-success');
+            modalTitleIcon.classList.add('fa-check-circle');
+            okBtn.classList.add('text-green');
+            break;
+    }
+    notificationMessage.innerHTML = message;
+    
+    const okListener = () => {
+        hideModal(notificationModal);
+        if (callback) callback();
+    };
+
+    okBtn.replaceWith(okBtn.cloneNode(true));
+    document.getElementById('okButtonNotificationModalGeneral').addEventListener('click', okListener, { once: true });
+    
+    showModal(notificationModal);
 }
+window.showPageNotification = showPageNotification;
+
+function showConfirmModal(message, callback, options = {}) {
+    const confirmModal = document.getElementById('confirmModalGeneral');
+    if (!confirmModal) {
+        if (confirm(message)) callback(true); else callback(false);
+        return;
+    }
+    
+    const type = options.type || 'warning';
+    const titleText = options.title || 'Confirm Action';
+
+    const modalContent = confirmModal.querySelector('.modal-content');
+    const titleElement = confirmModal.querySelector('.modal-header h2');
+    const titleIcon = titleElement.querySelector('i');
+    const titleSpan = titleElement.querySelector('span');
+    const messageEl = document.getElementById('confirmModalGeneralMessage');
+    const okBtn = document.getElementById('confirmModalGeneralOkBtn');
+    const cancelBtn = document.getElementById('confirmModalGeneralCancelBtn');
+
+    modalContent.classList.remove('modal-state-warning', 'modal-state-error');
+    titleElement.classList.remove('modal-title-warning', 'modal-title-error');
+    
+    if (type === 'delete') {
+        modalContent.classList.add('modal-state-error');
+        titleElement.classList.add('modal-title-error');
+        titleIcon.className = 'fas fa-trash-alt';
+    } else {
+        modalContent.classList.add('modal-state-warning');
+        titleElement.classList.add('modal-title-warning');
+        titleIcon.className = 'fas fa-exclamation-triangle';
+    }
+
+    titleSpan.textContent = titleText;
+    messageEl.innerHTML = message;
+
+    const okListener = () => { hideModal(confirmModal); callback(true); };
+    const cancelListener = () => { hideModal(confirmModal); callback(false); };
+    
+    okBtn.replaceWith(okBtn.cloneNode(true));
+    cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+    document.getElementById('confirmModalGeneralOkBtn').addEventListener('click', okListener, { once: true });
+    document.getElementById('confirmModalGeneralCancelBtn').addEventListener('click', cancelListener, { once: true });
+    
+    showModal(confirmModal);
+}
+window.showConfirmModal = showConfirmModal;
 
 function makeModalDraggable(modalElement) {
     const content = modalElement.querySelector('.modal-content');
-    const header = content ? content.querySelector('h2') : null;
+    const header = content ? content.querySelector('.modal-header h2') : null;
     if (!header || !content) return;
 
     header.style.cursor = 'grab';
     
-    let initialMouseX, initialMouseY;
-    let initialContentX, initialContentY;
+    let initialMouseX, initialMouseY, initialContentX, initialContentY;
 
     function dragStart(e) {
+        if (e.target.matches('input, select, button, textarea, a')) { return; }
         e.preventDefault();
         if (window.getComputedStyle(content).position !== 'absolute') {
             const rect = content.getBoundingClientRect();
@@ -234,42 +325,5 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (typeof initializeAllSortableTables === 'function') {
         initializeAllSortableTables();
-    }
-
-    const allCloseButtons = document.querySelectorAll('.modal .close, .modal .cancel-btn, .modal [data-close-modal-id], .modal .close-modal-btn');
-    allCloseButtons.forEach(button => {
-        button.addEventListener('click', function(event) {
-            const modalToClose = event.target.closest('.modal');
-            if (modalToClose && typeof hideModal === 'function') {
-                hideModal(modalToClose);
-            }
-        });
-    });
-
-    const allOkButtons = document.querySelectorAll('#okButtonNotificationModalGeneral, #okButton');
-     allOkButtons.forEach(button => {
-        button.addEventListener('click', function(event) {
-            const modalToClose = event.target.closest('.modal');
-            if (modalToClose && typeof hideModal === 'function') {
-                hideModal(modalToClose);
-            }
-        });
-    });
-
-    // [NEW] Logic to find and display the login message modal
-    const loginMessageModal = document.getElementById('loginMessageModal');
-    if (loginMessageModal) {
-        const messageBody = loginMessageModal.querySelector('.login-message-body');
-        // Only show modal if the server actually populated messages into it
-        if (messageBody && messageBody.innerHTML.trim() !== '') {
-            showModal(loginMessageModal);
-        }
-
-        const okButton = document.getElementById('okButtonLoginMessage');
-        if (okButton) {
-            okButton.addEventListener('click', function() {
-                hideModal(loginMessageModal);
-            });
-        }
     }
 });

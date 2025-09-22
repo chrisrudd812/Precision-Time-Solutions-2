@@ -1,0 +1,97 @@
+/* === css/configureLocationRestrictions.css === */
+
+.config-container {
+	max-width: 900px;
+}
+
+.location-table th, .location-table td {
+	text-align: left;
+	padding: 8px 10px;
+}
+
+.location-table td .action-icon {
+	margin-right: 10px;
+	color: #2563eb; /* Blue */
+	cursor: pointer;
+	font-size: 1.1em;
+}
+
+/* MODIFIED: Changed delete icon to red */
+.location-table td .action-icon.delete-location {
+	color: #dc2626; /* Red */
+}
+
+/* MODIFIED: Override switch style for this page */
+#locationModal .switch {
+    width: 60px;
+    height: 26px;
+}
+#locationModal .slider:before {
+    height: 18px;
+    width: 18px;
+}
+#locationModal .switch input:checked + .slider:before {
+    transform: translateX(34px);
+}
+
+#locationMap {
+	height: 280px;
+	margin-bottom: 10px;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+}
+
+.map-instructions {
+	font-size: 0.85em;
+	text-align: center;
+	margin-top: -5px;
+	margin-bottom: 15px;
+	padding: 8px 10px;
+	background-color: #f0f5fa;
+	border: 1px solid #d6e0f0;
+	border-radius: 4px;
+	color: #334e68;
+}
+
+.lat-lon-group {
+	display: flex;
+	gap: 10px;
+}
+
+.lat-lon-group .form-item {
+	flex: 1;
+}
+
+.get-current-location-btn {
+	width: 100%;
+    margin-bottom: 18px;
+}
+
+.action-buttons {
+	margin-bottom: 20px;
+}
+
+/* MODIFIED: Changed to align items at the bottom */
+.address-search-group {
+	display: flex;
+	gap: 10px;
+	align-items: flex-end;
+	margin-bottom: 18px;
+}
+
+.address-search-group .form-item {
+	flex-grow: 1;
+	margin-bottom: 0;
+}
+
+.address-search-group button {
+	flex-shrink: 0;
+	white-space: nowrap;
+}
+
+.form-separator {
+    text-align: center;
+    margin: 10px 0 18px 0;
+    font-weight: 500;
+    color: #555;
+}

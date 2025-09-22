@@ -65,6 +65,8 @@ public class MessagingServlet extends HttpServlet {
 
         if ("sendMessage".equals(action)) {
             handleSendMessage(tenantId, request, response);
+        } else if ("sendWelcomeEmails".equals(action)) {
+            handleSendWelcomeEmails(tenantId, request, response);
         }
     }
 
@@ -145,6 +147,54 @@ public class MessagingServlet extends HttpServlet {
         }
     }
 
+    private void handleSendWelcomeEmails(int tenantId, HttpServletRequest request, HttpServletResponse response) throws IOException {
+        String subject = request.getParameter("subject");
+        String baseBody = request.getParameter("baseBody");
+        String adminContent = request.getParameter("adminContent");
+        String userContent = request.getParameter("userContent");
+        
+        try {
+            String sql = "SELECT EMAIL, PERMISSIONS FROM employee_data WHERE TenantID = ? AND ACTIVE = TRUE AND EMAIL IS NOT NULL AND EMAIL <> ''";
+            List<String> adminEmails = new ArrayList<>();
+            List<String> userEmails = new ArrayList<>();
+            
+            try (Connection con = DatabaseConnection.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setInt(1, tenantId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        String email = rs.getString("EMAIL");
+                        String permissions = rs.getString("PERMISSIONS");
+                        if ("Administrator".equalsIgnoreCase(permissions)) {
+                            adminEmails.add(email);
+                        } else {
+                            userEmails.add(email);
+                        }
+                    }
+                }
+            }
+            
+            int totalSent = 0;
+            if (!adminEmails.isEmpty()) {
+                String adminBody = baseBody + adminContent;
+                EmailService.send(adminEmails, subject, adminBody);
+                totalSent += adminEmails.size();
+            }
+            
+            if (!userEmails.isEmpty()) {
+                String userBody = baseBody + userContent;
+                EmailService.send(userEmails, subject, userBody);
+                totalSent += userEmails.size();
+            }
+            
+            String successMessage = "Welcome emails sent successfully to " + totalSent + " recipient(s) (" + adminEmails.size() + " admins, " + userEmails.size() + " users).";
+            writeJsonResponse(response, true, successMessage, null);
+            
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error sending welcome emails for TenantID " + tenantId, e);
+            writeJsonResponse(response, false, "Error sending welcome emails: " + e.getMessage(), null);
+        }
+    }
+    
     private List<String> getRecipientEmails(int tenantId, String type, String target) throws SQLException {
         List<String> emails = new ArrayList<>();
         String sql = "SELECT EMAIL FROM employee_data WHERE TenantID = ? AND ACTIVE = TRUE AND EMAIL IS NOT NULL AND EMAIL <> ''";

@@ -1,0 +1,67 @@
+<%-- /WEB-INF/includes/configureLocationRestrictions-modals.jspf --%>
+
+<%-- Confirmation Modal (for Deleting) --%>
+<div id="confirmModal" class="modal modal-state-error">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h2 id="confirmModalTitle" class="modal-title-error"><i class="fas fa-exclamation-triangle"></i> <span>Confirm Deletion</span></h2>
+        </div>
+        <div class="modal-body">
+            <p id="confirmModalMessage"></p>
+        </div>
+        <div class="button-row">
+            <button type="button" id="confirmModalCancelBtn" class="glossy-button text-red">Cancel</button>
+            <button type="button" id="confirmModalOkBtn" class="glossy-button text-green">Delete</button>
+        </div>
+    </div>
+</div>
+
+<%-- Add/Edit Location Modal --%>
+<div id="locationModal" class="modal">
+    <div class="modal-content modal-form-green-state">
+        <form id="locationForm" action="${pageContext.request.contextPath}/LocationRestrictionServlet" method="POST">
+            <input type="hidden" name="action" id="locationActionInput" value="addLocation">
+            <input type="hidden" name="locationID" id="locationIDInput" value="0">
+            
+            <div class="modal-header">
+                <h2 id="locationModalTitle" class="modal-title-success"><i class="fas fa-plus-circle"></i> <span>Add New Location</span></h2>
+            </div>
+            
+            <div class="modal-body">
+                <div id="locationMap"></div>
+                <p class="map-instructions">Click map to set center, or use "My Current Location". Drag marker to adjust.</p>
+                
+                <div class="address-search-group">
+                    <div class="form-item">
+                        <label for="addressSearchInput">Find by Address:</label>
+                        <input type="text" id="addressSearchInput" placeholder="e.g., 1600 Pennsylvania Ave NW, Washington, DC">
+                    </div>
+                    <button type="button" id="findAddressBtn" class="glossy-button text-blue"><i class="fas fa-search"></i> Find</button>
+                </div>
+                
+                <p style="text-align: center; margin: 10px 0; font-weight: 500; color: #555;">-or-</p>
+
+                <button type="button" id="getCurrentLocationBtn" class="get-current-location-btn glossy-button text-blue"><i class="fas fa-location-arrow"></i> Use My Current Location</button>
+                
+                <div class="form-item"><label for="locationNameInput">Location Name:<span class="required-asterisk">*</span></label><input type="text" id="locationNameInput" name="locationName" required maxlength="100"></div>
+                
+                <div class="lat-lon-group">
+                    <div class="form-item"><label for="latitudeInput">Latitude:<span class="required-asterisk">*</span></label><input type="number" id="latitudeInput" name="latitude" required step="0.00000001" min="-90" max="90" readonly></div>
+                    <div class="form-item"><label for="longitudeInput">Longitude:<span class="required-asterisk">*</span></label><input type="number" id="longitudeInput" name="longitude" required step="0.00000001" min="-180" max="180" readonly></div>
+                </div>
+                
+                <div class="form-item"><label for="radiusMetersInput">Radius (meters):<span class="required-asterisk">*</span></label><input type="number" id="radiusMetersInput" name="radiusMeters" required min="10" max="10000" step="1" value="100"></div>
+                
+                <div class="form-item" style="display: flex; align-items: center; gap: 10px;">
+                    <label for="locationIsEnabledInput" class="slider-label" style="margin-bottom: 0;">Enabled:</label>
+                    <label class="switch"><input type="checkbox" id="locationIsEnabledInput" name="isEnabled" value="true" checked><span class="slider round"></span></label>
+                </div>
+            </div>
+
+            <div class="button-row">
+                <button type="button" id="cancelLocationModalBtn" class="glossy-button text-red">Cancel</button>
+                <button type="submit" id="saveLocationBtn" class="glossy-button text-green">Save Location</button>
+            </div>
+        </form>
+    </div>
+</div>

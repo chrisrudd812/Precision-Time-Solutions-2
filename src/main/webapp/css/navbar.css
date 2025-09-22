@@ -1,169 +1,291 @@
+html {
+    overflow-y: scroll;
+}
+
 /* === css/navbar.css === */
-/* v7: Corrected flyout menu positioning context for proper vertical centering */
 
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap');
-@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/all.min.css');
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
 
 body {
-    padding-top: 55px !important;
-    font-family: 'Open Sans', Arial, sans-serif;
-    margin: 0;
-    box-sizing: border-box;
+    padding-top: 60px;
 }
 
 .main-navbar {
-    background: linear-gradient(to bottom, #007bff, #0056b3);
+    background: linear-gradient(to right, #2c3e50, #3498db);
     width: 100%;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
     position: fixed;
     top: 0;
     left: 0;
-    z-index: 1050;
-    min-height: 55px;
+    z-index: 9999;
+    min-height: 60px;
+    height: auto;
     display: flex;
     align-items: center;
-    padding: 0 15px;
+    padding: 5px 25px;
     box-sizing: border-box;
-    flex-wrap: wrap; /* [FIX #1] Allow items inside the navbar (brand, links, user) to wrap to the next line if needed. */
+    justify-content: flex-start; 
 }
 
-.main-navbar .navbar-brand { flex-shrink: 0; margin-right: 20px; }
-.main-navbar .navbar-brand a { color: #ffffff; text-decoration: none; font-size: 1.3em; font-weight: 600; display: flex; align-items: center; height: 100%; padding: 0 5px; }
-.main-navbar .navbar-brand a:hover { opacity: 0.85; }
-.main-navbar .navbar-brand a i.fas { margin-right: 8px; font-size: 1.1em; }
+.navbar-brand a {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: #ffffff;
+    font-size: 1.3em;
+    font-weight: 600;
+    white-space: nowrap;
+}
 
-/* The container for all the links */
-.main-navbar .navbar-links-container {
+.navbar-brand a:hover {
+    color: #ecf0f1;
+}
+
+.navbar-brand .navbar-logo {
+    height: 40px;
+    width: auto;
+    margin-right: 12px;
+}
+
+.mobile-menu-toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: #ffffff;
+    font-size: 1.5em;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+    order: 3; 
+    margin-left: auto;
+}
+
+.mobile-menu-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.navbar-links-container {
+    height: 100%;
     flex-grow: 1;
     display: flex;
-    justify-content: space-between; /* [FIX #2] Pushes user/account links to the right and main links toward the center/left. */
-    align-items: center;
-    height: 100%;
-    flex-wrap: wrap; /* [FIX #3] Allow the link groups themselves to wrap. */
+    justify-content: center;
 }
 
-.main-navbar ul.navbar-links {
+ul.navbar-links {
     list-style-type: none;
     margin: 0;
     padding: 0;
     display: flex;
     align-items: center;
+    height: auto;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+ul.navbar-links > li {
+    position: relative;
+    height: 50px;
+}
+
+ul.navbar-links > li > a {
+    display: flex;
+    align-items: center;
     height: 100%;
-    flex-wrap: inherit; /* Inherit the wrap behavior from the parent container */
-}
-
-.main-navbar ul.navbar-links > li { position: relative; display: flex; align-items: stretch; }
-
-.main-navbar ul.navbar-links > li > a,
-.main-navbar ul.navbar-links > li > .dropbtn {
-    display: flex; align-items: center; color: #e0e0e0; padding: 0 15px;
-    text-decoration: none; font-size: 1.1em; font-weight: 600;
-    height: 100%; cursor: pointer; transition: background-color 0.2s, color 0.2s;
+    padding: 0 15px;
+    color: #ecf0f1;
+    text-decoration: none;
+    font-size: 0.95em;
     white-space: nowrap;
+    transition: background-color 0.2s ease-in-out;
+    border-radius: 4px;
 }
 
-.main-navbar ul.navbar-links > li > .dropbtn::after {
-    content: '\25BC';
-    font-size: 0.6em;
+ul.navbar-links > li > a:hover,
+ul.navbar-links > li > a.active {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+}
+
+ul.navbar-links > li > a i.fas {
+    margin-right: 8px;
+}
+
+.dropbtn .fa-chevron-down {
+    font-size: 0.7em;
     margin-left: 8px;
-    color: #b0c4de;
     transition: transform 0.2s;
 }
 
-.main-navbar ul.navbar-links > li > a i.fas,
-.main-navbar ul.navbar-links > li > .dropbtn i.fas {
-    margin-right: 6px; color: #b0c4de;
-}
-.main-navbar ul.navbar-links > li:hover > a,
-.main-navbar ul.navbar-links > li:hover > .dropbtn {
-    background-color: rgba(255, 255, 255, 0.1); color: #ffffff;
+.dropdown.is-open > a.dropbtn .fa-chevron-down {
+    transform: rotate(180deg);
 }
 
-/* --- Dropdown Menu Styling --- */
 .dropdown-content {
-    display: block;
+    display: none;
     position: absolute;
-    background-color: #fff;
+    background-color: #ffffff;
     min-width: 240px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-    z-index: 1060;
-    list-style-type: none;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    z-index: 1051;
+    list-style: none;
     padding: 8px 0;
-    margin: 0;
-    border-radius: 6px;
-    border: 1px solid #e9ecef;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+    margin-top: 0;
+    border-radius: 0 0 5px 5px;
+    border: 1px solid #e7e7e7;
+    border-top: none;
+    left: 0;
 }
 
-/* NEW: Explicitly set the positioning context for sub-menu triggers */
-.dropdown-content .sub-dropdown-trigger {
+.dropdown.is-open > .dropdown-content,
+.sub-dropdown-trigger.is-open > .sub-dropdown-content {
+    display: block;
+}
+
+.sub-dropdown-trigger {
     position: relative;
 }
 
-/* First-level dropdown animation & positioning */
-.main-navbar .dropdown > .dropdown-content {
-    transform: translateY(10px);
-    top: 90%;
-    left: 0;
-}
-.main-navbar .dropdown:hover > .dropdown-content,
-.main-navbar .dropdown.is-open > .dropdown-content {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-}
-
-/* Sub-level (flyout) animation combines vertical centering and horizontal movement */
-.sub-dropdown-trigger > .sub-dropdown-content {
-    transform: translate(10px, -50%);
-}
-.sub-dropdown-trigger:hover > .sub-dropdown-content,
-.sub-dropdown-trigger.is-open > .sub-dropdown-content {
-    opacity: 1;
-    visibility: visible;
-    transform: translate(0, -50%);
-}
-
-/* Sub-level (flyout) dropdown position for vertical centering */
-li.sub-dropdown-trigger > .sub-dropdown-content {
-    top: 50%; 
+.sub-dropdown-content {
+    display: none;
+    position: absolute;
     left: 100%;
+    top: -1px;
+    background-color: #ffffff;
+    min-width: 240px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    z-index: 1052;
+    list-style: none;
+    padding: 8px 0;
+    margin-left: 0;
+    border-radius: 5px;
+    border: 1px solid #e7e7e7;
 }
 
-/* Dropdown link styling */
-.dropdown-content li a {
+.dropdown-content a {
     padding: 10px 20px;
     text-decoration: none; 
     display: block;
     white-space: nowrap; 
-    color: #343a40; 
-    font-size: 0.95em;
-    transition: background-color 0.15s, color 0.15s;
+    color: #34495e; 
+    font-size: 0.9em;
+    transition: background-color 0.2s, color 0.2s;
 }
 
-.dropdown-content li:hover > a {
+.dropdown-content a:hover {
     background-color: #f8f9fa; 
-    color: #0056b3;
+    color: #2980b9;
 }
 
-/* Flyout arrow indicator */
 .sub-dropdown-trigger > a.sub-dropbtn {
     display: flex; 
     justify-content: space-between; 
     align-items: center;
 }
 
-.sub-dropdown-trigger > a.sub-dropbtn::after {
-    content: '\f054';
-    font-family: "Font Awesome 6 Free";
-    font-weight: 900;
-    font-size: 0.8em;
-    color: #adb5bd;
-    transition: color 0.15s;
+.sub-dropdown-trigger > a.sub-dropbtn .fa-chevron-right {
+    font-size: 0.7em;
+    margin-left: 15px;
+    color: #bdc3c7;
 }
 
-.sub-dropdown-trigger:hover > a.sub-dropbtn::after {
-    color: #0056b3;
+@media (max-width: 992px) {
+    .main-navbar {
+        justify-content: space-between;
+        min-height: 60px;
+        height: 60px;
+        padding: 0 25px;
+        flex-wrap: wrap; /* Allow menu to be part of the flex flow */
+    }
+
+    .mobile-menu-toggle {
+        display: block;
+    }
+    
+    .navbar-links-container {
+        /* MODIFIED: Changed from absolute position to be part of the normal flow */
+        position: relative;
+        width: 100%;
+        order: 4; /* Ensures it appears below the brand and toggle button */
+        height: auto;
+    }
+    
+    ul.navbar-links {
+        flex-direction: column;
+        width: 100%;
+        height: auto;
+        padding: 0;
+        margin: 0;
+        flex-wrap: nowrap;
+        display: flex;
+        overflow: hidden;
+        max-height: 0;
+        transition: max-height 0.4s ease-in-out;
+        /* This gives the menu its own solid background */
+        background: linear-gradient(to right, #2c3e50, #3498db);
+        box-shadow: inset 0 3px 5px rgba(0,0,0,0.2);
+    }
+    
+    ul.navbar-links.mobile-open {
+        max-height: 75vh;
+        padding-top: 10px;
+    }
+    
+    ul.navbar-links > li {
+        width: 100%;
+        height: auto;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    ul.navbar-links > li:last-child {
+        border-bottom: none;
+    }
+    
+    ul.navbar-links > li > a {
+        width: 100%;
+        height: auto;
+        padding: 15px 25px;
+        justify-content: flex-start;
+        border-radius: 0;
+    }
+    
+    ul.navbar-links > li > a:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .dropdown-content {
+        position: static;
+        display: none;
+        background-color: rgba(0,0,0,0.1);
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+        border: none;
+        border-radius: 0;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .dropdown.is-open > .dropdown-content {
+        display: block;
+    }
+    
+    .dropdown-content a {
+        color: #ecf0f1;
+        padding: 12px 45px;
+        font-size: 0.9em;
+    }
+    
+    .dropdown-content a:hover {
+        background-color: rgba(255,255,255,0.1);
+        color: #ffffff;
+    }
+    
+    .sub-dropdown-content {
+        position: static;
+        margin-left: 20px;
+        background-color: rgba(0,0,0,0.15);
+    }
+    
+    .sub-dropdown-content a {
+        padding: 10px 65px;
+    }
 }

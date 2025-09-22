@@ -1,49 +1,52 @@
 <%-- /WEB-INF/includes/account-modals.jspf --%>
 
-<%-- ## NEW MODAL ADDED BELOW ## --%>
 <div id="lifetimeAccessModal" class="modal">
-    <div class="modal-content" style="max-width: 550px;">
-        <span class="close" data-close-modal>&times;</span>
-        <h2>Lifetime Subscription</h2>
-        <p style="text-align: center; font-size: 1.1em; color: #343a40; margin-bottom: 25px; padding: 0 25px; line-height: 1.6;">
-            You are on a lifetime free plan. There is nothing to cancel or upgrade.
-        </p>
-        <div class="button-row" style="justify-content: center;">
-            <button type="button" data-close-modal class="glossy-button text-blue">OK</button>
+    <div class="modal-content modal-state-success" style="max-width: 550px;">
+        <div class="modal-header"><h2 class="modal-title-success"><i class="fas fa-award"></i> <span>Lifetime Subscription</span></h2></div>
+        <div class="modal-body">
+            <p style="text-align: center; font-size: 1.1em; color: #343a40; line-height: 1.6;">
+                You are on a lifetime free plan. There is nothing to cancel or upgrade.
+            </p>
         </div>
+        <div class="button-row"><button type="button" data-close-modal class="glossy-button text-blue">OK</button></div>
     </div>
 </div>
 
 <div id="billingRequiredModal" class="modal">
-    <div class="modal-content" style="max-width: 550px;">
-        <span class="close" data-close-modal>&times;</span>
-        <h2>Subscription Inactive</h2>
-        <p id="billingRequiredModalMessage" style="text-align: center; font-size: 1.1em; color: #343a40; margin-bottom: 25px; padding: 0 25px; line-height: 1.6;">
-            Your subscription is inactive. Please update your billing information to restore full access.
-        </p>
+    <div class="modal-content modal-state-error" style="max-width: 550px;">
+        <div class="modal-header"><h2 class="modal-title-error"><i class="fas fa-credit-card"></i> <span>Subscription Inactive</span></h2></div>
+        <div class="modal-body">
+            <p id="billingRequiredModalMessage" style="text-align: center; font-size: 1.1em; line-height: 1.6;">
+                Your subscription is inactive. Please update your billing information to restore full access.
+            </p>
+        </div>
         <div class="button-row">
-            <button type="button" id="billingModalManageButton" class="glossy-button text-green"><i class="fas fa-credit-card"></i> Manage Subscription & Billing</button>
-            <button type="button" id="billingModalLogoutButton" class="cancel-btn glossy-button text-red" onclick="window.location.href='logout.jsp';">Logout</button>
+            <button type="button" id="billingModalManageButton" class="glossy-button text-green"><i class="fas fa-credit-card"></i> Manage Subscription</button>
+            <button type="button" class="cancel-btn glossy-button text-red" onclick="window.location.href='LogoutServlet';">Logout</button>
         </div>
     </div>
 </div>
 
+<%-- MODIFIED: Replaced with new themed structure --%>
 <div id="verifyAdminPasswordModal" class="modal">
-    <div class="modal-content">
-        <span class="close" data-close-modal>&times;</span>
-        <h2>Verify Administrator Credentials</h2>
-        
-        <p style="text-align: center; font-size: 1em; color: #343a40; margin-bottom: 20px; padding: 0 25px;">For security, please re-enter the Company Admin password.</p>
-        
+    <div class="modal-content modal-form-blue-state">
         <form id="verifyAdminPasswordForm" onsubmit="return false;">
              <input type="hidden" id="verificationNextAction" value="">
-            <div class="form-item">
-                <label for="verifyAdminEmail">Admin Email:</label>
-                <input type="email" id="verifyAdminEmail" readonly style="background-color: #e9ecef; cursor: not-allowed;">
+            <div class="modal-header">
+                <h2><i class="fas fa-user-shield"></i> <span>Verify Administrator Credentials</span></h2>
             </div>
-            <div class="form-item">
-                 <label for="verifyAdminCurrentPassword">Password:<span style="color:red;">*</span></label>
-                <input type="password" id="verifyAdminCurrentPassword" required autofocus>
+            <div class="modal-body">
+                <div class="form-body-container">
+                    <p style="text-align: center; margin-top: 0; margin-bottom: 20px;">For security, please re-enter the Company Admin password.</p>
+                    <div class="form-item">
+                        <label for="verifyAdminEmail">Admin Email:</label>
+                        <input type="email" id="verifyAdminEmail" readonly style="background-color: #e9ecef; cursor: not-allowed;">
+                    </div>
+                    <div class="form-item">
+                         <label for="verifyAdminCurrentPassword">Password: <span class="required-asterisk">*</span></label>
+                        <input type="password" id="verifyAdminCurrentPassword" required autofocus>
+                    </div>
+                </div>
             </div>
             <div class="button-row">
                 <button type="submit" class="glossy-button text-green">Verify</button>
@@ -54,43 +57,29 @@
 </div>
 
 <div id="editCompanyDetailsModal" class="modal">
-    <div class="modal-content" style="max-width: 650px;"> 
-        <span class="close" data-close-modal>&times;</span> 
-        <h2>Edit Company Details</h2> 
+    <div class="modal-content wide-modal modal-form-yellow-state" style="max-width: 650px;"> 
         <form id="updateCompanyDetailsForm" onsubmit="return false;"> 
-            <div class="form-item"> <label for="editCompanyNameDisplay">Company Name:</label> <input type="text" id="editCompanyNameDisplay" name="companyNameDisplay" readonly disabled> </div> 
-             <div class="form-item"> <label for="editCompanyIdDisplay">Company ID:</label> <input type="text" id="editCompanyIdDisplay" name="companyIdDisplay" readonly disabled> </div> 
-            <hr> 
-            <div class="form-item"> <label for="editCompanyPhone">Company Phone:</label> <input type="tel" id="editCompanyPhone" name="companyPhone" maxlength="20" pattern="^\(\d{3}\) \d{3}-\d{4}$" placeholder="(555) 555-5555" title="Phone number must be in the format (555) 555-5555."> </div> 
-            <div class="form-item"> <label for="editCompanyAddress">Street Address:</label> <input type="text" id="editCompanyAddress" name="companyAddress" maxlength="255"> </div> 
-            <div class="form-row"> 
-                 <div class="form-item"> <label for="editCompanyCity">City:</label> <input type="text" id="editCompanyCity" name="companyCity" maxlength="100"> </div> 
-                 <div class="form-item"> <label for="editCompanyState">State:</label> <select id="editCompanyState" name="companyState"> <option value="">Select State</option> <%@ include file="/WEB-INF/includes/states_options.jspf" %> </select> </div> 
-            </div> 
-            <div class="form-item"> 
-                <label for="editCompanyZip">Zip Code:</label> 
-                <input type="text" id="editCompanyZip" name="companyZip" style="max-width:48%"  maxlength="10" pattern="\d{5}(-\d{4})?" title="Zip code must be 5 or 9 digits (e.g., 12345 or 12345-6789)."> 
-            </div> 
-            
-            <div class="form-item" style="text-align: right; margin-top: 25px; padding-top: 15px; border-top: 1px solid #eee;">
-                 <a href="change_company_admin_password.jsp">Need to change the Company Admin Password?</a>
+            <div class="modal-header"><h2><i class="fas fa-edit"></i> <span>Edit Company Details</span></h2></div>
+            <div class="modal-body">
+                <div class="form-body-container">
+                    <div class="form-item"> <label for="editCompanyNameDisplay">Company Name:</label> <input type="text" id="editCompanyNameDisplay" name="companyNameDisplay" readonly disabled> </div> 
+                    <div class="form-item"> <label for="editCompanyIdDisplay">Company ID:</label> <input type="text" id="editCompanyIdDisplay" name="companyIdDisplay" readonly disabled> </div> 
+                </div>
+                <div class="form-body-container">
+                    <div class="form-item"> <label for="editCompanyPhone">Company Phone:</label> <input type="tel" id="editCompanyPhone" name="companyPhone" maxlength="20" pattern="^\(\d{3}\) \d{3}-\d{4}$" placeholder="(555) 555-5555" title="Phone number must be in the format (555) 555-5555."> </div> 
+                    <div class="form-item"> <label for="editCompanyAddress">Street Address:</label> <input type="text" id="editCompanyAddress" name="companyAddress" maxlength="255"> </div> 
+                    <div class="form-row"> 
+                         <div class="form-item"> <label for="editCompanyCity">City:</label> <input type="text" id="editCompanyCity" name="companyCity" maxlength="100"> </div> 
+                         <div class="form-item"> <label for="editCompanyState">State:</label> <select id="editCompanyState" name="companyState"> <option value="">Select State</option> <%@ include file="/WEB-INF/includes/states_options.jspf" %> </select> </div> 
+                         <div class="form-item"> <label for="editCompanyZip">Zip Code:</label> <input type="text" id="editCompanyZip" name="companyZip" style="max-width:150px" maxlength="10" pattern="\d{5}(-\d{4})?" title="Zip code must be 5 or 9 digits (e.g., 12345 or 12345-6789)."> </div> 
+                    </div> 
+                </div>
+                <div style="text-align: right; margin: 15px 10px 0 0;"><a href="change_company_admin_password.jsp">Need to change the Company Admin Password?</a></div>
             </div>
-             
             <div class="button-row"> 
                  <button type="submit" class="glossy-button text-green"><i class="fas fa-save"></i> Update Details</button> 
-                <button type="button" data-close-modal class="cancel-btn glossy-button text-red"><i class="fas fa-times"></i> Cancel</button> 
+                 <button type="button" data-close-modal class="cancel-btn glossy-button text-red"><i class="fas fa-times"></i> Cancel</button> 
             </div> 
         </form> 
     </div> 
-</div>
-
-<div id="editAccountLoginModal" class="modal">
-    <div class="modal-content" style="max-width: 550px;">
-        <span class="close" data-close-modal>&times;</span>
-        <h2>Edit Account Login Details</h2>
-        <p>Functionality to change your personal login PIN or other details will be here.</p>
-        <div class="button-row">
-             <button type="button" data-close-modal class="cancel-btn glossy-button text-red">Close</button> 
-        </div>
-    </div>
 </div>

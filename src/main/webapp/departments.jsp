@@ -9,19 +9,20 @@
 <%@ page import="java.nio.charset.StandardCharsets" %>
 
 <%!
-    // Helper to escape HTML characters to prevent XSS.
     private String escapeJspHtml(String input) {
-        if (input == null) return "";
+        if (input == null) {
+            return "";
+        }
         return input.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&#39;");
     }
 
-    // Helper to safely embed Java strings into JavaScript.
     private String escapeForJS(String input) { 
-        if (input == null) return "";
+        if (input == null) {
+            return "";
+        }
         return input.replace("\\", "\\\\").replace("'", "\\'").replace("\"", "\\\"").replace("\r", "\\r").replace("\n", "\\n").replace("/", "\\/");
     }
     
-    // Helper to build a JSON array string from a List of Maps.
     private String buildJsonArray(List<Map<String, String>> dataList) {
         StringBuilder json = new StringBuilder("[");
         if (dataList != null) {
@@ -31,10 +32,14 @@
                 int keyCount = 0;
                 for (Map.Entry<String, String> entry : item.entrySet()) {
                     json.append("\"").append(escapeForJS(entry.getKey())).append("\":\"").append(escapeForJS(entry.getValue())).append("\"");
-                    if (++keyCount < item.size()) json.append(",");
+                    if (++keyCount < item.size()) {
+                        json.append(",");
+                    }
                 }
                 json.append("}");
-                if (i < dataList.size() - 1) json.append(",");
+                if (i < dataList.size() - 1) {
+                    json.append(",");
+                }
             }
         }
         json.append("]");
@@ -42,7 +47,6 @@
     }
 %>
 <%
-    // --- SESSION AND PERMISSION VALIDATION ---
     HttpSession currentSession = request.getSession(false);
     Integer tenantId = null;
     String userPermissions = "User"; 
@@ -50,15 +54,16 @@
     String pageLevelSuccess = request.getParameter("message");
     boolean isReopenModalRequest = request.getParameter("reopenModal") != null;
     
-    // --- WIZARD SETUP LOGIC ---
     boolean inSetupWizardMode_JSP = false;
     String currentWizardStepForPage_JSP = null;
     String companyNameSignup_JSP = "Your Company"; 
     boolean departmentJustAddedInWizard_JSP = "true".equalsIgnoreCase(request.getParameter("deptAdded"));
-
+    
     if (currentSession != null) {
         Object tenantIdObj = currentSession.getAttribute("TenantID");
-        if(tenantIdObj instanceof Integer) tenantId = (Integer) tenantIdObj;
+        if(tenantIdObj instanceof Integer) {
+            tenantId = (Integer) tenantIdObj;
+        }
         
         userPermissions = (String) currentSession.getAttribute("Permissions");
         if (Boolean.TRUE.equals(currentSession.getAttribute("startSetupWizard"))) {
@@ -85,7 +90,6 @@
         pageLevelError = "Access Denied.";
     }
 
-    // --- DATA FETCHING ---
     List<Map<String, String>> allDeptsForReassignDropdown = (tenantId != null) ?
         ShowReports.getDepartmentsForTenant(tenantId) : new ArrayList<>();
     String departmentRowsHtml = (tenantId != null) ? ShowDepartments.showDepartments(tenantId) : "<tr><td colspan='3' class='report-error-row'>Invalid session.</td></tr>";
@@ -98,8 +102,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <%@ include file="/WEB-INF/includes/common-head.jspf" %>
     <link rel="stylesheet" href="<%= request.getContextPath() %>/css/departments.css?v=<%= System.currentTimeMillis() %>">
+    <link rel="stylesheet" href="<%= request.getContextPath() %>/css/modals.css?v=<%= System.currentTimeMillis() %>">
 </head>
-<body class="reports-page">
+<body>
     <% if (!inSetupWizardMode_JSP) { %>
         <%@ include file="/WEB-INF/includes/navbar.jspf" %>
     <% } else { %>
@@ -109,7 +114,7 @@
         </div>
     <% } %>
 
-    <div class="parent-container reports-container">
+    <div class="parent-container">
         <h1>Manage Departments<% if (inSetupWizardMode_JSP) { %> <span style="font-size:0.8em; color:#555;">(Setup)</span><% } %></h1>
         
         <% if (pageLevelSuccess != null && !pageLevelSuccess.isEmpty()) { %><div class="page-message success-message"><%= escapeJspHtml(pageLevelSuccess) %></div><% } %>
@@ -121,15 +126,11 @@
             <button type="button" id="deleteDepartmentButton" class="glossy-button text-red" disabled><i class="fas fa-trash-alt"></i> Delete Department</button>
         </div>
 
-        <%-- MODIFIED: Moved the h4 tag outside and above the report-display-area div --%>
-        <h4 style="text-align: left; color: #6c757d; margin-bottom: 10px; font-size: 0.9em;">To Edit or Delete: Select a row from the table.</h4>
+        <h4 style="text-align: left; color: #6c757d; margin-bottom: 10px; font-size: 0.9em;"><span class="instruction-text">💡 Select a row to edit or delete</span></h4>
 
-        <div class="report-display-area">
-            <div class="table-container report-table-container department-table-container">
-                <table id="departmentsTable"
-                   class="report-table sortable"
-                   data-initial-sort-column="0"
-                   data-initial-sort-direction="asc">
+        <div class="content-display-area">
+            <div class="table-container department-table-container">
+                <table id="departmentsTable" class="report-table sortable" data-initial-sort-column="0" data-initial-sort-direction="asc">
                     <thead>
                         <tr>
                             <th class="sortable" data-sort-type="string">Name</th>
@@ -145,13 +146,10 @@
         </div>
     </div>
 
-    <%-- Modals --%>
-    <div id="wizardGenericModal" class="modal"><div class="modal-content"><span class="close">&times;</span><h2 id="wizardGenericModalTitle"></h2><p id="wizardGenericModalText1"></p><p id="wizardGenericModalText2"></p><div class="button-row" id="wizardGenericModalButtonRow"></div></div></div>
+    <%@ include file="/WEB-INF/includes/modals.jspf" %>
     <%@ include file="/WEB-INF/includes/departments-modals.jspf" %>
-    <div id="notificationModalGeneral" class="modal"><div class="modal-content" style="max-width:480px;"><span class="close">&times;</span><h2 id="notificationModalGeneralTitle"></h2><p id="notificationModalGeneralMessage"></p><div class="button-row"><button type="button" id="okButtonNotificationModalGeneral" class="glossy-button text-blue">OK</button></div></div></div>
 
     <script>
-        // --- Page-specific data from JSP ---
         window.appRootPath = "<%= request.getContextPath() %>";
         window.inWizardMode_Page = <%= inSetupWizardMode_JSP %>;
         window.currentWizardStep_Page = "<%= escapeForJS(currentWizardStepForPage_JSP) %>";

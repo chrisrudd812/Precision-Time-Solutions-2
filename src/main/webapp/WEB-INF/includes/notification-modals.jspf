@@ -5,11 +5,18 @@
 <%-- General purpose notification modal --%>
 <div id="notificationModalGeneral" class="modal">
     <div class="modal-content">
-        <span class="close" data-close-modal-id="notificationModalGeneral">&times;</span>
-        <h2 id="notificationModalGeneralTitle">Notification</h2>
-        <p id="notificationModalGeneralMessage" style="padding: 15px 25px; line-height: 1.6;"></p>
+        <div class="modal-header">
+            <h2 id="notificationModalGeneralTitle">
+                <i class="fas"></i> <%-- Icon will be set by JS --%>
+                <span>Notification</span> <%-- Title text will be set by JS --%>
+            </h2>
+        </div>
+        <div class="modal-body">
+            <p id="notificationModalGeneralMessage"></p>
+        </div>
         <div class="button-row">
-            <button type="button" id="okButtonNotificationModalGeneral" data-close-modal-id="notificationModalGeneral" class="glossy-button text-blue">OK</button>
+            <button type="button" id="okButtonNotificationModalGeneral" data-close-modal-id="notificationModalGeneral" class="glossy-button text-grey">OK</button>
+            <button type="button" id="customButtonNotificationModalGeneral" class="glossy-button text-green" style="display: none;">Custom Action</button>
         </div>
     </div>
 </div>
@@ -17,12 +24,18 @@
 <%-- Modal for the setup wizard --%>
 <div id="wizardGenericModal" class="modal">
     <div class="modal-content">
-         <span class="close" id="closeWizardGenericModal" data-close-modal-id="wizardGenericModal">&times;</span>
-        <h2 id="wizardGenericModalTitle"></h2>
-        <p id="wizardGenericModalText1" style="padding: 10px 15px; font-size: 1.1em;"></p>
-        <p id="wizardGenericModalText2" style="padding: 0px 15px 15px; font-size: 1em; color: #555;"></p>
-        <div class="button-row" id="wizardGenericModalButtonRow" style="justify-content: center; padding-top: 15px; border-top: 1px solid #eee;">
-            </div>
+        <div class="modal-header">
+            <h2 id="wizardGenericModalTitle">
+                <i class="fas fa-cog"></i>
+                <span>Setup Wizard</span>
+            </h2>
+        </div>
+        <div class="modal-body">
+            <p id="wizardGenericModalText1" style="font-size: 1.1em;"></p>
+            <p id="wizardGenericModalText2" style="font-size: 1em; color: #555;"></p>
+        </div>
+        <div class="button-row" id="wizardGenericModalButtonRow">
+        </div>
     </div>
 </div>
 
@@ -35,11 +48,15 @@
         unreadMessages = (List<Map<String, String>>) modalSession.getAttribute("unreadLoginMessages");
     }
 %>
-<div id="loginMessageModal" class="modal">
+<div id="loginMessageModal" class="modal modal-form-blue-state">
     <div class="modal-content">
-        <h2 id="loginMessageModalTitle">Important Message</h2>
-        <%-- [FIX] Added text-align:center to the container --%>
-        <div class="login-message-body" style="padding: 15px 25px; line-height: 1.6; max-height: 60vh; overflow-y: auto; text-align: center;">
+        <div class="modal-header">
+            <h2 id="loginMessageModalTitle">
+                <i class="fas fa-info-circle"></i>
+                <span>Important Message</span>
+            </h2>
+        </div>
+        <div class="modal-body" style="max-height: 60vh; overflow-y: auto; text-align: center;">
             <%
                 if (unreadMessages != null && !unreadMessages.isEmpty()) {
                     for (Map<String, String> message : unreadMessages) {
@@ -55,7 +72,7 @@
                 }
             %>
         </div>
-        <div class="button-row" style="justify-content: center;">
+        <div class="button-row">
             <button type="button" id="okButtonLoginMessage" class="glossy-button text-blue">OK</button>
         </div>
     </div>

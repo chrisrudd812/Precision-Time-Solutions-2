@@ -1,5 +1,38 @@
 // js/timeclock.js
 
+// --- NEW: Inactivity Timeout Logic ---
+let inactivityTimer;
+
+function logoutDueToInactivity() {
+    // Redirect to the logout servlet with a reason
+    const contextPath = (typeof app_contextPath !== 'undefined') ? app_contextPath : '';
+    window.location.href = contextPath + '/LogoutServlet?autoLogout=true&reason=' + encodeURIComponent('Session timed out due to inactivity.');
+}
+
+function resetInactivityTimer() {
+    clearTimeout(inactivityTimer);
+    // The session timeout duration is passed from the JSP
+    const timeoutMilliseconds = (typeof sessionTimeoutDuration_Js !== 'undefined' && sessionTimeoutDuration_Js > 0) 
+                                ? (sessionTimeoutDuration_Js * 1000) 
+                                : (60 * 60 * 1000); // Fallback to 1 hour
+    inactivityTimer = setTimeout(logoutDueToInactivity, timeoutMilliseconds);
+}
+
+function setupInactivityDetection() {
+    // This function is called on page load
+    // It checks for the permission variable set by timeclock.jsp
+    if (typeof currentUserPermissions_tc !== 'undefined' && currentUserPermissions_tc === 'User') {
+        // Attach event listeners that will reset the timer
+        ['mousemove', 'mousedown', 'keypress', 'touchmove', 'scroll', 'click', 'keydown'].forEach(activityEvent => {
+            window.addEventListener(activityEvent, resetInactivityTimer, true);
+        });
+        // Start the timer for the first time
+        resetInactivityTimer();
+    }
+}
+// --- END: Inactivity Timeout Logic ---
+
+
 async function getDeviceFingerprint() {
     if (window.FingerprintJS) {
         try {
@@ -57,7 +90,6 @@ function getDeviceType() {
     return "Desktop Device";
 }
 
-
 function navigateToEmployee(selectedEid, isCurrentlyReportMode) {
     let baseUrl = 'timeclock.jsp';
     const params = new URLSearchParams();
@@ -74,33 +106,43 @@ function navigateToEmployee(selectedEid, isCurrentlyReportMode) {
     window.location.href = baseUrl;
 }
 
+
 function showTimeclockNotificationModal(message, isError) {
+    console.log("DEBUG: --- Inside showTimeclockNotificationModal ---");
+    console.log("DEBUG: Received message:", message);
+    
     const modal = document.getElementById("notificationModal");
-    if (!modal) return;
+    if (!modal) {
+        console.error("DEBUG: ABORTING. Modal element NOT FOUND in the DOM.");
+        return;
+    }
 
     const title = modal.querySelector('#notificationModalTitle');
     const msg = modal.querySelector('#notificationMessage');
     const okBtn = modal.querySelector('#okButton');
     const closeBtn = modal.querySelector('#closeNotificationModal');
-
-    title.textContent = isError ? "Error" : "Notification";
     const modalContent = modal.querySelector('.modal-content');
-    if (modalContent) {
-        modalContent.classList.toggle('error-message', isError);
-        modalContent.classList.toggle('success-message', !isError);
-    }
 
+    // Set title text and add an icon
+    if (isError) {
+        title.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error';
+        modalContent.classList.add('error-message');
+        modalContent.classList.remove('success-message');
+    } else {
+        title.innerHTML = '<i class="fas fa-check-circle"></i> Notification';
+        modalContent.classList.add('success-message');
+        modalContent.classList.remove('error-message');
+    }
+    
     msg.innerHTML = message.replace(/\n/g, '<br>');
 
     const hide = () => {
-        modal.style.display = 'none';
         modal.classList.remove('modal-visible');
     };
 
     okBtn.onclick = hide;
     closeBtn.onclick = hide;
 
-    modal.style.display = 'flex';
     modal.classList.add('modal-visible');
     okBtn.focus();
 }
@@ -125,82 +167,89 @@ function printTimecard() {
     setTimeout(() => { try {printWindow.focus(); printWindow.print(); } catch(e){alert("Print error: " + e.message);}}, 500);
 }
 
-let inactivityTimer;
-let quickLogoutTimer;
-function performLogoutRedirectWithMessage(messageKey) {
-    const contextPath = (typeof app_contextPath !== 'undefined') ? app_contextPath : '';
-    let logoutReasonParam = "Auto-logout initiated.";
-    if (messageKey === 'punchSuccess') logoutReasonParam = 'Punch successful. Logging out...';
-    else if (messageKey === 'sessionTimeout') logoutReasonParam = 'Session timed out due to inactivity.';
-    window.location.href = contextPath + '/LogoutServlet?autoLogout=true&reason=' + encodeURIComponent(logoutReasonParam);
-}
-function resetInactivityTimer() {
-    if (typeof currentUserPermissions_tc !== 'undefined' && currentUserPermissions_tc === 'User') {
-        clearTimeout(inactivityTimer);
-        const timeoutSeconds = (typeof sessionTimeoutDuration_Js !== 'undefined' && sessionTimeoutDuration_Js > 0) ? sessionTimeoutDuration_Js : (30 * 60);
-        if (quickLogoutTimer == null || typeof quickLogoutTimer === 'undefined') {
-            inactivityTimer = setTimeout(() => { performLogoutRedirectWithMessage('sessionTimeout'); }, timeoutSeconds * 1000);
-        }
-    }
-}
-function setupInactivityDetection() {
-    if (typeof currentUserPermissions_tc !== 'undefined' && currentUserPermissions_tc === 'User') {
-        resetInactivityTimer();
-        ['mousemove', 'mousedown', 'keypress', 'touchmove', 'scroll', 'click', 'keydown'].forEach(activityEvent => {
-            window.addEventListener(activityEvent, resetInactivityTimer, { passive: true });
-        });
-    }
-}
-
+/**
+ * Handles the punch-in and punch-out form submissions.
+ * This function prevents the default form submission, asynchronously gathers required data
+ * (like geolocation and device fingerprint), populates the form's hidden fields,
+ * and then programmatically submits the form.
+ *
+ * @param {Event} event - The form submission event.
+ */
 async function handlePunchSubmit(event) {
-    event.preventDefault();
+    event.preventDefault(); // Stop the form from submitting immediately
     const form = event.target;
     const submitButton = form.querySelector('button[type="submit"]');
-    
+    const isPunchOut = (form.id === "punchOutForm");
+    const isPunchIn = !isPunchOut;
+
+    // Disable the button and provide feedback to the user
     if (submitButton) {
         submitButton.disabled = true;
-        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Please Wait...';
     }
 
+    // Function to re-enable the button if something goes wrong
     const restoreButton = () => {
         if (submitButton) {
             submitButton.disabled = false;
-            submitButton.innerHTML = form.id === "punchInForm" ? 'PUNCH IN' : 'PUNCH OUT';
+            submitButton.innerHTML = isPunchOut ? 'PUNCH OUT' : 'PUNCH IN';
         }
     };
 
-    const executePunch = async (latitude, longitude) => {
-        try {
-            const fingerprint = await getDeviceFingerprint();
-            document.getElementById(form.id === "punchInForm" ? 'deviceFingerprintHash_IN' : 'deviceFingerprintHash_OUT').value = fingerprint;
-            document.getElementById(form.id === "punchInForm" ? 'latitude_IN' : 'latitude_OUT').value = latitude;
-            document.getElementById(form.id === "punchInForm" ? 'longitude_IN' : 'longitude_OUT').value = longitude;
-            const tzInput = document.getElementById(form.id === "punchInForm" ? 'browserTimeZoneId_IN' : 'browserTimeZoneId_OUT');
-            if (tzInput) tzInput.value = Intl.DateTimeFormat().resolvedOptions().timeZone;
-            const deviceTypeInput = document.getElementById(form.id === "punchInForm" ? 'deviceType_IN' : 'deviceType_OUT');
-            if (deviceTypeInput) deviceTypeInput.value = getDeviceType();
-            form.submit();
-        } catch (error) {
-            console.error("Data gathering error:", error);
-            showTimeclockNotificationModal("Could not gather all required data before punching: " + error.message, true);
-            restoreButton();
+    try {
+        // --- NEW UNIVERSAL PRE-CHECK FOR ALL PUNCHES ---
+        // As directed, the VERY first step is to check the user's current punch status with the server.
+        const response = await fetch(`${app_contextPath}/CheckOpenPunchServlet`);
+        if (!response.ok) {
+            throw new Error("Server error: Could not verify current punch status.");
         }
-    };
+        const statusData = await response.json();
+        if (statusData.error) {
+            throw new Error(statusData.error);
+        }
 
-    if (typeof IS_LOCATION_RESTRICTION_ENABLED !== 'undefined' && IS_LOCATION_RESTRICTION_ENABLED) {
-        try {
-            const locationData = await getClientGeolocation();
-            executePunch(locationData.latitude, locationData.longitude);
-        } catch (locError) {
-            console.error("Geo Err:", locError);
-            showTimeclockNotificationModal(locError.message, true);
-            restoreButton();
+        const hasOpenPunch = statusData.hasOpenPunch;
+
+        // Now, validate the action based on the server's response.
+        if (isPunchIn && hasOpenPunch) {
+            throw new Error("You are already clocked in. Please clock out before clocking in again.");
         }
-    } else {
-        executePunch("", "");
+        if (isPunchOut && !hasOpenPunch) {
+            throw new Error("No open work punch found to clock out against. You are already clocked out.");
+        }
+        // --- END OF UNIVERSAL PRE-CHECK ---
+
+
+        // If the pre-check passes, we proceed with the other steps.
+        // Step 1: Get data that doesn't cause a delay
+        const fingerprint = await getDeviceFingerprint();
+        form.querySelector('input[name="deviceFingerprintHash"]').value = fingerprint;
+        form.querySelector('input[name="browserTimeZoneId"]').value = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        form.querySelector('input[name="deviceType"]').value = getDeviceType();
+
+        // Step 2: Get location ONLY if the company policy requires it.
+        if (typeof locationCheckIsTrulyRequired !== 'undefined' && locationCheckIsTrulyRequired) {
+            if (submitButton) {
+                submitButton.innerHTML = '<i class="fas fa-location-arrow fa-spin"></i> Getting Location...';
+            }
+            const coords = await getClientGeolocation();
+            form.querySelector('input[name="latitude"]').value = coords.latitude;
+            form.querySelector('input[name="longitude"]').value = coords.longitude;
+        } else {
+            form.querySelector('input[name="latitude"]').value = "";
+            form.querySelector('input[name="longitude"]').value = "";
+        }
+
+        // Step 3: All data is now correctly populated, submit the form to the main servlet.
+        form.submit();
+
+    } catch (error) {
+        // This will catch any error, including the one from our new pre-check.
+        console.error("Punch submission error:", error);
+        showTimeclockNotificationModal(error.message || "An unexpected error occurred.", true);
+        restoreButton(); // Re-enable the button on failure
     }
 }
-
 
 function applyRowBandingByDay() {
     const tableBody = document.querySelector('#punches tbody');
@@ -226,6 +275,8 @@ function applyRowBandingByDay() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log("DEBUG: DOMContentLoaded event fired.");
+
     const punchInForm = document.getElementById('punchInForm');
     if (punchInForm) punchInForm.addEventListener('submit', handlePunchSubmit);
     
@@ -237,45 +288,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (btnPrintEmailSingle && employeeSelect) {
         btnPrintEmailSingle.addEventListener('click', function() {
-            // [DEBUG LOG]
-            console.log("[TimecardDebug] 'Print/Email' button clicked.");
-            
             const eid = employeeSelect.value;
-            
-            // [DEBUG LOG]
-            console.log(`[TimecardDebug] EID read from dropdown is: '${eid}'`);
-            
             if (eid && eid !== "0") {
                 const printUrl = `${app_contextPath}/PrintTimecardsServlet?filterType=single&filterValue=${eid}`;
-                // [DEBUG LOG]
-                console.log(`[TimecardDebug] Opening new tab with URL: ${printUrl}`);
                 window.open(printUrl, '_blank');
             } else {
-                console.log("[TimecardDebug] No employee selected. Alerting user.");
                 alert("An employee must be selected from the dropdown to print or email their timecard.");
             }
         });
-    }
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const messageParam = urlParams.get('message');
-    const errorParam = urlParams.get('error');
-    const punchStatus = urlParams.get('punchStatus');
-
-    let currentUrlForRedirect = window.location.pathname;
-    const eidFromUrl = urlParams.get('eid');
-    if (eidFromUrl) { currentUrlForRedirect += '?eid=' + eidFromUrl; }
-
-    if (messageParam) {
-        showTimeclockNotificationModal(decodeURIComponent(messageParam), false);
-        if (window.history.replaceState) { window.history.replaceState(null, '', currentUrlForRedirect); }
-        if (punchStatus === 'success' && typeof currentUserPermissions_tc !== 'undefined' && currentUserPermissions_tc === 'User') {
-            clearTimeout(inactivityTimer);
-            quickLogoutTimer = setTimeout(() => { performLogoutRedirectWithMessage('punchSuccess'); }, 12000);
-        }
-    } else if (errorParam) {
-        showTimeclockNotificationModal(decodeURIComponent(errorParam), true);
-        if (window.history.replaceState) { window.history.replaceState(null, '', currentUrlForRedirect); }
     }
 
     const btnPrintThisTimecard = document.getElementById('btnPrintThisTimecard');

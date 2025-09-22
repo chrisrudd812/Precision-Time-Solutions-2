@@ -84,6 +84,10 @@
     <%@ include file="/WEB-INF/includes/common-head.jspf" %>
     
     <style>
+    
+    body.reassign-page .parent-container {
+    max-width: 55%;
+}
         .reassign-container { padding: 20px; max-width: 800px; margin: 20px auto; background-color:#fff; border-radius:8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .form-row { display: flex; flex-wrap: wrap; justify-content: space-between; margin-bottom: 20px; align-items: flex-end; gap: 15px;}
         .form-row > .form-item { flex: 1; min-width: 200px; }
@@ -108,7 +112,7 @@
         h1 { text-align: center; color: #005A9C; margin-bottom: 25px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
     </style>
 </head>
-<body class="reports-page">
+<body class="reassign-page">
     <%@ include file="/WEB-INF/includes/navbar.jspf" %>
 
     <div class="parent-container reassign-container">
@@ -193,5 +197,6 @@
         console.log("reassign.jsp: allData.supervisor count =", allData.supervisor ? allData.supervisor.length : 0);
     </script>
     <script src="${pageContext.request.contextPath}/js/reassign.js?v=<%= System.currentTimeMillis() %>"></script>
+    <%@ include file="/WEB-INF/includes/common-scripts.jspf" %>
 </body>
 </html>

@@ -250,6 +250,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         setupFunction();
         if (addHoursDateInput) {
+            // Set date restrictions to current pay period
+            if (window.PAY_PERIOD_START && window.PAY_PERIOD_END) {
+                addHoursDateInput.min = window.PAY_PERIOD_START;
+                addHoursDateInput.max = window.PAY_PERIOD_END;
+            }
             // --- FIX: Use local date components instead of UTC-based toISOString() ---
             const today = new Date();
             const year = today.getFullYear();
@@ -278,6 +283,11 @@ document.addEventListener('DOMContentLoaded', function() {
             selectedRowElement = targetRow.classList.contains('selected') ? targetRow : null;
             if (editRowBtn) editRowBtn.disabled = !selectedRowElement;
             if (deleteRowBtn) deleteRowBtn.disabled = !selectedRowElement;
+            
+            // Scroll to bottom when row is selected to show buttons
+            if (selectedRowElement) {
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            }
         });
     }
 
@@ -293,7 +303,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if (editPunchEIDInput) editPunchEIDInput.value = data.eid || '';
 
             const formattedDate = formatDateToYyyyMmDd(data.date);
-            if (editPunchDateInput) editPunchDateInput.value = formattedDate;
+            if (editPunchDateInput) {
+                // Set date restrictions to current pay period
+                if (window.PAY_PERIOD_START && window.PAY_PERIOD_END) {
+                    editPunchDateInput.min = window.PAY_PERIOD_START;
+                    editPunchDateInput.max = window.PAY_PERIOD_END;
+                }
+                editPunchDateInput.value = formattedDate;
+            }
             
             configureEditModalFields(data.type);
 

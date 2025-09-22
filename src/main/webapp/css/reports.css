@@ -1,62 +1,10 @@
 /* === css/reports.css === */
-/* v4 - Corrected sorted column highlighting on load */
+/* Styles specific to the reports page content. Global styles are in common.css */
 
-/* --- General Page Styles --- */
-body.reports-page {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background-color: #f8fafc;
-    color: #1e293b;
-    line-height: 1.5;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    margin: 0;
+.content-display-area {
+    /* You can add specific overrides here if needed */
 }
 
-/* --- Wizard Fix --- */
-body:has(.modal.modal-visible) > .wizard-header { display: none !important; }
-
-/* --- Container Styles --- */
-.reports-page .parent-container,
-.reports-page .parent-container.reports-container {
-    padding: 20px 30px;
-    min-width: 50%;
-    max-width: 95%;
-    width: auto;
-    margin: 20px auto;
-    box-sizing: border-box;
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    background-color: #ffffff; 
-}
-
-.report-display-area {
-    background: linear-gradient(to bottom, #f0fdfa, #f8fafc);
-    border: 1px solid #e2e8f0; 
-    border-radius: 8px;
-    padding: 20px 25px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05); 
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1;
-    min-height: 300px;
-    overflow: hidden;
-}
-
-/* --- Typography --- */
-.reports-page h1 {
-    text-align: center;
-    color: #1e293b; 
-    margin-bottom: 25px;
-    font-weight: 300;
-    font-size: 2em;
-    border-bottom: 1px solid #e2e8f0; 
-    padding-bottom: 15px;
-    flex-shrink: 0;
-}
 .report-title { 
     font-size: 1.5em; 
     color: #0f766e; 
@@ -66,61 +14,54 @@ body:has(.modal.modal-visible) > .wizard-header { display: none !important; }
     flex-shrink: 0; 
 }
 
-.report-actions {
-	display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 15px;
-    flex-wrap: wrap;
+.report-actions { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    gap: 10px; 
+    margin-bottom: 15px; 
+    flex-wrap: wrap; 
 }
-.action-buttons-group {
-    display: flex;
-    gap: 10px;
+
+.action-buttons-group { 
+    display: flex; 
+    gap: 10px; 
 }
-.report-filters {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    padding: 5px 0;
-    font-size: 1.1em;
+
+.archive-filters-container { 
+    display: flex; 
+    gap: 15px; 
+    align-items: center; 
+    justify-content: center; 
+    margin-bottom: 15px; 
+    background-color: #f1f5f9; 
+    padding: 15px; 
+    border-radius: 6px; 
+    border: 1px solid #e2e8f0; 
 }
-.report-filters label { display: flex; align-items: center; cursor: pointer; }
-.report-filters input[type="radio"] {
-    margin-right: 8px;
-    accent-color: #16a34a;
-    transform: scale(1.1);
+
+.archive-filters-container .form-item { 
+    display: flex; 
+    flex-direction: column; 
 }
-.archive-filters-container {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 15px;
-    background-color: #f1f5f9;
-    padding: 15px;
-    border-radius: 6px;
-    border: 1px solid #e2e8f0;
+
+.archive-filters-container label { 
+    font-size: 0.9em; 
+    margin-bottom: 4px; 
+    font-weight: 500; 
+    color: #475569; 
 }
-.archive-filters-container .form-item {
-    display: flex;
-    flex-direction: column;
+
+.archive-filters-container input[type="date"] { 
+    padding: 8px; 
+    border: 1px solid #cbd5e0; 
+    border-radius: 4px; 
+    height: 38px; 
+    box-sizing: border-box; 
 }
-.archive-filters-container label {
-    font-size: 0.9em;
-    margin-bottom: 4px;
-    font-weight: 500;
-    color: #475569;
-}
-.archive-filters-container input[type="date"] {
-    padding: 8px;
-    border: 1px solid #cbd5e0;
-    border-radius: 4px;
-    height: 38px;
-    box-sizing: border-box;
-}
-.archive-filters-container .glossy-button {
-    align-self: flex-end;
+
+.archive-filters-container .glossy-button { 
+    align-self: flex-end; 
 }
 
 .report-description { 
@@ -130,151 +71,63 @@ body:has(.modal.modal-visible) > .wizard-header { display: none !important; }
     min-height: 1.3em; 
     flex-shrink: 0; 
 }
-.required-asterisk {
-    color: #ef4444; 
-    font-weight: bold;
+
+.table-container {
+    max-height: 55vh;
 }
 
-#button-container { display: flex; gap: 15px; width: 100%; box-sizing: border-box; justify-content: space-between; margin-bottom: 20px; }
-#button-container.main-action-buttons .glossy-button { flex: 1 1 auto; min-width: 160px; max-width: 32%; }
-
-/* --- Table Styling --- */
-.report-table-container { width: 100%; max-height: 55vh; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.04); position: relative; }
-table.report-table { width: 100%; border-collapse: collapse; font-size: 0.85em; background-color: #fff; }
-table.report-table th, table.report-table td { padding: 8px 10px; border: none; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: middle; }
-table.report-table thead { 
-    position: sticky; 
-    top: -1px; 
-    z-index: 20; 
-    background: #f1f5f9; 
-}
-table.report-table thead th { 
-    background: inherit; 
-    color: #0f766e; 
-    font-weight: 600; 
-    border-bottom: 2px solid #14b8a6 !important; 
-}
-table.report-table tbody tr.selected td { 
-    background-color: #ccfbf1 !important; 
-    color: #0f766e !important; 
-    font-weight: bold !important; 
-}
-table.report-table tbody tr:not(.selected):hover td { 
-    background-color: #f1f5f9; 
-    cursor: pointer; 
-}
-table.report-table tbody tr:nth-child(even) { background-color: #f8fafc; } 
-table.report-table tbody tr { transition: background-color 0.15s ease-in-out; }
-
-/* --- Sort Indicators --- */
-table.report-table thead th.sortable { cursor: pointer; position: relative; padding-right: 28px !important; }
-table.report-table thead th.sortable:hover { background: #e2e8f0; } 
-table.report-table thead th.sortable::before, table.report-table thead th.sortable::after { content: ""; position: absolute; right: 10px; border: 5px solid transparent; opacity: 0.4; }
-table.report-table thead th.sortable::before { bottom: 50%; margin-bottom: 2px; border-bottom-color: #0f766e; } 
-table.report-table thead th.sortable::after { top: 50%; margin-top: 2px; border-top-color: #0f766e; } 
-table.report-table thead th.sort-asc::before { border-bottom-color: #14b8a6 !important; opacity: 1 !important; } 
-table.report-table thead th.sort-desc::after { border-top-color: #14b8a6 !important; opacity: 1 !important; } 
-table.report-table thead th.sort-asc::after, table.report-table thead th.sort-desc::before { opacity: 0.15 !important; }
-
-/* [MODIFIED] This rule now uses a new highlight color */
-table.report-table thead th.sort-asc, table.report-table thead th.sort-desc { 
-    background-color: #e0f2fe; /* Light blue highlight */
-    color: #0c4a6e; 
+/* --- Report-Specific Modal Styles --- */
+#exceptionReportModalReports .modal-content {
+    width: 85%; 
+    max-width: 1000px; 
+    min-width: 700px;
 }
 
-/* === MODAL & BUTTON STYLES (CONSOLIDATED) === */
-.modal { display: none !important; position: fixed; z-index: 10080; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); }
-.modal.modal-visible { display: flex !important; align-items: center; justify-content: center; }
-.modal-content { background-color: #fff; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); width: auto; min-width: 400px; max-width: 600px; max-height: 90vh; position: relative; display: flex; flex-direction: column; overflow: hidden; }
-.modal-content.wide-modal { max-width: 750px; }
-.modal-content > h2 { 
-    padding: 15px 20px; margin: 0; text-align: center; font-size: 1.3em; flex-shrink: 0; 
-    background: #0f766e; color: #ffffff; border-bottom: none; 
-}
-.modal-content form { padding: 20px 25px; margin: 0; box-sizing: border-box; overflow-y: auto; flex-grow: 1; }
-.modal-content .button-row { display:flex; gap:10px; padding:15px 25px; margin-top:auto; flex-shrink:0; background: #f1f5f9; border-top:1px solid #e2e8f0; } 
-.modal-content .button-row .glossy-button { flex: 1 1 0; min-width: 150px; }
-
-#wizardGenericModal .modal-content p { padding: 10px 25px; margin: 0; text-align: center; line-height: 1.6; }
-#notificationModalGeneralMessage { padding: 20px 25px; text-align: center; line-height: 1.5; margin: 0; color: #1e293b; }
-
-.close { color:#ef4444 !important; opacity:.8; position:absolute; top:8px; right:10px; font-size:26px; font-weight:700; cursor:pointer; } 
-.close:hover { opacity: 1; }
-
-.glossy-button { display:inline-flex; align-items:center; justify-content:center; padding:10px 18px; font-size:.95em; font-weight:500; line-height:1.5; color:#343a40; text-align:center; vertical-align:middle; cursor:pointer; user-select:none; border:1px solid #adb5bd; border-radius:5px; text-shadow:0 1px 0 rgba(255,255,255,.5); background-color:#f8f9fa; background-image:linear-gradient(to bottom,#fff,#e9ecef); box-shadow:inset 0 1px 1px rgba(255,255,255,.6),0 1px 2px rgba(0,0,0,.1); transition:all .15s ease-in-out }
-.glossy-button i{margin-right:8px}
-.glossy-button:hover{filter:brightness(1.05);text-decoration:none;border-color:#90a4ae}
-.glossy-button:active{filter:brightness(.95);box-shadow:inset 0 2px 3px rgba(0,0,0,.12)}
-.glossy-button.text-green, .glossy-button.text-green i{color:#16a34a !important} 
-.glossy-button.text-red, .glossy-button.text-red i{color:#dc2626 !important} 
-.glossy-button.text-orange, .glossy-button.text-orange i{color:#ea580c !important} 
-.glossy-button.text-blue, .glossy-button.text-blue i{color:#2563eb !important} 
-.glossy-button.text-grey, .glossy-button.text-grey i{color:#343a40!important}
-.glossy-button.text-amber, .glossy-button.text-amber i{color:#f59e0b !important}
-.glossy-button:disabled { cursor: not-allowed; background-color: #e9ecef!important; background-image: none!important; border-color: #ced4da!important; box-shadow: none; opacity: .65; color: #6c757d!important; }
-
-/* Fix for text color on custom-colored glossy buttons */
-.glossy-button.text-purple,
-.glossy-button.text-purple i {
-    color: #8b5cf6 !important;
+#exceptionReportModalReports .modal-header,
+#exceptionReportModalReports .button-row {
+    background: linear-gradient(to bottom, #fefce8, #fef9c3);
 }
 
-/* === GENERAL FORM STYLING === */
-.reports-page .form-section { margin-bottom: 15px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; background-color: #f8fafc; }
-.reports-page .form-section legend { font-weight: 600; color: #475569; padding: 0 8px; font-size: 0.9em; background-color: #f8fafc; }
-.reports-page .form-row { display: flex; gap: 15px; margin-bottom: 18px; flex-wrap: wrap; }
-.reports-page .form-row .form-item { flex: 1; min-width: calc(50% - 8px); }
-.reports-page label { display: block; margin-bottom: 5px; font-weight: 500; font-size: .9em; color: #475569; } 
-.reports-page input[type=text], .reports-page input[type=email], .reports-page input[type=tel], .reports-page input[type=password], .reports-page input[type=date], .reports-page input[type=time], .reports-page input[type=number], .reports-page select { 
-    width:100%; 
-    padding:9px 12px; 
-    border:1px solid #cbd5e0; 
-    border-radius:4px; 
-    box-sizing:border-box; 
-    font-size:.95em; 
-    height:40px; 
-    font-family: inherit; 
+#exceptionReportModalReports .modal-body { 
+    padding: 15px 25px; 
 }
 
-/* [NEW FIX] Added margin-bottom to form-items within modal forms for spacing */
-.modal-content form .form-item {
-    margin-bottom: 15px; /* Adds space below each label/input group */
-}
-/* Ensure the last form-item doesn't have extra margin if it's right before buttons */
-.modal-content form .form-item:last-of-type {
-    margin-bottom: 0;
+#exceptionReportModalReports .modal-table-container {
+    max-height: 55vh; 
+    overflow-y: auto; 
+    border: 1px solid #ccc;
 }
 
-
-#notificationModalGeneral {
-    z-index: 10100;
+.modal-instructions {
+    font-size: 0.9em; 
+    text-align: center; 
+    background-color: #fffbe6;
+    color: #8a6d3b; 
+    border: 1px solid #faebcc;
+    padding: 10px; 
+    border-radius: 4px; 
+    margin-bottom: 15px;
 }
 
-/* === Edit Punch Modal specific styles === */
-/* [FIX] Updated selector to target both payroll and reports modals */
-#editPunchModal .edit-punch-info,
 #editPunchModalReports .edit-punch-info { 
-    background-color: #f8f9fa; padding: 15px; margin-bottom: 20px;
-    border: 1px solid #dee2e6; border-radius: 4px; font-size: 0.95em;
+    background-color: #ffffff; /* MODIFIED: Changed from gray to white */
+    padding: 15px; 
+    margin-bottom: 20px;
+    border: 1px solid #dee2e6; 
+    border-radius: 4px; 
+    font-size: 0.95em; 
+    text-align: left;
 }
 
-/* [FIX] Updated selector and set flex-wrap to nowrap */
-#editPunchModal .edit-punch-info p,
-#editPunchModalReports .edit-punch-info p {
-    margin: 6px 0; line-height: 1.5; color: #495057; display: flex;
-    flex-wrap: nowrap; /* This prevents the text from wrapping to the next line */
-    align-items: baseline;
+#editPunchModalReports .edit-punch-info p { 
+    margin: 6px 0; 
+    display: flex; 
+    align-items: baseline; 
+    flex-wrap: nowrap; 
 }
 
-/* [FIX] Updated selector */
-#editPunchModal .edit-punch-info p strong,
-#editPunchModalReports .edit-punch-info p strong {
-    font-weight: 600; color: #343a40; margin-right: 8px;
-    min-width: 80px; flex-shrink: 0;
-}
-
-/* [FIX] Updated selector */
-#editPunchModal .edit-punch-info p span,
-#editPunchModalReports .edit-punch-info p span {
-    flex-grow: 1; word-break: break-word;
+#editPunchModalReports .edit-punch-info p strong { 
+    font-weight: 600; 
+    margin-right: 8px; 
+    min-width: 80px; 
 }

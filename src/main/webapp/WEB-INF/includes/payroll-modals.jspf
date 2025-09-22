@@ -1,0 +1,82 @@
+<%-- /WEB-INF/includes/payroll-modals.jspf --%>
+
+<%-- Exception Report Modal --%>
+<div id="exceptionReportModal" class="report-modal modal">
+    <div class="modal-content report-modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title-warning"><i class="fas fa-exclamation-triangle"></i> <span>Exception Report</span></h2>
+        </div>
+        <div class="modal-body">
+            <p class="modal-instructions"><i>Select a row below to make corrections. Click "Fix Missing Punches" to edit.</i></p>
+            <div class="modal-table-container table-container report-table-container">
+                <table id="exceptionReportTable" class="report-table">
+                    <thead><tr><th>Emp ID</th><th>First Name</th><th>Last Name</th><th>Date</th><th>IN Time</th><th>OUT Time</th></tr></thead>
+                    <tbody id="exceptionReportTbody"><tr><td colspan="6" style="text-align:center;padding:20px;">Click "Exception Report" to load data.</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="button-row">
+            <%-- MODIFIED: Changed button to green --%>
+            <button id="editExceptionButton" class="glossy-button text-green" disabled><i class="fas fa-edit"></i> Fix Missing Punches</button>
+            <button id="closeExceptionReportButton" class="glossy-button text-red" type="button"><i class="fas fa-times"></i> Close Report</button>
+        </div>
+    </div>
+</div>
+
+<%-- Edit Punch Modal (from Exception Report) --%>
+<div id="editPunchModal" class="modal">
+    <div class="modal-content modal-form-yellow-state">
+        <form id="editPunchForm" action="AddEditAndDeletePunchesServlet" method="post">
+            <input type="hidden" id="editPunchIdField" name="editPunchId">
+            <input type="hidden" name="action" value="editPunch">
+            <input type="hidden" id="editPunchEmployeeIdField" name="editEmployeeId">
+            <input type="hidden" id="editUserTimeZone" name="userTimeZone" value="<%= escapeJspHtml(userTimeZoneId) %>">
+            <input type="hidden" name="editPunchType" value="Supervisor Override">
+            <div class="modal-header">
+                 <h2 class="modal-title-warning"><i class="fas fa-edit"></i> <span>Edit Punch Record</span></h2>
+            </div>
+            <div class="modal-body">
+                <div class="form-body-container">
+                    <div class="edit-punch-info">
+                         <p><strong>Employee:</strong> <span id="editPunchEmployeeName"></span></p>
+                        <p><strong>Schedule:</strong> <span id="editPunchScheduleInfo"></span></p>
+                    </div>
+                    <div class="form-item">
+                        <label for="editDate">Date <span class="required-asterisk">*</span></label>
+                        <input type="date" id="editDate" name="editDate" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-item">
+                            <label for="editInTime">IN Time (HH:MM:SS)</label>
+                            <input type="time" id="editInTime" name="editInTime" step="1">
+                        </div>
+                        <div class="form-item">
+                            <label for="editOutTime">OUT Time (HH:MM:SS)</label>
+                            <input type="time" id="editOutTime" name="editOutTime" step="1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="button-row">
+                <button type="submit" class="glossy-button text-green"><i class="fas fa-save"></i> Save Changes</button>
+                <button type="button" id="cancelEditPunch" class="glossy-button text-red"><i class="fas fa-times"></i> Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<%-- Custom Confirmation Modal for Closing Pay Period --%>
+<div id="closePeriodConfirmModal" class="modal modal-state-error">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="confirmModalTitle" class="modal-title-error"><i class="fas fa-lock"></i> <span>Confirm Action</span></h2>
+        </div>
+        <div class="modal-body">
+            <p id="confirmModalMessage"></p>
+        </div>
+        <div class="button-row">
+            <button type="button" id="confirmModalCancelBtn" class="glossy-button text-red">Cancel</button>
+            <button type="button" id="confirmModalOkBtn" class="glossy-button text-green">Confirm</button>
+        </div>
+    </div>
+</div>

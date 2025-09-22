@@ -1,0 +1,87 @@
+<%-- /WEB-INF/includes/modals.jspf --%>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page import="java.util.List, java.util.Map, jakarta.servlet.http.HttpSession" %>
+
+<%-- 1. General purpose notification modal --%>
+<div id="notificationModalGeneral" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="notificationModalGeneralTitle"><i class="fas fa-info-circle"></i> <span>Notification</span></h2>
+        </div>
+        <div class="modal-body">
+            <p id="notificationModalGeneralMessage"></p>
+        </div>
+        <div class="button-row">
+            <button type="button" id="okButtonNotificationModalGeneral" class="glossy-button text-green close-modal-btn">OK</button>
+            <button type="button" id="customButtonNotificationModalGeneral" class="glossy-button" style="display: none;">Custom Action</button>
+        </div>
+    </div>
+</div>
+
+<%-- 2. Generic Confirmation Modal --%>
+<div id="confirmModalGeneral" class="modal">
+    <div class="modal-content modal-state-warning">
+        <div class="modal-header">
+            <h2 class="modal-title-warning"><i class="fas fa-exclamation-triangle"></i> <span>Confirm Action</span></h2>
+        </div>
+        <div class="modal-body">
+            <p id="confirmModalGeneralMessage">Are you sure you want to proceed?</p>
+        </div>
+        <div class="button-row">
+             <button type="button" id="confirmModalGeneralCancelBtn" class="glossy-button text-grey close-modal-btn">Cancel</button>
+            <button type="button" id="confirmModalGeneralOkBtn" class="glossy-button text-red">Proceed</button>
+        </div>
+    </div>
+</div>
+
+<%-- 3. Modal for the setup wizard (STYLES UPDATED) --%>
+<div id="wizardGenericModal" class="modal">
+    <div class="modal-content modal-form-blue-state">
+        <div class="modal-header">
+            <h2 id="wizardGenericModalTitle"><i class="fas fa-magic"></i> <span>Company Setup</span></h2>
+        </div>
+        <div class="modal-body">
+            <p id="wizardGenericModalText1" style="font-size: 1.1em;"></p>
+            <p id="wizardGenericModalText2" style="font-size: 0.95em; color: #475569;"></p>
+        </div>
+        <div id="wizardGenericModalButtonRow" class="button-row" style="justify-content: space-evenly;">
+            </div>
+    </div>
+</div>
+
+<%-- 4. Modal for displaying unread messages upon login --%>
+<%
+    HttpSession modalSession = request.getSession(false);
+    List<Map<String, String>> unreadMessages = null;
+    if (modalSession != null) {
+        unreadMessages = (List<Map<String, String>>) modalSession.getAttribute("unreadLoginMessages");
+    }
+%>
+<div id="loginMessageModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title-info"><i class="fas fa-envelope"></i> <span>Important Message</span></h2>
+        </div>
+        <div class="login-message-body modal-body">
+            <%
+                if (unreadMessages != null && !unreadMessages.isEmpty()) {
+                    for (Map<String, String> message : unreadMessages) {
+            %>
+                <div class="message-item">
+                    <h3><%= message.get("subject") %></h3>
+                    <p><%= message.get("body").replace("\n", "<br>") %></p>
+                </div>
+            <%
+                    }
+                    modalSession.removeAttribute("unreadLoginMessages");
+                }
+            %>
+        </div>
+        <div class="button-row" style="justify-content: center;">
+            <button type="button" class="glossy-button text-green close-modal-btn">OK</button>
+        </div>
+    </div>
+</div>
+
+<%-- 5. Toast Notification Container --%>
+<div id="toast-notification-container"></div>

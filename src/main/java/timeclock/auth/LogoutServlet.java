@@ -20,8 +20,8 @@ public class LogoutServlet extends HttpServlet {
             throws IOException {
         response.setContentType("text/html;charset=UTF-8");
         HttpSession session = request.getSession(false); 
-        String autoLogoutFlag = request.getParameter("autoLogout"); // Check for this flag
-        String autoLogoutReason = request.getParameter("reason"); // Optional reason from JS
+        String autoLogoutFlag = request.getParameter("autoLogout");
+        String autoLogoutReason = request.getParameter("reason");
 
         logger.info("Logout attempt. Session ID: " + (session != null ? session.getId() : "null") + 
                     ", autoLogoutFlag: " + autoLogoutFlag);
@@ -39,13 +39,12 @@ public class LogoutServlet extends HttpServlet {
 
         String loginPageUrl = request.getContextPath() + "/login.jsp";
         
-        if (!"true".equalsIgnoreCase(autoLogoutFlag)) { // Only add message if NOT an auto-logout
+        if (!"true".equalsIgnoreCase(autoLogoutFlag)) {
             String successMessage = URLEncoder.encode("You have been logged out successfully.", StandardCharsets.UTF_8.name());
             loginPageUrl += "?message=" + successMessage + "&msgType=logout";
         } else if (autoLogoutReason != null && !autoLogoutReason.isEmpty()){
-            // If it is an auto-logout and a reason was provided by JS, pass it as a different param
-            // so login.jsp can display it as a non-modal message if desired.
-            loginPageUrl += "?autoLogoutMessage=" + URLEncoder.encode(autoLogoutReason, StandardCharsets.UTF_8.name());
+            // MODIFIED: Changed parameter name from autoLogoutMessage to "reason" for consistency with JS
+            loginPageUrl += "?reason=" + URLEncoder.encode(autoLogoutReason, StandardCharsets.UTF_8.name());
         }
         
         logger.info("Redirecting to login page: " + loginPageUrl);

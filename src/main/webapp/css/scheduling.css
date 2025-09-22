@@ -1,85 +1,76 @@
-/* Styles for scheduling.jsp */
+/* === css/scheduling.css === */
 
-/* Sizing overrides for the main display area and table container */
-.report-display-area:has(#reportOutput_schedules) {
+/* Sizing overrides */
+.content-display-area:has(#reportOutput_schedules) {
     min-height: 0;
-    flex-grow: 0;
+    /* MODIFIED: Removed the 'flex-grow: 0;' rule that was causing the container to shrink */
 }
-
-#reportOutput_schedules .report-table-container {
+#reportOutput_schedules .table-container {
     max-height: none;
 }
 
-/* Original styles for checkbox groups (unchanged) */
-.checkbox-group {
+/* === Schedule-Specific Styles === */
+/* These styles are unique to the scheduling modals */
+
+.styled-checkbox { 
+    display: inline-flex; 
+    align-items: center; 
+    cursor: pointer; 
+    position: relative; 
+    -webkit-user-select: none; 
+    -moz-user-select: none; 
+    -ms-user-select: none; 
+    user-select: none; 
+}
+.styled-checkbox input[type="checkbox"] { 
+    opacity: 0; 
+    width: 0; 
+    height: 0; 
+    position: absolute; 
+}
+.styled-checkbox label { 
+    padding-left: 28px; 
+    font-weight: normal; 
+    margin-bottom: 0; 
+    cursor: pointer; 
+}
+.styled-checkbox label::before { 
+    content: ''; 
+    position: absolute; 
+    left: 0; 
+    top: 50%; 
+    transform: translateY(-50%); 
+    width: 18px; 
+    height: 18px; 
+    border: 2px solid #adb5bd; 
+    border-radius: 3px; 
+    background-color: #fff; 
+    transition: all 0.2s ease; 
+}
+.styled-checkbox label::after { 
+    content: '\f00c'; 
+    font-family: "Font Awesome 6 Free"; 
+    font-weight: 900; 
+    position: absolute; 
+    left: 3px; 
+    top: 50%; 
+    transform: translateY(-50%) scale(0); 
+    font-size: 14px; 
+    color: white; 
+    transition: transform 0.2s ease; 
+}
+.styled-checkbox input[type="checkbox"]:checked + label::before { 
+    background-color: #006400; 
+    border-color: #004d00; 
+}
+.styled-checkbox input[type="checkbox"]:checked + label::after { 
+    transform: translateY(-50%) scale(1); 
+}
+
+.modal-content .checkbox-group {
     display: flex;
     flex-wrap: wrap;
     gap: 10px 20px;
-    padding: 8px 0;
+    padding-top: 8px;
     justify-content: flex-start;
-}
-.styled-checkbox { display: inline-flex; align-items: center; cursor: pointer; position: relative; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
-.styled-checkbox input[type="checkbox"] { opacity: 0; width: 0; height: 0; position: absolute; }
-.styled-checkbox label { padding-left: 28px; font-weight: normal; margin-bottom: 0; cursor: pointer; }
-.styled-checkbox label::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; border: 2px solid #adb5bd; border-radius: 3px; background-color: #fff; transition: all 0.2s ease; }
-.styled-checkbox label::after { content: '\f00c'; font-family: "Font Awesome 6 Free"; font-weight: 900; position: absolute; left: 3px; top: 50%; transform: translateY(-50%) scale(0); font-size: 14px; color: white; transition: transform 0.2s ease; }
-.styled-checkbox input[type="checkbox"]:checked + label::before { background-color: #006400; border-color: #004d00; }
-.styled-checkbox input[type="checkbox"]:checked + label::after { transform: translateY(-50%) scale(1); }
-
-
-/* --- REVISED: Modal Styling Enhancements --- */
-
-/* 1. Set consistent styling for all form sections (fieldsets) */
-.modal-content form .form-section {
-    margin-bottom: 15px;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
-    padding: 15px;
-    background-color: #f0f4f8; 
-}
-
-/* 2. Style the legends for all our fieldsets */
-.modal-content form .form-section legend {
-    font-weight: 600;
-    color: #495057;
-    padding: 0 8px;
-    font-size: 0.9em;
-    background-color: #f0f4f8; 
-}
-
-/* 3. Make the time sections shorter */
-.modal-content .time-group {
-    padding-top: 10px;
-    padding-bottom: 0; 
-}
-.modal-content .time-group .form-row {
-    margin-bottom: 0;
-}
-.modal-content .time-group .form-item {
-    min-width: calc(50% - 10px);
-}
-
-/* 4. Adjust padding inside other sections */
-.modal-content .form-section .checkbox-group {
-    padding: 0;
-    margin-top: -5px;
-}
-.modal-content .auto-lunch-group {
-    padding-bottom: 5px;
-}
-.modal-content .auto-lunch-group .form-item {
-     margin-bottom: 12px;
-}
-
-/* Style time inputs to match all other inputs */
-.modal-content input[type="time"] {
-    width: 100%;
-    padding: 9px 12px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    box-sizing: border-box;
-    font-size: 0.95em;
-    height: 40px;
-    background-color: #fff;
-    font-family: inherit;
 }

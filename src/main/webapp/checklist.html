@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Checklist</title>
+</head>
+<body style="width: 90%; margin: auto; font-family: Arial, sans-serif; line-height: 1.6;">
+<h1>Mobile App Testing Checklist</h1>
+1. Prerequisites<br><br>
+<ol>
+<li>Phone and computer on same WiFi network</li>
+<li>Expo Go app installed on phone</li>
+<li>Eclipse running with your Java web app at localhost:8082</li>
+</ol>
+ <br>
+ 
+2. Starting Development Server<br><br>
+<ol>
+<li>Open PowerShell/Terminal</li>
+<li>Navigate to project: cd C:\MobileApps\TimeclockApp</li>
+<li>Start Expo: npx expo start</li>
+<li>Wait for QR code to appear in terminal</li>
+</ol><br>
+3. Connect Phone to Development Server<br>
+
+ <ol>
+ <li>Open Expo Go app on phone </li>
+ <li>Option A: Scan QR code from terminal</li>
+ <li>Option B: Manual entry - look for URL like exp://
+ <li>Wait for QR code to appear in terminal
+ </ol>
+
+6. When Making Code Changes
+
+<ol>
+<li>Save file in VS Code</li>
+<li>Press r in terminal to reload app</li>
+<li>Check phone for updates<li>
+</li></ol>
+
+7. If Connection Lost
+<ol>
+<li>Press Ctrl+C in terminal to stop server</li>
+<li>Run npx expo start again</li>
+<li>Reconnect phone using QR code or manual URL</li>
+</ol>
+
+8. Troubleshooting
+
+<ol>
+<li>If 404 errors: Check Eclipse server is running</li>
+<li>If network errors: Verify both devices on same WiFi</li>
+<li>If app won't update: Try r to reload, or restart Expo server</li>
+</ol>
+
+Order: Eclipse server first, then Expo server, then connect phone.
+
+</body>
+</html>

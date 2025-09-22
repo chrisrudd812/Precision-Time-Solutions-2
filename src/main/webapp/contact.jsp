@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contact Us</title>
     <%@ include file="/WEB-INF/includes/common-head.jspf" %>
-    <link rel="stylesheet" href="css/reports.css?v=<%= System.currentTimeMillis() %>">
 
     <style>
         /* --- Page Specific Styles --- */
@@ -16,6 +15,9 @@
             align-items: center;
             gap: 20px;
             margin-top: 20px;
+            background-color: #ffffff;
+            padding: 25px;
+            border-radius: 8px;
         }
         .contact-info {
             text-align: center;
@@ -128,13 +130,13 @@
                         <input type="text" id="contactSubject" name="contactSubject" required>
                     </div>
                     <div class="form-group">
-                        <label for="contactMessage">Message</label>
+                        <label for="contactMessage" style="padding-top: 25px">Message</label>
                         <textarea id="contactMessage" name="contactMessage" required></textarea>
                     </div>
 
                     <div class="form-group">
-                        <label>Attach a Screenshot (Optional)</label>
-                        <label for="fileAttachment" class="file-input-wrapper">
+                        <label style="padding-top: 25px">Attach a Screenshot (Optional)</label>
+                        <label for="fileAttachment" class="file-input-wrapper"">
                             <div><i class="fas fa-cloud-upload-alt"></i> Click to browse or drag & drop a file</div>
                             <div id="fileNameDisplay">No file selected</div>
                         </label>
@@ -142,7 +144,7 @@
                     </div>
                     
                     <div class="form-group">
-                        <button type="submit" class="glossy-button text-blue" style="width: 100%;">
+                        <button type="submit" class="glossy-button text-blue" style="width: 100%; margin-top: 15px;">
                             <i class="fas fa-paper-plane"></i> Send Message
                         </button>
                     </div>

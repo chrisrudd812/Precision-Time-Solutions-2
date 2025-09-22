@@ -1,0 +1,95 @@
+<%-- /WEB-INF/includes/punches-modals.jspf --%>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+
+<%-- Add Hours / Add Timed Punch Modal --%>
+<div id="addHoursModal" class="modal">
+    <div class="modal-content modal-form-green-state">
+        <form id="addHoursForm" action="AddEditAndDeletePunchesServlet" method="POST">
+            <input type="hidden" name="action" value="addHours">
+            <input type="hidden" name="eid" id="addHours_eidInput">
+            <input type="hidden" name="userTimeZone" value="<%= escapeHtml(userTimeZoneId) %>">
+            <div class="modal-header">
+                <h2 id="addHoursModalTitle" class="modal-title-success"><i class="fas fa-plus-circle"></i> <span>Add Entry</span></h2>
+            </div>
+            <div class="modal-body">
+                <div class="form-body-container">
+                    <div class="form-item">
+                        <label for="addHours_dateInput">Date <span class="required-asterisk">*</span></label>
+                        <input type="date" name="punchDate" id="addHours_dateInput" required>
+                    </div>
+                    <div class="form-item">
+                        <label for="addHours_typeSelect">Type <span class="required-asterisk">*</span></label>
+                        <select name="punchType" id="addHours_typeSelect" required></select>
+                    </div>
+                    <div id="addHours_timeFieldsRowDiv" class="form-row" style="display:none;">
+                        <div class="form-item"><label>Time In <span class="required-asterisk">*</span></label><input type="time" name="timeIn" id="addHours_timeInInput" step="1"></div>
+                        <div class="form-item"><label>Time Out</label><input type="time" name="timeOut" id="addHours_timeOutInput" step="1"></div>
+                    </div>
+                    <div id="addHours_totalHoursDiv" class="form-item" style="display:none;">
+                        <label for="addHours_totalHoursInput">Total Hours <span class="required-asterisk">*</span></label>
+                        <input type="number" name="totalHoursManual" id="addHours_totalHoursInput" step="0.01" min="0.01" max="24">
+                    </div>
+                </div>
+            </div>
+            <div class="button-row">
+                <button type="button" class="glossy-button text-red close-modal-btn"><i class="fas fa-times"></i> Cancel</button>
+                <button type="submit" class="glossy-button text-green"><i class="fas fa-save"></i> Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<%-- Edit Punch Record Modal --%>
+<div id="editPunchModal" class="modal">
+    <div class="modal-content modal-form-yellow-state">
+        <form id="editPunchForm" action="AddEditAndDeletePunchesServlet" method="POST">
+            <input type="hidden" name="action" value="editPunch">
+            <input type="hidden" name="punchId" id="editPunch_idInput">
+            <input type="hidden" name="editEmployeeId" id="editPunch_eidInput">
+            <input type="hidden" name="userTimeZone" value="<%= escapeHtml(userTimeZoneId) %>">
+            <div class="modal-header">
+                <h2 class="modal-title-warning"><i class="fas fa-edit"></i> <span>Edit Punch Record</span></h2>
+            </div>
+            <div class="modal-body">
+                <div class="form-body-container">
+                    <div class="form-item">
+                        <label for="editPunch_dateInput">Date <span class="required-asterisk">*</span></label>
+                        <input type="date" name="editDate" id="editPunch_dateInput" required>
+                    </div>
+                    <div class="form-item" id="editPunch_punchTypeContainer">
+                        <label for="editPunch_typeSelect">Punch Type</label>
+                        <select name="editPunchType" id="editPunch_typeSelect" required></select>
+                    </div>
+                    <div class="form-row" id="editPunch_timeFieldsRowDiv">
+                        <div class="form-item"><label>Time In</label><input type="time" name="editInTime" id="editPunch_timeInInput" step="1"></div>
+                        <div class="form-item"><label>Time Out</label><input type="time" name="editOutTime" id="editPunch_timeOutInput" step="1"></div>
+                    </div>
+                    <div class="form-item" id="editPunch_totalHoursDiv" style="display:none;">
+                        <label for="editPunch_totalHoursInput">Total Hours <span class="required-asterisk">*</span></label>
+                        <input type="number" name="totalHoursManual" id="editPunch_totalHoursInput" step="0.01" min="0.01" max="24">
+                    </div>
+                </div>
+            </div>
+            <div class="button-row">
+                <button type="submit" class="glossy-button text-green"><i class="fas fa-save"></i> Save Changes</button>
+                <button type="button" class="glossy-button text-red close-modal-btn"><i class="fas fa-times"></i> Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+    
+<%-- Confirmation Modal (for Deleting) --%>
+<div id="confirmationModal" class="modal modal-state-error">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="confirmationModalTitle" class="modal-title-error"><i class="fas fa-exclamation-triangle"></i> <span>Confirm Action</span></h2>
+        </div>
+        <div class="modal-body">
+            <p id="confirmationModalMessage"></p>
+        </div>
+        <div class="button-row">
+            <button type="button" id="cancelDeleteBtn" class="glossy-button text-red"><i class="fas fa-times"></i> Cancel</button>
+            <button type="button" id="confirmDeleteBtn" class="glossy-button text-green"><i class="fas fa-check"></i> Confirm</button>
+        </div>
+    </div>
+</div>

@@ -1,6 +1,6 @@
-// js/account.js - vFinalFixes_Complete
+// js/account.js - vFinalWithCorrectUpdate
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("account.js loaded (vFinalFixes_Complete).");
+    console.log("account.js loaded (vFinalWithCorrectUpdate).");
 
     // --- Element Selectors ---
     const editCompanyDetailsBtn = document.getElementById('editCompanyDetailsBtn');
@@ -15,17 +15,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const editCompanyDetailsModal = document.getElementById('editCompanyDetailsModal');
     const updateCompanyDetailsForm = document.getElementById('updateCompanyDetailsForm');
     
-    const notificationModal = document.getElementById('notificationModalGeneral');
-
     const billingRequiredModal = document.getElementById('billingRequiredModal');
     const billingModalMessageElement = document.getElementById('billingRequiredModalMessage');
     const billingModalManageButton = document.getElementById('billingModalManageButton');
     
-    // ## NEW: Selector for the new Lifetime Access Modal ##
     const lifetimeAccessModal = document.getElementById('lifetimeAccessModal');
 
-
-    // Function to handle checking subscription status after returning from portal
     function checkSubscriptionStatus() {
         const notificationDiv = document.getElementById('subscriptionStatusMessage');
         if (!notificationDiv) return;
@@ -57,8 +52,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-
-    // --- Event Listener Setup ---
     if (verifyAdminEmailField && window.primaryCompanyAdminEmail) {
         verifyAdminEmailField.value = window.primaryCompanyAdminEmail;
     }
@@ -75,14 +68,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (manageBillingBtn) {
-        // ## MODIFIED LOGIC FOR BILLING BUTTON ##
         manageBillingBtn.addEventListener('click', function() {
-            // Check the subscription status passed from the JSP
             if (typeof currentSubscriptionStatus !== 'undefined' && currentSubscriptionStatus === 'Active - Lifetime Promo') {
-                // If it's a lifetime plan, show the special modal
                 showModal(lifetimeAccessModal);
             } else {
-                // Otherwise, proceed with the normal password verification flow
                 if (verificationNextAction) verificationNextAction.value = 'redirectToPortal';
                 if (verifyAdminCurrentPasswordField) verifyAdminCurrentPasswordField.value = "";
                 showModal(verifyAdminPasswordModal);
@@ -101,7 +90,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const submitButton = this.querySelector('button[type="submit"]');
 
             if (!password) {
-                showPageNotification("Password is required.", true, notificationModal, "Error");
+                showPageNotification("Password is required.", 'error', null, "Error");
                 return;
             }
             if (submitButton) submitButton.disabled = true;
@@ -121,12 +110,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         fetchAndPopulateCompanyDetails();
                     }
                 } else {
-                    showPageNotification(data.error || "Incorrect password.", true, notificationModal, "Verification Failed");
+                    showPageNotification(data.error || "Incorrect password.", 'error', null, "Verification Failed");
                 }
             })
             .catch(error => {
                 console.error("Error during verification fetch:", error);
-                showPageNotification("An error occurred during verification.", true, notificationModal, "Error");
+                showPageNotification("An error occurred during verification.", 'error', null, "Error");
             })
             .finally(() => {
                 if (submitButton) submitButton.disabled = false;
@@ -149,7 +138,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('editCompanyZip').value = details.companyZip || '';
                     showModal(editCompanyDetailsModal);
                 } else {
-                     showPageNotification("Could not load company details for editing.", true, notificationModal, "Error");
+                     showPageNotification("Could not load company details for editing.", 'error', null, "Error");
                 }
             });
     }
@@ -169,15 +158,32 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 if(data.success) {
                     hideModal(editCompanyDetailsModal);
-                    showPageNotification(data.message || "Company details updated!", false, notificationModal, "Success");
-                    setTimeout(() => window.location.reload(), 2000);
+                    
+                    // MODIFIED: This logic runs AFTER the save is successful
+                    const newAddress = document.getElementById('editCompanyAddress').value;
+                    const newCity = document.getElementById('editCompanyCity').value;
+                    const newState = document.getElementById('editCompanyState').value;
+                    const newZip = document.getElementById('editCompanyZip').value;
+                    const newPhone = document.getElementById('editCompanyPhone').value;
+                    
+                    const displayAddress = document.getElementById('displayCompanyAddress');
+                    const displayPhone = document.getElementById('displayCompanyPhone');
+
+                    if (displayAddress) {
+                        displayAddress.textContent = `${newAddress}, ${newCity}, ${newState} ${newZip}`;
+                    }
+                    if (displayPhone) {
+                        displayPhone.textContent = newPhone;
+                    }
+                    
+                    showPageNotification(data.message || "Company details updated!", 'success', null, "Success");
                 } else {
-                    showPageNotification(data.error || "Failed to update details.", true, notificationModal, "Update Failed");
+                    showPageNotification(data.error || "Failed to update details.", 'error', null, "Update Failed");
                 }
             })
             .catch(error => {
                 console.error("Error updating company details:", error);
-                showPageNotification("An error occurred during the update.", true, notificationModal, "Error");
+                showPageNotification("An error occurred during the update.", 'error', null, "Error");
             })
             .finally(() => {
                  if (submitButton) submitButton.disabled = false;
@@ -201,7 +207,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // --- Page Load Logic ---
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('from_portal') === 'true') {
         checkSubscriptionStatus();
@@ -214,7 +219,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Add phone formatting for company phone field
     const editCompanyPhoneInput = document.getElementById('editCompanyPhone');
     if (editCompanyPhoneInput) {
         editCompanyPhoneInput.addEventListener('input', function(event) {

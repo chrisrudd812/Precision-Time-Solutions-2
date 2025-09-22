@@ -27,7 +27,6 @@
                     .replace("'", "&#39;");
     }
      private String escapeForJavaScriptString(String input) {
- 
         if (input == null) return "";
         return input.replace("\\", "\\\\")
                     .replace("\"", "\\\"")
@@ -39,6 +38,11 @@
     }
 %>
 <%
+    // Check if navbar should be hidden
+    String hideNavParam = request.getParameter("hideNav");
+    boolean hideNavbar = "true".equalsIgnoreCase(hideNavParam);
+    
+    // This entire block of Java scriptlet code remains unchanged.
     HttpSession punchesSession = request.getSession(false);
     Integer tenantId = null;
     String userPermissions = null;
@@ -121,7 +125,6 @@
         pageError = (pageError == null || pageError.isEmpty()) ? tzErrorMsg : pageError + " " + tzErrorMsg;
     }
     jspPunchesLogger.info("[punches_JSP_TZ] Punches.jsp final effective userTimeZoneId for display: " + userTimeZoneId + " for Admin EID: " + adminEidForLog);
-    
     StringBuilder punchTableHtmlBuilder = new StringBuilder();
     String employeeNameForDisplay = "N/A";
     double periodTotalHoursForDisplay = 0.0;
@@ -165,7 +168,6 @@
             if (employeeInfo.get("autoLunch") != null) autoLunchStatus = (Boolean) employeeInfo.get("autoLunch");
             if (employeeInfo.get("lunchLength") != null) lunchLengthForDisplay = (Integer) employeeInfo.get("lunchLength");
 
-            // *** BUG FIX: Safely cast the 'hoursRequired' value to a Double ***
             if (employeeInfo.get("hoursRequired") != null) {
                 Object hrsReqObj = employeeInfo.get("hoursRequired");
                 if (hrsReqObj instanceof Number) {
@@ -187,7 +189,6 @@
                             punchTableHtmlBuilder.append("<tr data-punch-id=\"").append(escapeHtml(punch.get("punchId"))).append("\" data-date=\"").append(escapeHtml(punch.get("punchDate"))).append("\" data-timein=\"").append(escapeHtml(punch.get("timeInRaw"))).append("\" data-timeout=\"").append(escapeHtml(punch.get("timeOutRaw"))).append("\" data-totalhours=\"").append(escapeHtml(punch.get("totalHours"))).append("\" data-type=\"").append(escapeHtml(punch.get("punchType"))).append("\" data-eid=\"").append(eidToLoad).append("\">");
                             punchTableHtmlBuilder.append("<td>").append(escapeHtml(punch.get("friendlyPunchDate"))).append("</td>");
                             punchTableHtmlBuilder.append("<td>").append(escapeHtml(punch.get("dayOfWeek"))).append("</td>");
-                            // The timeIn and timeOut values now come pre-wrapped with HTML from ShowPunches.java
                             punchTableHtmlBuilder.append("<td>").append(punch.get("timeIn")).append("</td>");
                             punchTableHtmlBuilder.append("<td>").append(punch.get("timeOut")).append("</td>");
                             punchTableHtmlBuilder.append("<td style=\"text-align:right;\">").append(escapeHtml(punch.get("totalHours"))).append("</td>");
@@ -222,10 +223,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Employee Punches</title>
     <%@ include file="/WEB-INF/includes/common-head.jspf" %>
+    <%-- ADDED link to modals.css --%>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/modals.css?v=<%= System.currentTimeMillis() %>">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/punches.css?v=<%= System.currentTimeMillis() %>">
 </head>
-<body class="reports-page">
+<body class="reports-page<%= hideNavbar ? " no-navbar" : "" %>">
+    <% if (!hideNavbar) { %>
     <%@ include file="/WEB-INF/includes/navbar.jspf" %>
+    <% } %>
 
     <div class="parent-container reports-container">
         <h1><i class="fas fa-user-clock"></i> Edit Employee Punches</h1>
@@ -234,6 +239,7 @@
         <% if (pageMessage != null) { %><div id="pageNotificationDiv_Success_Punches" class="page-message success-message"><%= escapeHtml(pageMessage) %></div><% } %>
 
         <form method="GET" action="punches.jsp" id="filterPunchesForm" class="filter-form-punches">
+            <% if (hideNavbar) { %><input type="hidden" name="hideNav" value="true"><% } %>
             <div class="form-item">
                 <label for="employeeSelectPunches">Employee:</label>
                 <select name="eid" id="employeeSelectPunches" required onchange="this.form.submit()">
@@ -261,23 +267,24 @@
                          <span>(Threshold: <strong><%= String.format(Locale.US, "%.2f", hrsRequiredForLunchTrigger) %> hrs</strong>)</span>
                     <% } %>
                 <% } %>
+                <span class="instruction-text">💡 Click on a table row to edit that punch record</span>
             </div>
         <% } %>
 
-        <h3 class="employee-punches-title">Punches for: <%= employeeNameForDisplay %></h3>
+        <h3 class="employee-punches-title">Showing Punches For: <%= employeeNameForDisplay %></h3>
         
         <div class="report-display-area">
             <div class="table-container report-table-container punches-table-container">
                 <table id="punchesTable" class="report-table">
                     <thead>
-                        <tr>
+                         <tr>
                             <th class="sortable">Date</th>
                             <th class="sortable">Day</th>
                             <th class="sortable">Time In</th>
                             <th class="sortable">Time Out</th>
                             <th class="sortable">Total Hours</th>
                             <th class="sortable">Type</th>
-                        </tr>
+                         </tr>
                     </thead>
                     <tbody>
                         <%= punchTableHtmlBuilder.toString() %>
@@ -315,91 +322,18 @@
         <% } %>
     </div>
 
-    <div id="addHoursModal" class="modal">
-        <div class="modal-content">
-            <span class="close close-modal-btn">&times;</span>
-            <h2 id="addHoursModalTitle">Add Entry</h2>
-            <form id="addHoursForm" action="AddEditAndDeletePunchesServlet" method="POST">
-                <input type="hidden" name="action" value="addHours">
-                <input type="hidden" name="eid" id="addHours_eidInput" value="<%= eidToLoad %>">
-                <input type="hidden" name="userTimeZone" value="<%= escapeHtml(userTimeZoneId) %>">
-                <fieldset class="form-section">
-                    <legend>Date <span class="required-asterisk">*</span></legend>
-                    <input type="date" name="punchDate" id="addHours_dateInput" required>
-                </fieldset>
-                <fieldset class="form-section" id="addHours_punchTypeContainer">
-                    <legend>Type <span class="required-asterisk">*</span></legend>
-                    <select name="punchType" id="addHours_typeSelect" required></select>
-                </fieldset>
-                <fieldset class="form-section" id="addHours_timeFieldsRowDiv" style="display:none;">
-                    <div class="form-row" style="margin: 0;">
-                        <div class="form-item"><label>Time In <span class="required-asterisk">*</span></label><input type="time" name="timeIn" id="addHours_timeInInput" step="1"></div>
-                        <div class="form-item"><label>Time Out</label><input type="time" name="timeOut" id="addHours_timeOutInput" step="1"></div>
-                    </div>
-                </fieldset>
-                <fieldset class="form-section" id="addHours_totalHoursDiv" style="display:none;">
-                    <legend>Total Hours <span class="required-asterisk">*</span></legend>
-                    <input type="number" name="totalHoursManual" id="addHours_totalHoursInput" step="0.01" min="0.01" max="24">
-                </fieldset>
-                <div class="button-row">
-                    <button type="button" class="glossy-button text-red close-modal-btn">Cancel</button>
-                    <button type="submit" class="glossy-button text-green"><span>Save</span></button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div id="editPunchModal" class="modal">
-        <div class="modal-content">
-            <span class="close close-modal-btn">&times;</span>
-            <h2>Edit Punch Record</h2>
-            <form id="editPunchForm" action="AddEditAndDeletePunchesServlet" method="POST">
-                <input type="hidden" name="action" value="editPunch">
-                <input type="hidden" name="punchId" id="editPunch_idInput">
-                <input type="hidden" name="editEmployeeId" id="editPunch_eidInput" value="<%= eidToLoad %>">
-                <input type="hidden" name="userTimeZone" value="<%= escapeHtml(userTimeZoneId) %>">
-                <fieldset class="form-section">
-                    <legend>Date <span class="required-asterisk">*</span></legend>
-                    <input type="date" name="editDate" id="editPunch_dateInput" required>
-                </fieldset>
-                <fieldset class="form-section" id="editPunch_timeFieldsRowDiv">
-                    <div class="form-row" style="margin: 0;">
-                        <div class="form-item"><label>Time In</label><input type="time" name="editInTime" id="editPunch_timeInInput" step="1"></div>
-                        <div class="form-item"><label>Time Out</label><input type="time" name="editOutTime" id="editPunch_timeOutInput" step="1"></div>
-                    </div>
-                </fieldset>
-                <fieldset class="form-section" id="editPunch_totalHoursDiv" style="display:none;">
-                    <legend>Total Hours <span class="required-asterisk">*</span></legend>
-                    <input type="number" name="totalHoursManual" id="editPunch_totalHoursInput" step="0.01" min="0.01" max="24">
-                </fieldset>
-                <fieldset class="form-section" id="editPunch_punchTypeContainer">
-                    <legend>Punch Type</legend>
-                    <select name="editPunchType" id="editPunch_typeSelect" required></select>
-                </fieldset>
-                <div class="button-row">
-                    <button type="button" class="glossy-button text-red close-modal-btn">Cancel</button>
-                    <button type="submit" class="glossy-button text-blue">Save Changes</button>
-                </div>
-            </form>
-        </div>
-    </div>
-    
-    <div id="confirmationModal" class="modal">
-        <div class="modal-content">
-            <h2 id="confirmationModalTitle">Confirm Action</h2>
-            <p id="confirmationModalMessage" style="padding: 20px 25px; text-align: center; line-height: 1.5; margin: 0;"></p>
-            <div class="button-row">
-                <button type="button" id="cancelDeleteBtn" class="glossy-button text-grey">Cancel</button>
-                <button type="button" id="confirmDeleteBtn" class="glossy-button text-red">Confirm</button>
-            </div>
-        </div>
-    </div>
-
+    <%-- MODIFIED: Removed inline modals and added new includes --%>
+    <%@ include file="/WEB-INF/includes/modals.jspf" %>
+    <%@ include file="/WEB-INF/includes/punches-modals.jspf" %>
     <%@ include file="/WEB-INF/includes/common-scripts.jspf" %>
-    <%@ include file="/WEB-INF/includes/notification-modals.jspf" %>
+    
     <script>
         window.SELECTED_EID_ON_LOAD = <%= eidToLoad %>;
         window.EFFECTIVE_TIME_ZONE_ID = "<%= escapeForJavaScriptString(userTimeZoneId) %>";
+        <% if (currentPayPeriodStartDate != null && currentPayPeriodEndDate != null) { %>
+        window.PAY_PERIOD_START = "<%= currentPayPeriodStartDate.toString() %>";
+        window.PAY_PERIOD_END = "<%= currentPayPeriodEndDate.toString() %>";
+        <% } %>
     </script>
     <script src="${pageContext.request.contextPath}/js/punches.js?v=<%= System.currentTimeMillis() %>"></script>
 </body>

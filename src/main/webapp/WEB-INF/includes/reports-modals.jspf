@@ -1,0 +1,72 @@
+<%-- /WEB-INF/includes/reports-modals.jspf --%>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%
+    String userTimeZoneId_reports = "UTC";
+    HttpSession reportsModalSession = request.getSession(false);
+    if (reportsModalSession != null) {
+        Object userTimeZoneIdObj = reportsModalSession.getAttribute("userTimeZoneId");
+        if (userTimeZoneIdObj instanceof String && !((String)userTimeZoneIdObj).trim().isEmpty()) {
+            userTimeZoneId_reports = (String) userTimeZoneIdObj;
+        }
+    }
+%>
+
+<%-- Edit Punch Modal (from Reports) --%>
+<div id="editPunchModalReports" class="modal">
+    <div class="modal-content modal-form-yellow-state">
+        <form id="editPunchFormReports" action="<%= request.getContextPath() %>/AddEditAndDeletePunchesServlet" method="post">
+            <input type="hidden" id="reports_editPunchIdField" name="editPunchId">
+            <input type="hidden" name="action" value="editPunch">
+            <input type="hidden" id="reports_editEmployeeIdField" name="editEmployeeId">
+            <input type="hidden" id="reports_editUserTimeZone" name="userTimeZone" value="<%= userTimeZoneId_reports %>">
+            <input type="hidden" name="editPunchType" value="Supervisor Override">
+            
+            <div class="modal-header">
+                <h2 class="modal-title-warning"><i class="fas fa-edit"></i> <span>Edit Punch Record</span></h2>
+            </div>
+            
+            <div class="modal-body">
+                <div class="form-body-container">
+                    <div class="edit-punch-info" style="background-color: #ffffff; border: 1px solid #dee2e6; border-radius: 4px; padding: 15px; margin-bottom: 20px;">
+                        <p><strong>Employee:</strong> <span id="reports_editPunchEmployeeName"></span></p>
+                        <p><strong>Schedule:</strong> <span id="reports_editPunchScheduleInfo"></span></p>
+                    </div>
+                    <div class="form-item">
+                        <label for="reports_editDate">Date <span class="required-asterisk">*</span></label>
+                        <input type="date" id="reports_editDate" name="editDate" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-item">
+                            <label for="reports_editInTime">IN Time (HH:MM:SS)</label>
+                            <input type="time" id="reports_editInTime" name="editInTime" step="1">
+                        </div>
+                         <div class="form-item">
+                            <label for="reports_editOutTime">OUT Time (HH:MM:SS)</label>
+                            <input type="time" id="reports_editOutTime" name="editOutTime" step="1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="button-row">
+                <button type="submit" class="glossy-button text-green"><i class="fas fa-save"></i> Save Changes</button>
+                <button type="button" class="cancel-btn glossy-button text-red"><i class="fas fa-times"></i> Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<%-- Upgrade Plan Modal --%>
+<div id="upgradePlanModal" class="modal modal-state-error">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title-error"><i class="fas fa-exclamation-circle"></i> <span>User Limit Reached</span></h2>
+        </div>
+        <div class="modal-body">
+            <p id="upgradePlanModalMessage"></p>
+        </div>
+        <div class="button-row">
+            <button type="button" class="cancel-btn glossy-button text-red">Cancel</button>
+            <a href="account.jsp?highlight=billing" class="glossy-button text-green">Upgrade Plan</a>
+        </div>
+    </div>
+</div>

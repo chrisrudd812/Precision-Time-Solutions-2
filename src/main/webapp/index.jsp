@@ -1,5 +1,7 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<%@ page import="java.sql.*, java.util.*, timeclock.db.DatabaseConnection" %>
+<%@ page import="java.sql.*" %>
+<%@ page import="java.util.*" %>
+<%@ page import="timeclock.db.DatabaseConnection" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -16,7 +18,7 @@
     <header class="landing-header">
         <div class="container">
             <div class="logo">
-                <img src="<%= request.getContextPath() %>/Images/logo2.png" alt="Precision Time Solutions Logo" class="logo-image-header">
+                <img src="<%= request.getContextPath() %>/Images/logo.png" alt="Precision Time Solutions Logo" class="logo-image-header">
             </div>
             <div class="header-title">
                 Precision Time Solutions
@@ -118,7 +120,7 @@
                         <% if (isMostPopular) { %>
                             <div class="popular-badge">Most Popular</div>
                         <% } %>
-                        <img src="<%= request.getContextPath() %>/Images/logo2.png" alt="Logo" class="pricing-logo">
+                        <img src="<%= request.getContextPath() %>/Images/logo.png" alt="Logo" class="pricing-logo">
                         <h3><%= plan.get("title") %></h3>
                         <p class="description"><%= plan.get("description") %></p>
                         <p class="price">$<%= plan.get("price") %><span>/ per month</span></p>

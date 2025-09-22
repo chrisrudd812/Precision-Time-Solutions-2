@@ -80,21 +80,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>Reports</title>
-    <link rel="stylesheet" href="css/navbar.css?v=<%= System.currentTimeMillis() %>">
-    <link rel="stylesheet" href="css/reports.css?v=<%= System.currentTimeMillis() %>">
+    <%@ include file="/WEB-INF/includes/common-head.jspf" %>
+    <link rel="stylesheet" href="css/modals.css?v=<%= System.currentTimeMillis() %>">
+    <%-- No separate reports.css needed if all styles are minor or can be in common.css --%>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
-<body class="reports-page">
+<body>
     <%@ include file="/WEB-INF/includes/navbar.jspf" %>
 
-    <div class="parent-container reports-container">
+    <div class="parent-container">
         <h1>Reports</h1>
 
         <% if (pageError != null) { %>
             <div class="page-message error-message" id="pageErrorNotification"><%= escapeJspHtml(pageError) %></div>
         <% } %>
 
-        <div class="report-display-area">
+        <div class="content-display-area">
             <h2 id="reportTitle" class="report-title">
                 <%= reportSelected ? "Loading Report..." : "Select Report" %>
             </h2>
@@ -103,8 +104,7 @@
             </p>
 
             <div id="reportActions" class="report-actions" style="display: none;">
-                <div id="reportSpecificFilters">
-                    </div>
+                <div id="reportSpecificFilters"></div>
                 <div class="action-buttons-group">
                     <button id="fixMissingPunchesBtnReports" class="glossy-button text-orange" style="display: none;" disabled>
                         <i class="fas fa-edit"></i> Fix Missing Punches
@@ -137,69 +137,26 @@
 
             <div id="reportOutput" class="report-output">
                 <% if (!reportSelected) { %>
-                    <p class="report-placeholder">Report results will appear here once selected from the menu.</p>
+                     <p class="report-placeholder">Report results will appear here once selected from the menu.</p>
                 <% } %>
             </div>
          </div>
     </div> <%-- End parent-container --%>
 
-    <div id="editPunchModalReports" class="modal">
-        <div class="modal-content">
-            <span class="close" id="closeEditPunchModalReports">&times;</span>
-            <h2>Edit Punch Record</h2>
-            <div class="edit-punch-info">
-                <p><strong>Employee:</strong> <span id="reports_editPunchEmployeeName"></span></p>
-                 <p><strong>Schedule:</strong> <span id="reports_editPunchScheduleInfo"></span></p>
-            </div>
-            <form id="editPunchFormReports" action="AddEditAndDeletePunchesServlet" method="post">
-                <input type="hidden" id="reports_editPunchIdField" name="editPunchId">
-                <input type="hidden" name="action" value="editPunch">
-                <input type="hidden" id="reports_editEmployeeIdField" name="editEmployeeId">
-                 <input type="hidden" id="reports_editUserTimeZone" name="userTimeZone" value="<%= escapeJspHtml(userTimeZoneId) %>">
-                 <input type="hidden" name="editPunchType" value="Supervisor Override">
-                 <div class="form-item">
-                    <label for="reports_editDate">Date: <span class="required-asterisk">*</span></label>
-                    <input type="date" id="reports_editDate" name="editDate" required>
-                </div>
-                <div class="form-item">
-                    <label for="reports_editInTime">IN Time (HH:MM:SS):</label>
-                    <input type="time" id="reports_editInTime" name="editInTime" step="1">
-                </div>
-                 <div class="form-item">
-                    <label for="reports_editOutTime">OUT Time (HH:MM:SS):</label>
-                    <input type="time" id="reports_editOutTime" name="editOutTime" step="1">
-                </div>
-            </form>
-             <div class="button-row">
-                <button type="submit" form="editPunchFormReports" class="glossy-button text-green">
-                    <i class="fas fa-save"></i> Save Changes
-                </button>
-                <button type="button" id="reports_cancelEditPunch" class="glossy-button text-red">
-                     <i class="fas fa-times"></i> Cancel
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <%@ include file="/WEB-INF/includes/notification-modals.jspf" %>
-    
-    <div id="upgradePlanModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2 id="upgradePlanModalTitle" style="color: #c82333;">User Limit Reached</h2>
-            <p id="upgradePlanModalMessage" style="padding: 15px 20px; text-align: center; line-height:1.6;"></p>
-            <div class="button-row">
-                <button type="button" id="upgradePlanCancelBtn" class="glossy-button text-red">Cancel</button>
-                <a href="account.jsp?highlight=billing" id="upgradePlanGoBtn" class="glossy-button text-green">Upgrade Plan</a>
-            </div>
-        </div>
-    </div>
+    <%@ include file="/WEB-INF/includes/modals.jspf" %>
+    <%@ include file="/WEB-INF/includes/reports-modals.jspf" %>
 
     <script type="text/javascript">
-        // [FIX] Added appRootPath for correct servlet URL construction
         window.appRootPath = "<%= request.getContextPath() %>";
-        const effectiveUserTimeZoneId = "<%= escapeJspHtml(userTimeZoneId) %>";
         const initialReport = "<%= initialReportType != null ? escapeJspHtml(initialReportType) : "" %>";
+        <%
+            String startDateStr = Configuration.getProperty(tenantId, "PayPeriodStartDate");
+            String endDateStr = Configuration.getProperty(tenantId, "PayPeriodEndDate");
+            if (ShowPunches.isValid(startDateStr) && ShowPunches.isValid(endDateStr)) {
+        %>
+        window.PAY_PERIOD_START = "<%= startDateStr.trim() %>";
+        window.PAY_PERIOD_END = "<%= endDateStr.trim() %>";
+        <% } %>
     </script>
     <%@ include file="/WEB-INF/includes/common-scripts.jspf" %>
     <script type="text/javascript" src="js/reports.js?v=<%= System.currentTimeMillis() %>"></script>

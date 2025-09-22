@@ -1,0 +1,209 @@
+/* === css/modals.css === */
+/* This file contains all common modal styling for your application. */
+
+
+.required-asterisk {
+    color: #dc3545 !important;
+    font-weight: bold;
+}
+
+.modal { 
+    display: none !important; 
+    position: fixed; 
+    z-index: 10080; 
+    left: 0; 
+    top: 0; 
+    width: 100%; 
+    height: 100%; 
+    overflow: auto; 
+    background-color: rgba(0,0,0,0.6); 
+}
+
+.modal.modal-visible { 
+    display: flex !important; 
+    align-items: center; 
+    justify-content: center; 
+}
+
+.modal-content {
+    background-color: #fff; 
+    border-radius: 8px; 
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3); 
+    width: auto; 
+    min-width: 400px; 
+    max-width: 600px; 
+    max-height: 90vh; 
+    position: relative; 
+    display: flex; 
+    flex-direction: column; 
+    overflow: hidden;
+    text-align: center;
+}
+
+.modal-form-yellow-state .modal-header,
+.modal-form-yellow-state .button-row {
+    background: linear-gradient(to bottom, #fefce8, #fef9c3);
+}
+
+/* NEW: Add this rule for the blue themed modal */
+.modal-form-blue-state .modal-header,
+.modal-form-blue-state .button-row {
+    background: linear-gradient(to bottom, #f0f9ff, #e0f2fe);
+}
+.modal-form-blue-state .modal-header h2 {
+    color: #1e40af;
+}
+
+
+/* Modal Header (Title Area) */
+.modal-header {
+    padding: 18px 25px; 
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-header h2 {
+    margin: 0; 
+    font-size: 1.5em; 
+    font-weight: 600; 
+    display: flex;
+    align-items: center; 
+    justify-content: center; 
+    gap: 10px;
+    cursor: move;
+    user-select: none;
+}
+
+/* Modal Body (Content/Message Area) */
+.modal-body {
+    background-color: #ffffff; 
+    padding: 25px; 
+    line-height: 1.6;
+    overflow-y: auto; 
+    flex-grow: 1;
+}
+
+/* Modal Button Area */
+.modal-content .button-row {
+    padding: 20px 25px 25px; 
+    margin-top: 0; 
+    border-top: 1px solid #e5e7eb;
+    display: flex; 
+    gap: 15px; 
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.modal-content .button-row .glossy-button {
+    flex: 1 1 0;
+}
+
+/* Styling for forms inside a modal */
+.modal-body:has(.form-body-container) { 
+    padding: 25px 20px; 
+}
+
+.modal-body .form-body-container {
+    background-color: #f8fafc; 
+    border: 1px solid #e2e8f0; 
+    border-radius: 8px;
+    padding: 25px 20px 15px 20px;
+}
+
+.modal-body .form-body-container:not(:last-child) {
+    margin-bottom: 1.5rem;
+}
+
+.modal-content .form-item { 
+    text-align: left; 
+    margin-bottom: 1rem; 
+}
+
+.modal-content .form-row { 
+    display: flex; 
+    gap: 15px; 
+}
+
+.modal-content .form-row > .form-item {
+    flex: 1;
+}
+
+/* State-specific styles for different notification types */
+.modal-title-success { color: #166534; }
+.modal-title-warning { color: #b45309; }
+.modal-title-error { color: #b91c1c; }
+.modal-title-info { color: #1e40af; }
+
+/* State-specific backgrounds for header and footer */
+.modal-state-success .modal-header,
+.modal-state-success .button-row {
+    background: linear-gradient(to bottom, #f0fdf4, #e6fcf5);
+}
+
+.modal-state-error .modal-header,
+.modal-state-error .button-row {
+    background: linear-gradient(to bottom, #fef2f2, #feebeb);
+}
+
+.modal-state-warning .modal-header,
+.modal-state-warning .button-row {
+    background: linear-gradient(to bottom, #fefce8, #fef9c3);
+}
+
+.modal-form-green-state .modal-header,
+.modal-form-green-state .button-row {
+    background: linear-gradient(to bottom, #f0fdf4, #e6fcf5);
+}
+
+.modal-form-yellow-state .modal-header,
+.modal-form-yellow-state .button-row {
+    background: linear-gradient(to bottom, #fefce8, #fef9c3);
+}
+
+/* Legacy close button styling removed for cleaner modal design */
+
+/* === Toast Notification Styles === */
+#toast-notification-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    pointer-events: none;
+}
+.toast-notification {
+    background-color: #16a34a; /* MODIFIED: Default color is now theme green */
+    color: white;
+    padding: 12px 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out, transform 0.3s ease-in-out;
+    transform: translateY(20px);
+    min-width: 250px;
+    max-width: 350px;
+    margin-bottom: 10px;
+    text-align: center;
+    pointer-events: all;
+}
+.toast-notification:last-child {
+    margin-bottom: 0;
+}
+.toast-notification.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+.toast-notification.success {
+    background-color: #16a34a; /* MODIFIED: Set to theme green for consistency */
+}
+.toast-notification.error {
+    background-color: #dc2626; /* Kept as red for errors */
+}
+.toast-notification.info {
+    background-color: #16a34a; /* MODIFIED: Set to theme green for consistency */
+}

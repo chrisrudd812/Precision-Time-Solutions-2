@@ -1,0 +1,212 @@
+/* === css/configureDeviceRestrictions.css === */
+
+.config-container { 
+    max-width: 1000px;
+}
+
+.content-display-area.device-restrictions {
+    background: linear-gradient(to top, #f0fdfa, #f8fafc);
+}
+
+.form-actions { 
+    margin-top: 20px; 
+    display: flex; 
+    justify-content: flex-start;
+}
+
+.global-max-devices-section { 
+    margin-bottom: 25px; 
+    padding: 15px 25px; 
+    border: 1px solid #d1fae5; 
+    border-radius: 8px;
+    background-color: #f0fdf4; 
+    display: flex;
+    align-items: center; 
+    gap: 15px; 
+    flex-wrap: wrap;
+}
+
+.global-max-devices-section label { 
+    font-weight: bold; 
+    color: #065f46; 
+    margin-bottom: 0;
+    white-space: nowrap; 
+} 
+
+.global-max-devices-section input[type="number"] { 
+    width: 70px; 
+    padding: 8px; 
+    height: 38px;
+    text-align: center; 
+}
+
+.how-it-works-section {
+    margin-bottom: 25px;
+    padding: 20px;
+    background-color: #f0f9ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+}
+
+.how-it-works-section h3 {
+    margin: 0 0 15px 0;
+    color: #1e40af;
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+.how-it-works-section h3 .fas {
+    margin-right: 8px;
+}
+
+.explanation-content p {
+    margin: 0 0 12px 0;
+    font-size: 0.95em;
+    line-height: 1.5;
+    color: #374151;
+}
+
+.explanation-content p:last-child {
+    margin-bottom: 0;
+}
+
+.explanation-content strong {
+    color: #1f2937;
+}
+
+.setting-info-bar { 
+    margin-bottom: 20px; 
+    padding: 12px 18px; 
+    background-color: #fefce8;
+    border-left: 4px solid #facc15;
+    font-size: 0.95em; 
+    line-height: 1.5;
+}
+
+.employee-list-scroll-container { 
+    flex-grow: 1; 
+    max-height: 60vh; 
+    overflow-y: auto; 
+    border: 1px solid #e2e8f0;
+    border-radius: 4px; 
+    padding: 0 10px 10px 10px; 
+    margin-bottom: 20px; 
+    background: #f8fafc;
+} 
+
+.employee-section:first-child { 
+    margin-top: 10px;
+}
+
+.employee-section { 
+    margin-bottom: 20px; 
+    border: 1px solid #e2e8f0; 
+    border-radius: 5px; 
+    background-color: #ffffff;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+} 
+
+.employee-header { 
+    font-size: 1.15em; 
+    font-weight: 600; 
+    color: #1e3a8a; 
+    padding: 12px 15px;
+    border-bottom: 1px solid #e2e8f0;
+    background-color: #f7f9fc;
+    border-radius: 5px 5px 0 0;
+}
+.employee-header .fas {
+    margin-right: 8px;
+}
+
+.device-table { 
+    width: 100%; 
+    border-collapse: collapse;
+} 
+
+.device-table th, .device-table td { 
+    text-align: left; 
+    padding: 12px 15px; 
+    font-size: 0.9em; 
+    vertical-align: middle; 
+    border-bottom: 1px solid #f1f5f9;
+} 
+
+.device-table tr:last-child td {
+    border-bottom: none;
+}
+
+.device-table th { 
+    background-color: #f8f9fa;
+    color: #334155;
+    font-weight: 600;
+} 
+
+.device-table .description-input { 
+    width: 95%; 
+    padding: 6px 8px; 
+    font-size: 1em; 
+    border: 1px solid #cbd5e1; 
+    border-radius: 4px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.device-table .description-input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    outline: none;
+}
+
+.action-icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    font-size: 1.1em;
+    color: #64748b;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+.action-icon-btn:hover {
+    transform: scale(1.1);
+}
+.action-icon-btn.delete {
+    color: #991b1b;
+}
+.action-icon-btn.delete:hover {
+    color: #dc2626;
+}
+
+.no-devices { 
+    color: #64748b; 
+    font-style: italic; 
+    padding: 20px; 
+    text-align: center; 
+} 
+
+.status-indicator { 
+    display: inline-block; 
+    margin-left: 8px; 
+    font-size: 0.85em;
+    font-style: italic; 
+    min-width: 50px; 
+    text-align: left;
+    transition: color 0.3s ease;
+} 
+.status-indicator.global-max-status {
+    margin-left: 0;
+}
+.status-saved { color: #16a34a; } 
+.status-error { color: #dc2626; } 
+.status-typing { color: #64748b; font-style: normal; } 
+.status-saving { color: #2563eb; }
+
+/* Restore browser-default spinners for number inputs on this page */
+.global-max-devices-section input[type="number"] {
+    -moz-appearance: textfield; /* Firefox */
+    appearance: textfield;
+}
+
+.global-max-devices-section input[type="number"]::-webkit-inner-spin-button,
+.global-max-devices-section input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: inner-spin-button; /* Chrome, Safari, Edge, Opera */
+    opacity: 1;
+}

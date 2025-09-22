@@ -89,6 +89,9 @@ public class EmployeeInfoServlet extends HttpServlet {
             case "resetPassword":
                 handleResetPassword(request, response, tenantId, globalEid);
                 break;
+            case "getAllEmployees":
+                handleGetAllEmployees(request, response, tenantId);
+                break;
             default:
                 logger.warning("Unknown GET action: " + action);
                 response.sendRedirect("employees.jsp?error=" + URLEncoder.encode("Unknown action.", StandardCharsets.UTF_8));
@@ -173,6 +176,38 @@ public class EmployeeInfoServlet extends HttpServlet {
             response.sendRedirect("employees.jsp?eid=" + globalEid + "&error=" + URLEncoder.encode("Database error during PIN reset.", StandardCharsets.UTF_8));
         }
     }
+    private void handleGetAllEmployees(HttpServletRequest request, HttpServletResponse response, int tenantId) throws IOException {
+        JSONObject jsonResponse = new JSONObject();
+        String sql = "SELECT EID, FIRST_NAME, LAST_NAME, PERMISSIONS FROM employee_data WHERE TenantID = ? AND ACTIVE = TRUE";
+        
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = con.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, tenantId);
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                org.json.JSONArray employees = new org.json.JSONArray();
+                
+                while (rs.next()) {
+                    JSONObject employee = new JSONObject();
+                    employee.put("eid", rs.getInt("EID"));
+                    employee.put("firstName", rs.getString("FIRST_NAME"));
+                    employee.put("lastName", rs.getString("LAST_NAME"));
+                    employee.put("permissions", rs.getString("PERMISSIONS"));
+                    employees.put(employee);
+                }
+                
+                jsonResponse.put("success", true);
+                jsonResponse.put("employees", employees);
+                writeJsonResponse(response, jsonResponse.toString(), HttpServletResponse.SC_OK);
+            }
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error fetching all employees for TenantID: " + tenantId, e);
+            jsonResponse.put("success", false).put("error", "A server error occurred while fetching employees.");
+            writeJsonResponse(response, jsonResponse.toString(), HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        }
+    }
+    
     private void handleGetScheduleInfo(HttpServletRequest request, HttpServletResponse response, int tenantId, int globalEid) throws IOException {
         JSONObject jsonResponse = new JSONObject();
         try {

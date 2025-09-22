@@ -45,7 +45,6 @@
     String startDateStrParam = request.getParameter("startDate");
     String endDateStrParam = request.getParameter("endDate");
     
-    // [MODIFIED] Search only runs if the 'search' button was clicked.
     boolean isFormSubmitted = request.getParameter("search") != null;
     
     int eid = 0;
@@ -71,24 +70,35 @@
             startDate = defaultStartDate; endDate = defaultEndDate;
         }
     } else {
-        startDate = defaultStartDate;
-        endDate = defaultEndDate;
+        if (ShowPunches.isValid(startDateStrParam) && ShowPunches.isValid(endDateStrParam)) {
+            try {
+                startDate = LocalDate.parse(startDateStrParam);
+                endDate = LocalDate.parse(endDateStrParam);
+            } catch (DateTimeParseException e) {
+                paramError = "Invalid date format from URL. Using default range.";
+                startDate = defaultStartDate;
+                endDate = defaultEndDate;
+            }
+        } else {
+            startDate = defaultStartDate;
+            endDate = defaultEndDate;
+        }
         if (ShowPunches.isValid(request.getParameter("eid"))) {
              try { eid = Integer.parseInt(request.getParameter("eid")); } catch (NumberFormatException e) { eid = 0;}
         }
     }
 
     List<Map<String, Object>> employeeDropdownList = ShowPunches.getActiveEmployeesForDropdown(tenantId);
-
     String tableRowsHtml = "";
     boolean showEmployeeColumnsInHeader = (eid <= 0);
+    int tableColspan = showEmployeeColumnsInHeader ? 8 : 6;
 
     if (isFormSubmitted && paramError == null) {
         tableRowsHtml = ShowReports.showArchivedPunchesReport(tenantId, eid, userTimeZoneId, startDate, endDate);
     } else if (paramError != null) {
-        tableRowsHtml = "<tr><td colspan='" + (showEmployeeColumnsInHeader ? 7 : 5) + "' class='report-error-row'>" + escapeJspHtml(paramError) + "</td></tr>";
+        tableRowsHtml = "<tr><td colspan='" + tableColspan + "' class='report-error-row'>" + escapeJspHtml(paramError) + "</td></tr>";
     } else {
-        tableRowsHtml = "<tr><td colspan='" + (showEmployeeColumnsInHeader ? 7 : 5) + "' class='report-message-row'>Select filters and click 'Apply' to load data.</td></tr>";
+        tableRowsHtml = "<tr><td colspan='" + tableColspan + "' class='report-message-row'>Select filters and click 'Apply' to load data.</td></tr>";
     }
     
     String startDateValueToUse = startDate.toString();
@@ -97,7 +107,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale-1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>View Archived Punches</title>
     <%@ include file="/WEB-INF/includes/common-head.jspf" %>
@@ -105,11 +115,11 @@
 </head>
 <body class="reports-page">
     <%@ include file="/WEB-INF/includes/navbar.jspf" %>
-    <div class="parent-container reports-container">
+    <div class="parent-container">
         <h1>View Archived Punches</h1>
         <form id="archiveViewForm" action="archived_punches.jsp" method="GET" class="archive-controls-form">
              <div class="archive-controls-flex">
-                  <div class="form-item-container employee-select">
+                 <div class="form-item-container employee-select">
                      <label for="employeesDropDown">Employee:</label>
                      <select id="employeesDropDown" name="employeesDropDown">
                          <option value="0" <%= (eid == 0) ? "selected" : "" %>>All Employees</option>
@@ -121,12 +131,12 @@
                              <option value="<%= currentDropdownGlobalEid %>" <%= selectedAttr %>><%= escapeJspHtml(displayName) %></option>
                          <% } %>
                      </select>
-                  </div>
+                 </div>
                  <div class="form-item-container date-range-item">
                      <label for="startDate">Start Date:</label>
                      <input type="date" id="startDate" name="startDate" value="<%= startDateValueToUse %>" required>
                  </div>
-                  <div class="form-item-container date-range-item">
+                 <div class="form-item-container date-range-item">
                       <label for="endDate">End Date:</label>
                       <input type="date" id="endDate" name="endDate" value="<%= endDateValueToUse %>" required>
                   </div>
@@ -138,7 +148,7 @@
              </div>
         </form>
 
-        <div class="report-display-area">
+        <div class="content-display-area">
              <h2 id="reportTitle" class="report-title">Archived Punches Results</h2>
              <div class="report-actions">
                 <button type="button" id="printArchivedPunchesBtn" class="glossy-button text-blue">
@@ -151,14 +161,15 @@
                         <thead>
                             <tr>
                                 <% if (showEmployeeColumnsInHeader) { %>
-                                    <th data-sort-type="number">Emp ID</th>
-                                    <th data-sort-type="string">Employee Name</th>
+                                    <th class="sortable" data-sort-type="number">Emp ID</th>
+                                    <th class="sortable" data-sort-type="string">First Name</th>
+                                    <th class="sortable" data-sort-type="string">Last Name</th>
                                 <% } %>
-                                <th data-sort-type="date">Date</th>
-                                <th data-sort-type="string" class="center-text">IN Punch</th>
-                                <th data-sort-type="string" class="center-text">OUT Punch</th>
-                                <th data-sort-type="number" class="center-text">Total Hours</th>
-                                <th data-sort-type="string" class="center-text">Punch Type</th>
+                                <th class="sortable" data-sort-type="date">Date</th>
+                                <th class="sortable" data-sort-type="string" class="center-text">IN Punch</th>
+                                <th class="sortable" data-sort-type="string" class="center-text">OUT Punch</th>
+                                <th class="sortable" data-sort-type="number" class="center-text">Total Hours</th>
+                                <th class="sortable" data-sort-type="string" class="center-text">Punch Type</th>
                             </tr>
                         </thead>
                         <tbody>
