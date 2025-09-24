@@ -249,4 +249,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const stage = window.itemJustAdded_Page ? 'departments_after_add' : 'departments_initial';
         updateWizardView(stage);
     }
+
+    // Handle success/error notifications from page load
+    const successNotificationDiv = document.getElementById('pageNotificationDiv_Success_Department');
+    if (successNotificationDiv && successNotificationDiv.textContent.trim()) {
+        const message = successNotificationDiv.innerHTML;
+        successNotificationDiv.style.display = 'none';
+        showPageNotification(message, false, null, "Success");
+    }
+
+    const errorNotificationDiv = document.getElementById('pageNotificationDiv_Error_Department');
+    if (errorNotificationDiv && errorNotificationDiv.textContent.trim()) {
+        const message = errorNotificationDiv.innerHTML;
+        errorNotificationDiv.style.display = 'none';
+        showPageNotification(message, true, null, "Error");
+    }
 });

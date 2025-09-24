@@ -12,7 +12,7 @@ body {
     /* --- START: BACKGROUND OPACITY FIX --- */
     /* The fallback color is now the main background of the body itself */
     background-color: #e7f0f7;
-    /* The image is moved to the ::before pseudo-element below */
+    background-image: url('../Images/background3.png');
 }
 
 /* This new pseudo-element creates the transparent background layer */
@@ -23,7 +23,7 @@ body::before {
     left: 0;
     width: 100%;
     height: 100%;
-    background-image: url('../Images/background3.png');
+    
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;

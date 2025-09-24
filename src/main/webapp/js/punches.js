@@ -214,7 +214,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (addHours_timeFieldsRowDiv) addHours_timeFieldsRowDiv.style.display = isAccrued ? 'none' : 'flex';
         if (addHours_timeInInput) addHours_timeInInput.required = !isAccrued;
         if (addHours_totalHoursDiv) addHours_totalHoursDiv.style.display = isAccrued ? 'block' : 'none';
-        if (addHours_totalHoursInput) addHours_totalHoursInput.required = isAccrued;
+        if (addHours_totalHoursInput) {
+        addHours_totalHoursInput.required = isAccrued;
+        addHours_totalHoursInput.max = 160;
+    }
     }
 
     function setupModalForAccruedHours() {
@@ -235,7 +238,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (editPunchTimeFieldsRowDiv) editPunchTimeFieldsRowDiv.style.display = isAccrued ? 'none' : 'flex';
         if (editPunchTimeInInput) editPunchTimeInInput.required = !isAccrued;
         if (editPunchTotalHoursDiv) editPunchTotalHoursDiv.style.display = isAccrued ? 'block' : 'none';
-        if (editPunchTotalHoursInput) editPunchTotalHoursInput.required = isAccrued;
+        if (editPunchTotalHoursInput) {
+        editPunchTotalHoursInput.required = isAccrued;
+        editPunchTotalHoursInput.max = 160;
+    }
     }
     
     function openAddModal(setupFunction) {

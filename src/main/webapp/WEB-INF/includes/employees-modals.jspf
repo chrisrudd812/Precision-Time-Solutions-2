@@ -24,9 +24,9 @@
                         </div>
                         <div class="form-item"><label for="addZip">Zip</label><input type="text" id="addZip" name="zip" autocomplete="new-password" pattern="\d{5}|\d{5}-\d{4}" title="Zip code must be 5 or 9 digits (e.g., 12345 or 12345-6789)."></div>
                     </div>
-                      <div class="form-row">
+                      <div class="form-row" id="addPhoneEmailRow">
                         <div class="form-item"><label for="addPhone">Phone</label><input type="tel" id="addPhone" name="addEmployeePhone" placeholder="(555) 555-5555" pattern="^\(\d{3}\) \d{3}-\d{4}$" title="Phone number must be in the format (555) 555-5555."></div>
-                        <div class="form-item"><label for="addEmail">Email (this will be their username) <span class="required-asterisk">*</span></label><input type="email" id="addEmail" name="email" required autocomplete="new-password"></div>
+                        <div class="form-item"><label for="addEmail">Email <span class="required-asterisk">*</span></label><input type="email" id="addEmail" name="email" placeholder="This will be their username" required autocomplete="new-password"></div>
                      </div>
                 </div>
                 
@@ -89,9 +89,9 @@
                         </div>
                         <div class="form-item"><label for="editZip">Zip</label><input type="text" id="editZip" name="zip" autocomplete="new-password" pattern="\d{5}|\d{5}-\d{4}" title="Zip code must be 5 or 9 digits (e.g., 12345 or 12345-6789)."></div>
                     </div>
-                     <div class="form-row">
+                     <div class="form-row" id="editPhoneEmailRow">
                         <div class="form-item"><label for="editPhone">Phone</label><input type="tel" id="editPhone" name="editEmployeePhone" placeholder="(555) 555-5555" pattern="^\(\d{3}\) \d{3}-\d{4}$" title="Phone number must be in the format (555) 555-5555."></div>
-                         <div class="form-item"><label for="editEmail">Email <span class="required-asterisk">*</span></label><input type="email" id="editEmail" name="email" required autocomplete="new-password"></div>
+                         <div class="form-item"><label for="editEmail">Email <span class="required-asterisk">*</span></label><input type="email" id="editEmail" name="email" placeholder="This will be their username" required autocomplete="new-password"></div>
                     </div>
                 </div>
 

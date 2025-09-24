@@ -1,7 +1,13 @@
 /* === css/configureLocationRestrictions.css === */
 
+.content-display-area {
+	min-height: 0;
+    flex-grow: 0;
+}
+
 .config-container {
 	max-width: 900px;
+	max-height: 60vh;
 }
 
 .location-table th, .location-table td {

@@ -87,8 +87,10 @@
     
     body.reassign-page .parent-container {
     max-width: 55%;
+    min-height: 0;
+    flex-grow: 0;
 }
-        .reassign-container { padding: 20px; max-width: 800px; margin: 20px auto; background-color:#fff; border-radius:8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .reassign-container { padding: 20px; max-width: 800px; max-height: 60vh; margin: 20px auto; background-color:#fff; border-radius:8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .form-row { display: flex; flex-wrap: wrap; justify-content: space-between; margin-bottom: 20px; align-items: flex-end; gap: 15px;}
         .form-row > .form-item { flex: 1; min-width: 200px; }
         .form-item label { display: block; margin-bottom: 6px; font-weight: 600; color: #333; }

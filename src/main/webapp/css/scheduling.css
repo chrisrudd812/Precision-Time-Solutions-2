@@ -3,10 +3,10 @@
 /* Sizing overrides */
 .content-display-area:has(#reportOutput_schedules) {
     min-height: 0;
-    /* MODIFIED: Removed the 'flex-grow: 0;' rule that was causing the container to shrink */
+    flex-grow: 0;
 }
 #reportOutput_schedules .table-container {
-    max-height: none;
+    max-height: 60vh;
 }
 
 /* === Schedule-Specific Styles === */

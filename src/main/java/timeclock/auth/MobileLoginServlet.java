@@ -29,7 +29,7 @@ public class MobileLoginServlet extends HttpServlet {
     private static final Logger logger = Logger.getLogger(MobileLoginServlet.class.getName());
     private final Gson gson = new Gson();
 
-    private record TenantInfo(int id, String timeZone) {}
+    private record TenantInfo(int id, String timeZone, int maxUsers) {}
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -72,12 +72,12 @@ public class MobileLoginServlet extends HttpServlet {
     }
 
     private TenantInfo findTenantInfo(Connection conn, String companyIdentifier) throws SQLException {
-        String tenantSql = "SELECT TenantID, DefaultTimeZone FROM tenants WHERE CompanyIdentifier = ?";
+        String tenantSql = "SELECT TenantID, DefaultTimeZone, MaxUsers FROM tenants WHERE CompanyIdentifier = ?";
         try (PreparedStatement ps = conn.prepareStatement(tenantSql)) {
             ps.setString(1, companyIdentifier);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return new TenantInfo(rs.getInt("TenantID"), rs.getString("DefaultTimeZone"));
+                    return new TenantInfo(rs.getInt("TenantID"), rs.getString("DefaultTimeZone"), rs.getInt("MaxUsers"));
                 }
                 return null;
             }
@@ -124,6 +124,7 @@ public class MobileLoginServlet extends HttpServlet {
         userData.put("supervisor", rs.getString("SUPERVISOR"));
         userData.put("schedule", rs.getString("SCHEDULE"));
         userData.put("requiresPasswordChange", requiresChange);
+        userData.put("maxUsers", tenantInfo.maxUsers());
         
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);

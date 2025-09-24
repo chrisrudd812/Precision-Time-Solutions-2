@@ -61,10 +61,13 @@
     <%-- Include the standard navigation bar --%>
     <%@ include file="/WEB-INF/includes/navbar.jspf" %>
 
+    <%-- Include common JavaScript files for navbar functionality --%>
+    <%@ include file="/WEB-INF/includes/common-scripts.jspf" %>
+
     <div class="content-container">
         <h1>Terms of Service</h1>
 
-        <p><strong>Last Updated:</strong> August 28, 2025</p>
+        <p><strong>Last Updated:</strong> August 28, 2024</p>
 
         <p>Welcome to Precision Time Solutions! These Terms of Service ("Terms") govern your use of our time tracking, employee management, and payroll services (collectively, the "Service"), provided by Precision Time Solutions ("we," "us," or "our").</p>
 
@@ -106,8 +109,7 @@
         <p>We reserve the right to modify these Terms at any time. We will provide notice of any significant changes. Your continued use of the Service after such changes constitutes your acceptance of the new Terms.</p>
 
         <h2>9. Contact Us</h2>
-        <p>If you have any questions about these Terms, please contact us <a href="/contact.jsp">here</a>.
-        </p>
+        <p>If you have any questions about these Terms, please contact us <a href="<%= request.getContextPath() %>/contact.jsp">here</a>.</p>
 
     </div>
 </body>

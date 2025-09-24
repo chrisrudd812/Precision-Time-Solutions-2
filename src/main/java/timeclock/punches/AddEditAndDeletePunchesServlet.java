@@ -258,7 +258,7 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
                 if (!isValid(totalHoursManualStr)) { throw new SQLException("Total Hours value is required for type '" + newPunchType + "'."); }
                 try {
                     newFinalTotalHoursForAccrual = Double.parseDouble(totalHoursManualStr.trim());
-                    if (newFinalTotalHoursForAccrual <= 0.00 || newFinalTotalHoursForAccrual > 24) { throw new SQLException("Hours must be > 0 and <= 24."); }
+                    if (newFinalTotalHoursForAccrual <= 0.00 || newFinalTotalHoursForAccrual > 160) { throw new SQLException("Hours must be > 0 and <= 160."); }
                     newFinalTotalHoursForAccrual = Math.round(newFinalTotalHoursForAccrual * 100.0) / 100.0;
                 } catch (NumberFormatException e) { throw new SQLException("Invalid format for Total Hours: '" + totalHoursManualStr + "'."); }
                 newUtcDbDate = localPunchDate.atStartOfDay(userInputZoneId).toInstant().atZone(ZoneOffset.UTC).toLocalDate();
@@ -376,7 +376,7 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
             if (isHoursOnly) {
                 if (!isValid(totalHoursManualStr)) { sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Total Hours are required for type '" + escapeHtml(punchType) + "'.", null); return; }
                 finalTotalHoursForAccrual = Double.parseDouble(totalHoursManualStr.trim());
-                if (finalTotalHoursForAccrual <= 0.00 || finalTotalHoursForAccrual > 24) { sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Total Hours must be > 0 and <= 24.", null); return; }
+                if (finalTotalHoursForAccrual <= 0.00 || finalTotalHoursForAccrual > 160) { sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Total Hours must be > 0 and <= 160.", null); return; }
                 finalTotalHoursForAccrual = Math.round(finalTotalHoursForAccrual * 100.0) / 100.0;
             } else {
                 if (!isValid(inTimeStr)) { sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Time In is required for type '" + escapeHtml(punchType) + "'.", null); return; }
@@ -463,8 +463,8 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
         try {
             localPunchDate = LocalDate.parse(dateStr.trim(), DATE_FORMATTER_FROM_USER);
             totalHours = Double.parseDouble(totalHoursStr.trim());
-            if (totalHours <= 0.00 || totalHours > 24) {
-                response.sendRedirect("add_global_data.jsp?error=" + URLEncoder.encode("Total Hours must be > 0 and <= 24.", StandardCharsets.UTF_8.name()));
+            if (totalHours <= 0.00 || totalHours > 160) {
+                response.sendRedirect("add_global_data.jsp?error=" + URLEncoder.encode("Total Hours must be > 0 and <= 160.", StandardCharsets.UTF_8.name()));
                 return;
             }
             totalHours = Math.round(totalHours * 100.0) / 100.0;

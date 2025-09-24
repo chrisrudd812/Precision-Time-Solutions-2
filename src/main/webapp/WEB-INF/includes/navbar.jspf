@@ -42,8 +42,8 @@
         // Get max users from database to determine plan level
         if (tenantIdForNav_jspf != null) {
             try (java.sql.Connection conn = timeclock.db.DatabaseConnection.getConnection()) {
-                String sql = "SELECT MaxUsers FROM tenants WHERE TenantID = ?";
-                try (java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
+                String maxUsersSql = "SELECT MaxUsers FROM tenants WHERE TenantID = ?";
+                try (java.sql.PreparedStatement ps = conn.prepareStatement(maxUsersSql)) {
                     ps.setInt(1, tenantIdForNav_jspf);
                     try (java.sql.ResultSet rs = ps.executeQuery()) {
                         if (rs.next()) {
@@ -219,8 +219,10 @@
                     <li class="dropdown">
                          <a href="javascript:void(0);" class="dropbtn"><i class="fas fa-question-circle"></i> Help <i class="fas fa-chevron-down"></i></a>
                         <ul class="dropdown-content">
-                            <li><a href="<%= request.getContextPath() %>/help.jsp">Help Topics</a></li>
+                            <li><a href="<%= request.getContextPath() %>/help.jsp">Help & Support</a></li>
                             <li><a href="<%= request.getContextPath() %>/contact.jsp">Contact Us</a></li>
+                            <li><a href="<%= request.getContextPath() %>/privacy.jsp">Privacy Policy</a></li>
+                            <li><a href="<%= request.getContextPath() %>/terms.jsp">Terms & Conditions</a></li>
                         </ul>
                     </li>
                     <li><a href="<%= request.getContextPath() %>/account.jsp" class="<%= pageName_jspf.equals("account.jsp") ? "active" : "" %>"><i class="fas fa-user-circle"></i> Account</a></li>

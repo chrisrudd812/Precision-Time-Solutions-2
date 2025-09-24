@@ -24,7 +24,7 @@
 
     <session-config>
         <cookie-config>
-            <secure>true</secure>
+            <secure>false</secure>
         </cookie-config>
     </session-config>
     

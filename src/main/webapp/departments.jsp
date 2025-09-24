@@ -117,8 +117,8 @@
     <div class="parent-container">
         <h1>Manage Departments<% if (inSetupWizardMode_JSP) { %> <span style="font-size:0.8em; color:#555;">(Setup)</span><% } %></h1>
         
-        <% if (pageLevelSuccess != null && !pageLevelSuccess.isEmpty()) { %><div class="page-message success-message"><%= escapeJspHtml(pageLevelSuccess) %></div><% } %>
-        <% if (pageLevelError != null && !pageLevelError.isEmpty() && !isReopenModalRequest) { %><div class="page-message error-message"><%= escapeJspHtml(pageLevelError) %></div><% } %>
+        <% if (pageLevelSuccess != null && !pageLevelSuccess.isEmpty()) { %><div class="page-message success-message" id="pageNotificationDiv_Success_Department"><%= escapeJspHtml(pageLevelSuccess) %></div><% } %>
+        <% if (pageLevelError != null && !pageLevelError.isEmpty() && !isReopenModalRequest) { %><div class="page-message error-message" id="pageNotificationDiv_Error_Department"><%= escapeJspHtml(pageLevelError) %></div><% } %>
         
         <div id="button-container" class="main-action-buttons">
             <button type="button" id="addDepartmentButton" class="glossy-button text-green"><i class="fas fa-plus-circle"></i> Add Department</button>

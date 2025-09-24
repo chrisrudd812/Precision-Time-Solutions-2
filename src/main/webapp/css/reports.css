@@ -1,8 +1,13 @@
 /* === css/reports.css === */
 /* Styles specific to the reports page content. Global styles are in common.css */
 
+.parent-container {
+	max-height: 90vh;
+}
+
 .content-display-area {
-    /* You can add specific overrides here if needed */
+    min-height: 0;
+    flex-grow: 0;
 }
 
 .report-title { 
@@ -73,7 +78,7 @@
 }
 
 .table-container {
-    max-height: 55vh;
+    max-height: 60vh;
 }
 
 /* --- Report-Specific Modal Styles --- */

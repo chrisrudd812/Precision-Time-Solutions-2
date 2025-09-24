@@ -461,3 +461,17 @@ body.employees-page .parent-container {
 .input-with-prefix input {
     padding-left: 28px !important;
 }
+
+/* Fix email field responsive layout */
+@media (max-width: 650px) {
+    #addPhoneEmailRow,
+    #editPhoneEmailRow {
+        flex-direction: column !important;
+    }
+    
+    #addPhoneEmailRow .form-item,
+    #editPhoneEmailRow .form-item {
+        flex: none !important;
+        width: 100% !important;
+    }
+}

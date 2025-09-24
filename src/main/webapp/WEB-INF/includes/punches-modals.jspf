@@ -27,7 +27,7 @@
                     </div>
                     <div id="addHours_totalHoursDiv" class="form-item" style="display:none;">
                         <label for="addHours_totalHoursInput">Total Hours <span class="required-asterisk">*</span></label>
-                        <input type="number" name="totalHoursManual" id="addHours_totalHoursInput" step="0.01" min="0.01" max="24">
+                        <input type="number" name="totalHoursManual" id="addHours_totalHoursInput" step="0.01" min="0.01" max="160">
                     </div>
                 </div>
             </div>
@@ -66,7 +66,7 @@
                     </div>
                     <div class="form-item" id="editPunch_totalHoursDiv" style="display:none;">
                         <label for="editPunch_totalHoursInput">Total Hours <span class="required-asterisk">*</span></label>
-                        <input type="number" name="totalHoursManual" id="editPunch_totalHoursInput" step="0.01" min="0.01" max="24">
+                        <input type="number" name="totalHoursManual" id="editPunch_totalHoursInput" step="0.01" min="0.01" max="160">
                     </div>
                 </div>
             </div>

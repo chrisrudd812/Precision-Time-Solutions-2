@@ -1,14 +1,20 @@
 /* === css/add_global_data.css === */
 
-/* Container for the form to center it and give it a card-like appearance */
+/* Container for the form to take full width and grow with content */
+.content-display-area {
+    min-height: 0;
+    flex-grow: 0;
+}
+
 .form-container {
-    max-width: 500px;
-    margin: 20px auto; /* Adds vertical spacing and centers the block horizontally */
+    max-height: 60vh;
+    margin: 10px;
     padding: 25px 30px;
     background-color: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    overflow-y: auto;
 }
 
 /* Style for the instructional text above the form */
@@ -29,4 +35,18 @@
 .submit-button {
     margin-top: 15px;
     width: 100%;
+}
+
+/* Pay period header styling - matches payroll.css */
+#payPeriodHeader {
+    text-align: center;
+    color: #ffffff;
+    background: linear-gradient(to bottom, #0f766e, #14b8a6);
+    border: 1px solid #14b8a6;
+    border-radius: 8px;
+    font-size: 1.2em;
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-weight: normal;
+    padding: 12px 20px;
 }
