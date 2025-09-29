@@ -6,9 +6,10 @@
     <title>Precision Time Solutions - Help & User Guide</title>
     <%@ include file="/WEB-INF/includes/common-head.jspf" %>
     <style>
-        /* Smooth scrolling for TOC links */
+        /* Smooth scrolling for TOC links with offset for sticky header */
         html {
             scroll-behavior: smooth;
+            scroll-padding-top: 300px;
         }
 
         /* General Body Styling */
@@ -284,8 +285,10 @@
                 <li><a href="#accruals">Accrual Policies</a></li>
                 <li><a href="#settings">Global Settings</a></li>
                 <li><a href="#payroll">Payroll Processing</a></li>
+                <li><a href="#overtime-calculation">Overtime Calculations</a></li>
                 <li><a href="#reports">Reports</a></li>
                 <li><a href="#account">Account Settings</a></li>
+                <li><a href="contact.jsp">Contact Support</a></li>
             </ul>
         </nav>
 
@@ -312,7 +315,7 @@
                 <p>The main Time Clock page allows employees to punch IN and OUT. On the time card, you can also view employee details and available accrued PTO. <br>To use, simply click on IN or OUT to initiate a punch. 
                 You will then be automatically logged out in 30 seconds, unless you have Administrator permissions. <br>Tardy punches will be shown in red<br>Accrued PTO is visible at the bottom of the "time card"". </p> <br>
                 <span style="color: red;">Note: Successful punch is subject to restriction policies (Device, Time or Location Restrictions)</span>
-                <img src="Images/timecards_individual.webp" alt="Individual time card view">
+                <img src="Images/timecards_individual.webp" style="max-width: 1200px" alt="Individual time card view">
             </section>
 
 			<section id="navigation-bar">
@@ -329,7 +332,7 @@
                 <h3>Viewing Employee Details</h3>
                 <p>To view an employee's details, click on their row in the table. Their information, including accrued time balances, will appear in the "Selected Employee Details" panel. 
                 <br>This panel also contains the PIN Reset button, which resets their PIN to "1234" and require change at next login.</p> 
-                <img src="Images/employees_main.webp" alt="Employee page with a row selected">
+                <img src="Images/employees_main.webp" style="max-width: 1200px" alt="Employee page with a row selected">
 
                 <h3>Adding a New Employee</h3>
                 <ol>
@@ -588,7 +591,7 @@
              <section id="payroll">
                 <h2>Payroll Processing</h2>
                 <p>The Payroll Processing page is where you review and finalize employee time cards for payroll.</p> 
-                <img src="Images/payroll_main.webp" alt="Payroll processing main page">
+                <img src="Images/payroll_main.webp" style="max-width: 1200px" alt="Payroll processing main page">
 
                 <h3>Reviewing Time Cards</h3>
                 
@@ -605,6 +608,49 @@
                 <img src="Images/payroll_exceptions.webp" style="max-width:600px" alt="Payroll exceptions report with missing punches">
                
                 <img src="Images/payroll_close_confirm.webp" style="max-width:600px" alt="Finalize payroll confirmation modal">
+                
+                <h3 id="overtime-calculation">How Overtime is Calculated</h3>
+                
+                <h4>Overtime Calculation Methods</h4>
+                
+                <p>Your overtime calculation depends on your subscription plan and configuration settings:</p>
+                
+                <p><strong>Basic and Business Plans:</strong> Overtime can be calculated using two methods:</p>
+                <ul>
+                    <li><strong>By Company State:</strong> All employees follow the overtime rules of your company's registered state, regardless of where individual employees are located.</li>
+                    <li><strong>Manual Override:</strong> You can set custom overtime rules that override both federal and state calculations.</li>
+                </ul>
+                
+                <p><strong>Pro Plan:</strong> Includes all the above options plus:</p>
+                <ul>
+                    <li><strong>By Employee State:</strong> Each employee's overtime is calculated according to the labor laws of the state listed in their employee profile. This ensures compliance with state-specific overtime rules, which can vary significantly. This feature is particularly useful for companies with remote workers or multiple office locations across different states.</li>
+                </ul>
+                
+                <h4>Work Week Definition</h4>
+                
+                <p>The system calculates overtime based on a 7-day work week period. By default, the work week starts on <strong>Sunday at 12:00 AM</strong> and ends on <strong>Saturday at 11:59 PM</strong>. This means:</p>
+                <ul>
+                    <li>Hours are counted from Sunday through Saturday for overtime purposes</li>
+                    <li>Overtime calculations reset each Sunday</li>
+                    <li>Daily overtime rules (where applicable by state) are calculated within each 24-hour period</li>
+                </ul>
+                
+                <p><em>Note: While it's optional, changing the first day of the work week in Settings is not recommended as it may affect overtime calculations and payroll consistency.</em></p>
+                
+                <h4>State-Specific Rules</h4>
+                
+                <p>Different states have varying overtime requirements:</p>
+                <ul>
+                    <li>Some states require overtime after 8 hours in a single day (daily overtime)</li>
+                    <li>Others follow the federal standard of 40 hours per week</li>
+                    <li>Certain states have different rates for double-time (2x pay) after specific thresholds</li>
+                    <li>For complete state-by-state overtime rules, visit the <a href="https://www.dol.gov/agencies/whd/minimum-wage/state" target="_blank">Department of Labor's State Minimum Wage and Overtime Laws</a></li>
+                </ul>
+                
+                <h4>Calculation Priority</h4>
+                
+                <p>When multiple overtime rules apply, the system uses whichever calculation results in the highest pay for the employee, ensuring compliance while maximizing employee compensation.<br>
+                Punch types other than "User Initiated" or "Supervisor Override" (PTO), and Salaried employees are not included in Overtime calculations.</p>
                 
                 </section>
             

@@ -33,7 +33,7 @@
             </div>
             <div class="button-row">
                 <button type="button" class="glossy-button text-red close-modal-btn"><i class="fas fa-times"></i> Cancel</button>
-                <button type="submit" class="glossy-button text-green"><i class="fas fa-save"></i> Add PTO</button>
+                <button type="submit" class="glossy-button text-green"><i class="fas fa-save"></i> Add</button>
             </div>
         </form>
     </div>
