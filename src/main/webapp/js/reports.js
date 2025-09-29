@@ -138,6 +138,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const reportName = reportType.replace(/([A-Z])/g, ' $1').trim();
         let titleText = `${reportName.charAt(0).toUpperCase() + reportName.slice(1)} Report`;
         
+        if (reportType === 'accrualBalance') {
+            titleText = 'PTO Balance Report';
+        }
+        
         if (reportType === 'tardy') {
             const range = filterValue || 'all';
             let rangeText = ' (All Time)';

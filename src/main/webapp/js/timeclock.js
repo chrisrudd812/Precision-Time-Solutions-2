@@ -1,36 +1,52 @@
 // js/timeclock.js
 
-// --- NEW: Inactivity Timeout Logic ---
-let inactivityTimer;
-
-function logoutDueToInactivity() {
-    // Redirect to the logout servlet with a reason
-    const contextPath = (typeof app_contextPath !== 'undefined') ? app_contextPath : '';
-    window.location.href = contextPath + '/LogoutServlet?autoLogout=true&reason=' + encodeURIComponent('Session timed out due to inactivity.');
-}
-
-function resetInactivityTimer() {
-    clearTimeout(inactivityTimer);
-    // The session timeout duration is passed from the JSP
-    const timeoutMilliseconds = (typeof sessionTimeoutDuration_Js !== 'undefined' && sessionTimeoutDuration_Js > 0) 
-                                ? (sessionTimeoutDuration_Js * 1000) 
-                                : (60 * 60 * 1000); // Fallback to 1 hour
-    inactivityTimer = setTimeout(logoutDueToInactivity, timeoutMilliseconds);
-}
-
 function setupInactivityDetection() {
-    // This function is called on page load
-    // It checks for the permission variable set by timeclock.jsp
-    if (typeof currentUserPermissions_tc !== 'undefined' && currentUserPermissions_tc === 'User') {
-        // Attach event listeners that will reset the timer
-        ['mousemove', 'mousedown', 'keypress', 'touchmove', 'scroll', 'click', 'keydown'].forEach(activityEvent => {
-            window.addEventListener(activityEvent, resetInactivityTimer, true);
-        });
-        // Start the timer for the first time
-        resetInactivityTimer();
+    // Only apply timeout to non-administrator users
+    if (typeof currentUserPermissions_tc !== 'undefined' && currentUserPermissions_tc === 'Administrator') {
+        console.log('Administrator user - no inactivity timeout applied');
+        return;
     }
+    
+    // Only apply timeout if session timeout duration is available
+    if (typeof sessionTimeoutDuration_Js === 'undefined' || sessionTimeoutDuration_Js <= 0) {
+        console.log('No valid session timeout duration - no inactivity timeout applied');
+        return;
+    }
+    
+    let inactivityTimer;
+    let warningTimer;
+    const timeoutDuration = sessionTimeoutDuration_Js * 1000; // Convert to milliseconds
+    const warningTime = Math.max(30000, timeoutDuration - 30000); // Show warning 30 seconds before timeout
+    
+    function resetTimers() {
+        clearTimeout(inactivityTimer);
+        clearTimeout(warningTimer);
+        
+        // Set logout timer (no warning, just logout after 30 seconds)
+        inactivityTimer = setTimeout(() => {
+            showTimeclockNotificationModal('Session expired due to inactivity. Click OK to return to login.', true);
+            const modal = document.getElementById('notificationModal');
+            const okBtn = modal ? modal.querySelector('#okButton') : null;
+            if (okBtn) {
+                okBtn.onclick = () => {
+                    window.location.href = app_contextPath + '/LogoutServlet?reason=inactivity';
+                };
+            }
+        }, timeoutDuration);
+    }
+    
+    // Events that should reset the inactivity timer
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    
+    events.forEach(event => {
+        document.addEventListener(event, resetTimers, true);
+    });
+    
+    // Start the timers
+    resetTimers();
+    
+    console.log('Inactivity timeout set for non-administrator user:', timeoutDuration / 1000, 'seconds');
 }
-// --- END: Inactivity Timeout Logic ---
 
 
 async function getDeviceFingerprint() {
@@ -56,6 +72,14 @@ function getClientGeolocation() {
             reject({ code: -1, message: "Geolocation is not supported by your browser." });
             return;
         }
+        
+        // Try with less strict options first for mobile compatibility
+        const options = {
+            enableHighAccuracy: false, // Changed from true to reduce permission issues
+            timeout: 30000, // Increased timeout for mobile
+            maximumAge: 300000 // Allow cached location up to 5 minutes old
+        };
+        
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 resolve({
@@ -67,14 +91,22 @@ function getClientGeolocation() {
             (error) => {
                 let friendlyMessage = "Geolocation error: ";
                 switch(error.code) {
-                    case error.PERMISSION_DENIED: friendlyMessage += "Permission denied by browser."; break;
-                    case error.POSITION_UNAVAILABLE: friendlyMessage += "Position unavailable."; break;
-                    case error.TIMEOUT: friendlyMessage += "Request timed out."; break;
-                    default: friendlyMessage += "Unknown error (Code: " + error.code + ").";
+                    case error.PERMISSION_DENIED: 
+                        friendlyMessage += "Location access denied. Please enable location services in your browser settings and refresh the page."; 
+                        break;
+                    case error.POSITION_UNAVAILABLE: 
+                        friendlyMessage += "Location unavailable. Please check your device's location settings."; 
+                        break;
+                    case error.TIMEOUT: 
+                        friendlyMessage += "Location request timed out. Please try again."; 
+                        break;
+                    default: 
+                        friendlyMessage += "Unknown error (Code: " + error.code + "). Please try again."; 
+                        break;
                 }
                 reject({ code: error.code, message: friendlyMessage });
             },
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+            options
         );
     });
 }
@@ -197,30 +229,7 @@ async function handlePunchSubmit(event) {
     };
 
     try {
-        // --- NEW UNIVERSAL PRE-CHECK FOR ALL PUNCHES ---
-        // As directed, the VERY first step is to check the user's current punch status with the server.
-        const response = await fetch(`${app_contextPath}/CheckOpenPunchServlet`);
-        if (!response.ok) {
-            throw new Error("Server error: Could not verify current punch status.");
-        }
-        const statusData = await response.json();
-        if (statusData.error) {
-            throw new Error(statusData.error);
-        }
-
-        const hasOpenPunch = statusData.hasOpenPunch;
-
-        // Now, validate the action based on the server's response.
-        if (isPunchIn && hasOpenPunch) {
-            throw new Error("You are already clocked in. Please clock out before clocking in again.");
-        }
-        if (isPunchOut && !hasOpenPunch) {
-            throw new Error("No open work punch found to clock out against. You are already clocked out.");
-        }
-        // --- END OF UNIVERSAL PRE-CHECK ---
-
-
-        // If the pre-check passes, we proceed with the other steps.
+        // Proceed with punch submission - server will validate punch status
         // Step 1: Get data that doesn't cause a delay
         const fingerprint = await getDeviceFingerprint();
         form.querySelector('input[name="deviceFingerprintHash"]').value = fingerprint;
@@ -232,9 +241,17 @@ async function handlePunchSubmit(event) {
             if (submitButton) {
                 submitButton.innerHTML = '<i class="fas fa-location-arrow fa-spin"></i> Getting Location...';
             }
-            const coords = await getClientGeolocation();
-            form.querySelector('input[name="latitude"]').value = coords.latitude;
-            form.querySelector('input[name="longitude"]').value = coords.longitude;
+            try {
+                const coords = await getClientGeolocation();
+                form.querySelector('input[name="latitude"]').value = coords.latitude;
+                form.querySelector('input[name="longitude"]').value = coords.longitude;
+            } catch (locationError) {
+                // If location fails, still try to submit but let server handle the error
+                console.warn('Location failed:', locationError);
+                form.querySelector('input[name="latitude"]').value = "";
+                form.querySelector('input[name="longitude"]').value = "";
+                // Don't throw here - let the server provide the proper error message
+            }
         } else {
             form.querySelector('input[name="latitude"]').value = "";
             form.querySelector('input[name="longitude"]').value = "";
@@ -250,6 +267,46 @@ async function handlePunchSubmit(event) {
         restoreButton(); // Re-enable the button on failure
     }
 }
+
+function formatMobileDatesTimes() {
+    if (window.innerWidth <= 480) {
+        const tableBody = document.querySelector('#punches tbody');
+        if (tableBody) {
+            const rows = tableBody.querySelectorAll('tr');
+            rows.forEach(row => {
+                const dateCell = row.cells[1];
+                if (dateCell && dateCell.textContent.trim()) {
+                    const dateText = dateCell.textContent.trim();
+                    const date = new Date(dateText);
+                    if (!isNaN(date.getTime())) {
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const day = String(date.getDate()).padStart(2, '0');
+                        dateCell.textContent = `${month}/${day}`;
+                    }
+                }
+            });
+        }
+        
+        // Format pay period header
+        const payPeriodDiv = document.querySelector('.timecard-pay-period');
+        if (payPeriodDiv && payPeriodDiv.textContent.trim()) {
+            const periodText = payPeriodDiv.textContent.trim();
+            const formattedPeriod = formatPayPeriodForMobile(periodText);
+            if (formattedPeriod) payPeriodDiv.textContent = formattedPeriod;
+        }
+    }
+}
+
+function formatPayPeriodForMobile(periodText) {
+    const regex = /(\w+day),\s+(\w+)\s+(\d+),\s+(\d+)\s+to\s+(\w+day),\s+(\w+)\s+(\d+),\s+(\d+)/;
+    const match = periodText.match(regex);
+    if (match) {
+        const [, day1, month1, date1, year1, day2, month2, date2, year2] = match;
+        return `${day1.substring(0,3)}, ${month1.substring(0,3)} ${date1}, ${year1} to ${day2.substring(0,3)}, ${month2.substring(0,3)} ${date2}, ${year2}`;
+    }
+    return null;
+}
+
 
 function applyRowBandingByDay() {
     const tableBody = document.querySelector('#punches tbody');
@@ -301,7 +358,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnPrintThisTimecard = document.getElementById('btnPrintThisTimecard');
     if (btnPrintThisTimecard) btnPrintThisTimecard.addEventListener('click', printTimecard);
 
+    // Setup inactivity detection (only for non-admin users)
     setupInactivityDetection();
+    formatMobileDatesTimes();
     applyRowBandingByDay();
     
     const timecardTableContainer = document.getElementById('timecardTableContainer');
@@ -310,4 +369,9 @@ document.addEventListener('DOMContentLoaded', function() {
             timecardTableContainer.scrollTo({ top: timecardTableContainer.scrollHeight, behavior: 'smooth' });
         }, 150);
     }
+    
+    // Auto-scroll to bottom of page to show punch buttons
+    setTimeout(() => {
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }, 300);
 });

@@ -4,26 +4,24 @@
 body.timeclock-page {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     color: #333;
-    background-color: transparent; /* MODIFIED: Make body background see-through */
-    position: relative; /* Required for the pseudo-element */
+    background-color: transparent;
+    position: relative;
 }
 
-/* NEW: This pseudo-element creates the background image layer */
 body.timeclock-page::before {
     content: '';
-    position: fixed; /* Cover the entire screen and stay fixed */
+    position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    background-image: url('../Images/PunchingIn.png');
+    background-image: url('../Images/PunchingIn.webp');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    z-index: -1; /* Place it behind all other content */
-    opacity: 0.8; /* Optional: Adjust for desired transparency */
+    z-index: -1;
+    opacity: 0.8;
 }
-
 
 body.timeclock-page .parent-container {
     height: 100%;
@@ -98,7 +96,6 @@ body.timeclock-page .parent-container {
     white-space: nowrap;
 }
 
-
 /* === Timecard Container & Card === */
 .timecard-container {
     width: 100%;
@@ -109,7 +106,7 @@ body.timeclock-page .parent-container {
 }
 
 .timecard {
-    background-color: rgba(252, 248, 227, 0.9); /* Added slight transparency */
+    background-color: #fcf8e3;
     border: 1px solid #a4a08a;
     box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.2);
     border-radius: 6px;
@@ -234,6 +231,7 @@ table.timecard-table {
     white-space: nowrap;
     border-left: 0;
     border-right: 0;
+    font-size: 0.9em;
 }
 .timecard-table thead th {
     background-color: #e8e1c6;
@@ -265,11 +263,40 @@ table.timecard-table {
 .timecard-table tfoot tr.hours-breakdown-row td { text-align: right; font-size: 0.9em; font-weight: normal; padding-top: 4px; border-top: none !important; color: #333; }
 
 /* === Accrual Balances Section === */
-.accrual-balances { margin-top: 25px; margin-bottom: 20px; padding-top: 15px; border-top: 1px solid #d3cbae; text-align: center;}
-.accrual-title { margin-top: 0; margin-bottom: 15px; font-size: 1.1em; font-weight: 600; color: #5c584a; text-transform: uppercase; }
-.balance-item { display: inline-block; margin: 0 15px 10px 15px; }
-.balance-label { font-weight: 600; color: #444; margin-right: 5px;}
-.balance-value { font-weight: bold; color: #333; background-color: #ffffff; padding: 3px 8px; border-radius: 4px; border: 1px solid #ccc; }
+.accrual-balances { 
+    margin-top: 25px; 
+    margin-bottom: 20px; 
+    padding-top: 15px; 
+    border-top: 1px solid #d3cbae; 
+    text-align: center;
+}
+.accrual-title { 
+    margin-top: 0; 
+    margin-bottom: 15px; 
+    font-size: 1.1em; 
+    font-weight: 600; 
+    color: #5c584a; 
+    text-transform: uppercase; 
+}
+.balance-item { 
+    display: inline-block; 
+    margin: 0 15px 10px 15px;
+    padding: 5px;
+    background-color: transparent;
+}
+.balance-label { 
+    font-weight: 600; 
+    color: #444; 
+    margin-right: 5px;
+}
+.balance-value { 
+    font-weight: bold; 
+    color: #333; 
+    background-color: #ffffff; 
+    padding: 3px 8px; 
+    border-radius: 4px; 
+    border: 1px solid #ccc; 
+}
 
 /* === Punch Button Styles === */
 .punch-buttons { display: flex; justify-content: space-around; margin-top: 20px; padding: 15px 10px 5px 10px; border-top: 1px solid #d3cbae; gap: 20px;}
@@ -442,4 +469,129 @@ table.timecard-table {
 }
 .logout-button-user i {
     margin-right: 8px;
+}
+
+/* === Mobile Only - Simple and Clean === */
+@media (max-width: 480px) {
+    body.timeclock-page {
+        background-color: #007bff;
+    }
+    
+    body.timeclock-page::before {
+        display: none;
+    }
+    
+    #main-clock-container {
+        width: 98%;
+        margin: 5px auto;
+        padding: 10px;
+        font-size: 1.5em;
+    }
+    
+    .employee-selector-container {
+        width: 98%;
+        margin: 5px auto;
+        padding: 10px;
+        flex-direction: column;
+        gap: 10px;
+        overflow: hidden;
+        word-wrap: break-word;
+    }
+    
+    .timecard-container {
+        width: 98%;
+        margin: 5px auto;
+        padding: 0;
+    }
+    
+    .timecard {
+        width: 100%;
+        padding: 10px;
+        margin: 0;
+    }
+    
+    .timecard-info {
+        flex-direction: column;
+    }
+    
+    .info-left, .info-right {
+        min-width: 100%;
+    }
+    
+    .timecard-table-container {
+        width: calc(100% + 20px);
+        margin: 15px -10px;
+        max-height: 30vh;
+        overflow-y: auto;
+    }
+    
+    .timecard-table {
+        font-size: 0.65em;
+        table-layout: fixed;
+    }
+    
+    .timecard-table th, .timecard-table td {
+        padding: 2px 1px;
+        font-size: 0.9em;
+        white-space: normal;
+        word-break: normal;
+        overflow-wrap: normal;
+        hyphens: none;
+    }
+    
+    .timecard-table th:nth-child(1), .timecard-table td:nth-child(1) {
+        width: 8%;
+    }
+    
+    .timecard-table th:nth-child(2), .timecard-table td:nth-child(2) {
+        width: 15%;
+    }
+    
+    .timecard-table th:nth-child(3), .timecard-table td:nth-child(3) {
+        width: 18%;
+        padding-right: 5px;
+    }
+    
+    .timecard-table th:nth-child(4), .timecard-table td:nth-child(4) {
+        width: 18%;
+        padding-left: 5px;
+    }
+    
+    .timecard-table th:nth-child(5), .timecard-table td:nth-child(5) {
+        width: 17%;
+    }
+    
+    .timecard-table th:nth-child(6), .timecard-table td:nth-child(6) {
+        width: 20%;
+    }
+    
+
+    
+    .balance-item {
+        display: block;
+        margin: 10px auto;
+        padding: 10px;
+        width: 80%;
+        background-color: #fcf8e3;
+        border-radius: 5px;
+    }
+    
+    .punch-buttons {
+        flex-direction: column;
+        gap: 10px;
+        padding: 15px 0 5px 0;
+    }
+    
+    .punch-buttons form {
+        width: 100%;
+        display: flex;
+    }
+    
+    .timecard-pay-period {
+        font-size: 0.8em;
+    }
+    
+    .timecard-pay-period::before {
+        content: "Pay Period: ";
+    }
 }

@@ -118,7 +118,7 @@
                                     <ul class="dropdown-content sub-dropdown-content">
                                         <li><a href="<%= request.getContextPath() %>/reassign.jsp?type=department">By Department</a></li>
                                          <li><a href="<%= request.getContextPath() %>/reassign.jsp?type=schedule">By Schedule</a></li>
-                                        <li><a href="<%= request.getContextPath() %>/reassign.jsp?type=accrual_policy">By Accrual Policy</a></li>
+                                        <li><a href="<%= request.getContextPath() %>/reassign.jsp?type=accrual_policy">By PTO Policy</a></li>
                                         <li><a href="<%= request.getContextPath() %>/reassign.jsp?type=supervisor">By Supervisor</a></li>
                                     </ul>
                                 </li>
@@ -126,7 +126,7 @@
                         </li>
                         <li><a href="<%= request.getContextPath() %>/departments.jsp" class="<%= pageName_jspf.equals("departments.jsp") ? "active" : "" %>"><i class="fas fa-building"></i> Departments</a></li>
                         <li><a href="<%= request.getContextPath() %>/scheduling.jsp" class="<%= pageName_jspf.equals("scheduling.jsp") ? "active" : "" %>"><i class="fas fa-calendar-alt"></i> Scheduling</a></li>
-                        <li><a href="<%= request.getContextPath() %>/accruals.jsp" class="<%= pageName_jspf.equals("accruals.jsp") ? "active" : "" %>"><i class="fas fa-umbrella-beach"></i> Accruals</a></li>
+                        <li><a href="<%= request.getContextPath() %>/accruals.jsp" class="<%= pageName_jspf.equals("accruals.jsp") ? "active" : "" %>"><i class="fas fa-umbrella-beach"></i> PTO</a></li>
                         <li class="dropdown">
                             <a href="javascript:void(0);" class="dropbtn"><i class="fas fa-file-invoice-dollar"></i> Payroll <i class="fas fa-chevron-down"></i></a>
                             <ul class="dropdown-content">
@@ -171,7 +171,7 @@
                                 <li><a href="<%= request.getContextPath() %>/reports.jsp?report=exception">Exception Report</a></li>
                                 <li><a href="<%= request.getContextPath() %>/reports.jsp?report=tardy">Tardy Report</a></li>
                                  <li><a href="<%= request.getContextPath() %>/reports.jsp?report=whosin">Who's In Report</a></li>
-                                <li><a href="<%= request.getContextPath() %>/reports.jsp?report=accrualBalance">Accrual Balance Report</a></li>
+                                <li><a href="<%= request.getContextPath() %>/reports.jsp?report=accrualBalance">PTO Balance Report</a></li>
                                 <li><a href="<%= request.getContextPath() %>/reports.jsp?report=systemAccess">System Access Report</a></li>
                                 <li class="sub-dropdown-trigger">
                                      <a href="javascript:void(0);" class="sub-dropbtn">Time Card Reports <i class="fas fa-chevron-right"></i></a>

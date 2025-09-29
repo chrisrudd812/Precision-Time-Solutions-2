@@ -75,6 +75,10 @@
     color: #475569; 
     font-size: 0.95em;
 }
+.toggle-switch-label.active {
+    font-weight: 600;
+    color: #14b8a6;
+}
 .switch { position: relative; display: inline-block; width: 50px; height: 28px; vertical-align: middle; }
 .switch input { opacity: 0; width: 0; height: 0; }
 .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; }
@@ -129,4 +133,102 @@ input:checked + .slider:before { transform: translateX(22px); }
 .manage-accrual-form-outer-box .button-row .glossy-button {
     min-width: 220px; 
     font-size: 1.05em;
+}
+
+/* Mobile Styles */
+@media (max-width: 480px) {
+    .parent-container {
+        padding: 10px !important;
+    }
+    
+    .main-action-buttons {
+        flex-direction: column !important;
+        gap: 10px !important;
+        margin-top: 20px !important;
+    }
+    
+    .main-action-buttons .glossy-button {
+        width: 100% !important;
+    }
+    
+    .table-container.report-table-container {
+        max-height: 30vh !important;
+        overflow-y: auto !important;
+    }
+    
+    h1 {
+        font-size: 1.3em !important;
+        margin-bottom: 20px !important;
+    }
+    
+    .instruction-text {
+        font-size: 0.8em !important;
+        text-align: center !important;
+    }
+    
+    .setup-label {
+        font-size: 0.7em !important;
+    }
+    
+    /* Accrual adjustment form mobile styles */
+    #adjustAccrualBalanceSection {
+        margin-top: 20px !important;
+        padding: 15px !important;
+    }
+    
+    .manage-accrual-form-outer-box h2 {
+        font-size: 1.2em !important;
+        padding: 0 10px 10px 10px !important;
+    }
+    
+    .manage-accrual-form-outer-box p.page-description {
+        font-size: 0.9em !important;
+        padding: 0 10px !important;
+    }
+    
+    .form-elements-gradient-wrapper {
+        padding: 15px !important;
+    }
+    
+    .scope-selection-top {
+        flex-direction: column !important;
+        gap: 10px !important;
+        text-align: center !important;
+    }
+    
+    .switch {
+        width: 60px !important;
+        height: 32px !important;
+    }
+    
+    .slider:before {
+        height: 24px !important;
+        width: 24px !important;
+        left: 4px !important;
+        bottom: 4px !important;
+    }
+    
+    input:checked + .slider:before {
+        transform: translateX(28px) !important;
+    }
+    
+    .form-elements-gradient-wrapper .form-row {
+        flex-direction: column !important;
+        gap: 15px !important;
+    }
+    
+    .form-elements-gradient-wrapper .form-row .form-item {
+        min-width: 100% !important;
+    }
+    
+    .form-elements-gradient-wrapper .radio-group {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 8px !important;
+    }
+    
+    .manage-accrual-form-outer-box .button-row .glossy-button {
+        min-width: 100% !important;
+        width: 100% !important;
+    }
 }

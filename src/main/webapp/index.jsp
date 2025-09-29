@@ -18,7 +18,7 @@
     <header class="landing-header">
         <div class="container">
             <div class="logo">
-                <img src="<%= request.getContextPath() %>/Images/logo.png" alt="Precision Time Solutions Logo" class="logo-image-header">
+                <img src="<%= request.getContextPath() %>/Images/logo.webp" alt="Precision Time Solutions Logo" class="logo-image-header">
             </div>
             <div class="header-title">
                 Precision Time Solutions
@@ -58,19 +58,19 @@
                 <h2>Simple and Intuitive Interface</h2>
                 <div class="preview-grid">
                     <div class="preview-item">
-                        <img src="<%= request.getContextPath() %>/Images/employees_main.png" alt="Employee Management preview">
+                        <img src="<%= request.getContextPath() %>/Images/employees_main.webp" alt="Employee Management preview">
                         <div class="preview-text"><h4>Employee Management</h4><p>Add, Edit and Delete employee details or Reset PINs all in one place.</p></div>
                     </div>
                     <div class="preview-item">
-                        <img src="<%= request.getContextPath() %>/Images/punches_edit.png" alt="Edit Punches preview">
-                        <div class="preview-text"><h4>Easy Timesheet Edits</h4><p>Administrators can easily review and edit employee timesheets with a clear, user-friendly interface.</p></div>
+                        <img src="<%= request.getContextPath() %>/Images/punches_main.webp" alt="Edit Punches preview">
+                        <div class="preview-text"><h4>Easy Time sheet Edits</h4><p>Administrators can easily review and edit employee time sheets with a clear, user-friendly interface.</p></div>
                     </div>
                     <div class="preview-item">
-                        <img src="<%= request.getContextPath() %>/Images/timecards_individual.png" alt="Time Clock preview">
+                        <img src="<%= request.getContextPath() %>/Images/timecards_individual.webp" alt="Time Clock preview">
                         <div class="preview-text"><h4>Simple "Time Card" Interface</h4><p>Punching IN or OUT is as simple as clicking a button and details such as accrued PTO, schedule and department info, are available at a glance.</p></div>
                     </div>
                 	<div class="preview-item">
-                        <img src="<%= request.getContextPath() %>/Images/settings_punch_restrictions.png" alt="Location (geofence) Preview">
+                        <img src="<%= request.getContextPath() %>/Images/settings_punch_restrictions.webp" alt="Location (geofence) Preview">
                         <div class="preview-text"><h4>Configure Punch Restrictions</h4><p>Restrict "Buddy Punching" with optional punch restrictions. Optional restrictions include Time / Lockout restrictions, Locations Restrictions (Geofencing), and Device Restrictioins.</p></div>
                     </div>
                 </div>
@@ -120,7 +120,7 @@
                         <% if (isMostPopular) { %>
                             <div class="popular-badge">Most Popular</div>
                         <% } %>
-                        <img src="<%= request.getContextPath() %>/Images/logo.png" alt="Logo" class="pricing-logo">
+                        <img src="<%= request.getContextPath() %>/Images/logo.webp" alt="Logo" class="pricing-logo">
                         <h3><%= plan.get("title") %></h3>
                         <p class="description"><%= plan.get("description") %></p>
                         <p class="price">$<%= plan.get("price") %><span>/ per month</span></p>

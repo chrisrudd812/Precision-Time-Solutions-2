@@ -48,9 +48,9 @@
     <div class="login-container">
         <div class="login-header">
             <a href="index.jsp" class="logo-link">
-                 <img src="<%= request.getContextPath() %>/Images/logo.png" style="height:350px" alt="Precision Time Solutions Logo" class="logo-image">
+                 <img src="<%= request.getContextPath() %>/Images/logo.webp" alt="Precision Time Solutions Logo" class="logo-image">
             </a>
-            <h1>Admin & Employee Login</h1>
+            <h1>Admin and Employee Login</h1>
         </div>
 
         <% if (errorMessage != null && !errorMessage.isEmpty()) { %>

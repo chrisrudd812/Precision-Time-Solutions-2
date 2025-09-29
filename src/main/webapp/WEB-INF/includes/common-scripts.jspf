@@ -3,5 +3,6 @@
 
 <script src="${pageContext.request.contextPath}/js/commonUtils.js?v=<%= System.currentTimeMillis() %>"></script>
 <script src="${pageContext.request.contextPath}/js/navbar.js?v=<%= System.currentTimeMillis() %>"></script>
+<script src="${pageContext.request.contextPath}/js/loginMessage.js?v=<%= System.currentTimeMillis() %>"></script>
 
 <%-- You can add other global JavaScript files here in the future --%>

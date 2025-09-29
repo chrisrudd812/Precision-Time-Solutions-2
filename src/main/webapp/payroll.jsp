@@ -109,7 +109,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Payroll Processing</title>
     <%@ include file="/WEB-INF/includes/common-head.jspf" %>
-    <link rel="stylesheet" href="css/modals.css?v=<%= System.currentTimeMillis() %>">
     <link rel="stylesheet" href="css/payroll.css?v=<%= System.currentTimeMillis() %>">
 </head>
 <body class="payroll-page">
@@ -127,34 +126,32 @@
         <% } %>
 
         <% if(dataReady) { %>
-        <div class="content-display-area" style="max-height: 800px; overflow-y: auto;">
-            <p class="instructions">Review payroll below. Run the 'Exception Report' first to check for missing punches before closing the pay period.</p>
-            <h4 style="color: #6c757d; margin: 7px auto 10px auto; font-size: 0.9em; text-align: center;"><span class="instruction-text">💡 Click on a payroll table row to edit that employee's punches</span></h4>
-            <div id="payroll-table-container" class="table-container report-table-container">
-                <table id="payrollTable" class="report-table sortable">
-                    <thead>
-                         <tr>
-                            <th class="sortable" data-sort-type="number">Emp ID</th>
-                            <th class="sortable" data-sort-type="string">First Name</th>
-                            <th class="sortable" data-sort-type="string">Last Name</th>
-                            <th class="sortable" data-sort-type="string">Wage Type</th>
-                            <th class="sortable" data-sort-type="number">Regular Hours</th>
-                            <th class="sortable" data-sort-type="number">Overtime Hours</th>
-                            <th class="sortable" data-sort-type="number">Double Time Hours</th>
-                            <th class="sortable" data-sort-type="number">Total Paid Hours</th>
-                            <th class="sortable" data-sort-type="currency">Wage</th>
-                            <th class="sortable" data-sort-type="currency">Total Pay</th>
-                        </tr>
-                    </thead>
-                    <tbody><%= payrollTableHtml %></tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="9">Payroll Grand Total:</td>
-                            <td><%= formattedGrandTotal %></td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
+        <p class="instructions">Review payroll below. Run the 'Exception Report' first to check for missing punches before closing the pay period.</p>
+        <h4 style="color: #6c757d; margin: 7px auto 10px auto; font-size: 0.9em; text-align: center;"><span class="instruction-text">💡 Click on a payroll table row to edit that employee's punches</span></h4>
+        <div id="payroll-table-container" class="table-container report-table-container">
+            <table id="payrollTable" class="report-table sortable">
+                <thead>
+                     <tr>
+                        <th class="sortable" data-sort-type="number">Emp ID</th>
+                        <th class="sortable" data-sort-type="string">First Name</th>
+                        <th class="sortable" data-sort-type="string">Last Name</th>
+                        <th class="sortable" data-sort-type="string">Wage Type</th>
+                        <th class="sortable" data-sort-type="number">Regular Hours</th>
+                        <th class="sortable" data-sort-type="number">Overtime Hours</th>
+                        <th class="sortable" data-sort-type="number">Double Time Hours</th>
+                        <th class="sortable" data-sort-type="number">Total Paid Hours</th>
+                        <th class="sortable" data-sort-type="currency">Wage</th>
+                        <th class="sortable" data-sort-type="currency">Total Pay</th>
+                    </tr>
+                </thead>
+                <tbody><%= payrollTableHtml %></tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="9">Payroll Grand Total:</td>
+                        <td><%= formattedGrandTotal %></td>
+                    </tr>
+                </tfoot>
+            </table>
         </div>
         <div id="payroll-actions-container">
             <button id="btnExceptionReport" type="button" class="glossy-button text-orange"><i class="fas fa-exclamation-triangle"></i> Exception Report</button>

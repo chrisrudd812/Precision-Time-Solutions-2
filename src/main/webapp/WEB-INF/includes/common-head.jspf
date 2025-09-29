@@ -9,7 +9,6 @@
 <%-- MODIFIED: All paths now use the contextPath for reliability --%>
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common.css?v=<%= System.currentTimeMillis() %>">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/navbar.css?v=<%= System.currentTimeMillis() %>">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/reports.css?v=<%= System.currentTimeMillis() %>">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/modals.css?v=<%= System.currentTimeMillis() %>">
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">

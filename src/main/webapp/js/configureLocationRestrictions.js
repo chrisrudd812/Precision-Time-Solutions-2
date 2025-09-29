@@ -185,21 +185,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (getCurrentLocationBtn) {
         getCurrentLocationBtn.addEventListener('click', () => {
-            // ... (this function is unchanged)
             if ("geolocation" in navigator) {
                 getCurrentLocationBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Getting Location...';
                 getCurrentLocationBtn.disabled = true;
-                navigator.geolocation.getCurrentPosition(position => {
-                    updateMapAndInputs(position.coords.latitude, position.coords.longitude);
-                    getCurrentLocationBtn.innerHTML = '<i class="fas fa-location-arrow"></i> Use My Current Location';
-                    getCurrentLocationBtn.disabled = false;
-                }, error => {
-                    showPageNotification('Could not get your location. Please enable location services and try again.', 'error');
-                    getCurrentLocationBtn.innerHTML = '<i class="fas fa-location-arrow"></i> Use My Current Location';
-                    getCurrentLocationBtn.disabled = false;
-                }, { timeout: 10000 });
+                
+                const options = {
+                    enableHighAccuracy: true,
+                    timeout: 5000,
+                    maximumAge: 0
+                };
+                
+                navigator.geolocation.getCurrentPosition(
+                    position => {
+                        updateMapAndInputs(position.coords.latitude, position.coords.longitude);
+                        getCurrentLocationBtn.innerHTML = '<i class="fas fa-location-arrow"></i> Use My Current Location';
+                        getCurrentLocationBtn.disabled = false;
+                        showToast('Location found!', 'success');
+                    },
+                    error => {
+                        getCurrentLocationBtn.innerHTML = '<i class="fas fa-location-arrow"></i> Use My Current Location';
+                        getCurrentLocationBtn.disabled = false;
+                        showToast('Location blocked - check browser address bar for location icon', 'error');
+                    },
+                    options
+                );
             } else {
-                showPageNotification('Geolocation is not supported by your browser.', 'error');
+                showToast('Geolocation not supported by this browser', 'error');
             }
         });
     }

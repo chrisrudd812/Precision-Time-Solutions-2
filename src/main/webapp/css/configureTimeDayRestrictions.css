@@ -3,13 +3,22 @@
 .config-container {
     padding: 20px;
     max-width: 950px;
-    margin: 20px auto;
+    margin: 3.5% auto 0 auto;
+    background-color: #ffffff;
+    border-radius: 12px;
+    min-height: fit-content;
+    height: auto;
+    overflow: visible;
 }
 
 #timeDayRestrictionsForm {
     display: flex;
     flex-direction: column;
-    align-items: center; 
+    align-items: center;
+    width: 100%;
+    min-height: fit-content;
+    height: auto;
+    overflow: visible;
 }
 
 #timeDayRestrictionsForm > .setting-item,
@@ -22,6 +31,10 @@
     margin-bottom: 25px; 
     padding-bottom: 25px; 
     border-bottom: 1px solid #eee;
+    width: 100%;
+    overflow: visible;
+    height: auto;
+    min-height: fit-content;
 }
 
 .setting-item.no-border {
@@ -156,4 +169,124 @@
     display: flex;
     justify-content: flex-end;
     gap: 15px;
+}
+
+/* Mobile Styles - ONLY for screens 480px and below */
+@media (max-width: 480px) {
+    .config-container {
+        margin: 10px !important;
+        max-width: calc(100% - 20px) !important;
+    }
+    
+    h1 {
+        font-size: 1.3em !important;
+        text-align: center !important;
+    }
+    
+    .section-heading {
+        font-size: 1.1em !important;
+    }
+    
+    .day-settings-row {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 15px !important;
+    }
+    
+    .toggle-group {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        width: 100% !important;
+        gap: 10px !important;
+    }
+    
+    .toggle-group[style*="align-items: center"] {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+    
+    .toggle-group .slider-label {
+        margin-bottom: 5px !important;
+        width: 100% !important;
+        white-space: normal !important;
+        word-spacing: normal !important;
+    }
+    
+    .toggle-group .slider-label strong {
+        margin-left: 0.25em !important;
+    }
+    
+    .toggle-group .switch {
+        align-self: flex-start !important;
+        margin-bottom: 10px !important;
+    }
+    
+    .time-inputs-group {
+        width: 100% !important;
+    }
+    
+    .time-input-pair-wrapper {
+        flex-direction: row !important;
+        gap: 10px !important;
+        align-items: center !important;
+    }
+    
+    .time-input-pair {
+        flex: 1 !important;
+        justify-content: space-between !important;
+        width: 100% !important;
+    }
+    
+    .time-inputs-group input[type="time"] {
+        width: 100% !important;
+        max-width: none !important;
+        flex: 1 !important;
+    }
+    
+    .form-actions {
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+    
+    .form-actions .glossy-button {
+        width: 100% !important;
+        text-align: center !important;
+        box-sizing: border-box !important;
+    }
+    
+    .day-restriction-block {
+        margin-bottom: 25px !important;
+    }
+    
+    .setting-info {
+        font-size: 0.9em !important;
+    }
+    
+    /* Fix global rule toggle switch */
+    .day-settings-row .switch {
+        width: 70px !important;
+        height: 30px !important;
+    }
+    
+    .day-settings-row .slider:before {
+        height: 22px !important;
+        width: 22px !important;
+    }
+    
+    .day-settings-row .switch input:checked + .slider:before {
+        transform: translateX(40px) !important;
+    }
+    
+    #unselectedDayActionText {
+        font-weight: 600 !important;
+        background-color: #e3f2fd !important;
+        padding: 5px 10px !important;
+        border-radius: 4px !important;
+        border: 1px solid #2196f3 !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        display: block !important;
+        text-align: left !important;
+        margin-left: 0 !important;
+    }
 }

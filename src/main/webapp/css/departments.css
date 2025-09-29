@@ -34,3 +34,35 @@
 .modal-form-yellow-state .form-item input {
     margin-top: 4px;
 }
+
+/* Mobile Styles */
+@media (max-width: 480px) {
+    .parent-container {
+        padding: 10px !important;
+    }
+    
+    .main-action-buttons {
+        flex-direction: column !important;
+        gap: 10px !important;
+        margin-top: 20px !important;
+    }
+    
+    .main-action-buttons .glossy-button {
+        width: 100% !important;
+    }
+    
+    .department-table-container {
+        max-height: 40vh !important;
+        overflow-y: auto !important;
+    }
+    
+    h1 {
+        font-size: 1.3em !important;
+        margin-bottom: 20px !important;
+    }
+    
+    .instruction-text {
+        font-size: 0.8em !important;
+        text-align: center !important;
+    }
+}

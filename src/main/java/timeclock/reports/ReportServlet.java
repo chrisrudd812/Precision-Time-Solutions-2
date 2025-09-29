@@ -242,8 +242,8 @@ public class ReportServlet extends HttpServlet {
                     case "accrualBalance":
                         reportHtml = ShowReports.showAccrualBalanceReport(tenantId);
                         if (reportHtml.contains("report-message-row")) { message = "No employees found for accrual report."; reportHtml = null; success = true;}
-                        else if (!reportHtml.contains("report-error-row")) { success = true; message = "Accrual Balance report loaded.";}
-                        else { message = "Error generating Accrual Balance report.";}
+                        else if (!reportHtml.contains("report-error-row")) { success = true; message = "PTO Balance report loaded.";}
+                        else { message = "Error generating PTO Balance report.";}
                         break;
                     case "systemAccess":
                         reportHtml = ShowReports.showSystemAccessReport(tenantId);

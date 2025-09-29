@@ -121,7 +121,7 @@
     <div class="login-container set-pin-container"> 
         <div class="login-header set-pin-header">
             <a href="<%= request.getContextPath() %>/index.jsp" class="logo-link">
-                <img src="<%= request.getContextPath() %>/Images/logo.png" alt="<%= escapeHtml(companyNameSignup_InitialPin) %> Logo" class="logo-image">
+                <img src="<%= request.getContextPath() %>/Images/logo.webp" alt="<%= escapeHtml(companyNameSignup_InitialPin) %> Logo" class="logo-image">
             </a>
             <h1>Set Your Login PIN</h1>
             <p class="welcome-message">

@@ -51,6 +51,7 @@
 	box-sizing: border-box;
 	justify-content: flex-start;
 	margin-top: 20px;
+	flex-wrap: wrap;
 }
 
 /* --- Table Footer Fix --- */
@@ -59,11 +60,12 @@
     bottom: 0; /* Changed from -1px to prevent rendering glitches */
     z-index: 10;
     /* Add a solid background to the entire footer to mask any gaps from the scrollbar */
-    background-color: #f1f5f9;
+    background: linear-gradient(to bottom, #f0fdf4, #e6fcf5);
 }
 #punchesTable tfoot tr.footer-summary-row td {
     font-weight: bold;
     border-top: 2px solid #14b8a6;
+    background: linear-gradient(to bottom, #f0fdf4, #e6fcf5);
 }
 #punchesTable tfoot span.hours-breakdown-span {
     font-weight: normal;
@@ -77,6 +79,12 @@
 */
 .report-display-area:has(.punches-table-container) {
     flex-grow: 0;
+}
+
+/* Desktop table max-height */
+.punches-table-container {
+    max-height: 60vh;
+    overflow-y: auto;
 }
 
 /* Pronounced hover effect for clickable table rows */
@@ -95,4 +103,52 @@
 .no-navbar .parent-container {
     margin-top: 0 !important;
     padding-top: 20px;
+}
+
+/* Mobile Styles */
+@media (max-width: 480px) {
+    .parent-container {
+        padding: 10px !important;
+    }
+    
+    .filter-form-punches {
+        flex-direction: column;
+        gap: 10px;
+        padding: 15px;
+        margin: 0 0 10px 0;
+    }
+    
+    .filter-form-punches .form-item {
+        width: 100%;
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .filter-form-punches select#employeeSelectPunches {
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
+    .employee-schedule-info-bar {
+        flex-direction: column;
+        gap: 8px;
+        padding: 15px;
+        text-align: center;
+        margin: 0 0 20px 0;
+    }
+    
+    .punches-table-container {
+        max-height: 30vh !important;
+        overflow-y: auto !important;
+    }
+    
+    .main-action-buttons {
+        flex-direction: column !important;
+        gap: 10px !important;
+        margin-top: 20px !important;
+    }
+    
+    .main-action-buttons .glossy-button {
+        width: 100% !important;
+    }
 }

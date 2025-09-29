@@ -125,14 +125,19 @@
                     List<Map<String, String>> punchesList = (List<Map<String, String>>) timecardData.get("punches");
                     if (punchesList != null && !punchesList.isEmpty()) {
                         for (Map<String, String> punch : punchesList) {
-                            String inTime = escapeHtml(punch.get("timeIn"));
-                            String outTime = escapeHtml(punch.get("timeOut"));
+                            String inTime = punch.get("timeIn");
+                            String outTime = punch.get("timeOut");
                             String inTimeCssClass = punch.get("inTimeCssClass");
                             String outTimeCssClass = punch.get("outTimeCssClass");
-                            if (inTimeCssClass != null && !inTimeCssClass.isEmpty()) {
+                            
+                            // Handle null/empty times for entries like Holiday, Vacation, Other
+                            inTime = (inTime != null && !inTime.trim().isEmpty()) ? escapeHtml(inTime) : "";
+                            outTime = (outTime != null && !outTime.trim().isEmpty()) ? escapeHtml(outTime) : "";
+                            
+                            if (inTimeCssClass != null && !inTimeCssClass.isEmpty() && !inTime.isEmpty()) {
                                 inTime = "<span class='" + inTimeCssClass + "'>" + inTime + "</span>";
                             }
-                            if (outTimeCssClass != null && !outTimeCssClass.isEmpty()) {
+                            if (outTimeCssClass != null && !outTimeCssClass.isEmpty() && !outTime.isEmpty()) {
                                 outTime = "<span class='" + outTimeCssClass + "'>" + outTime + "</span>";
                             }
 
@@ -164,16 +169,124 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Time Clock<%= titleSuffix %></title>
     
-    <%@ include file="/WEB-INF/includes/common-head.jspf" %>
-    
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="<%= request.getContextPath() %>/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="<%= request.getContextPath() %>/css/navbar.css?v=<%= System.currentTimeMillis() %>">
+    <link rel="stylesheet" href="<%= request.getContextPath() %>/css/modals.css?v=<%= System.currentTimeMillis() %>">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+        
     <link rel="stylesheet" href="css/timeclock.css?v=<%= System.currentTimeMillis() %>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs/dist/fp.min.js"></script>
+    
+    <% if ("Administrator".equalsIgnoreCase(userPermissions_timeclock)) { %>
+    <style>
+        #main-clock-container {
+            position: sticky !important;
+            top: 60px !important;
+            z-index: 100 !important;
+        }
+    </style>
+    <% } else { %>
+    <style>
+        #main-clock-container {
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 100 !important;
+        }
+    </style>
+    <% } %>
+    
+    <% if ("User".equalsIgnoreCase(userPermissions_timeclock)) { %>
+    <style>
+        body.timeclock-page {
+            padding-top: 0 !important;
+        }
+        #main-clock-container {
+            margin-top: 10px !important;
+        }
+        .user-logout-container {
+            width: 100% !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: flex-start !important;
+            padding: 0 0 30px 0 !important;
+        }
+        .logout-button-user {
+            width: 90% !important;
+            max-width: 750px !important;
+            box-sizing: border-box !important;
+        }
+    </style>
+    <% } %>
+    
+    <style>
+        @media (max-width: 480px) {
+            /* Fix dropdown overflow */
+            .employee-selector-container {
+                width: 100vw !important;
+                max-width: 100vw !important;
+                margin: 0 !important;
+                padding: 10px !important;
+                box-sizing: border-box !important;
+                overflow: hidden !important;
+            }
+            
+            .employee-selector-container select {
+                max-width: 100% !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+            }
+            
+            /* Use more page width */
+            .timecard-container {
+                width: 100vw !important;
+                max-width: 100vw !important;
+                margin: 0 !important;
+                padding: 5px !important;
+                box-sizing: border-box !important;
+            }
+            
+            .timecard {
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 10px !important;
+                box-sizing: border-box !important;
+            }
+            
+            /* Make table scrollable at 30vh */
+            #timecardTableContainer {
+                max-height: 30vh !important;
+                overflow-y: auto !important;
+                overflow-x: auto !important;
+                border: 1px solid #ccc !important;
+            }
+            
+            /* Fix punch buttons */
+            .punch-buttons {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 10px !important;
+                width: 100% !important;
+                padding: 15px 0 !important;
+            }
+            
+            .punch-buttons form {
+                width: 100% !important;
+                flex: none !important;
+            }
+            
+            .punch-button {
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+        }
+    </style>
+
 </head>
 <body class="timeclock-page">
     <% if ("Administrator".equalsIgnoreCase(userPermissions_timeclock)) { %>
@@ -324,33 +437,26 @@
     
     <%-- This debugging script will now run AFTER timeclock.js is loaded. --%>
     <script>
-        console.log("DEBUG: Page bottom script running.");
         (function() {
-            console.log("DEBUG: IIFE (Immediately Invoked Function Expression) is executing.");
             const message = "<%= punchMessage != null ? escapeForJavaScriptString(punchMessage) : "" %>";
             const error = "<%= punchError != null ? escapeForJavaScriptString(punchError) : "" %>";
-            
-            console.log("DEBUG: Value of 'error' parameter from URL:", error);
-            console.log("DEBUG: Value of 'message' parameter from URL:", message);
 
-            if (error) {
-                console.log("DEBUG: 'error' condition is true. Attempting to call showTimeclockNotificationModal.");
-                if (typeof showTimeclockNotificationModal === 'function') {
-                    showTimeclockNotificationModal(error, true);
-                } else {
-                    console.error("FATAL DEBUG ERROR: showTimeclockNotificationModal function is NOT defined!");
-                }
-            } else if (message) {
-                console.log("DEBUG: 'message' condition is true. Attempting to call showTimeclockNotificationModal.");
-                 if (typeof showTimeclockNotificationModal === 'function') {
-                    showTimeclockNotificationModal(message, false);
-                } else {
-                    console.error("FATAL DEBUG ERROR: showTimeclockNotificationModal function is NOT defined!");
+            if (error && typeof showTimeclockNotificationModal === 'function') {
+                showTimeclockNotificationModal(error, true);
+            } else if (message && typeof showTimeclockNotificationModal === 'function') {
+                showTimeclockNotificationModal(message, false);
+                // Scroll to table on mobile after successful punch
+                if (window.innerWidth <= 480) {
+                    setTimeout(() => {
+                        const tableContainer = document.getElementById('timecardTableContainer');
+                        if (tableContainer) {
+                            tableContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    }, 500);
                 }
             }
 
             if ((message || error) && window.history.replaceState) {
-                console.log("DEBUG: Cleaning URL parameters.");
                 const url = new URL(window.location);
                 url.searchParams.delete('message');
                 url.searchParams.delete('error');

@@ -93,6 +93,12 @@ public class LoginServlet extends HttpServlet {
 
 					int eid = rsUser.getInt("EID");
 					String userPermissions = rsUser.getString("PERMISSIONS");
+					
+					logger.info("[DEBUG] 8. SETTING SESSION ATTRIBUTES:");
+					logger.info("[DEBUG] - Session ID: " + session.getId());
+					logger.info("[DEBUG] - User-Agent: " + request.getHeader("User-Agent"));
+					logger.info("[DEBUG] - Remote Address: " + request.getRemoteAddr());
+					
 					session.setAttribute("EID", eid);
 					session.setAttribute("UserFirstName", rsUser.getString("FIRST_NAME"));
 					session.setAttribute("UserLastName", rsUser.getString("LAST_NAME"));
@@ -101,6 +107,12 @@ public class LoginServlet extends HttpServlet {
 					session.setAttribute("CompanyIdentifier", companyIdentifier.trim());
 					session.setAttribute("Email", email.trim().toLowerCase());
 					
+					logger.info("[DEBUG] 9. SESSION ATTRIBUTES SET:");
+					logger.info("[DEBUG] - EID: " + eid);
+					logger.info("[DEBUG] - Permissions: '" + userPermissions + "'");
+					logger.info("[DEBUG] - TenantID: " + tenantId);
+					logger.info("[DEBUG] - CompanyIdentifier: '" + companyIdentifier.trim() + "'");
+					
                     // NEW: Determine if location checks are needed BEFORE redirecting
                     boolean locationCheckIsRequired = Helpers.isLocationCheckRequired(tenantId);
                     session.setAttribute("locationCheckIsRequired", locationCheckIsRequired);
@@ -108,8 +120,10 @@ public class LoginServlet extends HttpServlet {
 
 					if ("Administrator".equalsIgnoreCase(userPermissions)) {
 						session.setMaxInactiveInterval(4 * 60 * 60);
+						logger.info("[DEBUG] 10. Session timeout set to 4 hours for Administrator");
 					} else {
-						session.setMaxInactiveInterval(1 * 5);
+						session.setMaxInactiveInterval(30);
+						logger.info("[DEBUG] 10. Session timeout set to 30 seconds for Employee");
 					}
 
 					String subscriptionStatus = syncSubscriptionStatus(conn, tenantId);
@@ -128,11 +142,13 @@ public class LoginServlet extends HttpServlet {
 
 					if (rsUser.getBoolean("RequiresPasswordChange")) {
 						session.setAttribute("pinChangeRequired", true);
+						logger.info("[DEBUG] 11. REDIRECTING to change_password.jsp (password change required)");
 						response.sendRedirect("change_password.jsp");
 					} else {
 						session.removeAttribute("startSetupWizard");
 						String targetPage = "Administrator".equalsIgnoreCase(userPermissions) ? "employees.jsp"
 								: "timeclock.jsp";
+						logger.info("[DEBUG] 11. REDIRECTING to: " + targetPage);
 						response.sendRedirect(targetPage);
 					}
 				} else {

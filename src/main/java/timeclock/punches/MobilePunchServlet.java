@@ -479,7 +479,7 @@ public class MobilePunchServlet extends HttpServlet {
         }
 
         if (Double.isNaN(userLat) || Double.isNaN(userLon)) {
-            throw new Exception("Location check is required, but no coordinates were provided. Please enable location services and try again.");
+            throw new Exception("Location access is required but was not provided. Please tap the location icon in your browser's address bar and select 'Allow', then try punching again. If the issue persists, ensure location services are enabled on your device.");
         }
         
         List<Map<String, Object>> enabledLocations = new ArrayList<>();

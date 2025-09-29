@@ -3,7 +3,6 @@
 
 /*
     Most styling (page layout, tables, modals, base glossy buttons)
-    is inherited from css/reports.css by applying common classes.
 */
 
 /* MODIFIED: Add rules to make container height dynamic */
@@ -30,7 +29,6 @@ table#historyTable th[data-sort-type="currency"] {
 }
 
 /* --- Button Container for Payroll History Actions --- */
-/* Override #button-container from reports.css if it used space-around */
 #button-container.payroll-history-actions {
     display: flex;
     justify-content: space-between; /* Pushes children to opposite ends */
@@ -54,7 +52,6 @@ table#historyTable th[data-sort-type="currency"] {
 }
 
 /* Styling for the buttons themselves - size, etc. */
-/* .glossy-button class from reports.css provides base style */
 .payroll-history-actions button.glossy-button {
     min-width: 200px; /* Give buttons a good minimum width */
 }
@@ -65,3 +62,34 @@ table#historyTable th[data-sort-type="currency"] {
 
 
 /* Add any other styles unique to payroll_history.jsp elements */
+
+/* Mobile Styles - ONLY for screens 480px and below */
+@media (max-width: 480px) {
+    .parent-container {
+        padding: 10px !important;
+    }
+    
+    .payroll-history-actions {
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+    
+    .payroll-history-actions .action-left,
+    .payroll-history-actions .action-right {
+        width: 100% !important;
+    }
+    
+    .payroll-history-actions button.glossy-button {
+        width: 100% !important;
+        min-width: 100% !important;
+    }
+    
+    .report-table-container {
+        max-height: 40vh !important;
+        overflow-y: auto !important;
+    }
+    
+    h1 {
+        font-size: 1.3em !important;
+    }
+}

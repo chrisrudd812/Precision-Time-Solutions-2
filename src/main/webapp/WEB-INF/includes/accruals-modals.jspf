@@ -7,7 +7,7 @@
             <input type="hidden" name="action" value="addAccrual">
             <% if(inSetupWizardMode_JSP) { %><input type="hidden" name="setup_wizard" value="true"><% } %>
             <div class="modal-header">
-                <h2 class="modal-title-success"><i class="fas fa-plus-circle"></i> <span>Add Accrual Policy</span></h2>
+                <h2 class="modal-title-success"><i class="fas fa-plus-circle"></i> <span>Add PTO Policy</span></h2>
             </div>
             <div class="modal-body">
                 <div class="form-body-container">
@@ -46,7 +46,7 @@
             <input type="hidden" name="action" value="editAccrual">
             <input type="hidden" id="originalAccrualName" name="originalAccrualName">
             <div class="modal-header">
-                <h2 class="modal-title-warning"><i class="fas fa-edit"></i> <span>Edit Accrual Policy</span></h2>
+                <h2 class="modal-title-warning"><i class="fas fa-edit"></i> <span>Edit PTO Policy</span></h2>
             </div>
             <div class="modal-body">
                 <div class="form-body-container">
@@ -83,7 +83,7 @@
 <div id="deleteAndReassignAccrualModal" class="modal modal-state-error">
     <div class="modal-content">
         <div class="modal-header">
-            <h2 class="modal-title-error"><i class="fas fa-exclamation-triangle"></i> <span>Delete & Reassign Policy</span></h2>
+            <h2 class="modal-title-error"><i class="fas fa-exclamation-triangle"></i> <span>Delete & Reassign PTO Policy</span></h2>
         </div>
         <div class="modal-body">
             <p id="deleteReassignAccrualModalMessage"></p>

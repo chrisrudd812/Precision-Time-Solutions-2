@@ -81,8 +81,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>Reports</title>
     <%@ include file="/WEB-INF/includes/common-head.jspf" %>
-    <link rel="stylesheet" href="css/modals.css?v=<%= System.currentTimeMillis() %>">
-    <%-- No separate reports.css needed if all styles are minor or can be in common.css --%>
+    <link rel="stylesheet" href="css/reports.css?v=<%= System.currentTimeMillis() %>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
 <body>

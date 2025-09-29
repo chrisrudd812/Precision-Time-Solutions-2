@@ -102,6 +102,53 @@
             z-index: 5;
         }
         #requestTypeFeedback:checked ~ .toggle-glider { transform: translateX(100%); }
+        
+        /* Mobile Styles */
+        @media (max-width: 480px) {
+            body {
+                padding: 0 !important;
+            }
+            
+            .parent-container {
+                width: calc(100vw - 20px) !important;
+                max-width: none !important;
+                margin-top: 80px !important;
+                margin-right: 10px !important;
+                margin-bottom: 10px !important;
+                margin-left: 10px !important;
+                padding: 0 !important;
+                box-sizing: border-box !important;
+                position: relative !important;
+                left: 0 !important;
+                right: 0 !important;
+            }
+            
+            .contact-section {
+                width: 100% !important;
+                max-width: none !important;
+                margin: 10px 0 !important;
+                padding: 15px !important;
+                box-sizing: border-box !important;
+            }
+            
+            .contact-form-container {
+                width: 100% !important;
+                max-width: none !important;
+                padding: 0 15px !important;
+                box-sizing: border-box !important;
+            }
+            
+            h1 {
+                font-size: 1.3em !important;
+                text-align: center !important;
+                margin: 10px 0 !important;
+                padding: 10px !important;
+            }
+            
+            .contact-info h2 {
+                font-size: 1.2em !important;
+            }
+        }
     </style>
 </head>
 <body class="reports-page">

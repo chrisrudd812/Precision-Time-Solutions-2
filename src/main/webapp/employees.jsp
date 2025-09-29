@@ -48,7 +48,16 @@
     }
 %>
 <%
+    // Enhanced logging for session debugging
+    java.util.logging.Logger pageLogger = java.util.logging.Logger.getLogger("employees_jsp_debug");
+    pageLogger.info("=== EMPLOYEES.JSP ACCESS ATTEMPT ===");
+    pageLogger.info("[DEBUG] User-Agent: " + request.getHeader("User-Agent"));
+    pageLogger.info("[DEBUG] Remote Address: " + request.getRemoteAddr());
+    pageLogger.info("[DEBUG] Session ID from request: " + request.getRequestedSessionId());
+    
     HttpSession currentSession = request.getSession(false);
+    pageLogger.info("[DEBUG] Session from request.getSession(false): " + (currentSession != null ? currentSession.getId() : "NULL"));
+    
     Integer tenantId = null;
     String pageLevelError = request.getParameter("error");
     String pageLevelSuccess = request.getParameter("message");
@@ -62,7 +71,24 @@
     boolean employeeJustAddedInWizard_JSP = "true".equalsIgnoreCase(request.getParameter("empAdded"));
 
     if (currentSession != null) {
+        pageLogger.info("[DEBUG] Session found! Session ID: " + currentSession.getId());
+        pageLogger.info("[DEBUG] Session creation time: " + new java.util.Date(currentSession.getCreationTime()));
+        pageLogger.info("[DEBUG] Session last accessed: " + new java.util.Date(currentSession.getLastAccessedTime()));
+        pageLogger.info("[DEBUG] Session max inactive interval: " + currentSession.getMaxInactiveInterval() + " seconds");
+        
         tenantId = (Integer) currentSession.getAttribute("TenantID");
+        pageLogger.info("[DEBUG] TenantID from session: " + tenantId);
+        
+        String userPermissions = (String) currentSession.getAttribute("Permissions");
+        pageLogger.info("[DEBUG] User permissions from session: '" + userPermissions + "'");
+        
+        Integer eid = (Integer) currentSession.getAttribute("EID");
+        pageLogger.info("[DEBUG] EID from session: " + eid);
+        
+        String userFirstName = (String) currentSession.getAttribute("UserFirstName");
+        String userLastName = (String) currentSession.getAttribute("UserLastName");
+        pageLogger.info("[DEBUG] User name from session: '" + userFirstName + " " + userLastName + "'");
+        
         Object companyNameObj = currentSession.getAttribute("CompanyNameSignup");
         if (companyNameObj instanceof String && !((String)companyNameObj).isEmpty()) {
             companyNameSignup_Employees = (String) companyNameObj;
@@ -91,11 +117,15 @@
             }
         }
 
-        String userPermissions = (String) currentSession.getAttribute("Permissions");
+        // userPermissions already retrieved above for logging
         if (!"Administrator".equalsIgnoreCase(userPermissions)) {
+            pageLogger.warning("[DEBUG] ACCESS DENIED - User permissions: '" + userPermissions + "' is not Administrator");
             pageLevelError = "Access Denied.";
+        } else {
+            pageLogger.info("[DEBUG] ACCESS GRANTED - User has Administrator permissions");
         }
     } else {
+        pageLogger.warning("[DEBUG] NO SESSION FOUND - Redirecting to login");
         response.sendRedirect(request.getContextPath() + "/login.jsp?error=" + URLEncoder.encode("Session expired.", StandardCharsets.UTF_8.name()));
         return;
     }
@@ -141,28 +171,26 @@
             <button type="button" id="deleteEmployeeButton" class="glossy-button text-red" disabled><i class="fas fa-user-times"></i> Deactivate Employee</button>
         </div>
         
-        <h4 style="color: #6c757d; margin: 7px auto 0 auto; font-size: 0.9em;"><span class="instruction-text">💡 Click on a table row to view employee details</span></h4>
+        <h4 style="color: #6c757d; margin: 7px auto 0 auto; font-size: 0.9em;"><span class="instruction-text">💡 Click on a table row to view or edit employee details</span></h4>
 
-        <div class="report-display-area" style="padding-top: 4px;">
-            <div id="reportOutput_employees" class="table-container report-table-container" style="background-color: #fff;">
-                <table class="report-table sortable" id="employeesTable" data-initial-sort-column="2" data-initial-sort-direction="asc">
-                    <thead>
-                        <tr>
-                             <th class="sortable" data-sort-type="number">ID</th>
-                             <th class="sortable" data-sort-type="string">First Name</th>
-                            <th class="sortable" data-sort-type="string">Last Name</th>
-                             <th class="sortable" data-sort-type="string">Department</th>
-                             <th class="sortable" data-sort-type="string">Schedule</th>
-                            <th class="sortable" data-sort-type="string">Supervisor</th>
-                             <th class="sortable" data-sort-type="string">Permissions</th>
-                             <th class="sortable" data-sort-type="string">Email</th>
-                             <th class="sortable" data-sort-type="date">Hire Date</th>
-                             <th class="sortable" data-sort-type="string">Work Sched.</th>
-                        </tr>
-                    </thead>
-                    <tbody><%= employeeRowsHtml %></tbody>
-                </table>
-            </div>
+        <div id="reportOutput_employees" class="table-container report-table-container" style="background-color: #fff; margin-top: 4px;">
+            <table class="report-table sortable" id="employeesTable" data-initial-sort-column="2" data-initial-sort-direction="asc">
+                <thead>
+                    <tr>
+                         <th class="sortable" data-sort-type="number">ID</th>
+                         <th class="sortable" data-sort-type="string">First Name</th>
+                        <th class="sortable" data-sort-type="string">Last Name</th>
+                         <th class="sortable" data-sort-type="string">Department</th>
+                         <th class="sortable" data-sort-type="string">Schedule</th>
+                        <th class="sortable" data-sort-type="string">Supervisor</th>
+                         <th class="sortable" data-sort-type="string">Permissions</th>
+                         <th class="sortable" data-sort-type="string">Email</th>
+                         <th class="sortable" data-sort-type="string">Hire Date</th>
+                         <th class="sortable" data-sort-type="string">Work Sched.</th>
+                    </tr>
+                </thead>
+                <tbody><%= employeeRowsHtml %></tbody>
+            </table>
         </div>
 
         <div id="employeeDetailsSection" style="display: none;">
@@ -191,9 +219,9 @@
                     </div>
                 </div>
                 <div class="detail-group">
-                    <h3><i class="fas fa-calendar-check"></i> Accrual Information</h3>
+                    <h3><i class="fas fa-calendar-check"></i> PTO Information</h3>
                     <div class="detail-content">
-                        <p><label>Accrual Policy:</label><span id="detailAccrualPolicy">--</span></p>
+                        <p><label>PTO Policy:</label><span id="detailAccrualPolicy">--</span></p>
                         <p><label>Vacation Hours:</label><span id="detailVacHours">--</span></p>
                         <p><label>Sick Hours:</label><span id="detailSickHours">--</span></p>
                         <p><label>Personal Hours:</label><span id="detailPersHours">--</span></p>

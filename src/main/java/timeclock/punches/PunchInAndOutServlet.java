@@ -61,12 +61,20 @@ public class PunchInAndOutServlet extends HttpServlet {
     }
     
     private boolean hasOpenPunch(Connection con, int tenantId, int eid) throws SQLException {
-        String sql = "SELECT 1 FROM punches WHERE TenantID = ? AND EID = ? AND OUT_1 IS NULL AND PUNCH_TYPE IN ('User Initiated', 'Supervisor Override', 'Regular') LIMIT 1";
+        String sql = "SELECT IN_1 FROM punches WHERE TenantID = ? AND EID = ? AND OUT_1 IS NULL AND PUNCH_TYPE IN ('User Initiated', 'Supervisor Override', 'Regular') ORDER BY IN_1 DESC LIMIT 1";
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, tenantId);
             ps.setInt(2, eid);
             try (ResultSet rs = ps.executeQuery()) {
-                return rs.next();
+                if (rs.next()) {
+                    java.sql.Timestamp lastInTime = rs.getTimestamp("IN_1");
+                    if (lastInTime != null) {
+                        long hoursSinceLastPunch = (System.currentTimeMillis() - lastInTime.getTime()) / (1000 * 60 * 60);
+                        // Only consider it an open punch if it's within 20 hours
+                        return hoursSinceLastPunch <= 20;
+                    }
+                }
+                return false;
             }
         }
     }
@@ -166,7 +174,7 @@ public class PunchInAndOutServlet extends HttpServlet {
             return;
         }
         if (Double.isNaN(userLat) || Double.isNaN(userLon)) {
-             throw new Exception("Location is required for punching, but it could not be determined. Please enable location services in your browser and try again.");
+             throw new Exception("Location access is required but was not provided. On mobile devices, please tap the location icon in your browser's address bar and select 'Allow', then try punching again. If the issue persists, ensure location services are enabled on your device.");
         }
         List<Map<String, Object>> enabledLocations = new ArrayList<>();
         String getLocationsSql = "SELECT Latitude, Longitude, RadiusMeters FROM geofence_locations WHERE TenantID = ? AND IsEnabled = TRUE";

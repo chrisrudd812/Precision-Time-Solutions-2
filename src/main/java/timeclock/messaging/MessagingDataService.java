@@ -120,7 +120,11 @@ public class MessagingDataService {
         try (Connection con = DatabaseConnection.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, tenantId);
             if (!"all".equals(type)) {
-                ps.setString(2, target);
+                if ("individual".equals(type)) {
+                    ps.setInt(2, Integer.parseInt(target));
+                } else {
+                    ps.setString(2, target);
+                }
             }
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {

@@ -3,16 +3,38 @@
 body.employees-page .parent-container {
     max-width: 85%;
     background-color: transparent;
-}
-
-.report-display-area:has(#employeesTable) {
-    min-height: 0;
-    flex-grow: 0;
-    overflow: hidden;
+    overflow: visible;
 }
 
 #reportOutput_employees.report-table-container {
     max-height: 45vh;
+    border-radius: 8px;
+    overflow-y: auto;
+    overflow-x: auto;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 25px;
+    clip-path: inset(0 round 8px);
+}
+
+#reportOutput_employees.report-table-container table.report-table {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+#reportOutput_employees.report-table-container table.report-table thead th:first-child {
+    border-top-left-radius: 8px;
+}
+
+#reportOutput_employees.report-table-container table.report-table thead th:last-child {
+    border-top-right-radius: 8px;
+}
+
+#reportOutput_employees.report-table-container table.report-table tbody tr:last-child td:first-child {
+    border-bottom-left-radius: 8px;
+}
+
+#reportOutput_employees.report-table-container table.report-table tbody tr:last-child td:last-child {
+    border-bottom-right-radius: 8px;
 }
 
 /* Light yellow color for instruction text */
@@ -28,6 +50,11 @@ body.employees-page .parent-container {
     flex: 1 1 auto;
     min-width: 200px;
     max-width: 32%;
+}
+
+#employeesTable {
+    border-radius: 8px;
+    overflow: hidden;
 }
 
 #employeesTable thead th {
@@ -115,7 +142,7 @@ body.employees-page .parent-container {
     
     #employeeDetailsSection {
         padding: 15px;
-        margin: 20px 0 0 0;
+        margin: 10px 0 0 0;
     }
     
     .detail-group h3 {
@@ -137,10 +164,6 @@ body.employees-page .parent-container {
     #button-container.main-action-buttons button.glossy-button {
         min-width: 100%;
         max-width: 100%;
-    }
-    
-    #reportOutput_employees.report-table-container {
-        max-height: 40vh;
     }
     
     #employeesTable {
@@ -192,7 +215,7 @@ body.employees-page .parent-container {
 }
 
 #employeeDetailsSection {
-    width: 100%; margin: 25px 0 0 0; padding: 20px;
+    width: 100%; margin: 13px 0 0 0; padding: 20px;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
     background: #ffffff;
@@ -321,22 +344,23 @@ body.employees-page .parent-container {
 }
 
 .detail-group:nth-child(4) .detail-content {
-    display: flex;
-    flex-direction: column;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 12px !important;
 }
 
 #securityGroup {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    margin: 0;
-    padding: 0;
+    display: flex !important;
+    flex-direction: column !important;
+    flex-grow: 1 !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 #securityGroup form {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
+    display: flex !important;
+    flex-direction: column !important;
+    flex-grow: 1 !important;
 }
 
 #securityGroup .security-item {
@@ -345,11 +369,32 @@ body.employees-page .parent-container {
     border: 1px solid #e2e8f0;
     border-radius: 4px;
     text-align: center;
-    margin: 0;
-    flex: 1;
+    margin: 0 0 8px 0 !important;
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+}
+
+/* Input with prefix styling for wage fields */
+.input-with-prefix {
+    position: relative;
     display: flex;
-    flex-direction: column;
-    justify-content: space-between;
+    align-items: center;
+}
+
+.input-prefix {
+    position: absolute;
+    left: 12px;
+    color: #6c757d;
+    font-weight: 500;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.input-with-prefix input {
+    padding-left: 25px !important;
+}tent: space-between !important;
 }
 
 #securityGroup .security-item h4 {
@@ -369,13 +414,13 @@ body.employees-page .parent-container {
 #securityGroup .security-item .security-status {
     font-size: 0.8em;
     font-weight: 600;
+    margin-bottom: 8px;
 }
 
 #btnResetPassword.glossy-button { 
     width: 100%;
     font-size: 0.85em;
     padding: 8px 12px;
-    margin-top: auto;
 }
 
 .modal-content .form-row .form-item.third-width {
@@ -440,38 +485,4 @@ body.employees-page .parent-container {
     overflow-y: auto;
     flex-grow: 1;
     overscroll-behavior: contain;
-}
-
-/* Input with prefix styling for wage fields */
-.input-with-prefix {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.input-prefix {
-    position: absolute;
-    left: 12px;
-    color: #6b7280;
-    font-weight: 500;
-    z-index: 1;
-    pointer-events: none;
-}
-
-.input-with-prefix input {
-    padding-left: 28px !important;
-}
-
-/* Fix email field responsive layout */
-@media (max-width: 650px) {
-    #addPhoneEmailRow,
-    #editPhoneEmailRow {
-        flex-direction: column !important;
-    }
-    
-    #addPhoneEmailRow .form-item,
-    #editPhoneEmailRow .form-item {
-        flex: none !important;
-        width: 100% !important;
-    }
 }

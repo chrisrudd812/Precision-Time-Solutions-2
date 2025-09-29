@@ -102,8 +102,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- WIZARD HANDLING LOGIC ---
     const wizardStages = {
         "accruals_prompt": {
-            title: "Setup: Accrual Policies",
-            text1: `Let's configure time off policies for <strong>${companyNameToDisplayJS_Accruals}</strong>.`,
+            title: "Setup: PTO Policies",
+            text1: `Let's configure PTO policies for <strong>${companyNameToDisplayJS_Accruals}</strong>.`,
             text2: "You can create different policies for groups of employees, like 'Full-Time' or 'Part-Time'. A 'Standard' policy is provided.",
             buttons: [
                 { id: "wizardActionAddPolicy", text: "Add a Policy", class: "text-green", actionKey: "openAddPolicyModalViaWizard" },
@@ -111,8 +111,8 @@ document.addEventListener('DOMContentLoaded', function() {
             ]
         },
         "accruals_after_add_prompt": {
-            title: "Setup: Accrual Policies",
-            text1: "Great! You've defined a new accrual policy.",
+            title: "Setup: PTO Policies",
+            text1: "Great! You've defined a new PTO policy.",
             text2: "Add another policy, or proceed to the final step: adding your employees.",
             buttons: [
                 { id: "wizardActionAddAnotherPolicy", text: "Add Another Policy", class: "text-green", actionKey: "openAddPolicyModalViaWizard" },
@@ -248,11 +248,27 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!adjustmentForm) return;
 
         if (allEmployeesToggle) {
+            const singleEmployeeLabel = document.getElementById('singleEmployeeLabel');
+            const allEmployeesLabel = document.getElementById('allEmployeesLabel');
+            
             allEmployeesToggle.addEventListener('change', function() {
                 const singleEmployeeMode = !this.checked;
                 employeeSelectContainer.style.display = singleEmployeeMode ? 'block' : 'none';
                 employeeSelect.required = singleEmployeeMode;
+                
+                // Update label highlighting
+                if (singleEmployeeLabel && allEmployeesLabel) {
+                    if (singleEmployeeMode) {
+                        singleEmployeeLabel.classList.add('active');
+                        allEmployeesLabel.classList.remove('active');
+                    } else {
+                        singleEmployeeLabel.classList.remove('active');
+                        allEmployeesLabel.classList.add('active');
+                    }
+                }
             });
+            
+            // Initialize the form state
             allEmployeesToggle.dispatchEvent(new Event('change'));
         }
 

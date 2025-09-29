@@ -1,9 +1,6 @@
 /* === css/archived_punches.css === */
 /* v5: Manual submit button styles */
 
-/* Inherits styles from reports.css */
-
-
 
 .archive-controls-form {
     background-color: #f0f4f8;
@@ -73,4 +70,64 @@
     border-color: #005A9C;
     box-shadow: 0 0 0 2px rgba(0, 90, 156, 0.2);
     outline: none;
+}
+
+/* Mobile Styles - ONLY for screens 480px and below */
+@media (max-width: 480px) {
+    .parent-container {
+        padding: 10px !important;
+    }
+    
+    .archive-controls-form {
+        padding: 15px !important;
+        margin-bottom: 15px !important;
+    }
+    
+    .archive-controls-flex {
+        flex-direction: column !important;
+        gap: 15px !important;
+    }
+    
+    .archive-controls-flex .form-item-container {
+        min-width: 100% !important;
+        flex: none !important;
+    }
+    
+    .archive-controls-flex .form-item-container.button-item .glossy-button {
+        width: 100% !important;
+        padding: 12px !important;
+    }
+    
+    .report-actions {
+        text-align: center !important;
+    }
+    
+    .report-actions .glossy-button {
+        width: 100% !important;
+    }
+    
+    .table-container {
+        max-height: 40vh !important;
+        overflow-y: auto !important;
+        overflow-x: auto !important;
+    }
+    
+    .archive-table {
+        font-size: 0.8em !important;
+        min-width: 700px !important;
+    }
+    
+    .archive-table th,
+    .archive-table td {
+        padding: 6px 4px !important;
+        white-space: nowrap !important;
+    }
+    
+    h1 {
+        font-size: 1.3em !important;
+    }
+    
+    .report-title {
+        font-size: 1.2em !important;
+    }
 }

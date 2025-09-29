@@ -101,3 +101,220 @@
     font-weight: 500;
     color: #555;
 }
+
+.info-message {
+    background-color: #e6f3ff;
+    border: 1px solid #b3d9ff;
+    color: #0066cc;
+    padding: 12px 15px;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.info-message i {
+    margin-right: 8px;
+}
+
+/* Mobile Styles - ONLY for screens 480px and below */
+@media (max-width: 480px) {
+    .parent-container {
+        padding: 10px !important;
+    }
+    
+    .config-container {
+        padding: 15px !important;
+        margin: 10px auto !important;
+        max-height: none !important;
+    }
+    
+    h1 {
+        font-size: 1.3em !important;
+        text-align: center !important;
+    }
+    
+    .section-heading {
+        font-size: 1.1em !important;
+    }
+    
+    /* Table responsive */
+    .location-table {
+        font-size: 0.9em !important;
+        overflow-x: auto !important;
+        display: block !important;
+        white-space: nowrap !important;
+    }
+    
+    .location-table th,
+    .location-table td {
+        padding: 6px 8px !important;
+        min-width: 80px !important;
+    }
+    
+    /* Action buttons */
+    .action-buttons {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 10px !important;
+        margin-bottom: 15px !important;
+    }
+    
+    .action-buttons .glossy-button {
+        width: 100% !important;
+        text-align: center !important;
+        box-sizing: border-box !important;
+    }
+    
+    /* Form actions */
+    .form-actions {
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+    
+    .form-actions .glossy-button {
+        width: 100% !important;
+        text-align: center !important;
+        box-sizing: border-box !important;
+    }
+    
+    /* Modal adjustments */
+    #locationModal .modal-content,
+    #confirmModal .modal-content {
+        width: 95% !important;
+        max-width: 95% !important;
+        margin: 5% auto !important;
+        padding: 15px !important;
+        max-height: 90vh !important;
+        overflow-y: auto !important;
+    }
+    
+    #locationModal .modal-header h2,
+    #confirmModal .modal-header h2 {
+        font-size: 1.2em !important;
+    }
+    
+    #locationModal .form-item {
+        margin-bottom: 15px !important;
+    }
+    
+    #locationModal input[type="text"],
+    #locationModal input[type="number"] {
+        padding: 12px !important;
+        font-size: 1em !important;
+        height: 44px !important;
+        box-sizing: border-box !important;
+    }
+    
+    #locationModal label {
+        margin-bottom: 5px !important;
+        display: block !important;
+    }
+    
+    /* Modal button rows */
+    #locationModal .button-row,
+    #confirmModal .button-row {
+        flex-direction: column !important;
+        gap: 10px !important;
+        margin-top: 20px !important;
+    }
+    
+    #locationModal .button-row .glossy-button,
+    #confirmModal .button-row .glossy-button {
+        width: 100% !important;
+        text-align: center !important;
+        box-sizing: border-box !important;
+        padding: 12px !important;
+    }
+    
+    /* Toggle switch in modal */
+    #locationModal .form-item[style*="display: flex"] {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+    }
+    
+    #locationModal .slider-label {
+        margin-bottom: 5px !important;
+    }
+    
+    /* Map adjustments */
+    #locationMap {
+        height: 200px !important;
+        margin-bottom: 15px !important;
+    }
+    
+    .map-instructions {
+        font-size: 0.8em !important;
+        padding: 6px 8px !important;
+        margin-bottom: 10px !important;
+    }
+    
+    /* Address search group */
+    .address-search-group {
+        flex-direction: column !important;
+        gap: 15px !important;
+        align-items: stretch !important;
+    }
+    
+    .address-search-group button {
+        width: 100% !important;
+    }
+    
+    /* Lat/Lon group - keep on same row */
+    .lat-lon-group {
+        flex-direction: row !important;
+        gap: 10px !important;
+    }
+    
+    .lat-lon-group .form-item {
+        flex: 1 !important;
+        margin-bottom: 15px !important;
+    }
+    
+    /* Create a row for radius and enabled toggle */
+    .radius-enabled-row {
+        display: flex !important;
+        gap: 15px !important;
+        align-items: flex-end !important;
+        margin-bottom: 15px !important;
+    }
+    
+    .radius-enabled-row .form-item {
+        flex: 1 !important;
+        margin-bottom: 0 !important;
+    }
+    
+    .radius-enabled-row .form-item[style*="display: flex"] {
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 10px !important;
+        justify-content: flex-start !important;
+    }
+    
+    .radius-enabled-row .slider-label {
+        margin-bottom: 0 !important;
+        white-space: nowrap !important;
+    }
+    
+    .get-current-location-btn {
+        margin-bottom: 15px !important;
+    }
+    
+    /* Toggle switches */
+    #locationModal .switch {
+        width: 70px !important;
+        height: 30px !important;
+    }
+    
+    #locationModal .slider:before {
+        height: 22px !important;
+        width: 22px !important;
+    }
+    
+    #locationModal .switch input:checked + .slider:before {
+        transform: translateX(40px) !important;
+    }
+    
+    .setting-info {
+        font-size: 0.9em !important;
+    }
+}

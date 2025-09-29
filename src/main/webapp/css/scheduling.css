@@ -74,3 +74,56 @@
     padding-top: 8px;
     justify-content: flex-start;
 }
+
+/* Mobile Styles */
+@media (max-width: 480px) {
+    .parent-container {
+        padding: 10px !important;
+    }
+    
+    .main-action-buttons {
+        flex-direction: column !important;
+        gap: 10px !important;
+        margin-top: 20px !important;
+    }
+    
+    .main-action-buttons .glossy-button {
+        width: 100% !important;
+    }
+    
+    #reportOutput_schedules .table-container {
+        max-height: 40vh !important;
+        overflow-y: auto !important;
+        overflow-x: auto !important;
+    }
+    
+    #schedulesTable {
+        font-size: 0.8em !important;
+        min-width: 700px !important;
+    }
+    
+    #schedulesTable th,
+    #schedulesTable td {
+        padding: 6px 4px !important;
+        white-space: nowrap !important;
+    }
+    
+    h1 {
+        font-size: 1.3em !important;
+        margin-bottom: 20px !important;
+    }
+    
+    .instruction-text {
+        font-size: 0.8em !important;
+        text-align: center !important;
+    }
+    
+    .setup-label {
+        font-size: 0.7em !important;
+    }
+    
+    .modal-content .checkbox-group {
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+}

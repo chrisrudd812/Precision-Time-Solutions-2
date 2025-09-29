@@ -118,24 +118,66 @@
         }
 
         @media (max-width: 480px) {
-            main {
-                padding: 10px 15px;
+            body {
+                padding: 0 !important;
             }
+            
+            .layout-container {
+                margin-top: 80px !important;
+                padding: 0 !important;
+                flex-direction: column !important;
+            }
+            
+            .parent-container,
+            nav#table-of-contents,
+            header,
+            main,
             section {
-                padding: 20px 15px;
+                width: calc(100vw - 20px) !important;
+                max-width: none !important;
+                margin: 10px !important;
+                left: auto !important;
+                right: auto !important;
+                position: static !important;
+                box-sizing: border-box !important;
             }
-            h1 {
-                font-size: 2em;
+            
+            main {
+                padding: 0 !important;
+                margin-left: 0 !important;
+                width: calc(100vw - 20px) !important;
             }
-            h2 {
-                font-size: 1.5em;
+            
+            section {
+                padding: 15px !important;
+                width: calc(100vw - 20px) !important;
+                margin: 10px !important;
             }
+            
             nav#table-of-contents {
-                padding: 15px;
+                padding: 15px !important;
+                width: calc(100vw - 20px) !important;
+                height: auto !important;
+                margin: 10px !important;
+                order: -1;
             }
-            nav#table-of-contents ul li a {
-                padding: 8px 12px;
-                font-size: 0.9em;
+            
+            header {
+                padding: 15px !important;
+                width: calc(100vw - 20px) !important;
+                margin: 10px !important;
+                top: auto !important;
+                left: auto !important;
+                right: auto !important;
+            }
+            
+            h1 {
+                font-size: 1.3em !important;
+                text-align: center !important;
+            }
+            
+            h2 {
+                font-size: 1.2em !important;
             }
         }
 
@@ -261,7 +303,7 @@
                 If you are an administrator, you will be taken to the Employee Management page after logging in. Regular users will be directed to the Time Clock page and logged out automatically after 30 seconds of inactivity to keep terminal secured.  - This is the only functionality that non-Administrators have access to. 
                 <br>If you have any messages, they will be displayed upon successful login.</p>
                 
-                <img src="Images/login.png" style="max-width:600px" alt="Login screen">
+                <img src="Images/login.webp" style="max-width:600px" alt="Login screen">
                 
             </section>
             
@@ -270,14 +312,14 @@
                 <p>The main Time Clock page allows employees to punch IN and OUT. On the time card, you can also view employee details and available accrued PTO. <br>To use, simply click on IN or OUT to initiate a punch. 
                 You will then be automatically logged out in 30 seconds, unless you have Administrator permissions. <br>Tardy punches will be shown in red<br>Accrued PTO is visible at the bottom of the "time card"". </p> <br>
                 <span style="color: red;">Note: Successful punch is subject to restriction policies (Device, Time or Location Restrictions)</span>
-                <img src="Images/timecards_individual.png" alt="Individual time card view">
+                <img src="Images/timecards_individual.webp" alt="Individual time card view">
             </section>
 
 			<section id="navigation-bar">
                 <h2>Navigating the Application</h2>
                 <p>The Navigation Bar pictured below is located at the top of every page (Admin users only) and is used to access the various management functions. Some of the options have sub-menus with additional options. <br> 
                 You can jump to any section, form anywhere, easily using the navigation bar.</p> 
-                <img src="Images/navbar.png" alt="Navigation bar screenshot">
+                <img src="Images/navbar.webp" alt="Navigation bar screenshot">
             </section>
 
             <section id="employee-management">
@@ -287,7 +329,7 @@
                 <h3>Viewing Employee Details</h3>
                 <p>To view an employee's details, click on their row in the table. Their information, including accrued time balances, will appear in the "Selected Employee Details" panel. 
                 <br>This panel also contains the PIN Reset button, which resets their PIN to "1234" and require change at next login.</p> 
-                <img src="Images/employees_main.png" alt="Employee page with a row selected">
+                <img src="Images/employees_main.webp" alt="Employee page with a row selected">
 
                 <h3>Adding a New Employee</h3>
                 <ol>
@@ -298,7 +340,7 @@
                     <li>Click <strong>"Submit"</strong> to save the new employee.</li>
                     <li>Employee will be created with default temporary PIN (1234).</li>
                 </ol>
-                <img src="Images/add_new_employee.png" style="max-width:600px" alt="Add new employee form">
+                <img src="Images/add_new_employee.webp" style="max-width:600px" alt="Add new employee form">
 
                 <h3>Editing an Existing Employee</h3>
                 <ol>
@@ -307,7 +349,7 @@
                     <li>In the "Edit Employee" modal, make the necessary changes.</li>
                     <li>Click <strong>"Save Changes"</strong> to update the record.</li>
                 </ol>
-                 <img src="Images/employees_edit.png"  style="max-width:600px" alt="Edit employee form">
+                 <img src="Images/employees_edit.webp"  style="max-width:600px" alt="Edit employee form">
 
                 <h3>Deactivating an Employee</h3>
                 <p>Deactivating an employee marks them as inactive. They will not be included in any calculations or reports except the Inactive Employees Report and can be reactivated from there (temp workers, seasonal, contractors, etc.).</p>
@@ -317,7 +359,7 @@
                     <li>In the confirmation pop-up, select a reason for deactivation from the dropdown list.</li>
                     <li>Click the red <strong>"Deactivate"</strong> button to confirm.</li>
                  </ol>
-                <img src="Images/deactivate_employee.png"  style="max-width:600px" alt="Deactivate employee confirmation modal">
+                <img src="Images/deactivate_employee.webp"  style="max-width:600px" alt="Deactivate employee confirmation modal">
                 <blockquote><strong>Note:</strong> Inactive employees can be viewed and reactivated from the <strong>Reports -> Employee Reports -> Inactive Employees</strong> section.<br>Inactive employees do not count toward the plan's employee limit.</blockquote>
                 
                 <h3>Re-Assigning Employees</h3>
@@ -331,7 +373,7 @@
 						all selected employees.
 					</li>
 					</ol>
-					                <img src="Images/employees_reassign.png"  style="max-width:1200px" alt="Re-assign employees modal">
+					                <img src="Images/employees_reassign.webp"  style="max-width:1200px" alt="Re-assign employees modal">
 			</section>
             
             <section id="punch-management">
@@ -341,7 +383,7 @@
                 <h3>Viewing Punch Records</h3>
                 <p>Access punch records through the main navigation bar under <strong>Punch Management -> Edit Employee Punches</strong></p>
                 
-                <img src="Images/punches_main.png" style="max-width: 1200px" alt="Punch Management">
+                <img src="Images/punches_main.webp" style="max-width: 1200px" alt="Punch Management">
                 
                 <h3>Adding PTO</h3>
                 <p>To add PTO for an INDIVIDUAL employee,  navigate to Punch Management -> Edit Employee Punches<strong>"Add PTO"</strong><br>
@@ -356,7 +398,7 @@
 					<li>PTO balances are automatically updated</li>
 					</ol>
                 
-                <img src="Images/punches_add_PTO.png" style="max-width: 600px" alt="Add PTO">
+                <img src="Images/punches_add_PTO.webp" style="max-width: 600px" alt="Add PTO">
                 
                 <h3>Adding Missing Punches</h3>
                 <p>If an employee forgot to punch in or out, you can add the missing punch manually., then save.</p>
@@ -379,7 +421,7 @@
 					<li>Adjust values and click save</li>
 					</ol>
 					
-					<img src="Images/punches_edit.png" style="max-width: 600px" alt="Edit Punches">
+					<img src="Images/punches_edit.webp" style="max-width: 600px" alt="Edit Punches">
                 
                 <h3>Deleting Incorrect Punches</h3>
                 <p>Incorrect punches can be deleted by selecting the punch record and clicking <strong>"Delete Row"</strong>. A confirmation dialog will appear before the punch is permanently removed.</p>
@@ -398,23 +440,23 @@
             <section id="departments">
                  <h2>Managing Departments</h2>
                 <p>Departments help you organize employees for reporting and management. Each employee can be assigned to one department.</p>
-                <img src="Images/departments_main.png"  style="max-width:1000px" alt="Departments main page">
+                <img src="Images/departments_main.webp"  style="max-width:1000px" alt="Departments main page">
 
                 <h3>Adding a New Department</h3>
                 <p>Click "Add Department", enter a unique name and optional details, and click "Submit".</p>
-                <img src="Images/departments_add.png"  style="max-width:600px" alt="Add new department form">
+                <img src="Images/departments_add.webp"  style="max-width:600px" alt="Add new department form">
 
                  <h3>Editing a Department</h3>
                 <p>Select a department, click "Edit Department", make your changes, and click "Save Changes".<br>
                 <span class="red">Note: Name cannot be changed. Instead, create new department, delete old department while re-assigning employees (if any) to new department.</span>
                 </p>
-                <img src="Images/departments_edit.png"  style="max-width:600px" alt="Edit department form">
+                <img src="Images/departments_edit.webp"  style="max-width:600px" alt="Edit department form">
 
                 <h3>Deleting a Department</h3>
                 <p>Select a department and click "Delete Department". You must re-assign any employees from the deleted department to a new one before confirming the deletion.<br>
                 <span class="red">Note: Deleting or Re-naming department "None" is not allowed as it is a system default.</span>
                 </p>
-                <img src="Images/departments_delete.png"  style="max-width:600px" alt="Delete department confirmation modal">
+                <img src="Images/departments_delete.webp"  style="max-width:600px" alt="Delete department confirmation modal">
             </section>
 
             <section id="schedules">
@@ -425,47 +467,47 @@
                 Tardies will show on time card in RED.</span>
                 
                 </p>
-                <img src="Images/scheduling_main.png"  style="max-width:1000px" alt="Schedules main page">
+                <img src="Images/scheduling_main.webp"  style="max-width:1000px" alt="Schedules main page">
 
                 <h3>Adding a New Schedule</h3>
                 <p>Click "Add Schedule", enter a unique name, set shift times, and configure auto-lunch rules if needed. <br>The auto-lunch feature requires you to specify the hours an employee must work (Hrs Req) and the break duration in minutes (Lunch (min)).</p> 
-                <img src="Images/scheduling_add.png"  style="max-width:600px" alt="Add new schedule form">
+                <img src="Images/scheduling_add.webp"  style="max-width:600px" alt="Add new schedule form">
 
                 <h3>Editing a Schedule</h3>
                 <p>Select a schedule, click "Edit Schedule", and update its details.  Note: The schedule name cannot be edited. <br>To rename a schedule, you must create a new one and reassign employees while deleting the old one.
                 <span class="red">Note: Editing "Open" or "Open w/ auto lunch" is not allowed as they serve as a system default. "Open w/ auto lunch" is editable (threshold and lunch length only)</span>
                 </p> 
-                <img src="Images/scheduling_edit.png"  style="max-width:600px" alt="Edit schedule form">
+                <img src="Images/scheduling_edit.webp"  style="max-width:600px" alt="Edit schedule form">
 
                 <h3>Deleting a Schedule</h3>
                 <p>Select a schedule and click "Delete Schedule". You must select another schedule to move any employees (if any) on that schedule, to a different schedule before confirming the deletion.<br>
                 <span class="red">Note: Deleting "Open" or "Open w/ auto lunch" is not allowed as is serves as a system default.</span>
                 </p> 
-                <img src="Images/scheduling_delete.png"  style="max-width:600px" alt="Delete schedule confirmation modal">
+                <img src="Images/scheduling_delete.webp"  style="max-width:600px" alt="Delete schedule confirmation modal">
             </section>
 
             <section id="accruals">
                 <h2>Managing Accrual Policies</h2>
                 <p>Accrual policies define how employees earn paid time off (PTO). The system automatically adds prorated hours to each employee's PTO balance when each pay period is closed.
                 <br>You can also add to, subtract from, or set the PTO balance for individuals or all employees in the Adjust Employee Accrual Balance section. (Especially useful during initial setup)</p>
-                <img src="Images/accruals_main.png" style="max-width: 1200px" alt="Accrual policies main page">
+                <img src="Images/accruals_main.webp" style="max-width: 1200px" alt="Accrual policies main page">
                 
                 <h3>Adding a New Accrual Policy</h3>
                 <p>Click "Add Policy", give it a unique name, and enter the annual hours for Vacation, Sick, and Personal time.</p>
-                <img src="Images/accruals_add.png"  style="max-width:600px" alt="Add new accrual policy form">
+                <img src="Images/accruals_add.webp"  style="max-width:600px" alt="Add new accrual policy form">
 
                 <h3>Editing an Accrual Policy</h3>
                 <p>Select a policy, click "Edit Policy", and adjust the time-off hours. Note: The policy name cannot be changed. To rename, you must create a new policy and reassign employees before deleting the old one.</p> 
-                <img src="Images/accruals_edit.png"  style="max-width:600px" alt="Edit accrual policy form">
+                <img src="Images/accruals_edit.webp"  style="max-width:600px" alt="Edit accrual policy form">
 
                 <h3>Deleting an Accrual Policy</h3>
                 <p>Select a policy and click "Delete Policy". You will be required to re-assign employees to a different policy before confirming the deletion.
                 <br><span class="red">Note: Deleting "None" policy is not allowed as is serves as a system default.</span></p> 
-                <img src="Images/accruals_delete.png"  style="max-width:600px" alt="Delete accrual policy confirmation modal">
+                <img src="Images/accruals_delete.webp"  style="max-width:600px" alt="Delete accrual policy confirmation modal">
                 
                 <h3>Adjusting PTO</h3>
                 <ol><li>Select an individual or all employees</li><li>Select PTO type</li><li>Select action</li><li>Define hours</li><li>Click Apply Adjustment</ol>
-                <img src="Images/accruals_adjust.png"  style="max-width:1200px" alt="Adjust PTO">
+                <img src="Images/accruals_adjust.webp"  style="max-width:1200px" alt="Adjust PTO">
                 
             </section>
             
@@ -480,7 +522,7 @@
                     <li><strong>Pay Period Start Date:</strong> A calendar date that one of your pay periods begins on.<li>Pay period End Date is calculated automatically</li>
                     <li><strong>Grace Period (Minutes):</strong> How many minutes an employee can punch in late (or leave early) before being marked as "Tardy". Tardies are recorded for reporting purposes and displayed in red on time card.</li>
                  </ul>
-                <img src="Images/settings_pay_period.png" alt="Pay period settings">
+                <img src="Images/settings_pay_period.webp" alt="Pay period settings">
 
                 <h3>Overtime Rules</h3>
                 <p>Configure how overtime is calculated for daily, weekly, and 7th-day overtime (OT) and double-time (DT) rules.</p>
@@ -488,7 +530,7 @@
                 <li>Automatically by state (recommended to ensure compliance)</li>
                 <li>Pro Plan subscribers have option for remote workers or locations, which calculates each employee's overtime according to the state in each employee's profile.</li></ol>
                 
-                <img src="Images/settings_overtime.png" style="max-width:1200px" alt="Overtime settings">
+                <img src="Images/settings_overtime.webp" style="max-width:1200px" alt="Overtime settings">
 
                 <h3>Punch Restrictions</h3>
                 <p>Control when, where and how employees can punch the clock. Any combination of restrictions (if any) is allowed.</p>
@@ -497,7 +539,7 @@
                     <li><strong>Restrict by Location:</strong> Set up geofences so employees can only punch in/out from specific locations.</li>
                     <li><strong>Restrict by Device:</strong> Ensure employees can only punch from registered devices.</li>
                 </ul>
-                <img src="Images/settings_punch_restrictions.png" style="max-width:800px" alt="Punch restriction settings">
+                <img src="Images/settings_punch_restrictions.webp" style="max-width:800px" alt="Punch restriction settings">
                 
                 <h3>Configuring Time/Day Restrictions</h3>
                  
@@ -506,8 +548,8 @@
                 <li>Quickly set all days to the same time windows using the Apply to All Days toggle.</li>
                 </ol>
                 
-                <img src="Images/time_restrictions.png" style="max-width:800px" alt="Time restriction settings configuration">
-                <img src="Images/time_restrictions_2.png" style="max-width:800px" alt="Time restrictions details">
+                <img src="Images/time_restrictions.webp" style="max-width:800px" alt="Time restriction settings configuration">
+                <img src="Images/time_restrictions_2.webp" style="max-width:800px" alt="Time restrictions details">
                 
                                 
                 <h3>Configuring Location Restrictions</h3>
@@ -520,17 +562,17 @@
                  <li>Punch radius may have to be adjusted if only using wi-fi.</li>
                  </ol>
                   
-                <img src="Images/location_restrictions.png" style="max-width:700px" alt="Location restriction settings configuration">
+                <img src="Images/location_restrictions.webp" style="max-width:700px" alt="Location restriction settings configuration">
                 
                  <h3>Adding/Editing a Location</h3>
                 <p>Click "Add Location", enter a unique name, address, and radius in feet, then click "Submit". You can also use the "Use My Location" button to auto-fill your current location coordinates.
                 Click Save. <br>Make sure individual locations are enabled here and with the main toggle in the settings page.</p> 
-                <img src="Images/location_restrictions_add.png" style="max-width:600px" alt="Add location form">
+                <img src="Images/location_restrictions_add.webp" style="max-width:600px" alt="Add location form">
                 
                 
                 <h3>Configuring Device Restrictions</h3>
                  <p>To restrict punches by device, first enable the feature. Then, set the maximum allowed registered devices per employee. When an employee punches IN or OUT, the device's "fingerprint" is checked against the employee's registered devices list.</p> 
-                 <img src="Images/device_restrictions.png" style="max-width:700px" alt="Device restriction settings configuration">
+                 <img src="Images/device_restrictions.webp" style="max-width:700px" alt="Device restriction settings configuration">
                  
                  <ol><li>If the device id registered, then the punch is allowed, otherwise it will attempt to register the device.</li>
                  <li>If the maximum registered devices has been reached, the punch is denied until an administrator allows more devices per user, or a previous device is deleted.</li>
@@ -546,7 +588,7 @@
              <section id="payroll">
                 <h2>Payroll Processing</h2>
                 <p>The Payroll Processing page is where you review and finalize employee time cards for payroll.</p> 
-                <img src="Images/payroll_main.png" alt="Payroll processing main page">
+                <img src="Images/payroll_main.webp" alt="Payroll processing main page">
 
                 <h3>Reviewing Time Cards</h3>
                 
@@ -560,9 +602,9 @@
                  <li>Upon closing, new pay period date range will be applied, current punches will be archived and accrued balances will be updated (Vac., Sick, etc.).</li>
                  </ol>
                 
-                <img src="Images/payroll_exceptions.png" style="max-width:600px" alt="Payroll exceptions report with missing punches">
+                <img src="Images/payroll_exceptions.webp" style="max-width:600px" alt="Payroll exceptions report with missing punches">
                
-                <img src="Images/payroll_close_confirm.png" style="max-width:600px" alt="Finalize payroll confirmation modal">
+                <img src="Images/payroll_close_confirm.webp" style="max-width:600px" alt="Finalize payroll confirmation modal">
                 
                 </section>
             
@@ -579,7 +621,7 @@
                     <li>Time Cards can also be E-mailed to all employees using the <code>Email All</code> button</li>
                     <li><strong>To Print an Individual Time Card:</strong> Navigate to <strong>Reports > Time Card Reports > Individual Time Card</strong> and select an employee.</li>
                 </ul>
-                <img src="Images/timecards_all.png" style="max-width:800px" alt="Printable view of all employee time cards">
+                <img src="Images/timecards_all.webp" style="max-width:800px" alt="Printable view of all employee time cards">
 
                 <h3>Exception Report</h3>
                 <p>The Exception Report is a critical tool for ensuring payroll accuracy. It automatically finds and lists all punches that are missing an <strong>OUT</strong> time. <strong>All exceptions must be corrected before you can close the pay period.</strong></p> 
@@ -587,7 +629,7 @@
                     <li><strong>Accessing:</strong> Navigate to Reports select <code>Exception Report</code></li> 
                     <li><strong>Usage:</strong> Select a row and click <code>Fix Missing Punches</code> to resolve the error by entering the correct time.</li>
                 </ul>
-                <img src="Images/reports_exception.png" style="max-width:800px" alt="Exception Report modal showing a missing punch">
+                <img src="Images/reports_exception.webp" style="max-width:800px" alt="Exception Report modal showing a missing punch">
                 
                 <h3>Employee Reports</h3>
                 <p>The Employee Report provides a comprehensive list of all employees, both active and inactive. This is where you can manage employee statuses and view contact information.</p>
@@ -595,14 +637,14 @@
                     <li><strong>Accessing:</strong> Navigate to <code>Reports > Employee Reports</code> from the main navigation bar.</li>
                     <li><strong>Features:</strong> You can filter the list to see employees by department, schedule or supervisor, only active or inactive employees, then use the <strong>Reactivate Employee</strong> button to return them to the active roster.</li>
                 </ul>
-                <img src="Images/reports_all_active_employees.png" style="max-width:800px" alt="Employee Report showing active and active employees">
+                <img src="Images/reports_all_active_employees.webp" style="max-width:800px" alt="Employee Report showing active and active employees">
                 
                  <h3>Tardy Report</h3>
                 <p>The Tardy Report provides a comprehensive sortable list of all employees with their number of late punches or early outs. You can filter tardies by current pay period, YTD or All Time</p>
                 <ul>
                     <li><strong>Accessing:</strong> Navigate to <code>Reports > Tardy Report</code> from the main navigation bar.</li>
                     </ul>
-                <img src="Images/reports_tardy.png" style="max-width:800px" alt="Report showing employees with tardies">
+                <img src="Images/reports_tardy.webp" style="max-width:800px" alt="Report showing employees with tardies">
                 
                 <h2>Other Reports</h2>
                 
@@ -613,11 +655,11 @@
                     </ul>
                 
                 
-                <h3>Accrual Balance Report</h3>
-                <p>The Accrual Balance Report provides a comprehensive list of all employees with their current accrued PTO balances.</p>
+                <h3>PTO Balance Report</h3>
+                <p>The PTO Balance Report provides a comprehensive list of all employees with their current accrued PTO balances.</p>
 				<ul>
 					<li><strong>Accessing:</strong> Navigate to <code>Reports
-							> Accrual Balance Report</code> from the main navigation bar.</li>
+							> PTO Balance Report</code> from the main navigation bar.</li>
 				</ul>
                 
 				<h3>System Access Report</h3>
@@ -642,11 +684,11 @@
             <section id="account">
                 <h2>Account Settings</h2>
                 <p>The Account page is for company-level administration, like managing your plan subscription and updating company info. Only the designated company admin can access these settings.</p>
-                <img src="Images/account.png"  style="max-width:600px" alt="Account settings page">
+                <img src="Images/account.webp"  style="max-width:600px" alt="Account settings page">
                 <p>Click "Edit" to change company info. You will be required to enter the company admin user name and pasword.</p>
-                <img src="Images/account_company_info.png"  style="max-width:600px" alt="Editing company information">
+                <img src="Images/account_company_info.webp"  style="max-width:600px" alt="Editing company information">
                 <p>Click "Manage Subscription and Billing" to change or cancel your subscription. Password credentials will be required.</p>
-                <img src="Images/account_subscription.png"  style="max-width:1000px" alt="Subscription management page">
+                <img src="Images/account_subscription.webp"  style="max-width:1000px" alt="Subscription management page">
             </section>
         </main>
     </div>

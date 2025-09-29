@@ -93,3 +93,35 @@
 .help-content strong {
     font-weight: 600;
 }
+
+/* Mobile Styles - ONLY for screens 480px and below */
+@media (max-width: 480px) {
+    .parent-container {
+        padding: 10px !important;
+    }
+    
+    h1 {
+        font-size: 1.3em !important;
+        text-align: center !important;
+    }
+    
+    .help-layout {
+        flex-direction: column !important;
+    }
+    
+    .help-nav,
+    .help-content {
+        width: 100% !important;
+    }
+    
+    .help-nav {
+        border-right: none !important;
+        border-bottom: 1px solid #eee !important;
+        padding-right: 0 !important;
+        padding-bottom: 15px !important;
+    }
+    
+    .help-content {
+        padding-left: 0 !important;
+    }
+}

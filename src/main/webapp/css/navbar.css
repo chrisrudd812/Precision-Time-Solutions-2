@@ -227,8 +227,15 @@ ul.navbar-links > li > a i.fas {
     }
     
     ul.navbar-links.mobile-open {
-        max-height: 75vh;
+        max-height: calc(100vh - 20px);
         padding-top: 10px;
+        padding-bottom: 30px;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+    
+    ul.navbar-links.mobile-open > li:first-child {
+        margin-top: 30px;
     }
     
     ul.navbar-links > li {

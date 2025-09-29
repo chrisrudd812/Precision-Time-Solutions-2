@@ -177,3 +177,68 @@ body.print-preview-body table.timecard-table {
 .print-controls .glossy-button.text-purple i {
     color: #8b5cf6 !important;
 }
+
+/* Mobile Styles - ONLY for screens 480px and below */
+@media (max-width: 480px) {
+    .print-controls {
+        padding: 8px 10px !important;
+        gap: 8px !important;
+    }
+    
+    .print-controls > div {
+        flex-direction: column !important;
+        gap: 8px !important;
+        width: 100% !important;
+    }
+    
+    .print-controls .print-action-btn {
+        width: 100% !important;
+        margin: 0 !important;
+        font-size: 0.9em !important;
+    }
+    
+    .report-context-message {
+        font-size: 1em !important;
+        text-align: center !important;
+    }
+    
+    .print-view-main-content {
+        padding-top: 180px !important;
+    }
+    
+    .timecard-print-page {
+        width: calc(100vw - 20px) !important;
+        margin: 10px !important;
+        padding: 15px !important;
+        min-height: auto !important;
+    }
+    
+    .timecard-info {
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+    
+    .timecard-table-container {
+        overflow-x: auto !important;
+    }
+    
+    .timecard-table {
+        min-width: 600px !important;
+        font-size: 9pt !important;
+    }
+    
+    .timecard-table th,
+    .timecard-table td {
+        padding: 6px 4px !important;
+        white-space: nowrap !important;
+    }
+    
+    .accrual-balances {
+        text-align: center !important;
+    }
+    
+    .balance-item {
+        max-width: 100% !important;
+        margin: 8px 0 !important;
+    }
+}

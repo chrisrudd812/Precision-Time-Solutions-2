@@ -82,7 +82,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Payroll History</title>
     <%@ include file="/WEB-INF/includes/common-head.jspf" %>
-    <link rel="stylesheet" href="css/payroll_history.css?v=3"> <%-- Specific overrides --%>
+    <link rel="stylesheet" href="css/payroll_history.css?v=4"> <%-- Specific overrides --%>
    </head>
 <body class="reports-page">
     <%@ include file="/WEB-INF/includes/navbar.jspf" %>
@@ -160,7 +160,6 @@
         <% } %>
     </div>
 
-    <%-- Notification Modal (Standard structure from reports.css) --%>
     <div id="notificationModal" class="modal">
         <div class="modal-content">
             <span class="close" id="closeNotificationModal">&times;</span>

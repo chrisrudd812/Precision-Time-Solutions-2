@@ -69,7 +69,7 @@
                     <h4 class="section-heading"><i class="fas fa-cogs"></i> Global Rule for Disabled Days</h4>
                     <div class="day-settings-row">
                         <div class="toggle-group" style="align-items: center;">
-                            <label for="allowUnselectedDays" class="slider-label">Rule for days with restriction&nbsp;<strong>disabled</strong>:</label>
+                            <label for="allowUnselectedDays" class="slider-label">Days with restriction <strong>disabled</strong>:</label>
                             <label class="switch">
                                 <input type="checkbox" id="allowUnselectedDays" name="allowUnselectedDays" value="true" <%= allowUnselectedDays ? "checked" : "" %> data-save-url="${pageContext.request.contextPath}/SettingsServlet">
                                 <span class="slider round"></span>

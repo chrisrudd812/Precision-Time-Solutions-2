@@ -4,86 +4,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Help - How to Punch In and Out</title>
+    <title>Quick Help - Time Clock</title>
     <%@ include file="/WEB-INF/includes/common-head.jspf" %>
-    <link rel="stylesheet" href="css/help.css?v=<%= System.currentTimeMillis() %>">
+    <style>
+    
+    code {color:red;}
+    
+        .help-container {
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .help-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #14b8a6;
+        }
+        .help-section h2 {
+            color: #0f766e;
+            margin-top: 0;
+        }
+        .punch-buttons {
+            display: flex;
+            gap: 15px;
+            margin: 15px 0;
+
+        .mobile-notice {
+            background: #dbeafe;
+            border: 1px solid #3b82f6;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+    </style>
 </head>
-<body class="help-page">
+<body>
     <%@ include file="/WEB-INF/includes/navbar.jspf" %>
     
     <div class="parent-container help-container">
-        <h1>How to Use Your Time Clock</h1>
+        <h1><i class="fas fa-clock"></i> Quick Time Clock Help</h1>
         
-        <div class="help-content">
-            <div class="help-section">
-                <h2><i class="fas fa-clock"></i> Punching In and Out</h2>
-                <p>Your time clock system is simple to use. Follow these steps to track your work hours:</p>
-                
-                <div class="step-guide">
-                    <div class="step">
-                        <div class="step-number">1</div>
-                        <div class="step-content">
-                            <h3>Log In</h3>
-                            <p>Go to the login page and enter:</p>
-                            <ul>
-                                <li>Your company ID (provided by your administrator)</li>
-                                <li>Your email address</li>
-                                <li>Your PIN (initially 1234, you'll change this on first login)</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <div class="step">
-                        <div class="step-number">2</div>
-                        <div class="step-content">
-                            <h3>Punch In</h3>
-                            <p>When you arrive at work, click the <strong>"Punch In"</strong> button on your time clock page. This records your start time.</p>
-                        </div>
-                    </div>
-                    
-                    <div class="step">
-                        <div class="step-number">3</div>
-                        <div class="step-content">
-                            <h3>Punch Out</h3>
-                            <p>When you're done working, click the <strong>"Punch Out"</strong> button. This records your end time and calculates your hours worked.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="help-section">
+            <h2>How to Punch In/Out</h2>
+            <p><strong>Simple:</strong> Click the buttons on your Time Clock page when you start and end work. There is a running clock at the top to ensure correct time. The Time Card shows you useful information:</p>
             
-            <div class="help-section">
-                <h2><i class="fas fa-mobile-alt"></i> Using on Mobile</h2>
-                <p>You can access your time clock from any device with internet access:</p>
-                <ul>
-                    <li>Bookmark the login page on your phone for quick access</li>
-                    <li>The system works on all smartphones and tablets</li>
-                    <li>No app download required - just use your web browser</li>
-                </ul>
-            </div>
+            <ol><li>Employee Information - ID, Name, Department and Schedule</li><li>Tardy punches are highlighted in red</li><li>Punch Type - User Initiated, Holiday, Supervisor Override, etc.</li><li>Accrued PTO</li></ol>
             
-            <div class="help-section">
-                <h2><i class="fas fa-question-circle"></i> Common Questions</h2>
-                
-                <div class="faq-item">
-                    <h3>What if I forget to punch in or out?</h3>
-                    <p>Contact your supervisor or administrator. They can add or edit your punch times as needed.</p>
-                </div>
-                
-                <div class="faq-item">
-                    <h3>Can I see my hours worked?</h3>
-                    <p>Yes! Your time clock page shows your recent punches and total hours for the current pay period.</p>
-                </div>
-                
-                <div class="faq-item">
-                    <h3>What if I'm having trouble logging in?</h3>
-                    <p>Make sure you're using the correct company ID and email address. If you've forgotten your PIN, contact your administrator to reset it.</p>
-                </div>
+            <ol><li>Your hours are automatically calculated and saved</li>
+            <li>Successful punch subject to restrictions if enabled</li>
+            <li>Time / Day Restrictions</li>
+            <li>Device Restrictions</li>
+            <li>Location Restrictions</li>
+        </div>
+        <img src="Images/timecards_individual.webp" alt="Time Clock">
+        <br>
+        <div class="help-section">
+            <h2>Mobile Access</h2>
+            <p>Use any web browser on your phone or tablet - just bookmark this site for quick access.</p>
+            <div class="mobile-notice">
+                <strong>📱 New:</strong> Try our dedicated mobile app.
             </div>
-            
-            <div class="help-section">
-                <h2><i class="fas fa-phone"></i> Need More Help?</h2>
-                <p>If you have questions about your schedule, time off, or payroll, please contact your supervisor or HR department.</p>
-            </div>
+        </div>
+        
+        <div class="help-section">
+            <h2>Forgot to Punch?</h2>
+            <p>Contact your supervisor - they can add or fix your punch times.</p>
+        </div>
+        
+        <div class="help-section">
+            <h2>Login Issues?</h2>
+            <p>Make sure you have:</p>
+            <ul>
+                <li>Correct company ID</li>
+                <li>Your email address</li>
+                <li>Your PIN (default for new users or reset PINs is <code>1234</code>)</li>
+            </ul>
+        </div>
+        
+        <div class="help-section">
+            <h2>Need Help?</h2>
+            <p>Contact your supervisor or administrator for schedule, time off, or payroll questions.</p>
         </div>
     </div>
     

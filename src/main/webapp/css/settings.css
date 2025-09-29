@@ -1,33 +1,113 @@
 /* === css/settings.css === */
 
+/* Ensure proper scrolling and full page display */
+html, body {
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+body.reports-page {
+    min-height: 100vh;
+    padding-bottom: 50px;
+}
+
 /* Default style for EXTRA-LARGE screens (wider than 1400px) */
 body.reports-page .parent-container {
     min-width: unset; 
-    max-width: 50%;	
+    max-width: 1200px;
+    width: 90%;
+    margin: 3.5% auto 0 auto;
+    padding: 20px;
     background-color: #ffffff;
+    min-height: fit-content;
+    height: auto;
+    overflow: visible;
+    border-radius: 12px;
 }
 
 /* Style for LARGE screens (up to 1400px) */
 @media (max-width: 1400px) {
     body.reports-page .parent-container {
-        max-width: 75%;
+        max-width: 1000px;
+        width: 85%;
+        margin: 3.5% auto 0 auto;
         background-color: #ffffff;
+        height: auto;
+        overflow: visible;
+        border-radius: 12px;
     }
 }
 
-/* Style for TABLET/MOBILE screens (992px or less) */
+/* Style for TABLET screens (768px to 992px) */
 @media (max-width: 992px) {
     body.reports-page .parent-container {
-        max-width: 95%;
+        max-width: none;
+        width: 95%;
+        margin: 3% auto 0 auto;
+        padding: 15px;
+        height: auto;
+        overflow: visible;
+        border-radius: 8px;
     }
 }
 
-#settingsForm { margin-top: 20px; }
+/* Style for MOBILE screens (below 768px) */
+@media (max-width: 768px) {
+    body.reports-page .parent-container {
+        width: 98%;
+        margin: 2% auto 0 auto;
+        padding: 10px;
+        border-radius: 6px;
+    }
+    
+    .form-body-container {
+        padding: 15px;
+    }
+    
+    .setting-block .setting-label-fixed {
+        flex-basis: 200px;
+        min-width: 150px;
+    }
+    
+    #payPeriodType, #firstDayOfWeek, #gracePeriod, #overtimeStateSelect,
+    #payPeriodStartDate {
+        max-width: 200px;
+        min-width: 150px;
+    }
+    
+    .calculated-date-display {
+        max-width: 200px;
+        min-width: 150px;
+    }
+    
+    .punch-restriction-item {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .configure-button {
+        min-width: 100px;
+    }
+}
+
+#settingsForm { 
+    margin-top: 20px; 
+    width: 100%;
+    min-height: fit-content;
+    overflow: visible;
+    height: auto;
+}
 
 .setting-item { 
-    margin-bottom: 30px; 
+    margin-bottom: 30px;
+    width: 100%;
+    overflow: visible;
+    clear: both;
+    height: auto;
+    min-height: fit-content;
 }
-.setting-item:last-parhild { 
+.setting-item:last-child { 
     margin-bottom: 0; 
 }
 
@@ -37,6 +117,11 @@ body.reports-page .parent-container {
     border-radius: 8px;
     padding: 25px;
     margin-top: 15px;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: visible;
+    height: auto;
+    min-height: fit-content;
 }
 
 h4.section-heading { 
@@ -65,6 +150,8 @@ h4.section-heading .fas, h4.section-heading .far { margin-right: 10px; color: #1
     align-items: center;    
     gap: 15px;              
     flex: 1 1 100%;
+    min-width: 0;
+    flex-wrap: wrap;
 }
 
 .setting-block .setting-label-fixed { 
@@ -145,7 +232,7 @@ h4.section-heading .fas, h4.section-heading .far { margin-right: 10px; color: #1
     text-align: center;
 }
 
-.radio-group { display: flex; flex-wrap: nowrap; gap: 20px; align-items: center; }
+.radio-group { display: flex; flex-wrap: wrap; gap: 20px; align-items: center; }
 .styled-radio { display: inline-flex; align-items: center; cursor: pointer; position: relative; padding-left: 35px; height: 24px; }
 .styled-radio input[type="radio"] { position: absolute; opacity: 0; cursor: pointer; }
 .styled-radio label { margin-bottom: 0; font-weight: normal; cursor: pointer; }

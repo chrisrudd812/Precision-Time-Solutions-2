@@ -139,7 +139,7 @@ public class AddAndDeleteAccrualPoliciesServlet extends HttpServlet {
                         try (ResultSet rs = psCheck.executeQuery()) {
                             if (rs.next()) {
                                 // **FIX START**: This block is modified to handle the duplicate name error specifically.
-                                errorMessage = "Accrual policy '" + policyName.trim() + "' already exists.";
+                                errorMessage = "PTO policy '" + policyName.trim() + "' already exists.";
                                 String stepForRedirect = isWizardModeActive ? currentWizardStepInSession : null;
                                 String url = buildRedirectUrl(request, redirectPage, errorMessage, null, isWizardModeActive, stepForRedirect, false);
                                 
@@ -162,7 +162,7 @@ public class AddAndDeleteAccrualPoliciesServlet extends HttpServlet {
                             psInsert.setInt(5, personalDays);
                             int rowsAffected = psInsert.executeUpdate();
                             if (rowsAffected > 0) {
-                                successMessage = "Accrual policy '" + policyName.trim() + "' added successfully.";
+                                successMessage = "PTO policy '" + policyName.trim() + "' added successfully.";
                                 logger.info(successMessage + " For TenantID: " + tenantId);
 
                                 if (isWizardModeActive && currentWizardStepInSession != null &&
@@ -172,7 +172,7 @@ public class AddAndDeleteAccrualPoliciesServlet extends HttpServlet {
                                     if(session != null) session.setAttribute("wizardStep", wizardRedirectNextStep);
                                 }
                             } else {
-                                errorMessage = "Failed to add accrual policy. No rows affected.";
+                                errorMessage = "Failed to add PTO policy. No rows affected.";
                             }
                         }
                     }
@@ -221,7 +221,7 @@ public class AddAndDeleteAccrualPoliciesServlet extends HttpServlet {
                     psUpdate.setInt(5, tenantId);
                     int rowsAffected = psUpdate.executeUpdate();
                     if (rowsAffected > 0) {
-                        successMessage = "Accrual policy '" + originalPolicyName.trim() + "' updated successfully.";
+                        successMessage = "PTO policy '" + originalPolicyName.trim() + "' updated successfully.";
                     } else {
                         errorMessage = "Failed to update policy '" + originalPolicyName.trim() + "'. Record not found or no changes made.";
                     }
@@ -246,8 +246,8 @@ public class AddAndDeleteAccrualPoliciesServlet extends HttpServlet {
         String redirectPage = "accruals.jsp";
         String wizardRedirectNextStep = isWizardModeActive ? currentWizardStepInSession : null;
 
-        if (!isValid(policyNameToDelete)) errorMessage = "Accrual Policy to delete was not specified.";
-        else if (!isValid(targetPolicyForReassignment)) errorMessage = "Target Accrual Policy for reassignment not specified.";
+        if (!isValid(policyNameToDelete)) errorMessage = "PTO Policy to delete was not specified.";
+        else if (!isValid(targetPolicyForReassignment)) errorMessage = "Target PTO Policy for reassignment not specified.";
         else if ("None".equalsIgnoreCase(policyNameToDelete.trim())) errorMessage = "The 'None' policy cannot be deleted.";
         else if (policyNameToDelete.trim().equalsIgnoreCase(targetPolicyForReassignment.trim())) errorMessage = "Cannot reassign to the same policy being deleted.";
 

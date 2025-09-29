@@ -45,9 +45,14 @@ body.payroll-page .parent-container {
 }
 
 /* Table Specifics */
-/* MODIFIED: Reduced max-height to make the change more noticeable */
 #payroll-table-container {
-    max-height: 55vh;
+    max-height: 75vh;
+    border-radius: 8px;
+    overflow-y: auto;
+    overflow-x: auto;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 25px;
+    clip-path: inset(0 round 8px);
 }
 #payrollTable thead th { text-align: center; }
 #payrollTable th:nth-child(n+5), #payrollTable td:nth-child(n+5) { text-align: right; }
@@ -83,6 +88,29 @@ body.payroll-page .parent-container {
 }
 #exceptionReportModal .modal-content {
     width: 85%; max-width: 1000px; min-width: 700px;
+}
+
+@media (max-width: 768px) {
+    #exceptionReportModal .modal-content {
+        width: 95%;
+        min-width: 300px;
+        max-width: 95vw;
+    }
+    
+    #exceptionReportModal .modal-body {
+        padding: 10px 15px;
+    }
+    
+    #exceptionReportTable {
+        font-size: 0.8em;
+    }
+    
+    #exceptionReportTable th,
+    #exceptionReportTable td {
+        padding: 6px 8px;
+        white-space: normal;
+        word-wrap: break-word;
+    }
 }
 #exceptionReportModal .modal-body { padding: 15px 25px; }
 #exceptionReportModal .modal-table-container {

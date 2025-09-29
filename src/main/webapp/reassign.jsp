@@ -84,14 +84,27 @@
     <%@ include file="/WEB-INF/includes/common-head.jspf" %>
     
     <style>
-    
-    body.reassign-page .parent-container {
-    max-width: 55%;
-    min-height: 0;
-    flex-grow: 0;
-}
-        .reassign-container { padding: 20px; max-width: 800px; max-height: 60vh; margin: 20px auto; background-color:#fff; border-radius:8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .form-row { display: flex; flex-wrap: wrap; justify-content: space-between; margin-bottom: 20px; align-items: flex-end; gap: 15px;}
+        body.reassign-page .parent-container {
+            max-width: 55%;
+            min-height: 0;
+            flex-grow: 0;
+        }
+        .reassign-container { 
+            padding: 20px; 
+            max-width: 800px; 
+            margin: 20px auto; 
+            background-color:#fff; 
+            border-radius:8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+        }
+        .form-row { 
+            display: flex; 
+            flex-wrap: wrap; 
+            justify-content: space-between; 
+            margin-bottom: 20px; 
+            align-items: flex-end; 
+            gap: 15px;
+        }
         .form-row > .form-item { flex: 1; min-width: 200px; }
         .form-item label { display: block; margin-bottom: 6px; font-weight: 600; color: #333; }
         .form-item select, .form-item button {
@@ -101,6 +114,8 @@
             border: 1px solid #ccc;
             box-sizing: border-box;
             font-size: 0.95em;
+            height: 42px;
+            line-height: 1.4;
         }
         .form-item select { background-color: #f9f9f9; }
         .form-item button { background-color: #007bff; color: white; cursor: pointer; font-weight: 500; transition: background-color 0.2s ease-in-out; }
@@ -112,12 +127,53 @@
         .error { background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7;}
         #validationMessage.error { margin-top: 5px; padding: 8px; font-size: 0.9em; }
         h1 { text-align: center; color: #005A9C; margin-bottom: 25px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+        
+        /* Mobile Styles */
+        @media (max-width: 480px) {
+            body.reassign-page .parent-container {
+                max-width: none !important;
+                width: 100% !important;
+                padding: 10px !important;
+                margin: 0 !important;
+            }
+            
+            .reassign-container {
+                margin: 0 !important;
+                padding: 15px !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                min-height: calc(100vh - 80px) !important;
+            }
+            
+            .form-row {
+                flex-direction: column !important;
+                gap: 15px !important;
+            }
+            
+            .form-row > .form-item {
+                min-width: 100% !important;
+                flex: none !important;
+            }
+            
+            .form-item select, .form-item button {
+                padding: 12px !important;
+                font-size: 1em !important;
+                height: 46px !important;
+                line-height: 1.4 !important;
+            }
+            
+            h1 {
+                font-size: 1.3em !important;
+                margin-bottom: 20px !important;
+            }
+        }
     </style>
 </head>
 <body class="reassign-page">
     <%@ include file="/WEB-INF/includes/navbar.jspf" %>
 
-    <div class="parent-container reassign-container">
+    <div class="parent-container">
+        <div class="reassign-container">
         <h1><i class="fas fa-exchange-alt"></i> Reassign Employees</h1>
 
         <% if (pageLoadErrorMessage != null && !pageLoadErrorMessage.isEmpty()) { %>
@@ -162,6 +218,7 @@
             </div>
             <div id="validationMessage" class="error" style="display:none;"></div>
         </form>
+        </div>
     </div>
 
     <script>

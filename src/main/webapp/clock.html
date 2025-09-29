@@ -19,26 +19,39 @@
 
 	<script>
             function updateClock() {
-                const now = new Date(); // Get current date and time
-
-                const dateOptions = {
-                    weekday: 'long', // Long day name (e.g., Monday)
-                    year: 'numeric', // 4-digit year
-                    month: 'long', // Long month name (e.g., January)
-                    day: 'numeric'    // Day of the month
-                };
-                const formattedDate = now.toLocaleDateString(undefined, dateOptions);
-
-                const timeOptions = {
-                    hour: 'numeric', // Hour (12 or 24 hour format, depends on locale)
-                    minute: 'numeric', // Minutes
-                    second: 'numeric', // Seconds
-                    hour12: true       // Set to true for 12-hour format, false for 24-hour.
-                };
-                const formattedTime = now.toLocaleTimeString(undefined, timeOptions);
-
+                const now = new Date();
                 const clockDiv = document.getElementById("clock");
-                clockDiv.textContent = `${formattedDate} ${formattedTime}`; // Update the clock div
+                const isMobile = window.innerWidth <= 480;
+
+                if (isMobile) {
+                    // Mobile format: two lines
+                    const dayShort = now.toLocaleDateString(undefined, { weekday: 'short' });
+                    const dateShort = now.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                    const timeWithSeconds = now.toLocaleTimeString(undefined, { 
+                        hour: 'numeric', 
+                        minute: '2-digit', 
+                        second: '2-digit', 
+                        hour12: true 
+                    });
+                    clockDiv.innerHTML = `${dayShort} ${dateShort}<br>${timeWithSeconds}`;
+                } else {
+                    // Desktop format: original single line
+                    const dateOptions = {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    };
+                    const formattedDate = now.toLocaleDateString(undefined, dateOptions);
+                    const timeOptions = {
+                        hour: 'numeric',
+                        minute: 'numeric',
+                        second: 'numeric',
+                        hour12: true
+                    };
+                    const formattedTime = now.toLocaleTimeString(undefined, timeOptions);
+                    clockDiv.textContent = `${formattedDate} ${formattedTime}`;
+                }
             }
 
             // Initial update

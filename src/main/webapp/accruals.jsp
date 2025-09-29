@@ -94,7 +94,7 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <title>Manage Accrual Policies<% if(inSetupWizardMode_JSP) { %> - Company Setup<% } %></title>
+    <title>Manage PTO Policies<% if(inSetupWizardMode_JSP) { %> - Company Setup<% } %></title>
     <%@ include file="/WEB-INF/includes/common-head.jspf" %> 
     <link rel="stylesheet" href="<%= request.getContextPath() %>/css/accruals.css?v=<%= System.currentTimeMillis() %>"> 
 </head>
@@ -103,21 +103,21 @@
         <%@ include file="/WEB-INF/includes/navbar.jspf" %>
     <% } else { %>
         <div class="wizard-header">
-            <h2>Company Setup: Accrual Policies for <%= escapeJspHtml(companyNameSignup_Accruals) %></h2>
+            <h2>Company Setup: PTO Policies for <%= escapeJspHtml(companyNameSignup_Accruals) %></h2>
             <p>Configure time off policies (Vacation, Sick, etc.). You can assign them to employees later.</p>
         </div>
     <% } %>
 
     <div class="parent-container">
-        <h1>Manage Accrual Policies <% if(inSetupWizardMode_JSP) { %> <span class="setup-label">(Setup)</span> <% } %></h1>
+        <h1>Manage PTO Policies <% if(inSetupWizardMode_JSP) { %> <span class="setup-label">(Setup)</span> <% } %></h1>
 
         <% if (pageLevelSuccess != null && !pageLevelSuccess.isEmpty()) { %><div class="page-message success-message" id="pageNotificationDiv_Success_Accrual"><%= escapeJspHtml(pageLevelSuccess) %></div><% } %>
         <% if (pageLevelError != null && !pageLevelError.isEmpty()) { %><div class="page-message error-message" id="pageNotificationDiv_Error_Accrual"><%= escapeJspHtml(pageLevelError) %></div><% } %>
        
         <div id="button-container" class="main-action-buttons">
-            <button type="button" id="btnAddPolicy" class="glossy-button text-green"><i class="fas fa-plus"></i> Add Accrual Policy</button>
-            <button type="button" id="btnEditPolicy" class="glossy-button text-orange" disabled><i class="fas fa-edit"></i> Edit Accrual Policy</button>
-            <button type="button" id="btnDeletePolicy" class="glossy-button text-red" disabled><i class="fas fa-trash-alt"></i> Delete Accrual Policy</button>
+            <button type="button" id="btnAddPolicy" class="glossy-button text-green"><i class="fas fa-plus"></i> Add PTO Policy</button>
+            <button type="button" id="btnEditPolicy" class="glossy-button text-orange" disabled><i class="fas fa-edit"></i> Edit PTO Policy</button>
+            <button type="button" id="btnDeletePolicy" class="glossy-button text-red" disabled><i class="fas fa-trash-alt"></i> Delete PTO Policy</button>
         </div>
         
         <h4 style="color: #6c757d; margin: 7px auto 0 auto; font-size: 0.9em;"><span class="instruction-text">💡 Select a row to edit or delete</span></h4>
@@ -144,19 +144,19 @@
     
         <div id="adjustAccrualBalanceSection">
             <div class="manage-accrual-form-outer-box">
-                 <h2>Adjust Employee Accrual Balance</h2>
-                <p class="page-description">Manually add, subtract, or set an employee's accrued time off balance. This is for corrections or initial setup.</p>
+                 <h2>Adjust Employee PTO Balance</h2>
+                <p class="page-description">Manually add, subtract, or set an employee's PTO balance. This is for corrections or initial setup.</p>
                 <div class="form-elements-gradient-wrapper">
                     <form action="<%= request.getContextPath() %>/AccrualServlet" method="POST" id="adjustAccrualBalanceForm">
                         <input type="hidden" name="action" value="adjustAccruedBalanceAction">
                         <fieldset id="adjustmentFormFieldset">
                             <div class="scope-selection-top">
-                                <span class="toggle-switch-label">Single Employee</span>
+                                <span class="toggle-switch-label" id="singleEmployeeLabel">Single Employee</span>
                                 <label class="switch">
-                                    <input type="checkbox" id="allEmployeesToggle" name="isGlobalAdd" value="true">
+                                    <input type="checkbox" id="allEmployeesToggle" name="isGlobalAdd" value="true" checked>
                                     <span class="slider round"></span>
                                 </label>
-                                <span class="toggle-switch-label">All Employees</span>
+                                <span class="toggle-switch-label active" id="allEmployeesLabel">All Employees</span>
                             </div>
                         
                             <div class="form-item" id="employeeSelectContainer">
@@ -170,7 +170,7 @@
                             </div>
                              <div class="form-row">
                                 <div class="form-item">
-                                    <label>Accrual Type: <span class="required-asterisk">*</span></label>
+                                    <label>PTO Type: <span class="required-asterisk">*</span></label>
                                     <div class="radio-group" id="adjustmentType">
                                         <label><input type="radio" name="accrualTypeColumn" value="VACATION_HOURS" checked> Vacation</label>
                                         <label><input type="radio" name="accrualTypeColumn" value="SICK_HOURS"> Sick</label>

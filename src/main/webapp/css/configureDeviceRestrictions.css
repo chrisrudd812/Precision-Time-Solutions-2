@@ -210,3 +210,113 @@
     -webkit-appearance: inner-spin-button; /* Chrome, Safari, Edge, Opera */
     opacity: 1;
 }
+
+/* Mobile Styles - ONLY for screens 480px and below */
+@media (max-width: 480px) {
+    .parent-container {
+        padding: 10px !important;
+    }
+    
+    .config-container {
+        padding: 15px !important;
+        margin: 10px auto !important;
+        max-width: none !important;
+    }
+    
+    h1 {
+        font-size: 1.3em !important;
+        text-align: center !important;
+    }
+    
+    .global-max-devices-section {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+        padding: 15px !important;
+    }
+    
+    .global-max-devices-section label {
+        white-space: normal !important;
+        text-align: center !important;
+    }
+    
+    .global-max-devices-section input[type="number"] {
+        width: 100% !important;
+        max-width: 100px !important;
+        margin: 0 auto !important;
+    }
+    
+    .how-it-works-section {
+        padding: 15px !important;
+        margin-bottom: 20px !important;
+    }
+    
+    .how-it-works-section h3 {
+        font-size: 1em !important;
+    }
+    
+    .explanation-content p {
+        font-size: 0.9em !important;
+    }
+    
+    .setting-info-bar {
+        padding: 10px 15px !important;
+        font-size: 0.9em !important;
+    }
+    
+    .employee-list-scroll-container {
+        max-height: 50vh !important;
+        padding: 0 5px 10px 5px !important;
+    }
+    
+    .employee-header {
+        font-size: 1em !important;
+        padding: 10px 12px !important;
+    }
+    
+    .device-table {
+        font-size: 0.85em !important;
+    }
+    
+    .device-table th,
+    .device-table td {
+        padding: 8px 10px !important;
+        font-size: 0.8em !important;
+    }
+    
+    .device-table .description-input {
+        width: 100% !important;
+        padding: 8px !important;
+        font-size: 0.9em !important;
+    }
+    
+    .action-icon-btn {
+        padding: 8px !important;
+        font-size: 1.2em !important;
+    }
+    
+    .form-actions {
+        flex-direction: column !important;
+        gap: 10px !important;
+        margin-top: 15px !important;
+    }
+    
+    .form-actions .glossy-button {
+        width: 100% !important;
+        text-align: center !important;
+        box-sizing: border-box !important;
+    }
+    
+    .no-devices {
+        padding: 15px !important;
+        font-size: 0.9em !important;
+    }
+    
+    .status-indicator {
+        font-size: 0.8em !important;
+        display: block !important;
+        margin-top: 5px !important;
+        margin-left: 0 !important;
+        text-align: center !important;
+    }
+}

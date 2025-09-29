@@ -91,7 +91,7 @@
     <div class="change-password-container login-container"> 
         <div class="change-password-header login-header">
             <a href="index.jsp" class="logo-link">
-    <img src="<%= request.getContextPath() %>/images/logo.png" alt="Company Logo" style="height: 32px; vertical-align: middle; margin-right: 8px;"> 
+    <img src="<%= request.getContextPath() %>/images/logo.webp" alt="Company Logo" style="height: 32px; vertical-align: middle; margin-right: 8px;"> 
     Precision Time Solutions
 </a>
             <h1>Set Your New Login PIN</h1>

@@ -71,6 +71,7 @@ public class CheckOpenPunchServlet extends HttpServlet {
                     java.sql.Timestamp lastInTime = rs.getTimestamp("IN_1");
                     if (lastInTime != null) {
                         long hoursSinceLastPunch = (System.currentTimeMillis() - lastInTime.getTime()) / (1000 * 60 * 60);
+                        // Only consider it an open punch if it's within 20 hours
                         return hoursSinceLastPunch <= 20;
                     }
                 }
