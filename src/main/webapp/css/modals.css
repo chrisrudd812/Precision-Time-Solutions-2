@@ -19,6 +19,10 @@
     background-color: rgba(0,0,0,0.6); 
 }
 
+#notificationModalGeneral {
+    z-index: 10090 !important;
+}
+
 .modal.modal-visible { 
     display: flex !important; 
     align-items: center; 

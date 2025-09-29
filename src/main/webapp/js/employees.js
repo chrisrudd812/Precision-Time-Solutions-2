@@ -569,14 +569,31 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (payRateInput && payRateInput.value) {
                         payRateInput.value = removeCommasFromPayRate(payRateInput);
                     }
-                    submitButton.disabled = true;
-                    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
                 }
             });
             form.querySelectorAll('[required], [pattern]').forEach(field => {
                 field.addEventListener('input', () => validateField(field));
                 if (field.tagName === 'SELECT') {
                     field.addEventListener('change', () => validateField(field));
+                }
+            });
+            
+            // Add error handling for form submission
+            form.addEventListener('submit', function(e) {
+                console.log('Form submission started for:', form.id);
+                const submitButton = form.querySelector('button[type="submit"]');
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+                    
+                    // Reset button after 10 seconds if no response
+                    setTimeout(() => {
+                        if (submitButton.disabled) {
+                            submitButton.disabled = false;
+                            submitButton.innerHTML = '<i class="fas fa-check"></i> Submit';
+                            console.log('Form submission timeout - re-enabling button');
+                        }
+                    }, 10000);
                 }
             });
         }

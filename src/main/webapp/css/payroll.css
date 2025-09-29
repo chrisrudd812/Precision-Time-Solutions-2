@@ -60,7 +60,7 @@ body.payroll-page .parent-container {
 #payrollTable td:nth-child(1), #payrollTable td:nth-child(2), #payrollTab	le td:nth-child(3), #payrollTable td:nth-child(4) { text-align: left; }
 #payrollTable tfoot { position: sticky; bottom: -1px; z-index: 20; }
 #payrollTable tfoot td {
-    font-weight: bold; background: #f1f5f9 !important; color: #0f766e !important;
+    font-weight: bold; background: linear-gradient(to bottom, #f0fdf4, #e6fcf5) !important; color: #065f46 !important;
     border-top: 2px solid #14b8a6 !important; text-shadow: none !important; padding: 10px 12px;
 }
 

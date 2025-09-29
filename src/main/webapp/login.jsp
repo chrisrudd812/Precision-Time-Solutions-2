@@ -62,22 +62,24 @@
 
         <form action="LoginServlet" method="POST" id="loginForm" class="login-form">
              <input type="hidden" id="browserTimeZone" name="browserTimeZone" value="">
-            <div class="form-group">
-                <label for="companyIdentifier">Company ID <span class="required">*</span></label>
-                <input type="text" id="companyIdentifier" name="companyIdentifier"
-                       value="<%= (companyIdentifierRepop != null ? companyIdentifierRepop.replace("\"", "&quot;") : "") %>"
-                       autocomplete="organization"
-                       required>
-            </div>
-            <div class="form-group">
-                <label for="email">Email Address <span class="required">*</span></label>
-                <input type="email" id="email" name="email"
-                       value="<%= (adminEmailRepop != null ? adminEmailRepop.replace("\"", "&quot;") : "") %>"
-                       autocomplete="email" required>
-            </div>
-            <div class="form-group">
-                <label for="password">PIN <span class="required">*</span></label>
-                <input type="password" id="password" name="password" autocomplete="current-password" required>
+            <div class="form-body-container">
+                <div class="form-group">
+                    <label for="companyIdentifier">Company ID <span class="required">*</span></label>
+                    <input type="text" id="companyIdentifier" name="companyIdentifier"
+                           value="<%= (companyIdentifierRepop != null ? companyIdentifierRepop.replace("\"", "&quot;") : "") %>"
+                           autocomplete="organization"
+                           required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email Address <span class="required">*</span></label>
+                    <input type="email" id="email" name="email"
+                           value="<%= (adminEmailRepop != null ? adminEmailRepop.replace("\"", "&quot;") : "") %>"
+                           autocomplete="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">PIN <span class="required">*</span></label>
+                    <input type="password" id="password" name="password" autocomplete="current-password" required>
+                </div>
             </div>
             <div class="form-actions">
                 <button type="submit" class="glossy-button text-blue login-submit-button">

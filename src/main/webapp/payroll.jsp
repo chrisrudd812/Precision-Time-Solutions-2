@@ -120,7 +120,7 @@
         <h2 id="payPeriodHeader">Pay Period: <%= escapeJspHtml(payPeriodMessage) %></h2>
 
         <% if (successMessageFromRedirect != null && !successMessageFromRedirect.isEmpty()) { %>
-            <div class="page-message success-message" id="pageNotificationDiv_Success_Payroll"><%= escapeJspHtml(successMessageFromRedirect) %></div>
+            <div class="page-message success-message" id="pageNotificationDiv_Success_Payroll" style="display: none;"><%= escapeJspHtml(successMessageFromRedirect) %></div>
         <% } else if (pageError != null && !pageError.isEmpty()) { %>
             <div class="page-message error-message" id="pageNotificationDiv_Error_Payroll"><%= pageError %></div>
         <% } %>

@@ -146,10 +146,23 @@ public class LoginServlet extends HttpServlet {
 						response.sendRedirect("change_password.jsp");
 					} else {
 						session.removeAttribute("startSetupWizard");
-						String targetPage = "Administrator".equalsIgnoreCase(userPermissions) ? "employees.jsp"
-								: "timeclock.jsp";
-						logger.info("[DEBUG] 11. REDIRECTING to: " + targetPage);
-						response.sendRedirect(targetPage);
+						
+						// Check if administrator and pay period has ended
+						if ("Administrator".equalsIgnoreCase(userPermissions)) {
+							logger.info("[DEBUG] 11. Checking pay period status for administrator");
+							boolean payPeriodEnded = isPayPeriodEnded(conn, tenantId);
+							logger.info("[DEBUG] 11. Pay period ended result: " + payPeriodEnded);
+							if (payPeriodEnded) {
+								logger.info("[DEBUG] 11. REDIRECTING to employees.jsp with payroll modal");
+								response.sendRedirect("employees.jsp?showPayrollModal=true");
+							} else {
+								logger.info("[DEBUG] 11. REDIRECTING to: employees.jsp");
+								response.sendRedirect("employees.jsp");
+							}
+						} else {
+							logger.info("[DEBUG] 11. REDIRECTING to: timeclock.jsp");
+							response.sendRedirect("timeclock.jsp");
+						}
 					}
 				} else {
 					logger.warning("[DEBUG] 8. PASSWORD MISMATCH. BCrypt check failed.");
@@ -259,5 +272,39 @@ public class LoginServlet extends HttpServlet {
 			}
 		}
 		return 25; // Fallback default
+	}
+	
+	private boolean isPayPeriodEnded(Connection conn, int tenantId) {
+		logger.info("[DEBUG] isPayPeriodEnded called for TenantID: " + tenantId);
+		try {
+			// Check settings table for pay period configuration
+			String sql = "SELECT setting_value FROM settings WHERE TenantID = ? AND setting_key = 'PayPeriodEndDate'";
+			logger.info("[DEBUG] Executing SQL: " + sql + " with TenantID: " + tenantId);
+			try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+				pstmt.setInt(1, tenantId);
+				try (ResultSet rs = pstmt.executeQuery()) {
+					if (rs.next()) {
+						String payPeriodEndStr = rs.getString("setting_value");
+						logger.info("[DEBUG] Found pay period end setting: '" + payPeriodEndStr + "'");
+						if (payPeriodEndStr != null && !payPeriodEndStr.trim().isEmpty()) {
+							java.sql.Date payPeriodEnd = java.sql.Date.valueOf(payPeriodEndStr.trim());
+							java.sql.Date today = new java.sql.Date(System.currentTimeMillis());
+							logger.info("[DEBUG] Pay period end date: " + payPeriodEnd + ", Today: " + today);
+							boolean isEnded = today.after(payPeriodEnd);
+							logger.info("[DEBUG] Pay period ended: " + isEnded);
+							return isEnded;
+						} else {
+							logger.info("[DEBUG] Pay period end setting is null or empty");
+						}
+					} else {
+						logger.info("[DEBUG] No pay period end setting found in database");
+					}
+				}
+			}
+		} catch (Exception e) {
+			logger.log(Level.WARNING, "Error checking pay period end date for TenantID " + tenantId, e);
+		}
+		logger.info("[DEBUG] Returning false - pay period not ended");
+		return false; // Default to false if can't determine
 	}
 }

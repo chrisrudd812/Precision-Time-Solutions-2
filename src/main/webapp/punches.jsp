@@ -314,7 +314,7 @@
 
         <% if (eidToLoad > 0) { %>
             <div id="button-container" class="main-action-buttons">
-                <button type="button" id="addHoursBtn" class="glossy-button text-green"><i class="fas fa-plus-circle"></i> Add Hours</button>
+                <button type="button" id="addHoursBtn" class="glossy-button text-green"><i class="fas fa-plus-circle"></i> Add PTO</button>
                 <button type="button" id="addTimedPunchBtn" class="glossy-button text-blue"><i class="fas fa-clock"></i> Add Timed Punch</button>
                 <button type="button" id="editRowBtn" class="glossy-button text-orange" disabled><i class="fas fa-edit"></i> Edit Row</button>
                 <button type="button" id="deleteRowBtn" class="glossy-button text-red" disabled><i class="fas fa-trash-alt"></i> Delete Row</button>

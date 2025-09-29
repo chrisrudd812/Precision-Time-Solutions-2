@@ -1,7 +1,7 @@
 // js/punches.js - v.ModalLogicUpdate_Rev11_DEBUG
 
 // --- Global Constants & Helpers ---
-const ACCRUED_HOUR_TYPES = ["Vacation", "Sick", "Personal", "Holiday", "Bereavement", "Other"];
+const ACCRUED_HOUR_TYPES = ["Vacation", "Sick", "Personal", "Holiday", "Other"];
 const TIMED_PUNCH_TYPE = "Supervisor Override";
 const MANUAL_ENTRY_TYPES = [TIMED_PUNCH_TYPE, ...ACCRUED_HOUR_TYPES];
 
@@ -221,7 +221,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function setupModalForAccruedHours() {
-        if (addHoursModalTitle) addHoursModalTitle.textContent = 'Add Manual Hours';
+        if (addHoursModalTitle) addHoursModalTitle.textContent = 'Add PTO Hours';
         populateDropdown(addHoursPunchTypeDropdown, ACCRUED_HOUR_TYPES, 'Vacation');
         updateAddModalFieldsVisibility('Vacation');
     }

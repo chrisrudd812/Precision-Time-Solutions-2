@@ -57,6 +57,17 @@
                     </div>
                 </div>
             </div>
+            <% if(!inSetupWizardMode_JSP) { %>
+            <div class="form-body-container" style="display: flex; justify-content: center; align-items: center; padding: 10px 20px; margin-top: -20px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <label style="margin: 0; font-weight: 500; font-size: 0.9em; color: #6c757d;">Send Welcome Email</label>
+                    <label class="switch">
+                        <input type="checkbox" id="sendWelcomeEmail" name="sendWelcomeEmail" value="true" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </div>
+            <% } %>
             <div class="button-row">
                 <button type="submit" class="glossy-button text-green"><i class="fas fa-check"></i> Submit</button>
                 <button type="button" class="cancel-btn glossy-button text-red"><i class="fas fa-times"></i> Cancel</button>

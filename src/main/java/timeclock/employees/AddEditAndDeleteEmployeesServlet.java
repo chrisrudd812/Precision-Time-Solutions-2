@@ -7,6 +7,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import timeclock.db.DatabaseConnection;
+import timeclock.auth.EmailService;
+import timeclock.Configuration;
 import org.mindrot.jbcrypt.BCrypt;
 import org.json.JSONObject;
 
@@ -21,7 +23,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -229,7 +233,21 @@ public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
                     String successMessage = String.format("Employee %s %s (#%d) added successfully.", 
                                                           firstName.trim(), lastName.trim(), tenEmpNo);
                     
+                    // Send welcome email if requested and not in wizard mode
                     boolean inWizard = "true".equals(request.getParameter("setup_wizard"));
+                    boolean sendWelcomeEmail = "true".equals(request.getParameter("sendWelcomeEmail"));
+                    
+                    if (!inWizard && sendWelcomeEmail && isValid(finalEmail)) {
+                        try {
+                            sendIndividualWelcomeEmail(tenantId, finalEmail, permissions, firstName.trim(), lastName.trim());
+                            successMessage += " Welcome email sent.";
+                        } catch (Exception emailEx) {
+                            logger.log(Level.WARNING, "Failed to send welcome email to " + finalEmail + ": " + emailEx.getMessage(), emailEx);
+                            // Don't let email failure block the employee creation
+                            successMessage += " (Note: Welcome email could not be sent)";
+                        }
+                    }
+                    
                     if (inWizard) {
                         // DEBUG: Print what's happening
                         System.out.println("DEBUG: Setting wizard step to after_add_employee_prompt, redirecting with empAdded=true");
@@ -590,5 +608,74 @@ public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
                 return rs.next() ? rs.getInt(1) + 1 : 1; 
             }
         }
+    }
+    
+    private void sendIndividualWelcomeEmail(int tenantId, String email, String permissions, String firstName, String lastName) throws Exception {
+        if (email == null || email.trim().isEmpty()) {
+            throw new IllegalArgumentException("Email address is required");
+        }
+        
+        // Get company information
+        String companyName = "Your Company";
+        String companyId = "";
+        
+        try (Connection con = DatabaseConnection.getConnection()) {
+            String sql = "SELECT CompanyName, CompanyIdentifier FROM tenants WHERE TenantID = ?";
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setInt(1, tenantId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        String dbCompanyName = rs.getString("CompanyName");
+                        String dbCompanyId = rs.getString("CompanyIdentifier");
+                        if (dbCompanyName != null && !dbCompanyName.trim().isEmpty()) {
+                            companyName = dbCompanyName.trim();
+                        }
+                        if (dbCompanyId != null && !dbCompanyId.trim().isEmpty()) {
+                            companyId = dbCompanyId.trim();
+                        } else {
+                            companyId = String.valueOf(tenantId);
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            logger.log(Level.WARNING, "Could not retrieve company information for welcome email", e);
+            // Continue with default values
+            companyId = String.valueOf(tenantId);
+        }
+        
+        // Build email content
+        String subject = "Welcome to " + companyName + "!";
+        String loginLink = getBaseUrl() + "/login.jsp?companyId=" + java.net.URLEncoder.encode(companyId, "UTF-8") + "&focus=email";
+        
+        StringBuilder body = new StringBuilder();
+        body.append("Dear ").append(firstName).append(",\n\n");
+        body.append("Welcome to your new time and attendance system!\n\n");
+        body.append("To log in, please use the following link. We recommend bookmarking it for easy access:\n");
+        body.append(loginLink).append("\n\n");
+        body.append("Your login details are:\n");
+        body.append("• Company ID: ").append(companyId).append("\n");
+        body.append("• Username: Your Email Address\n");
+        body.append("• Temporary PIN: 1234\n\n");
+        body.append("You will be required to change this PIN on your first login for security.\n\n");
+        
+        if ("Administrator".equalsIgnoreCase(permissions)) {
+            body.append("As an administrator, you have full access to manage employees, schedules, and payroll.\n\n");
+            body.append("For help getting started, visit our administrator help center:\n");
+            body.append(getBaseUrl()).append("/help.jsp");
+        } else {
+            body.append("You can punch in and out using our easy-to-use time clock.\n\n");
+            body.append("For help using the time clock, visit our user guide:\n");
+            body.append(getBaseUrl()).append("/help_user.jsp");
+        }
+        
+        List<String> recipients = new ArrayList<>();
+        recipients.add(email);
+        EmailService.send(recipients, subject, body.toString());
+    }
+    
+    private String getBaseUrl() {
+        // Use localhost for development - in production this should be configurable
+        return "http://localhost:8080"; // TODO: Make this configurable via properties
     }
 }
