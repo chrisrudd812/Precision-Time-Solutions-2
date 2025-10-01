@@ -176,7 +176,7 @@
                                 <li class="sub-dropdown-trigger">
                                      <a href="javascript:void(0);" class="sub-dropbtn">Time Card Reports <i class="fas fa-chevron-right"></i></a>
                                      <ul class="dropdown-content sub-dropdown-content">
-                                        <li><a href="<%= request.getContextPath() %>/timeclock.jsp?reportMode=true&eid=0">View Individual Timecard</a></li>
+                                        <li><a href="<%= request.getContextPath() %>/PrintTimecardsServlet?filterType=single&filterValue=1" target="_blank">View Individual Timecard</a></li>
                                         <li><a href="<%= request.getContextPath() %>/PrintTimecardsServlet?filterType=all" target="_blank">All Time Cards (Print View)</a></li>
                                          <li class="sub-dropdown-trigger">
                                             <a href="javascript:void(0);" class="sub-dropbtn">By Department (Print View) <i class="fas fa-chevron-right"></i></a>

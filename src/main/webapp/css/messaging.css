@@ -116,12 +116,51 @@
     border-top: 1px solid #e2e8f0;
 }
 
+.messaging-button-container {
+    display: flex;
+    justify-content: flex-end;
+    padding: 15px 0;
+    border-top: 1px solid #e2e8f0;
+    margin-top: 15px;
+    clear: both;
+}
+
 #sendMessageBtn {
     min-width: 180px;
 }
 
-/* Mobile Styles - ONLY for screens 480px and below */
-@media (max-width: 480px) {
+/* Laptop (1024px - 1440px) */
+@media (min-width: 1024px) and (max-width: 1440px) {
+    .messaging-form-container {
+        max-height: 90vh !important;
+        padding: 15px 20px !important;
+    }
+    
+    #messagingForm textarea {
+        min-height: 80px !important;
+    }
+    
+    #messagingForm .form-item {
+        margin-bottom: 10px !important;
+    }
+    
+    .button-row {
+        display: flex !important;
+        justify-content: flex-end !important;
+        padding-top: 5px !important;
+        border-top: 1px solid #e2e8f0 !important;
+    }
+}
+
+/* Desktop (1441px+) */
+@media (min-width: 1441px) {
+    .messaging-form-container {
+        max-height: 70vh;
+    }
+}
+
+/* Mobile Portrait (max 768px, portrait only) */
+@media (max-width: 768px) and (orientation: portrait) {
     .parent-container {
         padding: 10px !important;
     }
@@ -185,5 +224,39 @@
     
     h1 {
         font-size: 1.3em !important;
+    }
+}
+
+/* Mobile Landscape (481px - 1023px, landscape only) */
+@media (min-width: 481px) and (max-width: 1023px) and (orientation: landscape) {
+    .messaging-form-container {
+        max-height: none !important;
+        overflow: visible !important;
+        padding: 15px !important;
+    }
+    
+    #messagingForm .form-row {
+        gap: 15px !important;
+    }
+    
+    #messagingForm .form-item {
+        margin-bottom: 10px !important;
+    }
+    
+    #messagingForm textarea {
+        min-height: 80px !important;
+    }
+    
+    #messagingForm .button-row,
+    .messaging-button-container {
+        display: flex !important;
+        justify-content: center !important;
+        padding: 10px 0 !important;
+        margin-top: 10px !important;
+    }
+    
+    #sendMessageBtn {
+        width: 100% !important;
+        min-width: 100% !important;
     }
 }

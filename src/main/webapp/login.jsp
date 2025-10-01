@@ -78,7 +78,7 @@
                 </div>
                 <div class="form-group">
                     <label for="password">PIN <span class="required">*</span></label>
-                    <input type="password" id="password" name="password" autocomplete="current-password" required>
+                    <input type="password" id="password" name="password" autocomplete="off" required>
                 </div>
             </div>
             <div class="form-actions">

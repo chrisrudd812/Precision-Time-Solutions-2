@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("signup_validation.js - v35 FINAL POLISH");
 
     let isFreePlan = false;
     let stripe, cardNumberElement;
@@ -33,9 +32,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // Check if the publishable key was passed from the JSP file.
             // If not, log an error and disable the payment form to prevent errors.
             if (typeof STRIPE_PUBLISHABLE_KEY === 'undefined' || STRIPE_PUBLISHABLE_KEY === 'null' || STRIPE_PUBLISHABLE_KEY === '') {
-                console.error("CRITICAL: Stripe Publishable Key is not available from the server environment.");
                 displayClientSideError("Payment processing is currently unavailable. Please contact support.");
-                return; // Stop the initialization
+                return;
             }
 
             // Use the key provided by the server via the JSP file
@@ -58,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function() {
             addStripeValidationListener(cardCvcElement, 'card-cvc', 'cardCvc');
 
         } catch (e) {
-            console.error("Stripe.js has not loaded yet or another error occurred:", e);
+            displayClientSideError("Payment processing is currently unavailable. Please contact support.");
         }
     }
 
@@ -287,7 +285,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: new URLSearchParams(formData)
             });
             
-            const data = await response.json();
+            let data;
+            try {
+                data = await response.json();
+            } catch (jsonError) {
+                displayClientSideError('Server returned an invalid response. Please try again.');
+                setButtonState(false);
+                return;
+            }
 
             if (data.action_required) {
                 const { error: scaError } = await stripe.handleNextAction({ clientSecret: data.client_secret });
@@ -316,9 +321,52 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function displayClientSideError(message) {
-        if (!clientSideErrorDiv) return;
-        clientSideErrorDiv.textContent = message;
-        clientSideErrorDiv.style.display = message ? 'block' : 'none';
+        if (!message) return;
+        
+        // Use the confirmation modal with error styling
+        const modal = document.getElementById('confirmModalGeneral');
+        const messageElement = document.getElementById('confirmModalGeneralMessage');
+        const okBtn = document.getElementById('confirmModalGeneralOkBtn');
+        const cancelBtn = document.getElementById('confirmModalGeneralCancelBtn');
+        const modalContent = modal ? modal.querySelector('.modal-content') : null;
+        const titleElement = modal ? modal.querySelector('.modal-header h2') : null;
+        
+        if (modal && messageElement && okBtn && modalContent) {
+            // Add error state styling
+            modalContent.classList.remove('modal-state-warning');
+            modalContent.classList.add('modal-state-error');
+            
+            // Change title to Error
+            if (titleElement) {
+                titleElement.innerHTML = '<i class="fas fa-exclamation-circle"></i> <span>Error</span>';
+            }
+            
+            // Set error message and hide cancel button
+            messageElement.textContent = message;
+            cancelBtn.style.display = 'none';
+            okBtn.textContent = 'OK';
+            okBtn.className = 'glossy-button text-red';
+            
+            modal.classList.add('modal-visible');
+            
+            okBtn.onclick = function() {
+                modal.classList.remove('modal-visible');
+                cancelBtn.style.display = 'inline-block';
+                modalContent.classList.remove('modal-state-error');
+                modalContent.classList.add('modal-state-warning');
+            };
+            
+            modal.onclick = function(event) {
+                if (event.target === modal) {
+                    modal.classList.remove('modal-visible');
+                    cancelBtn.style.display = 'inline-block';
+                    modalContent.classList.remove('modal-state-error');
+                    modalContent.classList.add('modal-state-warning');
+                }
+            };
+        } else {
+            alert('Payment Error: ' + message);
+        }
     }
     
     // --- Initializers ---

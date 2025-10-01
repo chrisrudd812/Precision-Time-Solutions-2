@@ -400,17 +400,7 @@ table.timecard-table {
     color: #333;
     font-size: 1.05em;
 }
-.close-button {
-    color: rgba(255, 255, 255, 0.8);
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: color 0.2s ease;
-}
-.close-button:hover { color: #fff; }
+/* Close button removed for cleaner modal design */
 .modal-footer {
     margin-top: 0;
     padding: 15px;
@@ -482,32 +472,51 @@ table.timecard-table {
     }
     
     #main-clock-container {
-        width: 98%;
-        margin: 5px auto;
-        padding: 10px;
-        font-size: 1.5em;
+        width: calc(100% - 5px) !important;
+        margin: 2.5px auto !important;
+        padding: 10px !important;
+        font-size: 1.5em !important;
+        position: sticky !important;
+        top: 70px !important;
+        z-index: 100 !important;
+        box-sizing: border-box !important;
     }
     
     .employee-selector-container {
-        width: 98%;
-        margin: 5px auto;
-        padding: 10px;
-        flex-direction: column;
-        gap: 10px;
-        overflow: hidden;
-        word-wrap: break-word;
+        width: calc(100% - 5px) !important;
+        margin: 2.5px auto !important;
+        padding: 10px !important;
+        flex-direction: column !important;
+        gap: 10px !important;
+        overflow: hidden !important;
+        word-wrap: break-word !important;
+        box-sizing: border-box !important;
     }
     
     .timecard-container {
-        width: 98%;
-        margin: 5px auto;
-        padding: 0;
+        width: calc(100% - 5px) !important;
+        margin: 2.5px auto !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
     }
     
     .timecard {
-        width: 100%;
-        padding: 10px;
-        margin: 0;
+        width: 100% !important;
+        padding: 10px !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
+    }
+    
+    .user-logout-container {
+        width: calc(100% - 5px) !important;
+        margin: 2.5px auto !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
+    }
+    
+    .logout-button-user {
+        width: 100% !important;
+        box-sizing: border-box !important;
     }
     
     .timecard-info {
@@ -519,10 +528,11 @@ table.timecard-table {
     }
     
     .timecard-table-container {
-        width: calc(100% + 20px);
-        margin: 15px -10px;
-        max-height: 30vh;
-        overflow-y: auto;
+        width: 100% !important;
+        margin: 15px 0 !important;
+        max-height: 30vh !important;
+        overflow-y: auto !important;
+        box-sizing: border-box !important;
     }
     
     .timecard-table {
@@ -577,13 +587,13 @@ table.timecard-table {
     }
     
     .punch-buttons {
-        flex-direction: column;
+        flex-direction: row;
         gap: 10px;
         padding: 15px 0 5px 0;
     }
     
     .punch-buttons form {
-        width: 100%;
+        flex: 1;
         display: flex;
     }
     

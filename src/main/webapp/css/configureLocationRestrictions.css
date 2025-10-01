@@ -115,6 +115,52 @@
     margin-right: 8px;
 }
 
+/* Laptop (1024px - 1440px) */
+@media (min-width: 1024px) and (max-width: 1440px) {
+    .config-container {
+        max-height: none !important;
+    }
+    
+    #locationModal .modal-content,
+    #editLocationModal .modal-content {
+        max-height: 90vh !important;
+        overflow-y: auto !important;
+    }
+}
+
+/* Desktop (1441px+) */
+@media (min-width: 1441px) {
+    .config-container {
+        max-height: 70vh;
+    }
+}
+
+/* Mobile Portrait (max 768px, portrait only) */
+@media (max-width: 768px) and (orientation: portrait) {
+    .parent-container {
+        padding: 10px !important;
+    }
+    
+    .config-container {
+        padding: 15px !important;
+        margin: 10px auto !important;
+        max-height: none !important;
+    }
+}
+
+/* Mobile Landscape (max 1023px, landscape only) */
+@media (max-width: 1023px) and (orientation: landscape) {
+    .config-container {
+        max-height: none !important;
+    }
+    
+    #locationModal .modal-content,
+    #editLocationModal .modal-content {
+        max-height: 80vh !important;
+        overflow-y: auto !important;
+    }
+}
+
 /* Mobile Styles - ONLY for screens 480px and below */
 @media (max-width: 480px) {
     .parent-container {

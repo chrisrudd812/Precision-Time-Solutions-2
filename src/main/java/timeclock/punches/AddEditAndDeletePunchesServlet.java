@@ -6,11 +6,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import timeclock.Configuration;
 import timeclock.db.DatabaseConnection;
-import timeclock.punches.ShowPunches;
-import timeclock.payroll.PayrollServlet;
-
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -34,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 

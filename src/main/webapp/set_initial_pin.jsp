@@ -67,7 +67,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Roboto', sans-serif; } 
+        body { 
+            font-family: 'Roboto', sans-serif !important;
+        } 
         .set-pin-container { max-width: 550px; margin-top: 3%; }
         .login-header h1 { font-size: 1.6em; margin-bottom: 10px;}
         .login-header p.welcome-message { font-size: 0.95em; line-height: 1.5; color: #444; margin-bottom:20px; }
@@ -75,11 +77,13 @@
         .page-message.error-message { margin-top:10px; margin-bottom: 10px; }
         .modal { display: none; position: fixed; z-index: 1060; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
         .modal.modal-visible { display: flex !important; } 
-        .modal-content { background-color: #fefefe; margin: auto; padding: 25px 30px; border: 1px solid #bbb; border-radius: 8px; width: 90%; max-width: 520px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); text-align:left; position: relative; }
-        .modal-content h2 { margin-top: 0; font-size: 1.75em; color: #0056b3; padding-bottom: 15px; border-bottom: 1px solid #e9ecef; text-align:center; margin-bottom: 20px; font-weight: 500;}
-        .modal-content .close-modal-button { color: #888; float: right; font-size: 30px; font-weight: bold; cursor:pointer; position: absolute; top: 10px; right: 15px; line-height: 1; }
-        .modal-content .close-modal-button:hover, .modal-content .close-modal-button:focus { color: #000; text-decoration: none; }
-        .modal-content .button-row { display: flex; justify-content: space-evenly; gap: 15px; margin-top: 25px; padding-top:15px; border-top: 1px solid #e9ecef;}
+        .modal-content { background-color: #fefefe; margin: auto; padding: 0; border: 1px solid #bbb; border-radius: 8px; width: 90%; max-width: 520px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); text-align:left; position: relative; }
+        .modal-content .modal-header { background: linear-gradient(to bottom, #f0fdf4, #e6fcf5); padding: 18px 25px; border-bottom: 1px solid #e5e7eb; border-radius: 8px 8px 0 0; }
+        .modal-content h2 { margin: 0; font-size: 1.5em; color: #166534; text-align:center; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .modal-content .modal-body { padding: 25px; }
+        .modal-content .button-row { background: linear-gradient(to bottom, #f0fdf4, #e6fcf5); border-top: 1px solid #e5e7eb; border-radius: 0 0 8px 8px; }
+
+        .modal-content .button-row { display: flex; justify-content: space-evenly; gap: 15px; margin-top: 25px; padding: 15px 0 15px 0; border-top: 1px solid #e9ecef;}
         .signup-success-message-content p { margin-bottom: 12px; line-height: 1.65; font-size: 0.95em;}
         .signup-success-message-content p strong { font-weight: 500; }
         
@@ -115,6 +119,14 @@
         .text-green:hover { background-color: #218838; border-color: #1e7e34; }
         .text-blue { color: #fff; background-color: #007bff; border-color: #007bff; }
         .text-blue:hover { background-color: #0069d9; border-color: #0062cc; }
+        
+        .form-body-container {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 25px 20px 15px 20px;
+            margin-bottom: 1.5rem;
+        }
     </style>
 </head>
 <body>
@@ -132,13 +144,17 @@
 
         <div id="accountCreationSuccessInfoModal" class="modal <% if (signupSuccessfulCompanyInfo != null) { out.print("modal-visible"); } %>">
             <div class="modal-content">
-                <span class="close-modal-button" id="closeAccountSuccessInfoModal">&times;</span>
-                <h2>Account Creation Successful!</h2>
-                <div class="signup-success-message-content">
-                     <p><%= signupSuccessfulCompanyInfo %></p> 
-                    <p style="margin-top:15px;">The Administrator Password you created is for managing company-level account settings (billing, etc).</p>
-                    <p>To secure your <em>User</em> account (for <strong><%= escapeHtml(adminEmailForDisplay) %></strong>), please now set your initial 4-digit PIN. This PIN will be used for accessing the Dashboard features and clocking in/out.</p>
-                    <p>Please make a note of your Company ID (shown above). You will need to provide it to employees to login.</p>
+
+                <div class="modal-header">
+                    <h2><i class="fas fa-check-circle"></i> Account Creation Successful!</h2>
+                </div>
+                <div class="modal-body">
+                    <div class="signup-success-message-content">
+                         <p><%= signupSuccessfulCompanyInfo %></p> 
+                        <p style="margin-top:15px;">The Administrator Password you created is for managing company-level account settings (billing, etc).</p>
+                        <p>To secure your <em>User</em> account (for <strong><%= escapeHtml(adminEmailForDisplay) %></strong>), please now set your initial 4-digit PIN. This PIN will be used for accessing the Dashboard features and clocking in/out.</p>
+                        <p>Please make a note of your Company ID (shown above). You will need to provide it to employees to login.</p>
+                    </div>
                 </div>
                 <div class="button-row">
                     <button type="button" id="copyCompanyIdButton_pinPage" class="glossy-button text-blue"><i class="fas fa-copy"></i> Copy Company ID</button>
@@ -155,13 +171,15 @@
             <input type="hidden" name="eid" value="<%= wizardAdminEid %>"> 
             <input type="hidden" name="wizardStepVerify" value="initialPinSetRequired"> 
             
-            <div class="form-group">
-                <label for="newPin">New 4-Digit PIN <span class="required">*</span></label>
-                <input type="password" id="newPin" name="newPin" required minlength="4" maxlength="4" pattern="\d{4}" title="Must be exactly 4 numerical digits." inputmode="numeric" autocomplete="new-password" <% if (signupSuccessfulCompanyInfo == null) { out.print("autofocus"); } %> >
-            </div>
-            <div class="form-group">
-                <label for="confirmNewPin">Confirm New PIN <span class="required">*</span></label>
-                <input type="password" id="confirmNewPin" name="confirmNewPin" required minlength="4" maxlength="4" pattern="\d{4}" title="Must be exactly 4 numerical digits." inputmode="numeric" autocomplete="new-password">
+            <div class="form-body-container">
+                <div class="form-group">
+                    <label for="newPin">New 4-Digit PIN <span class="required">*</span></label>
+                    <input type="password" id="newPin" name="newPin" required minlength="4" maxlength="4" pattern="\d{4}" title="Must be exactly 4 numerical digits." inputmode="numeric" autocomplete="new-password" <% if (signupSuccessfulCompanyInfo == null) { out.print("autofocus"); } %> >
+                </div>
+                <div class="form-group">
+                    <label for="confirmNewPin">Confirm New PIN <span class="required">*</span></label>
+                    <input type="password" id="confirmNewPin" name="confirmNewPin" required minlength="4" maxlength="4" pattern="\d{4}" title="Must be exactly 4 numerical digits." inputmode="numeric" autocomplete="new-password">
+                </div>
             </div>
             <div class="form-actions">
                 <button type="submit" class="glossy-button text-green login-submit-button">
@@ -182,7 +200,7 @@
             const newPinField = document.getElementById('newPin');
             const confirmPinField = document.getElementById('confirmNewPin');
             const successModal = document.getElementById('accountCreationSuccessInfoModal');
-            const closeSuccessModalButton = document.getElementById('closeAccountSuccessInfoModal');
+
             const okSuccessButton = document.getElementById('okAccountSuccessInfoButton');
             const copyButton = document.getElementById('copyCompanyIdButton_pinPage');
             const companyIdElementForCopy = document.getElementById('copyCompanyIdValue'); 
@@ -204,9 +222,7 @@
             if (okSuccessButton) {
                 okSuccessButton.addEventListener('click', hideSuccessModalAndFocusPin);
             }
-            if (closeSuccessModalButton) {
-                closeSuccessModalButton.addEventListener('click', hideSuccessModalAndFocusPin);
-            }
+
 
             if (newPinField && (!successModal || !successModal.classList.contains('modal-visible'))) {
                 console.log("[set_initial_pin.jsp CLIENT] Success modal not initially visible. Focusing newPinField.");

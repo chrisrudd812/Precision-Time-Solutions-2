@@ -73,10 +73,14 @@ public class PrintTimecardsServlet extends HttpServlet {
         logger.info("[PrintTimecardsServlet-Debug] Received request. filterType=" + filterType + ", filterValue=" + filterValue);
 
         List<Map<String, Object>> printableTimecardsData = new ArrayList<>();
+        List<Map<String, String>> allEmployees = new ArrayList<>();
         String pageTitle = "Time Card Report";
         String payPeriodMessageForPrint = "Pay Period Not Set";
 
         try {
+            // Get all employees for the selector dropdown
+            allEmployees = getAllEmployeesForSelector(tenantId);
+            
             Map<String, LocalDate> periodInfo = ShowPunches.getCurrentPayPeriodInfo(tenantId);
             if (periodInfo == null || periodInfo.get("startDate") == null || periodInfo.get("endDate") == null) {
                 throw new ServletException("Could not determine current pay period.");
@@ -123,6 +127,8 @@ public class PrintTimecardsServlet extends HttpServlet {
         }
 
         request.setAttribute("printableTimecards", printableTimecardsData);
+        request.setAttribute("allEmployees", allEmployees);
+        request.setAttribute("selectedEmployeeId", filterValue);
         request.setAttribute("pageTitle", pageTitle);
         request.setAttribute("payPeriodMessageForPrint", payPeriodMessageForPrint);
         if (errorMessage != null) {
@@ -166,6 +172,37 @@ public class PrintTimecardsServlet extends HttpServlet {
             }
         }
         return eids;
+    }
+    
+    private List<Map<String, String>> getAllEmployeesForSelector(int tenantId) throws SQLException {
+        List<Map<String, String>> employees = new ArrayList<>();
+        String sql = "SELECT EID, TenantEmployeeNumber, FIRST_NAME, LAST_NAME FROM employee_data " +
+                    "WHERE TenantID = ? AND ACTIVE = TRUE ORDER BY LAST_NAME, FIRST_NAME";
+        
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, tenantId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, String> emp = new HashMap<>();
+                    emp.put("eid", String.valueOf(rs.getInt("EID")));
+                    
+                    Integer tenantEmpNum = (Integer) rs.getObject("TenantEmployeeNumber");
+                    String displayId = (tenantEmpNum != null && tenantEmpNum > 0) ? 
+                        "#" + tenantEmpNum : "EID:" + rs.getInt("EID");
+                    
+                    String firstName = rs.getString("FIRST_NAME");
+                    String lastName = rs.getString("LAST_NAME");
+                    String fullName = displayId + " - " + 
+                        (lastName != null ? lastName : "") + ", " + 
+                        (firstName != null ? firstName : "");
+                    
+                    emp.put("name", fullName);
+                    employees.add(emp);
+                }
+            }
+        }
+        return employees;
     }
 
     private void populatePrintableCardHeader(Map<String, Object> card, Map<String, Object> empInfo, int eid) {

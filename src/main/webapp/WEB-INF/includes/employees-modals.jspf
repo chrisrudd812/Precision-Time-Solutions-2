@@ -5,6 +5,7 @@
     <div class="modal-content wide-modal modal-form-green-state">
         <form id="addEmployeeForm" action="<%= request.getContextPath() %>/AddEditAndDeleteEmployeesServlet" method="post" autocomplete="off">
             <input type="hidden" name="action" value="addEmployee">
+            <input type="password" style="display:none" autocomplete="new-password">
             <% if(inSetupWizardMode_JSP) { %><input type="hidden" name="setup_wizard" value="true"><% } %>
             <div class="modal-header">
                 <h2 class="modal-title-success"><i class="fas fa-user-plus"></i> <span>Add New Employee</span></h2>
@@ -26,7 +27,7 @@
                     </div>
                       <div class="form-row" id="addPhoneEmailRow">
                         <div class="form-item"><label for="addPhone">Phone</label><input type="tel" id="addPhone" name="addEmployeePhone" placeholder="(555) 555-5555" pattern="^\(\d{3}\) \d{3}-\d{4}$" title="Phone number must be in the format (555) 555-5555."></div>
-                        <div class="form-item"><label for="addEmail">Email <span class="required-asterisk">*</span></label><input type="email" id="addEmail" name="email" placeholder="This will be their username" required autocomplete="new-password"></div>
+                        <div class="form-item"><label for="addEmail">Email <span class="required-asterisk">*</span></label><input type="email" id="addEmail" name="email" placeholder="This will be their username" required autocomplete="email"></div>
                      </div>
                 </div>
                 
@@ -81,6 +82,7 @@
     <div class="modal-content wide-modal modal-form-yellow-state">
         <form id="editEmployeeForm" action="<%= request.getContextPath() %>/AddEditAndDeleteEmployeesServlet" method="post" autocomplete="off">
             <input type="hidden" name="action" value="editEmployee">
+            <input type="password" style="display:none" autocomplete="new-password">
             <input type="hidden" id="editEmployeeId" name="eid">
             <div class="modal-header">
                 <h2 class="modal-title-warning"><i class="fas fa-user-edit"></i> <span>Edit Employee</span></h2>
@@ -102,7 +104,7 @@
                     </div>
                      <div class="form-row" id="editPhoneEmailRow">
                         <div class="form-item"><label for="editPhone">Phone</label><input type="tel" id="editPhone" name="editEmployeePhone" placeholder="(555) 555-5555" pattern="^\(\d{3}\) \d{3}-\d{4}$" title="Phone number must be in the format (555) 555-5555."></div>
-                         <div class="form-item"><label for="editEmail">Email <span class="required-asterisk">*</span></label><input type="email" id="editEmail" name="email" placeholder="This will be their username" required autocomplete="new-password"></div>
+                         <div class="form-item"><label for="editEmail">Email <span class="required-asterisk">*</span></label><input type="email" id="editEmail" name="email" placeholder="This will be their username" required autocomplete="email"></div>
                     </div>
                 </div>
 

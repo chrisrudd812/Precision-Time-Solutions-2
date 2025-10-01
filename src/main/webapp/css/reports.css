@@ -5,6 +5,12 @@
 	max-height: 90vh;
 }
 
+@media (orientation: landscape) {
+    .parent-container {
+        max-height: none !important;
+    }
+}
+
 .content-display-area {
     min-height: 0;
     flex-grow: 0;
@@ -137,8 +143,8 @@
     min-width: 80px; 
 }
 
-/* Mobile Styles - ONLY for screens 480px and below */
-@media (max-width: 480px) {
+/* Mobile Portrait Styles - ONLY for screens 480px and below in portrait */
+@media (max-width: 480px) and (orientation: portrait) {
     .parent-container {
         padding: 10px !important;
     }
@@ -178,6 +184,43 @@
         max-height: 40vh !important;
         overflow-y: auto !important;
     }
+}
+
+/* Mobile Landscape Styles */
+@media (max-width: 768px) and (orientation: landscape) {
+    .parent-container {
+        padding: 5px !important;
+        max-height: none !important;
+        overflow-y: visible !important;
+    }
+    
+    .table-container {
+        max-height: 50vh !important;
+        overflow-y: auto !important;
+    }
+    
+    .report-actions {
+        flex-direction: row !important;
+        gap: 5px !important;
+        align-items: center !important;
+    }
+    
+    .action-buttons-group {
+        flex-direction: row !important;
+        gap: 5px !important;
+    }
+    
+    .action-buttons-group .glossy-button {
+        width: auto !important;
+        padding: 8px 12px !important;
+        font-size: 0.85em !important;
+    }
+    
+    h1 {
+        font-size: 1.2em !important;
+        padding: 10px !important;
+        margin-bottom: 15px !important;
+    }
     
     h1 {
         font-size: 1.3em !important;
@@ -185,5 +228,12 @@
     
     .report-title {
         font-size: 1.2em !important;
+    }
+}
+
+/* Simple landscape fix - just remove height restriction */
+@media (orientation: landscape) {
+    .parent-container {
+        max-height: none !important;
     }
 }

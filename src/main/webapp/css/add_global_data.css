@@ -7,14 +7,12 @@
 }
 
 .form-container {
-    max-height: 60vh;
     margin: 10px;
     padding: 25px 30px;
     background-color: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-    overflow-y: auto;
 }
 
 /* Style for the instructional text above the form */

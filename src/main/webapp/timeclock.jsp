@@ -187,8 +187,14 @@
     <style>
         #main-clock-container {
             position: sticky !important;
-            top: 60px !important;
+            top: 70px !important;
             z-index: 100 !important;
+        }
+        
+        @media (min-width: 481px) and (max-width: 1400px) {
+            #main-clock-container {
+                top: 120px !important;
+            }
         }
     </style>
     <% } else { %>
@@ -224,68 +230,7 @@
     </style>
     <% } %>
     
-    <style>
-        @media (max-width: 480px) {
-            /* Fix dropdown overflow */
-            .employee-selector-container {
-                width: 100vw !important;
-                max-width: 100vw !important;
-                margin: 0 !important;
-                padding: 10px !important;
-                box-sizing: border-box !important;
-                overflow: hidden !important;
-            }
-            
-            .employee-selector-container select {
-                max-width: 100% !important;
-                overflow: hidden !important;
-                text-overflow: ellipsis !important;
-            }
-            
-            /* Use more page width */
-            .timecard-container {
-                width: 100vw !important;
-                max-width: 100vw !important;
-                margin: 0 !important;
-                padding: 5px !important;
-                box-sizing: border-box !important;
-            }
-            
-            .timecard {
-                width: 100% !important;
-                margin: 0 !important;
-                padding: 10px !important;
-                box-sizing: border-box !important;
-            }
-            
-            /* Make table scrollable at 30vh */
-            #timecardTableContainer {
-                max-height: 30vh !important;
-                overflow-y: auto !important;
-                overflow-x: auto !important;
-                border: 1px solid #ccc !important;
-            }
-            
-            /* Fix punch buttons */
-            .punch-buttons {
-                display: flex !important;
-                flex-direction: column !important;
-                gap: 10px !important;
-                width: 100% !important;
-                padding: 15px 0 !important;
-            }
-            
-            .punch-buttons form {
-                width: 100% !important;
-                flex: none !important;
-            }
-            
-            .punch-button {
-                width: 100% !important;
-                box-sizing: border-box !important;
-            }
-        }
-    </style>
+
 
 </head>
 <body class="timeclock-page">

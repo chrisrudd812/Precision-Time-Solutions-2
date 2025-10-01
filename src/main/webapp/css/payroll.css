@@ -25,6 +25,72 @@ body.payroll-page .parent-container {
         max-width: 98%;
         padding: 10px 15px;
     }
+    
+    #payroll-table-container {
+        max-height: 50vh !important;
+    }
+    
+    #payrollTable {
+        font-size: 0.75em;
+        display: table !important;
+        visibility: visible !important;
+        width: 100% !important;
+    }
+    
+    #payrollTable thead,
+    #payrollTable tbody,
+    #payrollTable tfoot {
+        display: table-header-group !important;
+        visibility: visible !important;
+    }
+    
+    #payrollTable tbody {
+        display: table-row-group !important;
+    }
+    
+    #payrollTable tfoot {
+        display: table-footer-group !important;
+    }
+    
+    #payrollTable tr {
+        display: table-row !important;
+        visibility: visible !important;
+    }
+    
+    #payrollTable th,
+    #payrollTable td {
+        padding: 4px 2px;
+        white-space: nowrap;
+        display: table-cell !important;
+        visibility: visible !important;
+    }
+    
+    /* Hide less important columns on mobile */
+    #payrollTable th:nth-child(6),
+    #payrollTable td:nth-child(6),
+    #payrollTable th:nth-child(7),
+    #payrollTable td:nth-child(7) {
+        display: none !important;
+    }
+}
+
+@media (max-width: 768px) and (min-width: 481px) {
+    #payroll-table-container {
+        max-height: 60vh !important;
+    }
+    
+    #payrollTable {
+        font-size: 0.85em;
+        display: table !important;
+        visibility: visible !important;
+    }
+    
+    #payrollTable th,
+    #payrollTable td {
+        padding: 6px 4px;
+        display: table-cell !important;
+        visibility: visible !important;
+    }
 }
 
 #payPeriodHeader {
@@ -46,13 +112,15 @@ body.payroll-page .parent-container {
 
 /* Table Specifics */
 #payroll-table-container {
-    max-height: 75vh;
+    max-height: 75vh !important;
     border-radius: 8px;
     overflow-y: auto;
     overflow-x: auto;
     border: 1px solid #e2e8f0;
     margin-bottom: 25px;
     clip-path: inset(0 round 8px);
+    display: block !important;
+    visibility: visible !important;
 }
 #payrollTable thead th { text-align: center; }
 #payrollTable th:nth-child(n+5), #payrollTable td:nth-child(n+5) { text-align: right; }

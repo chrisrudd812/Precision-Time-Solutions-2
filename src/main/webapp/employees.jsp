@@ -185,7 +185,6 @@
                         <th class="sortable" data-sort-type="string">Supervisor</th>
                          <th class="sortable" data-sort-type="string">Permissions</th>
                          <th class="sortable" data-sort-type="string">Email</th>
-                         <th class="sortable" data-sort-type="string">Hire Date</th>
                          <th class="sortable" data-sort-type="string">Work Sched.</th>
                     </tr>
                 </thead>

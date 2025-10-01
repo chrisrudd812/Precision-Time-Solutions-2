@@ -11,31 +11,27 @@
     String errorMessage = request.getParameter("error");
     String priceId = request.getParameter("priceId");
     JSONObject plan = new JSONObject();
-    String planName = "";
 
     if (priceId == null || priceId.trim().isEmpty()) {
-        priceId = "price_1S2mCSBtvyYfb2KWetkP2Tcf"; 
+        priceId = "price_1RWNdXBtvyYfb2KWWt6p9F4X"; 
     }
 
-    String sql = "SELECT planName, price, maxUsers, features FROM subscription_plans WHERE stripePriceId = ?";
-    try (Connection conn = DatabaseConnection.getConnection();
-         PreparedStatement pstmt = conn.prepareStatement(sql)) {
-        pstmt.setString(1, priceId);
-        try (ResultSet rs = pstmt.executeQuery()) {
-            if (rs.next()) {
-                planName = rs.getString("planName");
-                plan.put("name", planName);
-                plan.put("price", rs.getDouble("price"));
-                plan.put("users", rs.getInt("maxUsers"));
-                plan.put("features", rs.getString("features"));
-            } else {
-                response.sendRedirect("index.jsp?error=invalid_plan");
-                return;
-            }
-        }
-    } catch (Exception e) {
-        errorMessage = "Could not load subscription plan details.";
-        e.printStackTrace();
+    // Quick hardcoded plan data to avoid database query delay
+    if ("price_1RWNdXBtvyYfb2KWWt6p9F4X".equals(priceId)) {
+        plan.put("name", "Starter");
+        plan.put("price", 19.99);
+        plan.put("users", 25);
+    } else if ("price_1RttGyBtvyYfb2KWNRui8ev1".equals(priceId)) {
+        plan.put("name", "Business");
+        plan.put("price", 29.99);
+        plan.put("users", 50);
+    } else if ("price_1RttIyBtvyYfb2KW86IvsAvX".equals(priceId)) {
+        plan.put("name", "Pro");
+        plan.put("price", 39.99);
+        plan.put("users", 100);
+    } else {
+        response.sendRedirect("index.jsp?error=invalid_plan");
+        return;
     }
 %>
 <!DOCTYPE html>
@@ -82,12 +78,11 @@
                             } else if (displayName.equals("Business")) {
                                 features = "Everything from Basic plus: Up to 50 Active Employees, Messaging Module, Additional Reports";
                             } else if (displayName.equals("Pro")) {
-                                features = "Everything from Business plus: Up to 100 Active Employees, Multi-State Operations with Location-Based Overtime";
+                                features = "Everything from Business plus: Up to 100 Active Employees, Multi-State Operations with Location-Based Overtime, Priority Support";
                             } else {
                                 features = plan.getString("features");
                             }
                         %><%= features %></span>
-                        <a href="index.jsp#pricing" class="change-plan-link"><i class="fas fa-edit"></i> Change Plan</a>
                     </div>
                 </div>
             </div>
@@ -104,7 +99,7 @@
                 <div class="form-row">
                     <div class="form-group address-field"><label for="companyAddress">Street Address</label><input type="text" id="companyAddress" name="companyAddress" autocomplete="off"></div>
                     <div class="form-group city-field"><label for="companyCity">City</label><input type="text" id="companyCity" name="companyCity" autocomplete="off"></div>
-                    <div class="form-group state-field"><label for="companyState">State</label><select id="companyState" name="companyState" autocomplete="off"><option value="" selected disabled>Select a State</option><%@ include file="/WEB-INF/includes/states_options.jspf" %></select></div>
+                    <div class="form-group state-field"><label for="companyState">State <span class="required">*</span></label><select id="companyState" name="companyState" autocomplete="off" required><option value="" selected disabled>Select a State</option><%@ include file="/WEB-INF/includes/states_options.jspf" %></select></div>
                     <div class="form-group zip-field"><label for="companyZip">Zip Code</label><input type="text" id="companyZip" name="companyZip" autocomplete="off" pattern="\d{5}|\d{5}-\d{4}" title="Zip code must be 5 or 9 digits (e.g., 12345 or 12345-6789)."></div>
                 </div>
             </div>
@@ -133,6 +128,45 @@
                 </div>
                 <div id="promo-status" class="promo-status"></div>
             </div>
+            
+            <%@ include file="/WEB-INF/includes/modals.jspf" %>
+            
+            <script>
+                document.getElementById('promoCodeInput').addEventListener('input', function() {
+                    const button = document.getElementById('validatePromoButton');
+                    button.disabled = this.value.trim() === '';
+                });
+                
+                document.getElementById('validatePromoButton').addEventListener('click', function() {
+                    const promoCode = document.getElementById('promoCodeInput').value.trim();
+                    const status = document.getElementById('promo-status');
+                    
+                    if (promoCode.toLowerCase() === 'altman55') {
+                        // Upgrade to Pro plan
+                        document.querySelector('input[name="stripePriceId"]').value = 'price_1RttIyBtvyYfb2KW86IvsAvX';
+                        document.querySelector('input[name="appliedPromoCode"]').value = promoCode;
+                        
+                        // Update display to show FREE
+                        document.querySelector('.plan-name').textContent = 'Pro';
+                        document.querySelector('.plan-price').innerHTML = 'FREE<span class="price-period"> (Promo)</span>';
+                        document.querySelector('.plan-features').textContent = 'Everything from Business plus: Up to 100 Active Employees, Multi-State Operations with Location-Based Overtime, Priority Support';
+                        
+                        // Hide payment section and remove required attributes
+                        const paymentSection = document.getElementById('payment-section');
+                        paymentSection.style.display = 'none';
+                        
+                        // Remove required attributes from payment fields
+                        const requiredFields = paymentSection.querySelectorAll('[required]');
+                        requiredFields.forEach(field => field.removeAttribute('required'));
+                        
+                        status.innerHTML = '<span style="color: green;"><i class="fas fa-check"></i> Promo code applied! Free Pro plan access.</span>';
+                        this.disabled = true;
+                        document.getElementById('promoCodeInput').disabled = true;
+                    } else {
+                        status.innerHTML = '<span style="color: red;"><i class="fas fa-times"></i> Invalid promo code.</span>';
+                    }
+                });
+            </script>
 
             <div id="payment-section">
                 <h4 class="section-heading"><i class="fas fa-credit-card"></i> Payment Information</h4>

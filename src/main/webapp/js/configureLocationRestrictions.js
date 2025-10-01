@@ -191,21 +191,44 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 const options = {
                     enableHighAccuracy: true,
-                    timeout: 5000,
-                    maximumAge: 0
+                    timeout: 10000,
+                    maximumAge: 300000
                 };
                 
                 navigator.geolocation.getCurrentPosition(
                     position => {
+                        const accuracy = position.coords.accuracy;
                         updateMapAndInputs(position.coords.latitude, position.coords.longitude);
                         getCurrentLocationBtn.innerHTML = '<i class="fas fa-location-arrow"></i> Use My Current Location';
                         getCurrentLocationBtn.disabled = false;
-                        showToast('Location found!', 'success');
+                        showToast(`Location found! (±${Math.round(accuracy)}m accuracy)`, 'success');
                     },
                     error => {
                         getCurrentLocationBtn.innerHTML = '<i class="fas fa-location-arrow"></i> Use My Current Location';
                         getCurrentLocationBtn.disabled = false;
-                        showToast('Location blocked - check browser address bar for location icon', 'error');
+                        
+                        let errorMessage = 'Location access failed. ';
+                        
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+                                    errorMessage += 'HTTPS connection required for location services. Please use HTTPS or enable location permissions.';
+                                } else {
+                                    errorMessage += 'Location permission denied. Please enable location access in your browser settings.';
+                                }
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                errorMessage += 'Location information unavailable. Please try again.';
+                                break;
+                            case error.TIMEOUT:
+                                errorMessage += 'Location request timed out. Try using the address search instead.';
+                                break;
+                            default:
+                                errorMessage += 'Unknown error occurred. Please try again.';
+                                break;
+                        }
+                        
+                        showToast(errorMessage, 'error');
                     },
                     options
                 );

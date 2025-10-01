@@ -82,6 +82,18 @@
             box-sizing: border-box;
         }
 
+        /* Laptop (1024px - 1440px) */
+        @media (min-width: 1024px) and (max-width: 1440px) {
+            header {
+                top: calc(12vh + 37px) !important;
+            }
+            
+            nav#table-of-contents {
+                top: calc(6.5vh + 72px) !important;
+                height: calc(92vh - 20px) !important;
+            }
+        }
+
         /* Responsive Design */
         @media (max-width: 992px) {
             nav#table-of-contents {

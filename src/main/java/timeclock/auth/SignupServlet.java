@@ -141,6 +141,12 @@ public class SignupServlet extends HttpServlet {
                     } else { throw new Exception("Subscription requires authentication but invoice info is missing."); }
                 } else { throw new Exception("Unhandled subscription status: " + subStatus); }
             }
+        } catch (StripeException e) {
+            logger.log(Level.WARNING, "Stripe payment error in registerCompanyAndAdmin", e);
+            if (con != null) { try { con.rollback(); } catch (SQLException ex) { logger.log(Level.WARNING, "Rollback failed", ex); } }
+            String userMessage = e.getUserMessage() != null ? e.getUserMessage() : "Payment failed: " + e.getMessage();
+            jsonResponse.put("success", false).put("error", userMessage);
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         } catch (Exception e) {
             logger.log(Level.SEVERE, "CRITICAL ERROR in registerCompanyAndAdmin", e);
             if (con != null) { try { con.rollback(); } catch (SQLException ex) { logger.log(Level.WARNING, "Rollback failed", ex); } }

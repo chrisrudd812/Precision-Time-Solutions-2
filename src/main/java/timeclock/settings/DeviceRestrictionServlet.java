@@ -72,7 +72,6 @@ public class DeviceRestrictionServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         Integer tenantId = getTenantId(request);
-        String logPrefix = "[DeviceServlet doGet T:" + tenantId + "] ";
 
         if (tenantId == null) {
             response.sendRedirect(request.getContextPath() + "/login.jsp?error=" + encodeURL("Session expired."));
@@ -87,18 +86,24 @@ public class DeviceRestrictionServlet extends HttpServlet {
         try {
             loadAndForward(request, response, tenantId, null);
         } catch (Exception e) {
-            logger.log(Level.SEVERE, logPrefix + "Critical error during page load.", e);
+            logger.log(Level.SEVERE, "Critical error during page load.", e);
             request.setAttribute("pageLoadErrorMessage", "A critical error occurred while loading page data: " + e.getMessage());
             request.getRequestDispatcher("/configureDeviceRestrictions.jsp").forward(request, response);
         }
     }
 
     private void loadAndForward(HttpServletRequest request, HttpServletResponse response, Integer tenantId, String initialPageLoadError) throws ServletException, IOException, SQLException {
-        // ... (Wizard logic as before, can be simplified if not needed)
         HttpSession session = request.getSession(false);
-        boolean inWizardMode = session != null && Boolean.TRUE.equals(session.getAttribute("startSetupWizard"));
-        request.setAttribute("pageIsInWizardMode", inWizardMode);
-        request.setAttribute("wizardReturnStepForJSP", inWizardMode ? WIZARD_RETURN_STEP_settings : null);
+        boolean pageIsActuallyInWizardMode = false;
+        String wizardStepToReturnToOnSettingsPage = null;
+        
+        if (session != null && Boolean.TRUE.equals(session.getAttribute("startSetupWizard"))) {
+            String currentSessionWizardStep = (String) session.getAttribute("wizardStep");
+            if (WIZARD_RETURN_STEP_settings.equals(currentSessionWizardStep)) {
+                pageIsActuallyInWizardMode = true;
+                wizardStepToReturnToOnSettingsPage = WIZARD_RETURN_STEP_settings;
+            }
+        }
 
         // Load Global Max Devices
         String currentGlobalMaxDevices = Configuration.getProperty(tenantId, GLOBAL_MAX_DEVICES_KEY, DEFAULT_SYSTEM_MAX_DEVICES);
@@ -143,6 +148,10 @@ public class DeviceRestrictionServlet extends HttpServlet {
         
         request.setAttribute("employeeDeviceList", employeeDeviceList);
         if (initialPageLoadError != null) request.setAttribute("pageLoadErrorMessage", initialPageLoadError);
+        
+        request.setAttribute("pageIsInWizardMode", pageIsActuallyInWizardMode);
+        request.setAttribute("wizardReturnStepForJSP", wizardStepToReturnToOnSettingsPage);
+        
         request.getRequestDispatcher("/configureDeviceRestrictions.jsp").forward(request, response);
     }
 

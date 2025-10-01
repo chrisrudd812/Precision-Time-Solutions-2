@@ -84,19 +84,31 @@ public class TimeDayRestrictionServlet extends HttpServlet {
             return;
         }
         
+        // Check for wizard mode parameters
+        boolean isWizardMode = "true".equalsIgnoreCase(request.getParameter("setup_wizard"));
+        String returnStep = request.getParameter("return_step");
+        if (isWizardMode && returnStep != null) {
+            request.setAttribute("pageIsInWizardMode", true);
+            request.setAttribute("wizardReturnStepForJSP", returnStep);
+        }
+        
         loadDataAndForwardToJsp(request, response, tenantId, null);
     }
 
     private void loadDataAndForwardToJsp(HttpServletRequest request, HttpServletResponse response, Integer tenantId, String pageLoadError) throws ServletException, IOException {
-        HttpSession session = request.getSession(false);
-        boolean pageIsActuallyInWizardMode = false;
-        String wizardStepToReturnToOnSettingsPage = null;
-
-        if (session != null && Boolean.TRUE.equals(session.getAttribute("startSetupWizard"))) {
-            String currentSessionWizardStep = (String) session.getAttribute("wizardStep");
-            if (WIZARD_RETURN_STEP_settings.equals(currentSessionWizardStep)) {
-                pageIsActuallyInWizardMode = true;
-                wizardStepToReturnToOnSettingsPage = WIZARD_RETURN_STEP_settings;
+        // Check if wizard mode was already set by doGet from URL parameters
+        boolean pageIsActuallyInWizardMode = Boolean.TRUE.equals(request.getAttribute("pageIsInWizardMode"));
+        String wizardStepToReturnToOnSettingsPage = (String) request.getAttribute("wizardReturnStepForJSP");
+        
+        // If not set from URL parameters, check session (fallback)
+        if (!pageIsActuallyInWizardMode) {
+            HttpSession session = request.getSession(false);
+            if (session != null && Boolean.TRUE.equals(session.getAttribute("startSetupWizard"))) {
+                String currentSessionWizardStep = (String) session.getAttribute("wizardStep");
+                if (WIZARD_RETURN_STEP_settings.equals(currentSessionWizardStep)) {
+                    pageIsActuallyInWizardMode = true;
+                    wizardStepToReturnToOnSettingsPage = WIZARD_RETURN_STEP_settings;
+                }
             }
         }
 
@@ -140,8 +152,13 @@ public class TimeDayRestrictionServlet extends HttpServlet {
         }
         request.setAttribute("allowUnselectedDays", "true".equalsIgnoreCase(allowUnselectedStr));
 
-        request.setAttribute("pageIsInWizardMode", pageIsActuallyInWizardMode);
-        request.setAttribute("wizardReturnStepForJSP", wizardStepToReturnToOnSettingsPage);
+        // Only set if not already set
+        if (request.getAttribute("pageIsInWizardMode") == null) {
+            request.setAttribute("pageIsInWizardMode", pageIsActuallyInWizardMode);
+        }
+        if (request.getAttribute("wizardReturnStepForJSP") == null) {
+            request.setAttribute("wizardReturnStepForJSP", wizardStepToReturnToOnSettingsPage);
+        }
 
         request.getRequestDispatcher("/configureTimeDayRestrictions.jsp").forward(request, response);
     }

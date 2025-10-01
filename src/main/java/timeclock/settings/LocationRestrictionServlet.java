@@ -72,9 +72,25 @@ public class LocationRestrictionServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login.jsp?error=" + URLEncoder.encode("Access Denied.", "UTF-8"));
             return;
         }
+        
+        loadDataAndForwardToJsp(request, response, tenantId, null);
+    }
+    
+    private void loadDataAndForwardToJsp(HttpServletRequest request, HttpServletResponse response, Integer tenantId, String pageLoadError) throws ServletException, IOException {
+        HttpSession session = request.getSession(false);
+        boolean pageIsActuallyInWizardMode = false;
+        String wizardStepToReturnToOnSettingsPage = null;
+        
+        if (session != null && Boolean.TRUE.equals(session.getAttribute("startSetupWizard"))) {
+            String currentSessionWizardStep = (String) session.getAttribute("wizardStep");
+            if ("settings_setup".equals(currentSessionWizardStep)) {
+                pageIsActuallyInWizardMode = true;
+                wizardStepToReturnToOnSettingsPage = "settings_setup";
+            }
+        }
 
         List<Map<String, Object>> locations = new ArrayList<>();
-        String pageLoadError = null;
+        String effectivePageLoadError = pageLoadError;
 
         String sql = "SELECT LocationID, LocationName, Latitude, Longitude, RadiusMeters, IsEnabled FROM geofence_locations WHERE TenantID = ? ORDER BY LocationName";
         try (Connection conn = DatabaseConnection.getConnection();
@@ -94,25 +110,25 @@ public class LocationRestrictionServlet extends HttpServlet {
             }
         } catch (SQLException e) {
             logger.log(Level.SEVERE, "Error fetching geofence locations for TenantID: " + tenantId, e);
-            pageLoadError = "Error loading location data from the database.";
+            if (effectivePageLoadError == null) effectivePageLoadError = "Error loading location data from the database.";
         }
 
         boolean isGloballyEnabled = "true".equalsIgnoreCase(Configuration.getProperty(tenantId, "RestrictByLocation", "false"));
 
         request.setAttribute("locations", locations);
         request.setAttribute("isGloballyEnabled", isGloballyEnabled);
-        if (pageLoadError != null) {
-            request.setAttribute("pageLoadErrorMessage", pageLoadError);
-        }
+        if (effectivePageLoadError != null) request.setAttribute("pageLoadErrorMessage", effectivePageLoadError);
         
-        // Forward to the JSP page for display
+        request.setAttribute("pageIsInWizardMode", pageIsActuallyInWizardMode);
+        request.setAttribute("wizardReturnStepForJSP", wizardStepToReturnToOnSettingsPage);
+        
         request.getRequestDispatcher("/configureLocationRestrictions.jsp").forward(request, response);
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         Integer tenantId = getTenantId(request);
-        HttpSession session = request.getSession(false); // Get session to update it
+        HttpSession session = request.getSession(false);
         
         if (tenantId == null || !isAdmin(request) || session == null) {
             response.sendRedirect(request.getContextPath() + "/login.jsp?error=" + URLEncoder.encode("Access Denied.", "UTF-8"));

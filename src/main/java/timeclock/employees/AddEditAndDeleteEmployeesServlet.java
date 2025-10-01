@@ -8,7 +8,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import timeclock.db.DatabaseConnection;
 import timeclock.auth.EmailService;
-import timeclock.Configuration;
 import org.mindrot.jbcrypt.BCrypt;
 import org.json.JSONObject;
 
@@ -238,26 +237,27 @@ public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
                     boolean sendWelcomeEmail = "true".equals(request.getParameter("sendWelcomeEmail"));
                     
                     if (!inWizard && sendWelcomeEmail && isValid(finalEmail)) {
-                        try {
-                            sendIndividualWelcomeEmail(tenantId, finalEmail, permissions, firstName.trim(), lastName.trim());
-                            successMessage += " Welcome email sent.";
-                        } catch (Exception emailEx) {
-                            logger.log(Level.WARNING, "Failed to send welcome email to " + finalEmail + ": " + emailEx.getMessage(), emailEx);
-                            // Don't let email failure block the employee creation
-                            successMessage += " (Note: Welcome email could not be sent)";
-                        }
+                        // Use a separate thread for email sending to prevent blocking
+                        new Thread(() -> {
+                            try {
+                                sendIndividualWelcomeEmail(tenantId, finalEmail, permissions, firstName.trim(), lastName.trim());
+                                logger.info("Welcome email sent successfully to " + finalEmail);
+                            } catch (Exception emailEx) {
+                                logger.log(Level.WARNING, "Failed to send welcome email to " + finalEmail + ": " + emailEx.getMessage(), emailEx);
+                            }
+                        }).start();
+                        successMessage += " Welcome email will be sent shortly.";
                     }
                     
                     if (inWizard) {
-                        // DEBUG: Print what's happening
-                        System.out.println("DEBUG: Setting wizard step to after_add_employee_prompt, redirecting with empAdded=true");
+                        logger.info("Wizard mode: Adding employee completed, setting step to after_add_employee_prompt");
                         
                         session.setAttribute("wizardStep", "after_add_employee_prompt");
                         String wizardRedirectAction = "after_add_employee_prompt";
                         String redirectUrl = buildRedirectUrl(request, "employees.jsp", newGlobalEid, successMessage, null, wizardRedirectAction, true);
                         redirectUrl += "&lastAddedPerms=" + URLEncoder.encode(permissions, StandardCharsets.UTF_8.name());
                         
-                        System.out.println("DEBUG: Final redirect URL: " + redirectUrl);
+                        logger.info("Wizard redirect URL: " + redirectUrl);
                         response.sendRedirect(redirectUrl);
                     } else {
                         response.sendRedirect(buildRedirectUrl(request, "employees.jsp", newGlobalEid, successMessage, null, null, false));

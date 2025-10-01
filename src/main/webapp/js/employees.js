@@ -534,14 +534,24 @@ document.addEventListener('DOMContentLoaded', function() {
     function validateForm(form) {
         let firstInvalidField = null;
         let isFormValid = true;
+        const invalidFields = [];
+        
         form.querySelectorAll('[required], [pattern]').forEach(field => {
             if (!validateField(field)) {
+                invalidFields.push(field.name || field.id || 'unknown field');
                 if (isFormValid) { 
                     firstInvalidField = field;
                 }
                 isFormValid = false;
             }
         });
+        
+        if (!isFormValid) {
+            console.log('Form validation failed. Invalid fields:', invalidFields);
+        } else {
+            console.log('Form validation passed');
+        }
+        
         if (firstInvalidField) {
             firstInvalidField.focus();
         }
@@ -558,16 +568,37 @@ document.addEventListener('DOMContentLoaded', function() {
         if(form) {
             form.setAttribute('novalidate', 'true'); 
             form.addEventListener('submit', event => {
-                const submitButton = form.querySelector('button[type="submit"]');
+                console.log('Form submit event triggered for:', form.id);
                 if (!validateForm(form)) {
+                    console.log('Form validation failed for:', form.id);
                     event.preventDefault(); 
                 } else if (form.id === 'editEmployeeForm') {
                      // The JSON submission for edit form is handled separately
+                     console.log('Edit form - preventing default, will handle via fetch');
+                     event.preventDefault();
                 } else {
+                    console.log('Add form - allowing normal submission');
+                    console.log('Form action:', form.action);
+                    console.log('Form method:', form.method);
+                    
                     // Remove commas from pay rate before submission for add form
                     const payRateInput = form.querySelector('#addPayRate');
                     if (payRateInput && payRateInput.value) {
                         payRateInput.value = removeCommasFromPayRate(payRateInput);
+                    }
+                    
+                    // Add loading state to submit button
+                    const submitButton = form.querySelector('button[type="submit"]');
+                    if (submitButton) {
+                        submitButton.disabled = true;
+                        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+                        
+                        // Add a longer timeout for wizard mode
+                        setTimeout(() => {
+                            if (submitButton.disabled) {
+                                console.log('Form submission taking longer than expected, but keeping button disabled');
+                            }
+                        }, 5000);
                     }
                 }
             });
@@ -578,30 +609,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
-            // Add error handling for form submission
-            form.addEventListener('submit', function(e) {
-                console.log('Form submission started for:', form.id);
-                const submitButton = form.querySelector('button[type="submit"]');
-                if (submitButton) {
-                    submitButton.disabled = true;
-                    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-                    
-                    // Reset button after 10 seconds if no response
-                    setTimeout(() => {
-                        if (submitButton.disabled) {
-                            submitButton.disabled = false;
-                            submitButton.innerHTML = '<i class="fas fa-check"></i> Submit';
-                            console.log('Form submission timeout - re-enabling button');
-                        }
-                    }, 10000);
-                }
-            });
+
         }
     });
     
     editForm?.addEventListener('submit', function (event) {
+        console.log('Edit form submit handler called');
         event.preventDefault();
-        if (!validateForm(this)) return;
+        if (!validateForm(this)) {
+            console.log('Edit form validation failed');
+            return;
+        }
 
         const submitButton = this.querySelector('button[type="submit"]');
         const originalButtonHtml = submitButton.innerHTML;
@@ -629,16 +647,20 @@ document.addEventListener('DOMContentLoaded', function() {
             return response.text();
         })
         .then(data => {
+            console.log('Edit form response received:', data);
             if (!data) return; 
             if (typeof data === 'object' && data.success) {
+                console.log('Edit form success, hiding modal');
                 _hideModal(editModal);
                 if (isAdminVerify) {
+                    console.log('Admin verification complete, updating wizard view');
                     const adminRow = tableBody?.querySelector(`tr[data-eid="${formData.get('eid')}"]`);
                     if(adminRow) selectRow(adminRow);
                     updateWizardView('prompt_add_employees');
                 }
             } else if (typeof data === 'object' && !data.success) {
-                 alert('Error: ' + data.error);
+                console.log('Edit form error:', data.error);
+                alert('Error: ' + data.error);
             }
         })
         .catch(error => {
@@ -700,7 +722,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     });
     tableBody?.addEventListener('click', e => selectRow(e.target.closest('tr')));
-    document.querySelectorAll('.modal .close, .modal .cancel-btn').forEach(btn => {
+    document.querySelectorAll('.modal .cancel-btn').forEach(btn => {
         btn.addEventListener('click', e => {
             const modal = e.target.closest('.modal');
             const form = modal.querySelector('form');

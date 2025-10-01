@@ -1,7 +1,7 @@
 /* === css/employees.css === */
 
 body.employees-page .parent-container {
-    max-width: 85%;
+    max-width: 95%;
     background-color: transparent;
     overflow: visible;
 }
@@ -65,19 +65,17 @@ body.employees-page .parent-container {
     background-color: inherit;
 }
 
-#employeesTable th:nth-child(1), #employeesTable td:nth-child(1) { min-width: 60px; text-align: center; }
-#employeesTable th:nth-child(2), #employeesTable td:nth-child(2) { min-width: 120px; }
-#employeesTable th:nth-child(3), #employeesTable td:nth-child(3) { min-width: 120px; }
-#employeesTable th:nth-child(4), #employeesTable td:nth-child(4) { min-width: 130px; }
-#employeesTable th:nth-child(5), #employeesTable td:nth-child(5) { min-width: 150px; }
-#employeesTable th:nth-child(6), #employeesTable td:nth-child(6) { min-width: 130px; }
-#employeesTable th:nth-child(7), #employeesTable td:nth-child(7) { min-width: 120px; text-align: center; }
-#employeesTable th:nth-child(8), #employeesTable td:nth-child(8) { min-width: 220px; }
-#employeesTable th:nth-child(9), #employeesTable td:nth-child(9) { min-width: 120px; text-align: center; }
-#employeesTable th:nth-child(10), #employeesTable td:nth-child(10) { min-width: 120px; text-align: center; }
+#employeesTable th:nth-child(1), #employeesTable td:nth-child(1) { min-width: 50px; text-align: center; }
+#employeesTable th:nth-child(2), #employeesTable td:nth-child(2) { min-width: 100px; }
+#employeesTable th:nth-child(3), #employeesTable td:nth-child(3) { min-width: 100px; }
+#employeesTable th:nth-child(4), #employeesTable td:nth-child(4) { min-width: 110px; }
+#employeesTable th:nth-child(5), #employeesTable td:nth-child(5) { min-width: 120px; }
+#employeesTable th:nth-child(6), #employeesTable td:nth-child(6) { min-width: 110px; }
+#employeesTable th:nth-child(7), #employeesTable td:nth-child(7) { min-width: 100px; text-align: center; }
+#employeesTable th:nth-child(8), #employeesTable td:nth-child(8) { min-width: 200px; }
+#employeesTable th:nth-child(9), #employeesTable td:nth-child(9) { min-width: 110px; text-align: center; }
 
-#employeesTable th:nth-child(11), #employeesTable td:nth-child(11),
-#employeesTable th:nth-child(12), #employeesTable td:nth-child(12) {
+#employeesTable th:nth-child(n+10), #employeesTable td:nth-child(n+10) {
     display: none;
 }
 
@@ -186,7 +184,7 @@ body.employees-page .parent-container {
     }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 768px) {
     #employeesTable th:nth-child(n+6),
     #employeesTable td:nth-child(n+6) {
         display: none;
@@ -196,7 +194,14 @@ body.employees-page .parent-container {
     #employeesTable td:nth-child(4),
     #employeesTable th:nth-child(5),
     #employeesTable td:nth-child(5) {
-        font-size: 0.8em;
+        font-size: 0.85em;
+    }
+}
+
+@media (max-width: 480px) {
+    #employeesTable th:nth-child(n+4),
+    #employeesTable td:nth-child(n+4) {
+        display: none;
     }
     
     .detail-group .detail-content {

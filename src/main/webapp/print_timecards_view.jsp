@@ -19,9 +19,12 @@
 <%
     @SuppressWarnings("unchecked")
     List<Map<String, Object>> timecards = (List<Map<String, Object>>) request.getAttribute("printableTimecards");
+    @SuppressWarnings("unchecked")
+    List<Map<String, String>> allEmployees = (List<Map<String, String>>) request.getAttribute("allEmployees");
     String pageTitle = (String) request.getAttribute("pageTitle");
     String payPeriodMessage = (String) request.getAttribute("payPeriodMessageForPrint");
     String globalErrorMessage = (String) request.getAttribute("errorMessage");
+    String selectedEmployeeId = (String) request.getAttribute("selectedEmployeeId");
 
     boolean isSingleTimecard = (timecards != null && timecards.size() == 1);
 
@@ -35,10 +38,10 @@
     <title>Print Preview: <%= escapeJspHtml(pageTitle) %></title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <%@ include file="/WEB-INF/includes/common-head.jspf" %>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/timeclock.css?v=<%= System.currentTimeMillis() %>">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/reports.css?v=<%= System.currentTimeMillis() %>">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/print_timecards_view.css?v=<%= System.currentTimeMillis() %>">
 </head>
-<body class="print-preview-body">
+<body class="print-preview-body reports-page">
 
     <%@ include file="/WEB-INF/includes/navbar.jspf" %>
 
@@ -48,6 +51,23 @@
             <button id="printTimecardsBtn" onclick="window.print();" class="print-action-btn glossy-button text-blue"><i class="fas fa-print"></i> <%= isSingleTimecard ? "Print" : "Print All" %></button>
             <button id="emailTimecardsBtn" class="print-action-btn glossy-button text-purple"><i class="fas fa-envelope"></i> <%= isSingleTimecard ? "Email" : "Email All" %></button>
             <button id="closeTabBtn" class="print-action-btn glossy-button text-red"><i class="fas fa-times-circle"></i> Close</button>
+        </div>
+    </div>
+
+    <div class="employee-selector-section">
+        <div class="selector-container">
+            <label for="employeeSelect">Select Employee:</label>
+            <select id="employeeSelect" onchange="loadEmployeeTimecard()">
+                <option value="">-- Choose Employee --</option>
+                <% if (allEmployees != null) {
+                    for (Map<String, String> emp : allEmployees) {
+                        String eid = emp.get("eid");
+                        String name = emp.get("name");
+                        String selected = (selectedEmployeeId != null && selectedEmployeeId.equals(eid)) ? "selected" : "";
+                %>
+                    <option value="<%= eid %>" <%= selected %>><%= escapeJspHtml(name) %></option>
+                <% }} %>
+            </select>
         </div>
     </div>
 
@@ -86,7 +106,7 @@
                          </div>
                     </div>
                     <div class="timecard-table-container">
-                        <table class="punches timecard-table">
+                        <table class="punches report-table">
                              <thead>
                                 <tr>
                                     <th>Day</th>
@@ -178,6 +198,14 @@
         window.appRootPath = "<%= request.getContextPath() %>";
         window.payPeriodMessage = "<%= payPeriodMessage.replace("\"", "\\\"") %>";
         window.timecardDataForEmail = JSON.parse('<%= new Gson().toJson(timecards) %>');
+        
+        function loadEmployeeTimecard() {
+            const select = document.getElementById('employeeSelect');
+            const selectedEid = select.value;
+            if (selectedEid) {
+                window.location.href = window.appRootPath + '/PrintTimecardsServlet?filterType=single&filterValue=' + selectedEid;
+            }
+        }
     </script>
     <%@ include file="/WEB-INF/includes/common-scripts.jspf" %>
     <script src="js/print_timecards_view.js?v=<%= System.currentTimeMillis() %>"></script>

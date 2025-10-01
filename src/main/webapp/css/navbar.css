@@ -1,6 +1,4 @@
-html {
-    overflow-y: scroll;
-}
+
 
 /* === css/navbar.css === */
 
@@ -13,7 +11,7 @@ body {
 
 .main-navbar {
     background: linear-gradient(to right, #2c3e50, #3498db);
-    width: 100%;
+    width: calc(100% - 17px);
     position: fixed;
     top: 0;
     left: 0;

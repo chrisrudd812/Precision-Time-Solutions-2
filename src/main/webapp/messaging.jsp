@@ -62,13 +62,13 @@
                         <label for="messageBody">Message Body:</label>
                         <textarea id="messageBody" name="messageBody" rows="10" required placeholder="Your initial password is '1234'. Please change it upon your first login."></textarea>
                     </div>
-
-                    <div class="button-row">
-                        <button type="submit" id="sendMessageBtn" class="glossy-button text-green">
-                            <i class="fas fa-paper-plane"></i> Send Message
-                        </button>
-                    </div>
                 </form>
+            </div>
+            
+            <div class="messaging-button-container">
+                <button type="submit" form="messagingForm" id="sendMessageBtn" class="glossy-button text-green">
+                    <i class="fas fa-paper-plane"></i> Send Message
+                </button>
             </div>
         </div>
     </div>

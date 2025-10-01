@@ -88,7 +88,7 @@
 
 /* Modal Button Area */
 .modal-content .button-row {
-    padding: 20px 25px 25px; 
+    padding: 20px 25px 30px; 
     margin-top: 0; 
     border-top: 1px solid #e5e7eb;
     display: flex; 
@@ -163,7 +163,22 @@
     background: linear-gradient(to bottom, #fefce8, #fef9c3);
 }
 
-/* Legacy close button styling removed for cleaner modal design */
+/* Hide all close buttons in modals for cleaner design */
+.modal .close,
+.modal .close-button,
+.modal .modal-close,
+.modal .btn-close,
+.modal [data-dismiss="modal"],
+.modal [data-bs-dismiss="modal"] {
+    display: none !important;
+}
+
+/* Hide any X symbols that might be added */
+.modal-header::after,
+.modal-header .close::before,
+.modal-header .close::after {
+    display: none !important;
+}
 
 /* === Toast Notification Styles === */
 #toast-notification-container {

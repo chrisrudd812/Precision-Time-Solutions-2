@@ -110,6 +110,46 @@
     <title>Payroll Processing</title>
     <%@ include file="/WEB-INF/includes/common-head.jspf" %>
     <link rel="stylesheet" href="css/payroll.css?v=<%= System.currentTimeMillis() %>">
+    <style>
+        /* Force table container height and visibility */
+        #payroll-table-container {
+            min-height: 400px !important;
+            height: auto !important;
+            max-height: 60vh !important;
+            display: block !important;
+            visibility: visible !important;
+            overflow-y: auto !important;
+        }
+        
+        /* Mobile width adjustment */
+        @media (max-width: 480px) {
+            body.payroll-page .parent-container {
+                max-width: 100% !important;
+            }
+        }
+        
+        /* Laptop view - prevent container scrolling */
+        @media (min-width: 481px) {
+            .parent-container {
+                max-height: none !important;
+                overflow-y: visible !important;
+            }
+        }
+        #payrollTable {
+            display: table !important;
+            width: 100% !important;
+            height: auto !important;
+        }
+        #payrollTable tbody {
+            display: table-row-group !important;
+        }
+        #payrollTable tr {
+            display: table-row !important;
+        }
+        #payrollTable td {
+            display: table-cell !important;
+        }
+    </style>
 </head>
 <body class="payroll-page">
     <%@ include file="/WEB-INF/includes/navbar.jspf" %>

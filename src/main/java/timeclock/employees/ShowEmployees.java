@@ -30,7 +30,7 @@ public class ShowEmployees {
 
     public static String showEmployees(int tenantId) {
         StringBuilder tableRows = new StringBuilder();
-        final int VISIBLE_COLUMNS = 12; 
+        final int VISIBLE_COLUMNS = 9; 
 
         if (tenantId <= 0) {
             logger.warning("[ShowEmployees] showEmployees called with invalid TenantID: " + tenantId);
@@ -121,10 +121,7 @@ public class ShowEmployees {
                     tableRows.append("<td>").append(escapeHtml(supervisor)).append("</td>");
                     tableRows.append("<td>").append(escapeHtml(permissions)).append("</td>");
                     tableRows.append("<td>").append(escapeHtml(email)).append("</td>");
-                    tableRows.append("<td>").append(escapeHtml(displayHireDate)).append("</td>");
                     tableRows.append("<td>").append(escapeHtml(workSchedule)).append("</td>");
-                    tableRows.append("<td>").append(escapeHtml(wageType)).append("</td>");
-                    tableRows.append("<td style='text-align:right;'>").append(escapeHtml(displayWage)).append("</td>");
                     tableRows.append("</tr>\n");
                 }
                 if (!found) {

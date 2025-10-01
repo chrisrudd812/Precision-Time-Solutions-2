@@ -14,7 +14,7 @@ body.print-preview-body {
     background-color: #334155;
     color: #f8fafc;
     padding: 10px 20px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    box-shadow: none;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -39,9 +39,77 @@ body.print-preview-body {
     margin: 0 5px;
 }
 
-.print-view-main-content {
-    padding-top: 135px;
+.employee-selector-section {
+    position: fixed;
+    top: 135px;
+    left: 0;
     width: 100%;
+    background-color: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 8px 20px;
+    z-index: 1020;
+    box-sizing: border-box;
+}
+
+.selector-container {
+    max-width: 400px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.selector-container label {
+    font-weight: 500;
+    color: #334155;
+    white-space: nowrap;
+}
+
+.selector-container select {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background-color: #fff;
+    font-size: 0.95em;
+    color: #334155;
+}
+
+.selector-container select:focus {
+    outline: none;
+    border-color: #0f766e;
+    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
+}
+
+.print-view-main-content {
+    padding-top: 185px;
+    width: 100%;
+}
+
+/* Laptop (1024px - 1440px) */
+@media (min-width: 1024px) and (max-width: 1440px) {
+    .print-controls {
+        top: 70px;
+    }
+    
+    .employee-selector-section {
+        top: 170px;
+    }
+}
+
+/* Desktop (1441px+) */
+@media (min-width: 1441px) {
+    .print-controls {
+        top: 60px;
+    }
+    
+    .employee-selector-section {
+        top: 155px;
+    }
+    
+    .print-view-main-content {
+        padding-top: calc(200px + 3vh);
+    }
 }
 
 .timecard-print-page {
@@ -92,33 +160,47 @@ body.print-preview-body .timecard-header h1 {
     overflow-x: hidden;
 }
 
-/* [FIX] More specific selector to override the monospace font from timeclock.css */
+/* Override timecard styling with report table styling */
 body.print-preview-body table.timecard-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 10pt;
+    font-size: 0.85em;
+    background-color: #fff;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    table-layout: fixed;
-    word-wrap: break-word;
 }
 .timecard-table th, .timecard-table td {
-    border: 1px solid #dee2e6;
     padding: 8px 10px;
+    border: none;
+    border-bottom: 1px solid #e2e8f0;
     text-align: left;
     vertical-align: middle;
 }
+.timecard-table thead {
+    position: sticky;
+    top: -1px;
+    z-index: 20;
+    background: linear-gradient(to bottom, #f0fdf4, #e6fcf5);
+}
 .timecard-table thead th {
-    background-color: #f1f5f9;
+    background: linear-gradient(to bottom, #f0fdf4, #e6fcf5);
+    color: #065f46;
     font-weight: 600;
-    color: #334155;
+    border-bottom: 1px solid #d1fae5;
+    box-shadow: none;
+}
+.timecard-table tbody tr:nth-child(even) {
+    background-color: #f8fafc;
+}
+.timecard-table tbody tr {
+    transition: background-color 0.15s ease-in-out;
 }
 .timecard-table tfoot td {
-    background-color: #f1f5f9;
-    font-weight: normal;
+    background: linear-gradient(to bottom, #f0fdf4, #e6fcf5);
+    font-weight: bold;
+    color: #065f46;
 }
 .timecard-table tfoot tr:first-child td {
-    border-top: 2px solid #9ca3af;
-    font-weight: bold;
+    border-top: 2px solid #d1fae5;
 }
 .timecard-table tfoot td.hours-breakdown {
     white-space: normal;
@@ -157,7 +239,7 @@ body.print-preview-body table.timecard-table {
         font-family: Arial, sans-serif;
         font-size: 10pt;
     }
-    .main-navbar, .print-controls {
+    .main-navbar, .print-controls, .employee-selector-section {
         display: none !important;
     }
     .print-view-main-content {
@@ -178,8 +260,8 @@ body.print-preview-body table.timecard-table {
     color: #8b5cf6 !important;
 }
 
-/* Mobile Styles - ONLY for screens 480px and below */
-@media (max-width: 480px) {
+/* Mobile Portrait (max 768px, portrait only) */
+@media (max-width: 768px) and (orientation: portrait) {
     .print-controls {
         padding: 8px 10px !important;
         gap: 8px !important;
@@ -202,8 +284,27 @@ body.print-preview-body table.timecard-table {
         text-align: center !important;
     }
     
+    .employee-selector-section {
+        top: 245px !important;
+        padding: 8px 10px !important;
+    }
+    
+    .selector-container {
+        gap: 8px !important;
+        max-width: 100% !important;
+    }
+    
+    .selector-container label {
+        font-size: 0.9em !important;
+    }
+    
+    .selector-container select {
+        width: 100% !important;
+        font-size: 0.9em !important;
+    }
+    
     .print-view-main-content {
-        padding-top: 180px !important;
+        padding-top: 295px !important;
     }
     
     .timecard-print-page {
@@ -241,4 +342,58 @@ body.print-preview-body table.timecard-table {
         max-width: 100% !important;
         margin: 8px 0 !important;
     }
+}
+
+/* Mobile Landscape (max 1023px, landscape only) */
+@media (max-width: 1023px) and (orientation: landscape) {
+    body.print-preview-body {
+        padding-top: 0 !important;
+    }
+    
+    .print-controls {
+        top: 60px !important;
+    }
+    
+    .employee-selector-section {
+        top: calc(105px + 2vh);
+    }
+    
+    .print-view-main-content {
+        padding-top: calc(155px + 2vh);
+    }
+}
+
+/* Force report table styling with highest specificity */
+body.print-preview-body .timecard-print-page table.timecard-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 0.85em !important;
+    background-color: #fff !important;
+}
+body.print-preview-body .timecard-print-page table.timecard-table th,
+body.print-preview-body .timecard-print-page table.timecard-table td {
+    padding: 8px 10px !important;
+    border: none !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    text-align: left !important;
+    vertical-align: middle !important;
+}
+body.print-preview-body .timecard-print-page table.timecard-table thead {
+    position: sticky !important;
+    top: -1px !important;
+    z-index: 20 !important;
+    background: linear-gradient(to bottom, #f0fdf4, #e6fcf5) !important;
+}
+body.print-preview-body .timecard-print-page table.timecard-table thead th {
+    background: linear-gradient(to bottom, #f0fdf4, #e6fcf5) !important;
+    color: #065f46 !important;
+    font-weight: 600 !important;
+    border-bottom: 1px solid #d1fae5 !important;
+    box-shadow: none !important;
+}
+body.print-preview-body .timecard-print-page table.timecard-table tbody tr:nth-child(even) {
+    background-color: #f8fafc !important;
+}
+body.print-preview-body .timecard-print-page table.timecard-table tbody tr {
+    transition: background-color 0.15s ease-in-out !important;
 }

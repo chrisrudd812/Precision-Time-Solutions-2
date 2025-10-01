@@ -10,7 +10,6 @@ import timeclock.db.DatabaseConnection;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.net.URLEncoder; 
 import java.nio.charset.StandardCharsets; 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -18,8 +17,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
 import java.util.logging.Level;
