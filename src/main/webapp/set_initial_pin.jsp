@@ -174,16 +174,16 @@
             <div class="form-body-container">
                 <div class="form-group">
                     <label for="newPin">New 4-Digit PIN <span class="required">*</span></label>
-                    <input type="password" id="newPin" name="newPin" required minlength="4" maxlength="4" pattern="\d{4}" title="Must be exactly 4 numerical digits." inputmode="numeric" autocomplete="new-password" <% if (signupSuccessfulCompanyInfo == null) { out.print("autofocus"); } %> >
+                    <input type="password" id="newPin" name="newPin" required data-minlength="4" maxlength="4" pattern="\d{4}" title="Must be exactly 4 numerical digits." inputmode="numeric" autocomplete="new-password" <% if (signupSuccessfulCompanyInfo == null) { out.print("autofocus"); } %> >
                 </div>
                 <div class="form-group">
                     <label for="confirmNewPin">Confirm New PIN <span class="required">*</span></label>
-                    <input type="password" id="confirmNewPin" name="confirmNewPin" required minlength="4" maxlength="4" pattern="\d{4}" title="Must be exactly 4 numerical digits." inputmode="numeric" autocomplete="new-password">
+                    <input type="password" id="confirmNewPin" name="confirmNewPin" required data-minlength="4" maxlength="4" pattern="\d{4}" title="Must be exactly 4 numerical digits." inputmode="numeric" autocomplete="new-password">
                 </div>
             </div>
             <div class="form-actions">
                 <button type="submit" class="glossy-button text-green login-submit-button">
-                    <i class="fas fa-save"></i> Set PIN & Continue Setup
+                    <i class="fas fa-save"></i> Set PIN and Continue Setup
                 </button>
             </div>
         </form>

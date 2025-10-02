@@ -22,7 +22,9 @@ import java.util.logging.Logger;
 @WebServlet("/api/mobile/change-pin")
 public class ChangePinServlet extends HttpServlet {
 
-    private static final Logger logger = Logger.getLogger(ChangePinServlet.class.getName());
+
+	private static final long serialVersionUID = 1L;
+	private static final Logger logger = Logger.getLogger(ChangePinServlet.class.getName());
     private final Gson gson = new Gson();
 
     @Override

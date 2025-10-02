@@ -130,7 +130,6 @@ public class ReassignServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        logger.info("ReassignServlet: doGet called for initial page load.");
         HttpSession session = request.getSession(false);
         Integer tenantId = null;
         String pageLoadErrorMessage = null;
@@ -169,7 +168,6 @@ public class ReassignServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        logger.info("ReassignServlet: doPost called for form submission.");
         HttpSession session = request.getSession(false);
         String successMessage = null;
         String errorMessage = null;
@@ -188,7 +186,6 @@ public class ReassignServlet extends HttpServlet {
         } else {
             String fromValue = request.getParameter("fromValue");
             String toValue = request.getParameter("toValue");
-            logger.info("ReassignServlet POST processing: type=" + reassignType + ", from=" + fromValue + ", to=" + toValue + ", tenantId=" + tenantId);
 
             if (reassignType == null || fromValue == null || toValue == null ||
                 fromValue.trim().isEmpty() || toValue.trim().isEmpty()) {
@@ -225,7 +222,6 @@ public class ReassignServlet extends HttpServlet {
                     String sql = "UPDATE employee_data SET " + columnNameInEmployeeData + " = ? WHERE " + columnNameInEmployeeData + " = ? AND TenantID = ?";
                     int affectedRows = 0;
                     
-                    logger.info("Executing SQL for reassignment: " + sql + " with TO_VALUE=" + toValue + ", FROM_VALUE=" + fromValue + ", TENANT_ID=" + tenantId);
 
                     try (Connection conn = DatabaseConnection.getConnection();
                          PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -235,7 +231,6 @@ public class ReassignServlet extends HttpServlet {
                         pstmt.setInt(3, tenantId);
                         
                         affectedRows = pstmt.executeUpdate();
-                        logger.info("Rows affected by reassignment: " + affectedRows);
 
                         if (affectedRows > 0) {
                            successMessage = affectedRows + " employee(s) successfully reassigned from " + typeFriendlyName + " '" + fromValue + "' to '" + toValue + "'.";
@@ -255,7 +250,6 @@ public class ReassignServlet extends HttpServlet {
         request.setAttribute("errorMessage", errorMessage);
         request.setAttribute("type", reassignType); 
         
-        logger.info("ReassignServlet: Forwarding back to reassign.jsp with messages.");
         request.getRequestDispatcher("/reassign.jsp").forward(request, response);
     }
 }

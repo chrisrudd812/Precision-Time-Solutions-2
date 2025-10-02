@@ -44,7 +44,6 @@ public class EmailTimecardsServlet extends HttpServlet {
             }
         }
         
-        logger.info("[EmailTimecardsServlet] Received JSON payload: " + requestBody.toString());
 
         int successCount = 0;
         try {
@@ -60,12 +59,10 @@ public class EmailTimecardsServlet extends HttpServlet {
                 throw new Exception("Invalid data received from client. Timecards or Pay Period Message is missing.");
             }
             
-            logger.info("[EmailTimecardsServlet] Deserialized " + timecards.size() + " timecards to process.");
 
             for (Map<String, Object> cardData : timecards) {
                 String recipientEmail = (String) cardData.get("email");
                 
-                logger.info("[EmailTimecardsServlet] Processing timecard for: " + cardData.get("employeeName") + ". Email: " + recipientEmail);
 
                 if (recipientEmail == null || recipientEmail.trim().isEmpty()) {
                     logger.warning("Skipping timecard email for " + cardData.get("employeeName") + " due to missing email address.");

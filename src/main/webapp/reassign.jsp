@@ -192,7 +192,7 @@
                 <select id="reassignType" name="reassignType">
                     <option value="department">Department</option>
                     <option value="schedule">Schedule</option>
-                    <option value="accrual_policy">Accrual Policy</option>
+                    <option value="accrual_policy">PTO Policy</option>
                     <option value="supervisor">Supervisor</option>
                 </select>
             </div>

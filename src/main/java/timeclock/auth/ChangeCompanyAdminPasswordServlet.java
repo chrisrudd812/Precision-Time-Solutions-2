@@ -141,7 +141,6 @@ public class ChangeCompanyAdminPasswordServlet extends HttpServlet {
             int rowsAffected = psUpdateHash.executeUpdate();
 
             if (rowsAffected > 0) {
-                logger.info("Company admin password successfully updated for TenantID: " + tenantId);
                 // if (!con.getAutoCommit()) con.commit();
                 session.setAttribute("successMessage", "Company admin password updated successfully.");
             } else {

@@ -139,7 +139,9 @@ public class DeviceRestrictionServlet extends HttpServlet {
                         device.put("RegisteredDate", rs.getTimestamp("RegisteredDate"));
                         device.put("LastUsedDate", rs.getTimestamp("LastUsedDate"));
                         device.put("IsEnabled", rs.getBoolean("IsEnabled"));
-                        ((List<Map<String, Object>>) employee.get("devices")).add(device);
+                        @SuppressWarnings("unchecked")
+                        List<Map<String, Object>> devices = (List<Map<String, Object>>) employee.get("devices");
+                        devices.add(device);
                     }
                 }
                 employeeDeviceList.addAll(employeeMap.values());

@@ -58,7 +58,6 @@ public class AddAndDeleteAccrualPoliciesServlet extends HttpServlet {
         } else if (success != null && !success.isEmpty()) {
             url.append(firstParam ? "?" : "&").append("message=").append(encodeUrlParam(success));
         }
-        logger.info("[AccrualPoliciesServlet] Redirecting to: " + url.toString());
         return url.toString();
     }
     
@@ -83,7 +82,6 @@ public class AddAndDeleteAccrualPoliciesServlet extends HttpServlet {
         }
 
         String action = request.getParameter("action");
-        logger.info("AddAndDeleteAccrualPoliciesServlet doPost received action: " + action + " for TenantID: " + tenantId);
 
         boolean isWizardModeActive = (session != null && Boolean.TRUE.equals(session.getAttribute("startSetupWizard")));
         String currentWizardStepInSession = isWizardModeActive ? (String) session.getAttribute("wizardStep") : null;
@@ -163,7 +161,6 @@ public class AddAndDeleteAccrualPoliciesServlet extends HttpServlet {
                             int rowsAffected = psInsert.executeUpdate();
                             if (rowsAffected > 0) {
                                 successMessage = "PTO policy '" + policyName.trim() + "' added successfully.";
-                                logger.info(successMessage + " For TenantID: " + tenantId);
 
                                 if (isWizardModeActive && currentWizardStepInSession != null &&
                                     (currentWizardStepInSession.equals("accruals_prompt") || currentWizardStepInSession.equals("accruals_after_add_prompt"))) {

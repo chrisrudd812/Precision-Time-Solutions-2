@@ -83,7 +83,7 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        logger.info("--- AddEditAndDeletePunchesServlet doPost ---");
+
         request.setCharacterEncoding(StandardCharsets.UTF_8.name());
         logParameters(request);
 
@@ -122,13 +122,13 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
         if ("editPunch".equals(action)) {
             eidStr = request.getParameter("editEmployeeId");
             if (!isValid(eidStr)) {
-                logger.info("[Servlet] 'editEmployeeId' not found for action 'editPunch', trying 'eid' parameter.");
+
                 eidStr = request.getParameter("eid");
             }
-            logger.info("[Servlet] Action is 'editPunch', EID string from parameters ('editEmployeeId' or 'eid'): '" + eidStr + "'");
+
         } else if ("addHours".equals(action)){
              eidStr = request.getParameter("eid");
-             logger.info("[Servlet] Action is '" + action + "', EID string from 'eid' parameter: '" + eidStr + "'");
+
         }
 
 
@@ -153,7 +153,7 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
             sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Missing or invalid Employee ID for this action.", null);
             return;
         }
-        logger.info("[Servlet] Processing Action: " + action + ", TenantID: " + tenantId + ", TargetEID (parsed, if applicable): " + targetEid + ", LoggedInUserEID: " + loggedInUserEid);
+
 
         switch (action) {
             case "editPunch":
@@ -200,8 +200,7 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
             catch (Exception e) { logger.warning("[Servlet] Invalid userTimeZone for editPunch: " + userTimeZoneStr + ". Falling back."); }
         }
 
-        logger.info(String.format("-> handleEditPunch: TargetEID/ContextEID=%d, PunchID=%s, NewDate=%s, NewType=%s, InTime=%s, OutTime=%s, ManualHrs=%s, UserTZ=%s",
-                contextEid, punchIdStr, dateStr, newPunchTypeStr, inTimeStr, outTimeStr, totalHoursManualStr, userInputZoneId.toString()));
+
 
         if (!isValid(punchIdStr) || !isValid(dateStr) || !isValid(newPunchTypeStr)) {
             sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Punch ID, Date, and Type are required for edit.", null); return;
@@ -235,7 +234,7 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
             }
             String originalAccrualCol = getAccrualColumn(originalPunchTypeDb);
             if (originalAccrualCol != null && originalTotalHoursDb != null && originalTotalHoursDb > 0) {
-                logger.info("Restoring original accrual: " + originalTotalHoursDb + "h of '" + originalPunchTypeDb + "' to EID " + punchOwnerEid);
+
                 String restoreSql = "UPDATE employee_data SET " + originalAccrualCol + " = " + originalAccrualCol + " + ? WHERE EID = ? AND TenantID = ?";
                 try (PreparedStatement psRestore = con.prepareStatement(restoreSql)) {
                     psRestore.setDouble(1, originalTotalHoursDb); psRestore.setInt(2, punchOwnerEid); psRestore.setInt(3, tenantId);
@@ -249,7 +248,7 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
             boolean isNewTypeHoursOnly = isHoursOnlyType(newPunchType);
             String updatePunchSql; PreparedStatement psUpdatePunch;
             if (isNewTypeHoursOnly) {
-                logger.info("Processing edit as Hours-Only type: " + newPunchType);
+
                 if (!isValid(totalHoursManualStr)) { throw new SQLException("Total Hours value is required for type '" + newPunchType + "'."); }
                 try {
                     newFinalTotalHoursForAccrual = Double.parseDouble(totalHoursManualStr.trim());
@@ -264,7 +263,7 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
                 psUpdatePunch.setString(3, newPunchType); psUpdatePunch.setLong(4, punchId);
                 psUpdatePunch.setInt(5, tenantId); psUpdatePunch.setInt(6, punchOwnerEid);
             } else {
-                logger.info("Processing edit as Timed type: " + newPunchType);
+
                 try {
                     if (isValid(inTimeStr)) {
                         LocalTime localInTime = LocalTime.parse(inTimeStr.trim(), TIME_FORMATTER_FROM_USER);
@@ -353,8 +352,7 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
             catch (Exception e) { logger.warning("[Servlet] Invalid userTimeZone for addHours: " + userTimeZoneStr + ". Falling back."); }
         }
 
-        logger.info(String.format("-> handleAddHoursOrTimedPunch: EID=%d, Date=%s, Type=%s, ManualHours=%s, InTime=%s, OutTime=%s, UserTZ=%s",
-                eid, dateStr, punchTypeStr, totalHoursManualStr, inTimeStr, outTimeStr, userInputZoneId.toString()));
+
 
         if (!isValid(dateStr) || !isValid(punchTypeStr)) {
             sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Date and Punch Type are required.", null); return;
@@ -409,7 +407,7 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
                     if (generatedKeys.next()) newPunchId = generatedKeys.getLong(1);
                     else throw new SQLException("Creating punch failed, no ID.");
                 }
-                logger.info("Inserted punch (ID: " + newPunchId + ") for EID " + eid);
+
             }
             if (!isHoursOnly && utcInTimestamp != null && utcOutTimestamp != null) {
                 if (utcOutTimestamp.toInstant().isAfter(utcInTimestamp.toInstant())) {
@@ -446,8 +444,7 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
         String totalHoursStr = request.getParameter("addHoursTotal");
         String punchTypeStr = request.getParameter("addHoursPunchTypeDropDown");
 
-        logger.info(String.format("-> handleAddGlobalHours: Date=%s, TotalHours=%s, PunchType=%s, TenantID=%d",
-                dateStr, totalHoursStr, punchTypeStr, tenantId));
+
 
         if (!isValid(dateStr) || !isValid(totalHoursStr) || !isValid(punchTypeStr)) {
             response.sendRedirect("add_global_data.jsp?error=" + URLEncoder.encode("Date, Total Hours, and Punch Type are required.", StandardCharsets.UTF_8.name()));
@@ -507,7 +504,7 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
 
                 if (psUpdateAccrual != null) {
                     int[] updateCounts = psUpdateAccrual.executeBatch();
-                    logger.info("Accruals updated for " + Arrays.stream(updateCounts).filter(c -> c >=0 || c == Statement.SUCCESS_NO_INFO).map(c -> c == Statement.SUCCESS_NO_INFO ? 1 : c).sum() + " employees.");
+
                 }
             }
             con.commit();
@@ -535,7 +532,7 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
         long punchId;
         try { punchId = Long.parseLong(punchIdStr.trim()); }
         catch (NumberFormatException e) { sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Invalid Punch ID format: " + escapeHtml(punchIdStr), null); return; }
-        logger.info("-> handleDeletePunch: PunchID=" + punchId + ", TenantID=" + tenantId);
+
         Connection con = null;
         try {
             con = DatabaseConnection.getConnection(); con.setAutoCommit(false);
@@ -551,11 +548,11 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
             if (punchOwnerEid <= 0) { throw new SQLException("Invalid EID (<=0) retrieved for punch ID " + punchId); }
             String accrualCol = getAccrualColumn(originalPunchType); boolean restoredAccrual = false;
             if (accrualCol != null && originalHours != null && originalHours > 0) {
-                logger.info("Restoring " + originalHours + " of '" + originalPunchType + "' to EID " + punchOwnerEid);
+
                 String restoreSql = "UPDATE employee_data SET " + accrualCol + " = " + accrualCol + " + ? WHERE EID = ? AND TenantID = ?";
                 try (PreparedStatement psRestore = con.prepareStatement(restoreSql)) {
                     psRestore.setDouble(1, originalHours); psRestore.setInt(2, punchOwnerEid); psRestore.setInt(3, tenantId);
-                    if (psRestore.executeUpdate() > 0) { restoredAccrual = true; logger.info("Accrual restored successfully for EID " + punchOwnerEid); }
+                    if (psRestore.executeUpdate() > 0) { restoredAccrual = true; }
                     else { logger.warning("Failed to restore accrual hours for EID " + punchOwnerEid + " (or no change needed)."); }
                 }
             }
@@ -565,7 +562,7 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
                 int rowsDeleted = psDel.executeUpdate();
                 if (rowsDeleted > 0) {
                     con.commit(); String successMsg = "Punch deleted successfully" + (restoredAccrual ? ". Accrued hours were restored." : ".");
-                    logger.info(successMsg + " (PunchID: " + punchId + ")"); sendJsonResponse(response, HttpServletResponse.SC_OK, true, successMsg, null);
+                    sendJsonResponse(response, HttpServletResponse.SC_OK, true, successMsg, null);
                 } else { con.rollback(); logger.warning("Delete failed for punch ID " + punchId + ". Row not found or not deleted."); sendJsonResponse(response, HttpServletResponse.SC_NOT_FOUND, false, "Delete failed. Punch not found or no change made.", null); }
             }
         } catch (SQLException e_sql) {
@@ -593,23 +590,11 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
     }
 
     private void rollback(Connection con) {
-        if (con != null) { try { if (!con.getAutoCommit()) { logger.info("Attempting to rollback transaction."); con.rollback(); logger.info("Transaction rolled back successfully."); } } catch (SQLException rbEx) { logger.log(Level.SEVERE, "Rollback failed!", rbEx); } }
+        if (con != null) { try { if (!con.getAutoCommit()) { con.rollback(); } } catch (SQLException rbEx) { logger.log(Level.SEVERE, "Rollback failed!", rbEx); } }
     }
 
     private void logParameters(HttpServletRequest request) {
-        if (logger.isLoggable(Level.INFO)) {
-            logger.info("--- AddEditAndDeletePunchesServlet Request Parameters ---");
-            Enumeration<String> paramNames = request.getParameterNames();
-            if (!paramNames.hasMoreElements()) { logger.info("No parameters found in the request."); }
-            else {
-                while (paramNames.hasMoreElements()) {
-                    String paramName = paramNames.nextElement();
-                    String[] paramValues = request.getParameterValues(paramName);
-                    logger.info(String.format("Param: %s = %s", paramName, java.util.Arrays.toString(paramValues)));
-                }
-            }
-            logger.info("--- End Request Parameters ---");
-        }
+        // Debug logging removed for production
     }
 
     private String escapeHtml(String input) {

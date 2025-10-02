@@ -10,7 +10,6 @@ import timeclock.Configuration;
 import timeclock.util.Helpers; // <-- IMPORT THE HELPERS CLASS
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -78,17 +77,14 @@ public class SettingsServlet extends HttpServlet {
             // --- NEW LOGIC TO UPDATE THE SESSION ---
             // If the setting we just changed was the main location toggle...
             if ("RestrictByLocation".equals(settingKey)) {
-                logger.info("[SettingsServlet] 'RestrictByLocation' was changed. Re-evaluating and updating session...");
                 // ...re-calculate the requirement using our smart helper method...
                 boolean locationCheckIsRequired = Helpers.isLocationCheckRequired(tenantId);
                 // ...and update the session immediately.
                 session.setAttribute("locationCheckIsRequired", locationCheckIsRequired);
-                logger.log(Level.WARNING, "[SettingsServlet] >>> Session attribute 'locationCheckIsRequired' has been updated to: " + locationCheckIsRequired);
             }
             // --- END OF NEW LOGIC ---
 
             response.getWriter().write("OK");
-            logger.info("[SettingsServlet] Setting saved successfully for TenantID: " + tenantId + ", Key=" + settingKey);
 
         } catch (Exception e) {
             logger.log(Level.SEVERE, "[SettingsServlet] Error saving setting for TenantID: " + tenantId + ", Key=" + settingKey, e);

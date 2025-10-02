@@ -54,6 +54,7 @@
         </div>
     </div>
 
+    <% if (isSingleTimecard) { %>
     <div class="employee-selector-section">
         <div class="selector-container">
             <label for="employeeSelect">Select Employee:</label>
@@ -70,6 +71,7 @@
             </select>
         </div>
     </div>
+    <% } %>
 
     <div class="print-view-main-content">
         <%

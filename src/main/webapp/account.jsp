@@ -66,7 +66,7 @@
                 }
             }
         } catch (SQLException e) {
-            jspAccountLogger.log(Level.SEVERE, "SQLException in getCompanyDisplayDetails for TenantID " + tenantId, e);
+            // Database error occurred
         } 
         return info;
     }
@@ -138,7 +138,7 @@
             <p class="section-description">Manage your subscription plan, view invoices, and update your payment method via our secure billing portal.</p>
             <p class="section-description note"><strong>Note:</strong> Subscription and billing can only be managed by the primary company administrator.</p>
             <div style="padding-left: 5px; margin-top: 15px;">
-                <button type="button" id="manageBillingBtn" class="glossy-button text-blue" autofocus><i class="fas fa-credit-card"></i> Manage Subscription & Billing</button>
+                <button type="button" id="manageBillingBtn" class="glossy-button text-blue" autofocus><i class="fas fa-credit-card"></i> Manage Subscription and Billing</button>
                 <form id="stripePortalForm" action="StripePortalServlet" method="POST" style="display:none;"></form>
             </div>
         </div>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Precision Time Solutions - Help & User Guide</title>
+    <title>Precision Time Solutions - Help and User Guide</title>
     <%@ include file="/WEB-INF/includes/common-head.jspf" %>
     <style>
         /* Smooth scrolling for TOC links with offset for sticky header */
@@ -306,7 +306,7 @@
 
         <main>
             <header>
-                <h1>Precision Time Solutions - Help & User Guide</h1>
+                <h1>Precision Time Solutions - Help and User Guide</h1>
                 <p>Welcome! This guide will walk you through the features and settings to manage your company's time and attendance effectively.</p>
             </header>
 
@@ -316,7 +316,14 @@
                 <p>This is how you log into the system.<br><br>
                  The first time you log in, use the email address you registered with and the default PIN <code>1234</code>. You will be prompted to change your PIN immediately after logging in for security purposes. PIN must be 4 digits.<br><br> 
                 If you are an administrator, you will be taken to the Employee Management page after logging in. Regular users will be directed to the Time Clock page and logged out automatically after 30 seconds of inactivity to keep terminal secured.  - This is the only functionality that non-Administrators have access to. 
-                <br>If you have any messages, they will be displayed upon successful login.</p>
+                <br>If you have any messages, they will be displayed upon successful login.</p><br>
+                
+                Login Checklist: 
+                
+                <ol><li>Company ID - Sent in welcome email or provided by supervisor</li>
+                <li>Your e-mail address (username)</li>
+                <li>PIN - default for new employees or PIN resets is <code>1234</code></li>
+                <li>For mobile devices - bio-metric authentication or device lock PIN</li></ol>
                 
                 <img src="Images/login.webp" style="max-width:600px" alt="Login screen">
                 
@@ -727,7 +734,6 @@
 							> System Access Report</code> from the main navigation bar.</li>
 				</ul>
 				
-				<Archived Punches Report>
 				<h3>Archived Punches Report</h3>
 				<p>The Archived Punches Report provides a detailed list of all
 					punches that have been archived after closing a pay period for auditing purposes.</p>

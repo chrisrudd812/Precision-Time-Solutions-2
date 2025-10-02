@@ -48,15 +48,7 @@
     }
 %>
 <%
-    // Enhanced logging for session debugging
-    java.util.logging.Logger pageLogger = java.util.logging.Logger.getLogger("employees_jsp_debug");
-    pageLogger.info("=== EMPLOYEES.JSP ACCESS ATTEMPT ===");
-    pageLogger.info("[DEBUG] User-Agent: " + request.getHeader("User-Agent"));
-    pageLogger.info("[DEBUG] Remote Address: " + request.getRemoteAddr());
-    pageLogger.info("[DEBUG] Session ID from request: " + request.getRequestedSessionId());
-    
     HttpSession currentSession = request.getSession(false);
-    pageLogger.info("[DEBUG] Session from request.getSession(false): " + (currentSession != null ? currentSession.getId() : "NULL"));
     
     Integer tenantId = null;
     String pageLevelError = request.getParameter("error");
@@ -71,23 +63,8 @@
     boolean employeeJustAddedInWizard_JSP = "true".equalsIgnoreCase(request.getParameter("empAdded"));
 
     if (currentSession != null) {
-        pageLogger.info("[DEBUG] Session found! Session ID: " + currentSession.getId());
-        pageLogger.info("[DEBUG] Session creation time: " + new java.util.Date(currentSession.getCreationTime()));
-        pageLogger.info("[DEBUG] Session last accessed: " + new java.util.Date(currentSession.getLastAccessedTime()));
-        pageLogger.info("[DEBUG] Session max inactive interval: " + currentSession.getMaxInactiveInterval() + " seconds");
-        
         tenantId = (Integer) currentSession.getAttribute("TenantID");
-        pageLogger.info("[DEBUG] TenantID from session: " + tenantId);
-        
         String userPermissions = (String) currentSession.getAttribute("Permissions");
-        pageLogger.info("[DEBUG] User permissions from session: '" + userPermissions + "'");
-        
-        Integer eid = (Integer) currentSession.getAttribute("EID");
-        pageLogger.info("[DEBUG] EID from session: " + eid);
-        
-        String userFirstName = (String) currentSession.getAttribute("UserFirstName");
-        String userLastName = (String) currentSession.getAttribute("UserLastName");
-        pageLogger.info("[DEBUG] User name from session: '" + userFirstName + " " + userLastName + "'");
         
         Object companyNameObj = currentSession.getAttribute("CompanyNameSignup");
         if (companyNameObj instanceof String && !((String)companyNameObj).isEmpty()) {
@@ -117,15 +94,10 @@
             }
         }
 
-        // userPermissions already retrieved above for logging
         if (!"Administrator".equalsIgnoreCase(userPermissions)) {
-            pageLogger.warning("[DEBUG] ACCESS DENIED - User permissions: '" + userPermissions + "' is not Administrator");
             pageLevelError = "Access Denied.";
-        } else {
-            pageLogger.info("[DEBUG] ACCESS GRANTED - User has Administrator permissions");
         }
     } else {
-        pageLogger.warning("[DEBUG] NO SESSION FOUND - Redirecting to login");
         response.sendRedirect(request.getContextPath() + "/login.jsp?error=" + URLEncoder.encode("Session expired.", StandardCharsets.UTF_8.name()));
         return;
     }

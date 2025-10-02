@@ -3,6 +3,7 @@
 <%@ page import="timeclock.reports.ShowReports" %>
 <%@ page import="timeclock.punches.ShowPunches" %>
 <%@ page import="timeclock.Configuration" %>
+<%@ page import="timeclock.util.Helpers" %>
 <%@ page import="java.util.*" %>
 <%@ page import="java.time.LocalDate" %>
 <%@ page import="java.time.ZoneId" %>
@@ -30,7 +31,7 @@
         Object tenantIdObj = currentSession.getAttribute("TenantID");
         if (tenantIdObj instanceof Integer) { tenantId = (Integer) tenantIdObj; }
         Object userTimeZoneIdObj = currentSession.getAttribute("userTimeZoneId");
-        if (userTimeZoneIdObj instanceof String && ShowPunches.isValid((String)userTimeZoneIdObj)) {
+        if (userTimeZoneIdObj instanceof String && Helpers.isStringValid((String)userTimeZoneIdObj)) {
             userTimeZoneId = (String) userTimeZoneIdObj;
         }
     }
@@ -55,12 +56,12 @@
     LocalDate defaultStartDate = defaultEndDate.minusMonths(1).withDayOfMonth(1);
 
     if (isFormSubmitted) {
-        if (ShowPunches.isValid(eidStr)) {
+        if (Helpers.isStringValid(eidStr)) {
             try { eid = Integer.parseInt(eidStr.trim()); } catch (NumberFormatException e) { eid = 0; }
         }
         try {
-            startDate = ShowPunches.isValid(startDateStrParam) ? LocalDate.parse(startDateStrParam) : defaultStartDate;
-            endDate = ShowPunches.isValid(endDateStrParam) ? LocalDate.parse(endDateStrParam) : defaultEndDate;
+            startDate = Helpers.isStringValid(startDateStrParam) ? LocalDate.parse(startDateStrParam) : defaultStartDate;
+            endDate = Helpers.isStringValid(endDateStrParam) ? LocalDate.parse(endDateStrParam) : defaultEndDate;
             if (startDate.isAfter(endDate)) {
                 paramError = "Start date cannot be after end date. Using default range.";
                 startDate = defaultStartDate; endDate = defaultEndDate;
@@ -70,7 +71,7 @@
             startDate = defaultStartDate; endDate = defaultEndDate;
         }
     } else {
-        if (ShowPunches.isValid(startDateStrParam) && ShowPunches.isValid(endDateStrParam)) {
+        if (Helpers.isStringValid(startDateStrParam) && Helpers.isStringValid(endDateStrParam)) {
             try {
                 startDate = LocalDate.parse(startDateStrParam);
                 endDate = LocalDate.parse(endDateStrParam);
@@ -83,7 +84,7 @@
             startDate = defaultStartDate;
             endDate = defaultEndDate;
         }
-        if (ShowPunches.isValid(request.getParameter("eid"))) {
+        if (Helpers.isStringValid(request.getParameter("eid"))) {
              try { eid = Integer.parseInt(request.getParameter("eid")); } catch (NumberFormatException e) { eid = 0;}
         }
     }
@@ -112,6 +113,7 @@
     <title>View Archived Punches</title>
     <%@ include file="/WEB-INF/includes/common-head.jspf" %>
     <link rel="stylesheet" href="css/archived_punches.css?v=<%= System.currentTimeMillis() %>">
+    <link rel="stylesheet" href="css/reports.css?v=<%= System.currentTimeMillis() %>">
 </head>
 <body class="reports-page">
     <%@ include file="/WEB-INF/includes/navbar.jspf" %>
@@ -154,6 +156,7 @@
                 <button type="button" id="printArchivedPunchesBtn" class="glossy-button text-blue">
                     <i class="fas fa-print"></i> Print This View
                 </button>
+                <br>
             </div>
              <div id="reportOutput" class="report-output">
                  <div class="table-container report-table-container">

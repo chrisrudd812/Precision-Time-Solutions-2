@@ -6,13 +6,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Logger;
 import timeclock.Configuration;
 
 public class DeviceFingerprintValidator {
-    private static final Logger logger = Logger.getLogger(DeviceFingerprintValidator.class.getName());
 
     public static class ValidationResult {
         public final boolean isAllowed;
@@ -34,7 +30,7 @@ public class DeviceFingerprintValidator {
         }
 
         int maxDevices = Integer.parseInt(Configuration.getProperty(tenantId, "MaxDevicesPerUserGlobal", "2"));
-        List<String> registeredDeviceDescriptions = new ArrayList<>();
+        int enabledDeviceCount = 0;
         
         String getDevicesSql = "SELECT DeviceFingerprintHash, IsEnabled, DeviceDescription FROM employee_devices WHERE TenantID = ? AND EID = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(getDevicesSql)) {
@@ -42,11 +38,13 @@ public class DeviceFingerprintValidator {
             pstmt.setInt(2, employeeId);
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
-                    String hash = rs.getString("DeviceFingerprintHash").trim();
+                    String hash = rs.getString("DeviceFingerprintHash");
+                    if (hash != null) {
+                        hash = hash.trim();
+                    }
                     boolean isEnabled = rs.getBoolean("IsEnabled");
-                    String description = rs.getString("DeviceDescription");
 
-                    if (hash.equals(fingerprintHash)) {
+                    if (hash != null && hash.equals(fingerprintHash)) {
                         if (isEnabled) {
                             updateLastUsedDate(conn, tenantId, fingerprintHash);
                             return new ValidationResult(true, "Known device verified.");
@@ -55,19 +53,14 @@ public class DeviceFingerprintValidator {
                         }
                     }
                     if (isEnabled) {
-                        registeredDeviceDescriptions.add(description != null ? description : "Unnamed Device");
+                        enabledDeviceCount++;
                     }
                 }
             }
         }
 
-        if (registeredDeviceDescriptions.size() >= maxDevices) {
-            StringBuilder errorMessage = new StringBuilder("Device limit of " + maxDevices + " has been reached.");
-            if (!registeredDeviceDescriptions.isEmpty()) {
-                errorMessage.append("\n\nYour previously approved devices are:\n");
-                errorMessage.append(String.join("\n", registeredDeviceDescriptions));
-            }
-            return new ValidationResult(false, errorMessage.toString());
+        if (enabledDeviceCount >= maxDevices) {
+            return new ValidationResult(false, "You have reached the maximum number of registered devices. To use this device, an administrator must remove an existing one first.");
         }
 
         String description = generateDeviceDescription(userAgent);

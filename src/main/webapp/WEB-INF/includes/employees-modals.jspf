@@ -6,7 +6,7 @@
         <form id="addEmployeeForm" action="<%= request.getContextPath() %>/AddEditAndDeleteEmployeesServlet" method="post" autocomplete="off">
             <input type="hidden" name="action" value="addEmployee">
             <input type="password" style="display:none" autocomplete="new-password">
-            <% if(inSetupWizardMode_JSP) { %><input type="hidden" name="setup_wizard" value="true"><% } %>
+            <input type="hidden" name="setup_wizard" id="addEmployeeSetupWizardField" value="">
             <div class="modal-header">
                 <h2 class="modal-title-success"><i class="fas fa-user-plus"></i> <span>Add New Employee</span></h2>
             </div>
@@ -58,8 +58,7 @@
                     </div>
                 </div>
             </div>
-            <% if(!inSetupWizardMode_JSP) { %>
-            <div class="form-body-container" style="display: flex; justify-content: center; align-items: center; padding: 10px 20px; margin-top: -20px;">
+            <div id="addEmployeeWelcomeEmailSection" class="form-body-container" style="display: flex; justify-content: center; align-items: center; padding: 10px 20px; margin-top: -20px;">
                 <div style="display: flex; align-items: center; gap: 12px;">
                     <label style="margin: 0; font-weight: 500; font-size: 0.9em; color: #6c757d;">Send Welcome Email</label>
                     <label class="switch">
@@ -68,7 +67,6 @@
                     </label>
                 </div>
             </div>
-            <% } %>
             <div class="button-row">
                 <button type="submit" class="glossy-button text-green"><i class="fas fa-check"></i> Submit</button>
                 <button type="button" class="cancel-btn glossy-button text-red"><i class="fas fa-times"></i> Cancel</button>
@@ -138,7 +136,7 @@
             <div class="button-row">
                  <%-- MODIFIED: Changed text-orange to text-green --%>
                  <button type="submit" class="glossy-button text-green"><i class="fas fa-save"></i> Save Changes</button>
-                 <% if(!inSetupWizardMode_JSP) { %><button type="button" class="cancel-btn glossy-button text-red"><i class="fas fa-times"></i> Cancel</button><% } %>
+                 <button type="button" class="cancel-btn glossy-button text-red" id="editEmployeeCancelBtn"><i class="fas fa-times"></i> Cancel</button>
             </div>
         </form>
     </div>
@@ -187,3 +185,19 @@
         </div>
      </div>
 </div>
+
+<script type="text/javascript">
+// Set wizard mode fields and hide/show elements if parent page is in wizard mode
+if (typeof window.inWizardMode_Page !== 'undefined' && window.inWizardMode_Page) {
+    var setupField = document.getElementById('addEmployeeSetupWizardField');
+    if (setupField) setupField.value = 'true';
+    
+    // Hide welcome email section in wizard mode
+    var welcomeEmailSection = document.getElementById('addEmployeeWelcomeEmailSection');
+    if (welcomeEmailSection) welcomeEmailSection.style.display = 'none';
+    
+    // Hide cancel button in edit modal during wizard mode
+    var editCancelBtn = document.getElementById('editEmployeeCancelBtn');
+    if (editCancelBtn) editCancelBtn.style.display = 'none';
+}
+</script>

@@ -69,12 +69,12 @@
 <div id="deleteAndReassignDeptModal" class="modal modal-state-error">
     <div class="modal-content">
         <div class="modal-header">
-            <h2 class="modal-title-error"><i class="fas fa-exclamation-triangle"></i> <span>Delete & Reassign Department</span></h2>
+            <h2 class="modal-title-error"><i class="fas fa-exclamation-triangle"></i> <span>Delete and Reassign Department</span></h2>
         </div>
         <div class="modal-body">
              <p id="deleteReassignModalMessage"></p>
              <p style="font-size: 0.9em; color: #475569; margin-top: -1em; margin-bottom: 1.5em;">
-                To delete this department, you must reassign any employees currently assigned to it.
+                To delete this department, you must reassign any employees currently assigned to it (if any).
              </p>
              <label for="targetReassignDeptSelect">Reassign employees to: <span class="required-asterisk">*</span></label>
              <select id="targetReassignDeptSelect" name="targetReassignDeptSelect_form" style="width: 100%;" required>

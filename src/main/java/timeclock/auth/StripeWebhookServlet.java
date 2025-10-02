@@ -68,7 +68,6 @@ public class StripeWebhookServlet extends HttpServlet {
         }
         
         // If we get here, the signature was valid.
-        logger.info("SUCCESS: Stripe Webhook signature verified. Event Type: " + event.getType());
 
         EventDataObjectDeserializer dataObjectDeserializer = event.getDataObjectDeserializer();
         if (dataObjectDeserializer.getObject().isEmpty()) {
@@ -88,7 +87,6 @@ public class StripeWebhookServlet extends HttpServlet {
                 handleSubscriptionDeleted((Subscription) stripeObject);
                 break;
             default:
-                logger.info("Received unhandled Stripe event type: " + event.getType());
         }
 
         response.setStatus(HttpServletResponse.SC_OK);
@@ -97,7 +95,6 @@ public class StripeWebhookServlet extends HttpServlet {
     private void handleSubscriptionUpdated(Subscription subscription) {
         String newStatus = subscription.getStatus();
         String customerId = subscription.getCustomer();
-        logger.info("Processing 'customer.subscription.updated' for customer " + customerId + ". New status: " + newStatus);
         
         String sql = "UPDATE tenants SET SubscriptionStatus = ? WHERE StripeCustomerID = ?";
         try (Connection conn = DatabaseConnection.getConnection();
@@ -107,7 +104,6 @@ public class StripeWebhookServlet extends HttpServlet {
             pstmt.setString(2, customerId);
             int rowsAffected = pstmt.executeUpdate();
             if (rowsAffected > 0) {
-                logger.info("DB UPDATE SUCCESS for customer " + customerId);
             } else {
                 logger.warning("DB UPDATE FAILED: Could not find a tenant with StripeCustomerID " + customerId);
             }
@@ -118,7 +114,6 @@ public class StripeWebhookServlet extends HttpServlet {
 
     private void handleSubscriptionDeleted(Subscription subscription) {
         String customerId = subscription.getCustomer();
-        logger.info("Processing 'customer.subscription.deleted' for customer " + customerId);
         
         String sql = "UPDATE tenants SET SubscriptionStatus = 'canceled' WHERE StripeCustomerID = ?";
         try (Connection conn = DatabaseConnection.getConnection();
@@ -127,7 +122,6 @@ public class StripeWebhookServlet extends HttpServlet {
             pstmt.setString(1, customerId);
             int rowsAffected = pstmt.executeUpdate();
             if (rowsAffected > 0) {
-                logger.info("DB CANCEL SUCCESS for customer " + customerId);
             } else {
                 logger.warning("DB CANCEL FAILED: Could not find a tenant with StripeCustomerID " + customerId);
             }

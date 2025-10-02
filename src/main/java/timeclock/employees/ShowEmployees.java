@@ -6,10 +6,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Date;
 import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import timeclock.db.DatabaseConnection;
@@ -38,7 +36,6 @@ public class ShowEmployees {
         }
 
         SimpleDateFormat dateFormatDisplay = new SimpleDateFormat("MM/dd/yyyy");
-        NumberFormat currencyFormatter = NumberFormat.getCurrencyInstance(Locale.US);
         DecimalFormat hoursFormat = new DecimalFormat("0.00");
 
         String sql = "SELECT EID, TenantEmployeeNumber, FIRST_NAME, LAST_NAME, DEPT, SCHEDULE, SUPERVISOR, PERMISSIONS, " +
@@ -47,7 +44,7 @@ public class ShowEmployees {
                      "WORK_SCHEDULE, WAGE_TYPE, WAGE " +
                      "FROM employee_data WHERE TenantID = ? AND ACTIVE = TRUE ORDER BY TenantEmployeeNumber ASC";
 
-        logger.info("[ShowEmployees] Fetching active employees for TenantID: " + tenantId);
+
 
         try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
@@ -84,7 +81,6 @@ public class ShowEmployees {
                     String displayHireDate = (hireDate != null) ? dateFormatDisplay.format(hireDate) : "";
                     String isoHireDate = (hireDate != null) ? hireDate.toLocalDate().format(DATE_FORMAT_ISO) : "";
                     
-                    String displayWage = currencyFormatter.format(wage);
                     String displayVac = hoursFormat.format(vacHours);
                     String displaySick = hoursFormat.format(sickHours);
                     String displayPers = hoursFormat.format(persHours);
@@ -139,8 +135,7 @@ public class ShowEmployees {
     }
 
     public static String showInactiveEmployees(int tenantId) {
-        // --- ADDED: Versioned log message to confirm the new class is running ---
-        logger.info("[ShowEmployees.showInactiveEmployees] v2_debug_logging: Method entered for TenantID: " + tenantId);
+
 
         StringBuilder tableRows = new StringBuilder();
         final int VISIBLE_COLUMNS = 8; 
@@ -164,17 +159,7 @@ public class ShowEmployees {
                     String displayDeactivationDate = (deactivationDate != null) ? dateFormatDisplay.format(deactivationDate) : "N/A";
                     String deactivationReason = rs.getString("DeactivationReason");
                     
-                    // --- NEW DEBUG LOGGING ---
-                    logger.info("[DEBUG] Processing Inactive EID: " + globalEid);
-                    logger.info("  - Col 1 (EID): " + dEid);
-                    logger.info("  - Col 2 (First Name): " + rs.getString("FIRST_NAME"));
-                    logger.info("  - Col 3 (Last Name): " + rs.getString("LAST_NAME"));
-                    logger.info("  - Col 4 (Dept): " + rs.getString("DEPT"));
-                    logger.info("  - Col 5 (Schedule): " + rs.getString("SCHEDULE"));
-                    logger.info("  - Col 6 (Email): " + rs.getString("EMAIL"));
-                    logger.info("  - Col 7 (Deactivation Date): " + displayDeactivationDate);
-                    logger.info("  - Col 8 (Deactivation Reason): " + deactivationReason);
-                    // --- END DEBUG LOGGING ---
+
 
                     tableRows.append("<tr data-eid=\"").append(globalEid).append("\">");
                     tableRows.append("<td>").append(escapeHtml(dEid)).append("</td>");

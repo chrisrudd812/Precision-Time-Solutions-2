@@ -50,7 +50,7 @@ public class EmployeeInfoServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String action = request.getParameter("action");
-        logger.info("EmployeeInfoServlet received GET action: " + action);
+
         String eidStr = request.getParameter("eid"); 
         int globalEid = 0; 
         
@@ -100,7 +100,6 @@ public class EmployeeInfoServlet extends HttpServlet {
     }
 
     private void handleGetEmployeeDetails(HttpServletRequest request, HttpServletResponse response, int tenantId, int globalEid) throws IOException {
-        logger.info("HANDLE_GET_EMPLOYEE_DETAILS: Starting for EID=" + globalEid + ", TenantID=" + tenantId);
         JSONObject jsonResponse = new JSONObject();
         
         // *** FIX: Changed PAY_RATE to WAGE to match database schema ***
@@ -113,11 +112,10 @@ public class EmployeeInfoServlet extends HttpServlet {
 
             pstmt.setInt(1, globalEid);
             pstmt.setInt(2, tenantId);
-            logger.info("HANDLE_GET_EMPLOYEE_DETAILS: Executing query...");
+
 
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
-                    logger.info("HANDLE_GET_EMPLOYEE_DETAILS: Employee record found. Building JSON object.");
                     JSONObject employee = new JSONObject();
                     employee.put("eid", rs.getInt("EID"));
                     employee.put("tenantemployeenumber", rs.getObject("TenantEmployeeNumber"));
@@ -142,16 +140,14 @@ public class EmployeeInfoServlet extends HttpServlet {
                     
                     jsonResponse.put("success", true);
                     jsonResponse.put("employee", employee);
-                    logger.info("HANDLE_GET_EMPLOYEE_DETAILS: Successfully built JSON. Sending response.");
                     writeJsonResponse(response, jsonResponse.toString(), HttpServletResponse.SC_OK);
                 } else {
-                    logger.warning("HANDLE_GET_EMPLOYEE_DETAILS: No employee record found for EID=" + globalEid + ", TenantID=" + tenantId);
                     jsonResponse.put("success", false).put("error", "Employee not found for this company.");
                     writeJsonResponse(response, jsonResponse.toString(), HttpServletResponse.SC_NOT_FOUND);
                 }
             }
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "HANDLE_GET_EMPLOYEE_DETAILS: An exception occurred for EID: " + globalEid, e);
+            logger.log(Level.SEVERE, "Error fetching employee details for EID: " + globalEid, e);
             jsonResponse.put("success", false).put("error", "A server error occurred while fetching employee data.");
             writeJsonResponse(response, jsonResponse.toString(), HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }

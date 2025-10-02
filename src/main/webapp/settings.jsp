@@ -117,7 +117,6 @@
     
     if (tenantId_settings != null && tenantId_settings > 0 && pageLevelError_settings == null) {
         hasProPlan = SubscriptionUtils.hasProPlan(tenantId_settings);
-        jspSettingsPageLogger.info("[DEBUG] TenantID: " + tenantId_settings + ", hasProPlan: " + hasProPlan);
         boolean isFirstWizardSettingsLoad = false;
         if (inSetupWizardMode_JSP) {
             String firstLoadCheck = Configuration.getProperty(tenantId_settings, "WizardSettingsInitialized");
@@ -127,7 +126,6 @@
         }
 
         if (inSetupWizardMode_JSP && isFirstWizardSettingsLoad) {
-            jspSettingsPageLogger.info("[settings.jsp] FIRST WIZARD LOAD: Applying and SAVING Wizard Defaults for TenantID: " + tenantId_settings);
             currentPayPeriod = "Weekly"; currentFirstDayOfWeek = "Sunday"; currentPayPeriodStartDate = LocalDate.now().format(DateTimeFormatter.ISO_DATE); currentGracePeriod = "0"; currentOvertimeRuleMode = "AutoByState";
             currentOvertimeType = hasProPlan ? "employee_state" : "company_state";
             currentOvertimeState = (companyStateFromSignup != null && !companyStateFromSignup.isEmpty()) ? companyStateFromSignup : "FLSA"; currentRestrictByTimeDay = false;
@@ -149,7 +147,7 @@
                 Configuration.saveProperty(tenantId_settings, "OvertimeSeventhDayDTThreshold", currentOvertimeSeventhDayDTThreshold);
                 Configuration.saveProperty(tenantId_settings, "WizardSettingsInitialized", "true");
                 if (pageLevelSuccess_settings == null) pageLevelSuccess_settings = "Initial company settings populated. Review and click 'Next'.";
-            } catch (SQLException e) { jspSettingsPageLogger.log(Level.SEVERE, "[settings.jsp] WIZARD DEFAULTS SAVE FAILED T:" + tenantId_settings, e);
+            } catch (SQLException e) {
             pageLevelError_settings = "Error saving initial settings: " + e.getMessage(); }
         } else { 
             currentPayPeriod = Configuration.getProperty(tenantId_settings, "PayPeriodType", STD_DEFAULT_PAY_PERIOD_TYPE);

@@ -30,7 +30,7 @@
             <input type="hidden" id="editPunchIdField" name="editPunchId">
             <input type="hidden" name="action" value="editPunch">
             <input type="hidden" id="editPunchEmployeeIdField" name="editEmployeeId">
-            <input type="hidden" id="editUserTimeZone" name="userTimeZone" value="<%= escapeJspHtml(userTimeZoneId) %>">
+            <input type="hidden" id="editUserTimeZone" name="userTimeZone" value="">
             <input type="hidden" name="editPunchType" value="Supervisor Override">
             <div class="modal-header">
                  <h2 class="modal-title-warning"><i class="fas fa-edit"></i> <span>Edit Punch Record</span></h2>
@@ -80,3 +80,11 @@
         </div>
     </div>
 </div>
+
+<script type="text/javascript">
+// Set timezone field from parent page variable
+if (typeof window.effectiveTimeZoneIdJs !== 'undefined') {
+    var timezoneField = document.getElementById('editUserTimeZone');
+    if (timezoneField) timezoneField.value = window.effectiveTimeZoneIdJs;
+}
+</script>

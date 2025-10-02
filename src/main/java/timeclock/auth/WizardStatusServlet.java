@@ -43,31 +43,21 @@ public class WizardStatusServlet extends HttpServlet {
                 String nextStep = request.getParameter("nextStep");
                 if (nextStep != null && !nextStep.trim().isEmpty()) {
                     session.setAttribute("wizardStep", nextStep);
-                    logger.info("Wizard step updated to: " + nextStep);
+
                     out.print("{\"success\": true, \"nextStep\": \"" + nextStep + "\"}");
                 } else {
                     out.print("{\"success\": false, \"error\": \"Next step not provided.\"}");
                 }
             } else if ("endWizard".equals(action)) {
-                // ## DEBUG START: Added logging to trace session attribute removal ##
-                logger.info("--- WIZARD DEBUG: Received action 'endWizard'. ---");
                 Integer tenantId = (Integer) session.getAttribute("TenantID");
                 if (tenantId != null) {
                     String status = getSubscriptionStatus(tenantId);
                     session.setAttribute("SubscriptionStatus", status);
-                    logger.info("[Wizard Debug] Set SubscriptionStatus='" + status + "' for TenantID " + tenantId + " at end of wizard.");
                 }
-
-                logger.info("[Wizard Debug] Session ID before removal: " + session.getId());
-                logger.info("[Wizard Debug] 'startSetupWizard' attribute BEFORE removal: " + session.getAttribute("startSetupWizard"));
                 
                 session.removeAttribute("startSetupWizard");
                 session.removeAttribute("wizardStep");
                 session.removeAttribute("CompanyNameSignup");
-
-                logger.info("[Wizard Debug] 'startSetupWizard' attribute AFTER removal: " + session.getAttribute("startSetupWizard"));
-                logger.info("--- WIZARD DEBUG: Setup wizard session attributes cleared. Responding with success. ---");
-                // ## DEBUG END ##
 
                 out.print("{\"success\": true}");
             } else {

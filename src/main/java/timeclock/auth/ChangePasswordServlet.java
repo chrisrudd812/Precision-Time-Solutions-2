@@ -52,9 +52,7 @@ public class ChangePasswordServlet extends HttpServlet {
             isWizardMode = (Boolean) session.getAttribute("startSetupWizard");
             wizardStep = (String) session.getAttribute("wizardStep");
             wizardAdminEid = (Integer) session.getAttribute("wizardAdminEid");
-            logger.info("[ChangePasswordServlet] Processing POST. Session ID: " + session.getId() +
-                        ", EID: " + eid + ", TenantID: " + tenantId +
-                        ", isWizardMode: " + isWizardMode + ", WizardStep: " + wizardStep + ", WizardAdminEid: " + wizardAdminEid);
+
         } else {
             logger.warning("[ChangePasswordServlet] No active session. Redirecting to login.");
             response.sendRedirect("login.jsp?error=" + URLEncoder.encode("Session expired. Please log in.", StandardCharsets.UTF_8.name()));
@@ -119,7 +117,6 @@ public class ChangePasswordServlet extends HttpServlet {
             }
 
             if (!dbRequiresChange && Boolean.TRUE.equals(isWizardMode) && "pinChangePending".equals(wizardStep) && wizardAdminEid != null && wizardAdminEid.equals(eid)) {
-                logger.info("[ChangePasswordServlet] PIN for EID " + eid + " was already updated (DB flag is false), but proceeding with wizard step update as PIN change was pending in wizard flow.");
             } else if (!dbRequiresChange) {
                 logger.warning("[ChangePasswordServlet] User EID " + eid + " (Tenant: " + tenantId + ") PIN change attempted, but DB flag 'RequiresPasswordChange' is already FALSE. Not in expected wizard flow.");
                 session.setAttribute("successMessage", "Your PIN was already updated or does not require a change.");
@@ -145,7 +142,6 @@ public class ChangePasswordServlet extends HttpServlet {
             int rowsAffected = psUpdate.executeUpdate();
             if (rowsAffected > 0) {
                 conn.commit();
-                logger.info("[ChangePasswordServlet] PIN successfully changed for EID: " + eid + ", TenantID: " + tenantId);
                 session.setAttribute("RequiresPasswordChange", Boolean.FALSE);
                 session.removeAttribute("errorMessage");
 
@@ -163,7 +159,6 @@ public class ChangePasswordServlet extends HttpServlet {
                     
                     successRedirectPage = "departments.jsp?setup_wizard=true";
                     session.setAttribute("successMessage", "PIN updated! Let's set up your company details.");
-                    logger.info("[ChangePasswordServlet] Wizard mode: PIN change complete for admin EID: " + wizardAdminEid + ". Redirecting to: " + successRedirectPage);
                 } else {
                     session.setAttribute("successMessage", "Your PIN has been successfully updated.");
                     if (Boolean.TRUE.equals(isWizardMode)) {

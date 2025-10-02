@@ -26,7 +26,6 @@ public class ShowDepartments {
         StringBuilder tableRows = new StringBuilder();
         final int numberOfColumns = 3; // Department Name, Description, Department Supervisor
 
-        logger.info("[ShowDepartments] Called showDepartments for TenantID: " + tenantId);
 
         if (tenantId <= 0) {
             logger.warning("[ShowDepartments] Invalid TenantID: " + tenantId + ". Returning error row.");
@@ -34,7 +33,6 @@ public class ShowDepartments {
         }
 
         String sql = "SELECT NAME, DESCRIPTION, SUPERVISOR FROM departments WHERE TenantID = ? ORDER BY NAME ASC";
-        logger.info("[ShowDepartments] SQL Query: " + sql + " with TenantID: " + tenantId);
 
         try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
@@ -63,10 +61,8 @@ public class ShowDepartments {
                     tableRows.append("<td>").append(escapeHtml(supervisor != null ? supervisor : "")).append("</td>");
                     tableRows.append("</tr>\n");
                 }
-                logger.info("[ShowDepartments] Processed " + rowCount + " departments from DB for TenantID: " + tenantId);
 
                 if (!found) {
-                    logger.info("[ShowDepartments] No departments found in DB for TenantID: " + tenantId);
                     tableRows.append("<tr><td colspan='").append(numberOfColumns)
                              .append("' class='report-message-row'>No departments found. Use 'Add Department' to create one.</td></tr>");
                 }

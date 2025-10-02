@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
@@ -100,38 +101,32 @@ public class PayrollServlet extends HttpServlet {
         final String PACIFIC_TIME_FALLBACK = "America/Los_Angeles";
         final String DEFAULT_TENANT_FALLBACK_TIMEZONE = "America/Denver";
 
-        logger.info("PayrollServlet POST action received: " + action);
+
         HttpSession session = request.getSession(false);
         Integer tenantId = getTenantIdFromSession(session);
-        Integer sessionEidForLog = null;
         String userTimeZoneId = null;
 
         if (session != null) {
-            Object eidObj = session.getAttribute("EID");
-            if (eidObj instanceof Integer) {
-                sessionEidForLog = (Integer) eidObj;
-            }
-
             Object userTimeZoneIdObj = session.getAttribute("userTimeZoneId");
-            if (userTimeZoneIdObj instanceof String && ShowPunches.isValid((String)userTimeZoneIdObj)) {
+            if (userTimeZoneIdObj instanceof String && isValidTimeZone((String)userTimeZoneIdObj)) {
                 userTimeZoneId = (String) userTimeZoneIdObj;
             }
         }
 
         if (tenantId != null && tenantId > 0) {
-            if (!ShowPunches.isValid(userTimeZoneId)) {
+            if (!isValidTimeZone(userTimeZoneId)) {
                 String tenantDefaultTz = Configuration.getProperty(tenantId, "DefaultTimeZone");
-                if (ShowPunches.isValid(tenantDefaultTz)) {
+                if (isValidTimeZone(tenantDefaultTz)) {
                     userTimeZoneId = tenantDefaultTz;
                 } else {
                     userTimeZoneId = DEFAULT_TENANT_FALLBACK_TIMEZONE;
                 }
             }
-        } else if (!ShowPunches.isValid(userTimeZoneId)){
+        } else if (!isValidTimeZone(userTimeZoneId)){
              userTimeZoneId = PACIFIC_TIME_FALLBACK;
         }
 
-        if (!ShowPunches.isValid(userTimeZoneId)) {
+        if (!isValidTimeZone(userTimeZoneId)) {
             userTimeZoneId = PACIFIC_TIME_FALLBACK;
         }
 
@@ -141,7 +136,7 @@ public class PayrollServlet extends HttpServlet {
             logger.log(Level.SEVERE, "[PayrollServlet_TZ] CRITICAL: Invalid userTimeZoneId resolved: '" + userTimeZoneId + "'. Falling back to UTC. Tenant: " + tenantId, e);
             userTimeZoneId = UTC_ZONE_ID_SERVLET;
         }
-        logger.info("[PayrollServlet_TZ] Final effective userTimeZoneId for request (display context): " + userTimeZoneId + " for Tenant: " + tenantId);
+
 
         if (tenantId == null) {
             logger.log(Level.WARNING, "PayrollServlet action '" + action + "' failed: TenantID is null after session processing.");
@@ -183,7 +178,7 @@ public class PayrollServlet extends HttpServlet {
 
     private void handleExceptionReport(HttpServletRequest request, HttpServletResponse response, int tenantId, String userTimeZoneId)
             throws IOException {
-        logger.info("Handling exceptionReport for TenantID: " + tenantId + " with TimeZone: " + userTimeZoneId);
+
         String reportHtmlOrFlag = "<tr><td colspan='6' class='report-error-row'>Error initializing report.</td></tr>";
         LocalDate periodStartDate = null;
         LocalDate periodEndDate = null;
@@ -192,7 +187,7 @@ public class PayrollServlet extends HttpServlet {
             String startDateStr = Configuration.getProperty(tenantId, "PayPeriodStartDate");
             String endDateStr = Configuration.getProperty(tenantId, "PayPeriodEndDate");
 
-            if (ShowPunches.isValid(startDateStr) && ShowPunches.isValid(endDateStr)) {
+            if (isValidString(startDateStr) && isValidString(endDateStr)) {
                 periodStartDate = LocalDate.parse(startDateStr.trim());
                 periodEndDate = LocalDate.parse(endDateStr.trim());
             } else {
@@ -235,11 +230,11 @@ public class PayrollServlet extends HttpServlet {
 
     private void handleExportPayroll(HttpServletRequest request, HttpServletResponse response, int tenantId)
             throws IOException {
-        logger.info("Handling exportPayroll T:" + tenantId);
+
         LocalDate sd = null, ed = null; String eMsg = null;
         try {
             String sds = Configuration.getProperty(tenantId, "PayPeriodStartDate"); String eds = Configuration.getProperty(tenantId, "PayPeriodEndDate");
-            if (ShowPunches.isValid(sds) && ShowPunches.isValid(eds)) { sd = LocalDate.parse(sds.trim()); ed = LocalDate.parse(eds.trim()); }
+            if (isValidString(sds) && isValidString(eds)) { sd = LocalDate.parse(sds.trim()); ed = LocalDate.parse(eds.trim()); }
             else { eMsg = "Pay period dates not defined in Settings."; }
         } catch (Exception e) { eMsg = "Error retrieving pay period settings. T:" + tenantId; logger.log(Level.SEVERE, eMsg, e); }
         if (sd == null || ed == null) { response.sendRedirect("payroll.jsp?error=" + encodeUrlParam(eMsg != null ? eMsg : "Invalid pay period.")); return; }
@@ -274,7 +269,7 @@ public class PayrollServlet extends HttpServlet {
             Row fR = sh.createRow(rN); Cell tLC = fR.createCell(8); tLC.setCellValue("Grand Total:"); tLC.setCellStyle(hS);
             Cell gTC = fR.createCell(9); gTC.setCellValue(gT.doubleValue()); gTC.setCellStyle(cS);
             for (int i = 0; i < hdrs.length; i++) { try { sh.autoSizeColumn(i); } catch (Exception ign) { logger.finest("Could not autosize column " + i + " during export."); } }
-            wb.write(o); logger.info("Excel export successful for T:" + tenantId);
+            wb.write(o);
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error during Excel export T:" + tenantId, e);
             if (!response.isCommitted()) { response.setContentType("text/html"); response.sendRedirect("payroll.jsp?error=" + encodeUrlParam("Error creating Excel file: " + e.getMessage())); }
@@ -283,7 +278,7 @@ public class PayrollServlet extends HttpServlet {
 
     private void handleClosePayPeriod(HttpServletRequest request, HttpServletResponse response, int tenantId)
             throws IOException {
-        logger.info("Handling closePayPeriod T:" + tenantId);
+
         LocalDate csd = null, ced = null; String pt = "WEEKLY"; int ppy = 52;
         String opMsg = "Initialization failed."; boolean oS = false;
         Connection con = null;
@@ -291,19 +286,19 @@ public class PayrollServlet extends HttpServlet {
         String tenantProcessingTimeZoneIdStr = Configuration.getProperty(tenantId, "DefaultTimeZone", DEFAULT_TENANT_PROCESSING_ZONE_ID_STR);
         ZoneId processingZone;
         try {
-            if(!ShowPunches.isValid(tenantProcessingTimeZoneIdStr)) throw new Exception("Tenant DefaultTimeZone is invalid for processing.");
+            if(!isValidTimeZone(tenantProcessingTimeZoneIdStr)) throw new Exception("Tenant DefaultTimeZone is invalid for processing.");
             processingZone = ZoneId.of(tenantProcessingTimeZoneIdStr);
         } catch (Exception e) {
             logger.log(Level.WARNING, "Invalid Tenant DefaultTimeZone for processing: '" + tenantProcessingTimeZoneIdStr + "' for T:" + tenantId + ". Defaulting. Error: " + e.getMessage());
             processingZone = ZoneId.of(DEFAULT_TENANT_PROCESSING_ZONE_ID_STR);
         }
-        logger.info("[PayrollServlet.closePayPeriod] Using processingZone: " + processingZone + " for OT and Accruals for T:" + tenantId);
+
 
         try {
             String sds = Configuration.getProperty(tenantId, "PayPeriodStartDate");
             String eds = Configuration.getProperty(tenantId, "PayPeriodEndDate");
             pt = Configuration.getProperty(tenantId, "PayPeriodType", "WEEKLY").toUpperCase(Locale.ENGLISH);
-            if (!ShowPunches.isValid(sds) || !ShowPunches.isValid(eds)) { throw new Exception("Current Pay Period dates are not set in Settings."); }
+            if (!isValidString(sds) || !isValidString(eds)) { throw new Exception("Current Pay Period dates are not set in Settings."); }
             csd = LocalDate.parse(sds.trim()); ced = LocalDate.parse(eds.trim());
             switch (pt) {
                 case "DAILY": ppy = 365; break; case "WEEKLY": ppy = 52; break; case "BIWEEKLY": ppy = 26; break;
@@ -327,7 +322,7 @@ public class PayrollServlet extends HttpServlet {
                     throw new SQLException("Failed to update Overtime/Double Time values on punches.");
                 }
                 List<Map<String, Object>> fpD = ShowPayroll.calculatePayrollData(tenantId, csd, ced);
-                fGT = fpD.stream().map(rD -> BigDecimal.valueOf((Double) rD.getOrDefault("TotalPay", 0.0))).reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, BigDecimal.ROUND_HALF_UP);
+                fGT = fpD.stream().map(rD -> BigDecimal.valueOf((Double) rD.getOrDefault("TotalPay", 0.0))).reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP);
 
                 String cL = "TenantID, PUNCH_ID, EID, DATE, IN_1, OUT_1, TOTAL, OT, DT, LATE, EARLY_OUTS, PUNCH_TYPE";
                 String aSQL = "INSERT INTO archived_punches (" + cL + ") SELECT " + cL + " FROM punches WHERE TenantID=? AND DATE BETWEEN ? AND ?";
@@ -454,16 +449,8 @@ public class PayrollServlet extends HttpServlet {
                 
                 // Get state-specific overtime rules based on overtime type setting
                 StateOvertimeRuleDetail stateRules = null;
-                logger.info("[StateOT_DEBUG] PayrollServlet - TenantID: " + tenantId + ", hasProPlan: " + hasProPlan + ", overtimeType: " + overtimeType + ", employeeState: " + employeeState);
                 if (hasProPlan && "employee_state".equals(overtimeType) && employeeState != null && !employeeState.trim().isEmpty()) {
                     stateRules = StateOvertimeRules.getRulesForState(employeeState);
-                    if (stateRules != null) {
-                        logger.info("[StateOT] Applying employee state-based overtime rules for employee in state: " + employeeState + " (TenantID: " + tenantId + ")");
-                    } else {
-                        logger.info("[StateOT_DEBUG] PayrollServlet - No state rules found for state: " + employeeState);
-                    }
-                } else {
-                    logger.info("[StateOT_DEBUG] PayrollServlet - State-based OT not applied - hasProPlan: " + hasProPlan + ", overtimeType: " + overtimeType + ", employeeState: " + employeeState);
                 }
                 
                 // Use state rules if available, otherwise use FLSA standards for employee_state mode
@@ -619,7 +606,23 @@ public class PayrollServlet extends HttpServlet {
             }
             psUOt.executeBatch();
         }
-        logger.info("Punch OT/DT update complete for T:" + tenantId);
+
         return true;
+    }
+
+    private boolean isValidTimeZone(String timeZoneId) {
+        if (timeZoneId == null || timeZoneId.trim().isEmpty()) {
+            return false;
+        }
+        try {
+            ZoneId.of(timeZoneId.trim());
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private boolean isValidString(String str) {
+        return str != null && !str.trim().isEmpty();
     }
 }

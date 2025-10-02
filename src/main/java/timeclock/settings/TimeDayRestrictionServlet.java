@@ -225,7 +225,6 @@ public class TimeDayRestrictionServlet extends HttpServlet {
 				 * boolean allow = "true".equalsIgnoreCase(allowUnselectedParam);
 				 * Configuration.saveProperty(tenantId, "TimeDayAllowUnselected",
 				 * String.valueOf(allow));
-				 * logger.info("Saved TimeDayAllowUnselected setting for TenantID " + tenantId +
 				 * " as: " + allow);
 				 */
 

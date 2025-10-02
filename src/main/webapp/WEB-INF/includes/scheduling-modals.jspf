@@ -131,12 +131,12 @@
 <div id="deleteAndReassignSchedModal" class="modal modal-state-error">
     <div class="modal-content">
         <div class="modal-header">
-            <h2 class="modal-title-error"><i class="fas fa-exclamation-triangle"></i> <span>Delete & Reassign Schedule</span></h2>
+            <h2 class="modal-title-error"><i class="fas fa-exclamation-triangle"></i> <span>Delete and Reassign Schedule</span></h2>
         </div>
         <div class="modal-body">
             <p id="deleteReassignModalMessage"></p>
             <p style="font-size: 0.9em; color: #475569; margin-top: -1em; margin-bottom: 1.5em;">
-               To delete this schedule, you must reassign any employees currently assigned to it.
+               To delete this schedule, you must reassign any employees currently assigned to it (if any).
             </p>
             <label for="targetReassignSchedSelect" style="display: block; text-align: left; margin-bottom: 0.5em;">Reassign employees to: <span class="required-asterisk">*</span></label>
             <select id="targetReassignSchedSelect" name="targetScheduleForReassignment" style="width: 100%;" required></select>

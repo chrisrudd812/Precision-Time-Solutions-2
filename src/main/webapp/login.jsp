@@ -39,6 +39,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="save-password" content="false">
     <title>Login - Precision Time Solutions</title>
     <%@ include file="/WEB-INF/includes/common-head.jspf" %>
     <link rel="stylesheet" href="css/login.css?v=<%= System.currentTimeMillis() %>">
@@ -60,8 +61,9 @@
              <p class="page-message info-message login-page-message" id="autoLogoutInfoMessage"><%= autoLogoutMessage.replace("<", "&lt;").replace(">", "&gt;") %></p>
         <% } %>
 
-        <form action="LoginServlet" method="POST" id="loginForm" class="login-form">
+        <form action="LoginServlet" method="POST" id="loginForm" class="login-form" autocomplete="off">
              <input type="hidden" id="browserTimeZone" name="browserTimeZone" value="">
+             <input type="hidden" id="fingerprintAuth" name="fingerprintAuth" value="false">
             <div class="form-body-container">
                 <div class="form-group">
                     <label for="companyIdentifier">Company ID <span class="required">*</span></label>
@@ -76,9 +78,10 @@
                            value="<%= (adminEmailRepop != null ? adminEmailRepop.replace("\"", "&quot;") : "") %>"
                            autocomplete="email" required>
                 </div>
-                <div class="form-group">
+                <div class="form-group" id="passwordGroup">
                     <label for="password">PIN <span class="required">*</span></label>
-                    <input type="password" id="password" name="password" autocomplete="off" required>
+                    <input type="password" id="fakePassword" autocomplete="new-password" style="display:none;">
+                    <input type="password" id="password" name="password" autocomplete="one-time-code" required>
                 </div>
             </div>
             <div class="form-actions">

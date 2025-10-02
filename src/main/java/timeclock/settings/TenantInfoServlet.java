@@ -21,7 +21,8 @@ import timeclock.db.DatabaseConnection;
 
 @WebServlet("/api/mobile/tenant-info")
 public class TenantInfoServlet extends HttpServlet {
-    private static final Logger logger = Logger.getLogger(TenantInfoServlet.class.getName());
+    private static final long serialVersionUID = 1L;
+	private static final Logger logger = Logger.getLogger(TenantInfoServlet.class.getName());
     private final Gson gson = new Gson();
 
     @Override

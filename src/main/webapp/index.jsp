@@ -15,11 +15,11 @@
     <meta name="author" content="Precision Time Solutions">
     
     <!-- Open Graph / Social Media Meta Tags -->
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="Employee Time Clock Software | Precision Time Solutions">
-    <meta property="og:description" content="Streamline your business with smart time tracking. Accurate, easy-to-use, and affordable online time clock solution for your team.">
-    <meta property="og:url" content="<%= request.getRequestURL() %>">
-    <meta property="og:site_name" content="Precision Time Solutions">
+    <meta name="og:type" content="website">
+    <meta name="og:title" content="Employee Time Clock Software | Precision Time Solutions">
+    <meta name="og:description" content="Streamline your business with smart time tracking. Accurate, easy-to-use, and affordable online time clock solution for your team.">
+    <meta name="og:url" content="<%= request.getRequestURL() %>">
+    <meta name="og:site_name" content="Precision Time Solutions">
     
     <!-- Twitter Card Meta Tags -->
     <meta name="twitter:card" content="summary_large_image">
@@ -86,7 +86,7 @@
                 <div class="hero-benefits">
                     <div class="benefit-item"><i class="fas fa-check-circle"></i> GPS Location Tracking</div>
                     <div class="benefit-item"><i class="fas fa-check-circle"></i> Automated Overtime Calculations</div>
-                    <div class="benefit-item"><i class="fas fa-check-circle"></i> Mobile & Desktop Ready</div>
+                    <div class="benefit-item"><i class="fas fa-check-circle"></i> Mobile and Desktop Ready</div>
                 </div>
                 <div class="cta-buttons">
                     <a href="#pricing" class="btn btn-primary btn-large">Start Free 30-Day Trial</a>
@@ -98,17 +98,17 @@
         
         <section id="features" class="features-section">
             <div class="container">
-                <h2>Powerful Features That Save You Time & Money</h2>
+                <h2>Powerful Features That Save You Time and Money</h2>
                 <div class="features-grid">
                     <div class="feature-item">
                         <div class="feature-icon"><i class="fas fa-map-marker-alt"></i></div>
                         <h3>GPS Location Tracking</h3>
-                        <p>Prevent buddy punching with geofencing. Employees can only clock in from approved locations, ensuring accurate attendance records.</p>
+                        <p>Prevent buddy punching with geofencing. Employees can optionally, only clock in from approved locations, ensuring accurate attendance records.</p>
                     </div>
                     <div class="feature-item">
                         <div class="feature-icon"><i class="fas fa-calculator"></i></div>
                         <h3>Smart Payroll Integration</h3>
-                        <p>Automatically calculate overtime, double-time, and PTO based on federal and state labor laws. Export directly to your payroll system.</p>
+                        <p>Automatically calculate overtime, double-time, and PTO based on federal and state labor laws. Export directly to XLSX file.</p>
                     </div>
                     <div class="feature-item">
                         <div class="feature-icon"><i class="fas fa-mobile-alt"></i></div>
@@ -118,7 +118,7 @@
                     <div class="feature-item">
                         <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
                         <h3>Prevent Time Theft</h3>
-                        <p>Device restrictions and biometric options ensure only authorized employees can punch in, saving you thousands in labor costs.</p>
+                        <p>Device restrictions and biometric verification on mobile devices, help ensure only authorized employees can punch in, saving you thousands in labor costs.</p>
                     </div>
                     <div class="feature-item">
                         <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
@@ -150,7 +150,7 @@
                     </div>
                     <div class="testimonial-item">
                         <div class="stars">★★★★★</div>
-                        <p>"The mobile app works perfectly for our field teams. Automated overtime calculations have eliminated payroll errors completely."</p>
+                        <p>"Punching on a mobile phone works perfectly for our field teams. Automated overtime calculations have eliminated payroll errors completely."</p>
                         <div class="testimonial-author">- Jennifer L., HR Director</div>
                     </div>
                 </div>
@@ -159,7 +159,7 @@
         
         <section class="app-preview-section">
             <div class="container">
-                <h2>See It In Action - Simple & Powerful Interface</h2>
+                <h2>See It In Action - Simple and Powerful Interface</h2>
                 <div class="preview-grid">
                     <div class="preview-item">
                         <div class="preview-text"><h4>Employee Management</h4><p>Add, Edit and Delete employee details or Reset PINs all in one place.</p></div>
@@ -226,7 +226,7 @@
                         <h3>Business Plan</h3>
                         <p class="description">Advanced features for growing businesses</p>
                         <p class="price">$29.99<span>/ per month</span></p>
-                        <div class="plan-features">• Everything in Basic<br>• Employee messaging capabilities<br>• Advanced reporting & analytics<br>• Up to 50 active employees</div>
+                        <div class="plan-features">• Everything in Basic<br>• Employee messaging capabilities<br>• Advanced reporting and analytics<br>• Up to 50 active employees</div>
                         <a href="signup_company_info.jsp?priceId=price_1RttGyBtvyYfb2KWNRui8ev1" class="btn btn-primary btn-block">Start Trial</a>
                     </div>
                     

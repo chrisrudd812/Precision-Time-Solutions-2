@@ -5,7 +5,8 @@
     <div class="modal-content modal-form-green-state">
         <form id="addAccrualForm" action="<%= request.getContextPath() %>/AddAndDeleteAccrualPoliciesServlet" method="post">
             <input type="hidden" name="action" value="addAccrual">
-            <% if(inSetupWizardMode_JSP) { %><input type="hidden" name="setup_wizard" value="true"><% } %>
+            <input type="hidden" name="setup_wizard" id="setupWizardField" value="">
+
             <div class="modal-header">
                 <h2 class="modal-title-success"><i class="fas fa-plus-circle"></i> <span>Add PTO Policy</span></h2>
             </div>
@@ -45,6 +46,7 @@
         <form id="editAccrualForm" action="<%= request.getContextPath() %>/AddAndDeleteAccrualPoliciesServlet" method="post">
             <input type="hidden" name="action" value="editAccrual">
             <input type="hidden" id="originalAccrualName" name="originalAccrualName">
+            <input type="hidden" name="setup_wizard" id="editSetupWizardField" value="">
             <div class="modal-header">
                 <h2 class="modal-title-warning"><i class="fas fa-edit"></i> <span>Edit PTO Policy</span></h2>
             </div>
@@ -83,12 +85,12 @@
 <div id="deleteAndReassignAccrualModal" class="modal modal-state-error">
     <div class="modal-content">
         <div class="modal-header">
-            <h2 class="modal-title-error"><i class="fas fa-exclamation-triangle"></i> <span>Delete & Reassign PTO Policy</span></h2>
+            <h2 class="modal-title-error"><i class="fas fa-exclamation-triangle"></i> <span>Delete and Reassign PTO Policy</span></h2>
         </div>
         <div class="modal-body">
             <p id="deleteReassignAccrualModalMessage"></p>
             <p style="font-size: 0.9em; color: #475569; margin-top: -1em; margin-bottom: 1.5em;">
-               To delete this policy, you must reassign any employees currently assigned to it.
+               To delete this policy, you must reassign any employees currently assigned to it (if any).
             </p>
             <label for="targetReassignAccrualSelect" style="display: block; text-align: left; margin-bottom: 0.5em;">Reassign employees to: <span class="required-asterisk">*</span></label>
             <select id="targetReassignAccrualSelect" name="targetAccrualPolicyForReassignment" style="width: 100%;" required></select>
@@ -99,3 +101,13 @@
         </div>
     </div>
 </div>
+
+<script type="text/javascript">
+// Set wizard mode fields if parent page is in wizard mode
+if (typeof window.inWizardMode_Page !== 'undefined' && window.inWizardMode_Page) {
+    var setupField = document.getElementById('setupWizardField');
+    var editSetupField = document.getElementById('editSetupWizardField');
+    if (setupField) setupField.value = 'true';
+    if (editSetupField) editSetupField.value = 'true';
+}
+</script>

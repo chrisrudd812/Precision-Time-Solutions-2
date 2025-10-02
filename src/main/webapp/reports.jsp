@@ -3,13 +3,12 @@
 <%@ page import="timeclock.Configuration" %>
 <%@ page import="timeclock.punches.ShowPunches" %>
 <%@ page import="java.time.ZoneId" %>
-<%@ page import="java.util.logging.Logger" %>
-<%@ page import="java.util.logging.Level" %>
+<%@ page import="timeclock.util.Helpers" %>
 <%@ page import="java.net.URLEncoder" %>
 <%@ page import="java.nio.charset.StandardCharsets" %>
 
 <%!
-    private static final Logger reportsJspLogger = Logger.getLogger("reports_jsp_v_tz");
+
 
     private String escapeJspHtml(String input) {
         if (input == null) return "";
@@ -40,7 +39,7 @@
         if (eidObj instanceof Integer) { sessionEidForLog = (Integer) eidObj; }
 
         Object userTimeZoneIdObj = currentSession.getAttribute("userTimeZoneId");
-        if (userTimeZoneIdObj instanceof String && ShowPunches.isValid((String)userTimeZoneIdObj)) {
+        if (userTimeZoneIdObj instanceof String && Helpers.isStringValid((String)userTimeZoneIdObj)) {
             userTimeZoneId = (String) userTimeZoneIdObj;
         }
     }
@@ -51,28 +50,28 @@
         return;
     }
 
-    if (!ShowPunches.isValid(userTimeZoneId)) {
+    if (!Helpers.isStringValid(userTimeZoneId)) {
         String tenantDefaultTz = Configuration.getProperty(tenantId, "DefaultTimeZone");
-        if (ShowPunches.isValid(tenantDefaultTz)) {
+        if (Helpers.isStringValid(tenantDefaultTz)) {
             userTimeZoneId = tenantDefaultTz;
         } else {
             userTimeZoneId = DEFAULT_TENANT_FALLBACK_TIMEZONE;
         }
     }
 
-    if (!ShowPunches.isValid(userTimeZoneId)) {
+    if (!Helpers.isStringValid(userTimeZoneId)) {
         userTimeZoneId = PACIFIC_TIME_FALLBACK;
     }
 
     try {
         ZoneId.of(userTimeZoneId);
     } catch (Exception e) {
-        reportsJspLogger.log(Level.SEVERE, "[REPORTS_JSP_TZ] CRITICAL: Invalid userTimeZoneId resolved: '" + userTimeZoneId + "'. Falling back to UTC. Tenant: " + tenantId, e);
+        // Invalid timezone, falling back to UTC
         userTimeZoneId = "UTC";
         String tzErrorMsg = "A critical error occurred with timezone configuration. Report times may be shown in UTC. Please contact support.";
         pageError = (pageError == null) ? tzErrorMsg : pageError + " " + tzErrorMsg;
     }
-    reportsJspLogger.info("[REPORTS_JSP_TZ] Reports.jsp final effective userTimeZoneId: " + userTimeZoneId + " for Tenant: " + tenantId);
+
 %>
 <!DOCTYPE html>
 <html lang="en">
@@ -151,7 +150,7 @@
         <%
             String startDateStr = Configuration.getProperty(tenantId, "PayPeriodStartDate");
             String endDateStr = Configuration.getProperty(tenantId, "PayPeriodEndDate");
-            if (ShowPunches.isValid(startDateStr) && ShowPunches.isValid(endDateStr)) {
+            if (Helpers.isStringValid(startDateStr) && Helpers.isStringValid(endDateStr)) {
         %>
         window.PAY_PERIOD_START = "<%= startDateStr.trim() %>";
         window.PAY_PERIOD_END = "<%= endDateStr.trim() %>";

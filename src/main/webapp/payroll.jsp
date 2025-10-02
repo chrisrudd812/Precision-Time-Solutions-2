@@ -13,9 +13,10 @@
 <%@ page import="java.text.NumberFormat" %>
 <%@ page import="java.net.URLEncoder" %>
 <%@ page import="java.nio.charset.StandardCharsets" %>
-<%@ page import="java.util.logging.Logger" %>
-<%@ page import="java.util.logging.Level" %>
+
 <%@ page import="java.util.ArrayList" %>
+<%@ page import="timeclock.util.Helpers" %>
+
 
 <%!
     private String escapeJspHtml(String input) {
@@ -33,7 +34,7 @@
         Object tenantIdObj = currentSession.getAttribute("TenantID");
         if (tenantIdObj instanceof Integer) { tenantId = (Integer) tenantIdObj; }
         Object userTimeZoneIdObj = currentSession.getAttribute("userTimeZoneId");
-        if (userTimeZoneIdObj instanceof String && ShowPunches.isValid((String)userTimeZoneIdObj)) {
+        if (userTimeZoneIdObj instanceof String && Helpers.isStringValid((String)userTimeZoneIdObj)) {
             userTimeZoneId = (String) userTimeZoneIdObj;
         }
     }
@@ -44,7 +45,7 @@
         return;
     }
 
-    if (!ShowPunches.isValid(userTimeZoneId)) {
+    if (!Helpers.isStringValid(userTimeZoneId)) {
         userTimeZoneId = Configuration.getProperty(tenantId, "DefaultTimeZone", "America/Denver");
     }
 
@@ -68,7 +69,7 @@
         try {
             String startDateStr = Configuration.getProperty(tenantId, "PayPeriodStartDate");
             String endDateStr = Configuration.getProperty(tenantId, "PayPeriodEndDate");
-            if (ShowPunches.isValid(startDateStr) && ShowPunches.isValid(endDateStr)) {
+            if (Helpers.isStringValid(startDateStr) && Helpers.isStringValid(endDateStr)) {
                 periodStartDate = LocalDate.parse(startDateStr.trim());
                 periodEndDate = LocalDate.parse(endDateStr.trim());
                 payPeriodMessage = periodStartDate.format(longDateFormatter) + " to " + periodEndDate.format(longDateFormatter);
@@ -78,6 +79,7 @@
 
     if (periodStartDate != null && periodEndDate != null && pageError == null) {
         try {
+            @SuppressWarnings("unchecked")
             List<Map<String, Object>> calculatedData = ShowPayroll.calculatePayrollData(tenantId, periodStartDate, periodEndDate);
             if (calculatedData != null) { 
                 Map<String, Object> displayData = ShowPayroll.showPayroll(calculatedData);

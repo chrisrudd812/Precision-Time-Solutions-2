@@ -22,10 +22,8 @@ public class MobileSettingsServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        logger.info("[MobileSettingsServlet] GET request received.");
 
         String tenantIdParam = request.getParameter("tenantId");
-        logger.info("[MobileSettingsServlet] tenantId param: " + tenantIdParam);
 
         if (tenantIdParam == null) {
             logger.warning("[MobileSettingsServlet] tenantId is missing.");
@@ -50,7 +48,6 @@ public class MobileSettingsServlet extends HttpServlet {
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, tenantId);
-            logger.info("[MobileSettingsServlet] Executing query: " + ps.toString());
 
             try (ResultSet rs = ps.executeQuery()) {
                 StringBuilder json = new StringBuilder();
@@ -66,7 +63,6 @@ public class MobileSettingsServlet extends HttpServlet {
                 }
 
                 json.append("}");
-                logger.info("[MobileSettingsServlet] Query result JSON: " + json.toString());
 
                 response.setContentType("application/json");
                 response.setCharacterEncoding("UTF-8");

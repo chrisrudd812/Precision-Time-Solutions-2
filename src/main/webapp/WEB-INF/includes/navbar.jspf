@@ -219,10 +219,10 @@
                     <li class="dropdown">
                          <a href="javascript:void(0);" class="dropbtn"><i class="fas fa-question-circle"></i> Help <i class="fas fa-chevron-down"></i></a>
                         <ul class="dropdown-content">
-                            <li><a href="<%= request.getContextPath() %>/help.jsp">Help & Support</a></li>
+                            <li><a href="<%= request.getContextPath() %>/help.jsp">Help and Support</a></li>
                             <li><a href="<%= request.getContextPath() %>/contact.jsp">Contact Us</a></li>
                             <li><a href="<%= request.getContextPath() %>/privacy.jsp">Privacy Policy</a></li>
-                            <li><a href="<%= request.getContextPath() %>/terms.jsp">Terms & Conditions</a></li>
+                            <li><a href="<%= request.getContextPath() %>/terms.jsp">Terms and Conditions</a></li>
                         </ul>
                     </li>
                     <li><a href="<%= request.getContextPath() %>/account.jsp" class="<%= pageName_jspf.equals("account.jsp") ? "active" : "" %>"><i class="fas fa-user-circle"></i> Account</a></li>

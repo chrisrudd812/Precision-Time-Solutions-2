@@ -12,6 +12,7 @@
 <%@ page import="java.util.Locale" %>
 <%@ page import="java.net.URLEncoder" %>
 <%@ page import="java.nio.charset.StandardCharsets" %>
+<%@ page import="timeclock.util.Helpers" %>
 <%@ page import="java.util.logging.Logger" %>
 <%@ page import="java.util.logging.Level" %>
 
@@ -94,15 +95,15 @@
     String userTimeZoneId = null;
     if (punchesSession != null) {
         Object userTimeZoneIdObj = punchesSession.getAttribute("userTimeZoneId");
-        if (userTimeZoneIdObj instanceof String && ShowPunches.isValid((String)userTimeZoneIdObj)) {
+        if (userTimeZoneIdObj instanceof String && Helpers.isStringValid((String)userTimeZoneIdObj)) {
             userTimeZoneId = (String) userTimeZoneIdObj;
             jspPunchesLogger.info("[punches_JSP_TZ] Using userTimeZoneId from session: " + userTimeZoneId + " for Admin EID: " + adminEidForLog);
         }
     }
 
-    if (!ShowPunches.isValid(userTimeZoneId) && tenantId != null && tenantId > 0) {
+    if (!Helpers.isStringValid(userTimeZoneId) && tenantId != null && tenantId > 0) {
         String tenantDefaultTz = Configuration.getProperty(tenantId, "DefaultTimeZone");
-        if (ShowPunches.isValid(tenantDefaultTz)) {
+        if (Helpers.isStringValid(tenantDefaultTz)) {
             userTimeZoneId = tenantDefaultTz;
             jspPunchesLogger.info("[punches_JSP_TZ] Using Tenant DefaultTimeZone from settings: " + userTimeZoneId + " for Admin EID: " + adminEidForLog + ", Tenant: " + tenantId);
         } else {
@@ -111,7 +112,7 @@
         }
     }
 
-    if (!ShowPunches.isValid(userTimeZoneId)) {
+    if (!Helpers.isStringValid(userTimeZoneId)) {
         userTimeZoneId = PACIFIC_TIME_FALLBACK;
         jspPunchesLogger.warning("[punches_JSP_TZ] User/Tenant timezone not determined or invalid. Defaulting to system fallback (Pacific Time): " + userTimeZoneId + " for Admin EID: " + adminEidForLog);
     }

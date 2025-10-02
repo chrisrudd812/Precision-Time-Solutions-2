@@ -64,7 +64,6 @@ public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
         } else if (success != null && !success.isEmpty()) {
             url.append(firstParam ? "?" : "&").append("message=").append(encodeUrlParam(success));
         }
-        logger.info("[AddEditAndDeleteSchedulesServlet] Redirecting to: " + url.toString());
         return url.toString();
     }
     
@@ -89,7 +88,6 @@ public class AddEditAndDeleteSchedulesServlet extends HttpServlet {
         }
 
         String action = request.getParameter("action");
-        logger.info("...SchedulesServlet doPost received action: " + action + " for TenantID: " + tenantId);
         
         boolean isWizardModeActive = (session != null && Boolean.TRUE.equals(session.getAttribute("startSetupWizard")));
         String currentWizardStepInSession = isWizardModeActive ? (String) session.getAttribute("wizardStep") : null;

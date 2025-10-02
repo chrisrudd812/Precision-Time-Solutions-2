@@ -41,7 +41,6 @@ public class BillingServlet extends HttpServlet {
 
         // --- Placeholder for Real Payment Gateway Integration (e.g., Stripe) ---
         try {
-            logger.info("Simulating payment information processing for TenantID: " + tenantId);
             
             // In a real application, you would send data to Stripe and get a token.
             // You would then save the Stripe Customer ID and Payment Method ID to your database.

@@ -69,45 +69,46 @@ async function getDeviceFingerprint() {
 function getClientGeolocation() {
     return new Promise((resolve, reject) => {
         if (!navigator.geolocation) {
-            reject({ code: -1, message: "Geolocation is not supported by your browser." });
+            reject(new Error("Geolocation not supported"));
             return;
         }
         
-        // Try with less strict options first for mobile compatibility
-        const options = {
-            enableHighAccuracy: false, // Changed from true to reduce permission issues
-            timeout: 30000, // Increased timeout for mobile
-            maximumAge: 300000 // Allow cached location up to 5 minutes old
-        };
+        let attempts = 0;
+        const maxAttempts = 3;
         
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                resolve({
-                    latitude: position.coords.latitude,
-                    longitude: position.coords.longitude,
-                    accuracy: position.coords.accuracy
-                });
-            },
-            (error) => {
-                let friendlyMessage = "Geolocation error: ";
-                switch(error.code) {
-                    case error.PERMISSION_DENIED: 
-                        friendlyMessage += "Location access denied. Please enable location services in your browser settings and refresh the page."; 
-                        break;
-                    case error.POSITION_UNAVAILABLE: 
-                        friendlyMessage += "Location unavailable. Please check your device's location settings."; 
-                        break;
-                    case error.TIMEOUT: 
-                        friendlyMessage += "Location request timed out. Please try again."; 
-                        break;
-                    default: 
-                        friendlyMessage += "Unknown error (Code: " + error.code + "). Please try again."; 
-                        break;
-                }
-                reject({ code: error.code, message: friendlyMessage });
-            },
-            options
-        );
+        function tryGetLocation() {
+            attempts++;
+            
+            const options = {
+                enableHighAccuracy: attempts === 1,
+                timeout: attempts === 1 ? 5000 : (attempts === 2 ? 3000 : 8000),
+                maximumAge: attempts === 1 ? 60000 : 600000
+            };
+            
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    resolve({
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                        accuracy: position.coords.accuracy
+                    });
+                },
+                (error) => {
+                    if (attempts < maxAttempts) {
+                        setTimeout(tryGetLocation, 300);
+                    } else {
+                        let errorMsg = "Location unavailable after " + maxAttempts + " attempts";
+                        if (error.message && error.message.includes('secure origins')) {
+                            errorMsg = "Location access requires HTTPS. Please use https:// instead of http:// in your browser address bar.";
+                        }
+                        reject(new Error(errorMsg));
+                    }
+                },
+                options
+            );
+        }
+        
+        tryGetLocation();
     });
 }
 
@@ -201,26 +202,23 @@ function printTimecard() {
 
 /**
  * Handles the punch-in and punch-out form submissions.
- * This function prevents the default form submission, asynchronously gathers required data
- * (like geolocation and device fingerprint), populates the form's hidden fields,
- * and then programmatically submits the form.
+ * This function prevents the default form submission, first checks punch status quickly,
+ * then only gathers expensive data (location) if the punch is valid.
  *
  * @param {Event} event - The form submission event.
  */
 async function handlePunchSubmit(event) {
-    event.preventDefault(); // Stop the form from submitting immediately
+    event.preventDefault();
     const form = event.target;
     const submitButton = form.querySelector('button[type="submit"]');
     const isPunchOut = (form.id === "punchOutForm");
     const isPunchIn = !isPunchOut;
 
-    // Disable the button and provide feedback to the user
     if (submitButton) {
         submitButton.disabled = true;
-        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Please Wait...';
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
     }
 
-    // Function to re-enable the button if something goes wrong
     const restoreButton = () => {
         if (submitButton) {
             submitButton.disabled = false;
@@ -229,42 +227,54 @@ async function handlePunchSubmit(event) {
     };
 
     try {
-        // Proceed with punch submission - server will validate punch status
-        // Step 1: Get data that doesn't cause a delay
+        // Step 1: Quick punch status check (no location required)
+        const punchAction = form.querySelector('input[name="punchAction"]').value;
+        const punchEID = form.querySelector('input[name="punchEID"]').value;
+        
+        const quickCheckResponse = await fetch(app_contextPath + '/QuickPunchCheckServlet', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `punchAction=${punchAction}&punchEID=${punchEID}`
+        });
+        
+        if (!quickCheckResponse.ok) {
+            const errorData = await quickCheckResponse.json();
+            throw new Error(errorData.error || 'Punch validation failed');
+        }
+        
+        // Step 2: Get device fingerprint and basic data
+        if (submitButton) {
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Please Wait...';
+        }
+        
         const fingerprint = await getDeviceFingerprint();
         form.querySelector('input[name="deviceFingerprintHash"]').value = fingerprint;
         form.querySelector('input[name="browserTimeZoneId"]').value = Intl.DateTimeFormat().resolvedOptions().timeZone;
         form.querySelector('input[name="deviceType"]').value = getDeviceType();
-
-        // Step 2: Get location ONLY if the company policy requires it.
+        
+        // Step 3: Get location ONLY if location restrictions are enabled
         if (typeof locationCheckIsTrulyRequired !== 'undefined' && locationCheckIsTrulyRequired) {
-            if (submitButton) {
-                submitButton.innerHTML = '<i class="fas fa-location-arrow fa-spin"></i> Getting Location...';
-            }
             try {
                 const coords = await getClientGeolocation();
                 form.querySelector('input[name="latitude"]').value = coords.latitude;
                 form.querySelector('input[name="longitude"]').value = coords.longitude;
-            } catch (locationError) {
-                // If location fails, still try to submit but let server handle the error
-                console.warn('Location failed:', locationError);
-                form.querySelector('input[name="latitude"]').value = "";
-                form.querySelector('input[name="longitude"]').value = "";
-                // Don't throw here - let the server provide the proper error message
+                form.querySelector('input[name="accuracy"]').value = coords.accuracy || '';
+            } catch (error) {
+                throw new Error("Location access is required but was not provided. Please ensure location services are enabled and try again.");
             }
         } else {
             form.querySelector('input[name="latitude"]').value = "";
             form.querySelector('input[name="longitude"]').value = "";
+            form.querySelector('input[name="accuracy"]').value = "";
         }
 
-        // Step 3: All data is now correctly populated, submit the form to the main servlet.
+        // Step 4: Submit the form
         form.submit();
 
     } catch (error) {
-        // This will catch any error, including the one from our new pre-check.
         console.error("Punch submission error:", error);
         showTimeclockNotificationModal(error.message || "An unexpected error occurred.", true);
-        restoreButton(); // Re-enable the button on failure
+        restoreButton();
     }
 }
 

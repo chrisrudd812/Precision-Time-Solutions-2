@@ -241,23 +241,20 @@ public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
                         new Thread(() -> {
                             try {
                                 sendIndividualWelcomeEmail(tenantId, finalEmail, permissions, firstName.trim(), lastName.trim());
-                                logger.info("Welcome email sent successfully to " + finalEmail);
                             } catch (Exception emailEx) {
                                 logger.log(Level.WARNING, "Failed to send welcome email to " + finalEmail + ": " + emailEx.getMessage(), emailEx);
                             }
                         }).start();
-                        successMessage += " Welcome email will be sent shortly.";
+                        successMessage += " Welcome e-mail sent.";
                     }
                     
                     if (inWizard) {
-                        logger.info("Wizard mode: Adding employee completed, setting step to after_add_employee_prompt");
                         
                         session.setAttribute("wizardStep", "after_add_employee_prompt");
                         String wizardRedirectAction = "after_add_employee_prompt";
                         String redirectUrl = buildRedirectUrl(request, "employees.jsp", newGlobalEid, successMessage, null, wizardRedirectAction, true);
                         redirectUrl += "&lastAddedPerms=" + URLEncoder.encode(permissions, StandardCharsets.UTF_8.name());
                         
-                        logger.info("Wizard redirect URL: " + redirectUrl);
                         response.sendRedirect(redirectUrl);
                     } else {
                         response.sendRedirect(buildRedirectUrl(request, "employees.jsp", newGlobalEid, successMessage, null, null, false));

@@ -99,7 +99,7 @@
                 <div class="form-row">
                     <div class="form-group address-field"><label for="companyAddress">Street Address</label><input type="text" id="companyAddress" name="companyAddress" autocomplete="off"></div>
                     <div class="form-group city-field"><label for="companyCity">City</label><input type="text" id="companyCity" name="companyCity" autocomplete="off"></div>
-                    <div class="form-group state-field"><label for="companyState">State <span class="required">*</span></label><select id="companyState" name="companyState" autocomplete="off" required><option value="" selected disabled>Select a State</option><%@ include file="/WEB-INF/includes/states_options.jspf" %></select></div>
+                    <div class="form-group state-field"><label for="companyState">State <span class="required">*</span></label><select id="companyState" name="companyState" data-autocomplete="off" required><option value="" selected disabled>Select a State</option><%@ include file="/WEB-INF/includes/states_options.jspf" %></select></div>
                     <div class="form-group zip-field"><label for="companyZip">Zip Code</label><input type="text" id="companyZip" name="companyZip" autocomplete="off" pattern="\d{5}|\d{5}-\d{4}" title="Zip code must be 5 or 9 digits (e.g., 12345 or 12345-6789)."></div>
                 </div>
             </div>
@@ -178,7 +178,7 @@
                             <div id="card-number" class="stripe-element"></div>
                         </div>
                         <div class="form-group third-width">
-                            <label>Expiry & CVC <span class="required">*</span></label>
+                            <label>Expiration and CVC <span class="required">*</span></label>
                             <div class="stripe-elements-row">
                                 <div id="card-expiry" class="stripe-element"></div>
                                 <div id="card-cvc" class="stripe-element"></div>

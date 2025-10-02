@@ -1,6 +1,36 @@
-// js/login.js - v15 (Corrected Modal Styling)
+// js/login.js - v16 (Added WebAuthn Fingerprint Support)
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("login.js loaded (v15 - Corrected Modal Styling)");
+    console.log("login.js loaded (v16 - Added WebAuthn Fingerprint Support)");
+
+    function isBiometricSupported() {
+        return window.PublicKeyCredential && 'credentials' in navigator;
+    }
+
+    async function authenticateWithBiometric() {
+        try {
+            // Create a temporary credential to trigger biometric
+            const credential = await navigator.credentials.create({
+                publicKey: {
+                    challenge: new Uint8Array(32),
+                    rp: { name: "Time Clock" },
+                    user: {
+                        id: new Uint8Array(16),
+                        name: "temp",
+                        displayName: "Temp User"
+                    },
+                    pubKeyCredParams: [{ alg: -7, type: "public-key" }],
+                    authenticatorSelection: {
+                        authenticatorAttachment: "platform",
+                        userVerification: "required"
+                    },
+                    timeout: 60000
+                }
+            });
+            return credential;
+        } catch (error) {
+            throw new Error('Biometric authentication failed');
+        }
+    }
 
     const companyIdentifierField = document.getElementById('companyIdentifier');
     const emailField = document.getElementById('email');
@@ -11,6 +41,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const pageErrorMessageDiv = document.getElementById('loginErrorMessage');
     const autoLogoutInfoMessageDiv = document.getElementById('autoLogoutInfoMessage');
     const browserTimeZoneInput = document.getElementById('browserTimeZone');
+    const passwordGroup = document.getElementById('passwordGroup');
+    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+    let biometricAttempted = false;
+
+    // PIN field is always visible and required
+    passwordGroup.style.display = 'block';
+    passwordField.required = true;
 
     const urlParams = new URLSearchParams(window.location.search);
     const companyIdFromUrl = urlParams.get('companyIdentifier') || urlParams.get('companyId');
@@ -41,6 +78,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function setInitialFocus() {
+        // Skip auto-focus on mobile to prevent keyboard popup
+        if (isMobile) return;
+        
         const isModalVisible = notificationModalLogin && notificationModalLogin.classList.contains('modal-visible');
         if (isModalVisible) {
             const okButtonInModal = notificationModalLogin.querySelector('#okButtonNotificationModal');
@@ -137,20 +177,83 @@ document.addEventListener('DOMContentLoaded', function() {
     setInitialFocus();
 
     if (loginForm) { 
-        loginForm.addEventListener('submit', function(event) {
+        loginForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            const email = emailField.value.trim();
+            const companyId = companyIdentifierField.value.trim();
+            const submitButton = loginForm.querySelector('button[type="submit"]');
+            
+            if (!email || !companyId) {
+                alert('Please enter Company ID and Email');
+                return;
+            }
+            
+            // Regular PIN submission - try biometric verification on mobile after PIN validation
+            if (!passwordField.value.trim()) {
+                alert('Please enter your PIN');
+                return;
+            }
+            
+            // Try biometric verification on mobile devices after PIN is entered
+            if (isMobile && isBiometricSupported() && !biometricAttempted) {
+                biometricAttempted = true;
+                try {
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = '<i class="fas fa-fingerprint"></i> Use Fingerprint...';
+                    
+                    const originalPassword = passwordField.value;
+                    
+                    await authenticateWithBiometric();
+                    
+                    // Submit with fingerprint auth
+                    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging In...';
+                    
+                    // Add hidden fields for servlet
+                    const hiddenPassword = document.createElement('input');
+                    hiddenPassword.type = 'hidden';
+                    hiddenPassword.name = 'password';
+                    hiddenPassword.value = originalPassword;
+                    loginForm.appendChild(hiddenPassword);
+                    
+                    document.getElementById('fingerprintAuth').value = 'true';
+                    browserTimeZoneInput.value = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                    loginForm.submit();
+                    return;
+                    
+                } catch (error) {
+                    alert('Biometric verification required. Please try again.');
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> Log In';
+                    return;
+                }
+            }
+            
+            // Regular login for non-mobile devices
             if (browserTimeZoneInput) {
                 try {
                     browserTimeZoneInput.value = Intl.DateTimeFormat().resolvedOptions().timeZone;
                 } catch (e) {
-                    console.warn("Could not determine browser timezone on submit:", e);
                     browserTimeZoneInput.value = "Unknown"; 
                 }
             }
+            
             if (companyIdentifierField && companyIdentifierField.value.trim()) {
                 localStorage.setItem('lastCompanyIdentifier', companyIdentifierField.value.trim());
             }
-            const submitButton = loginForm.querySelector('button[type="submit"]');
-            if(submitButton){ submitButton.disabled = true; submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging In...'; }
+            
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging In...';
+            
+            const originalPassword = passwordField.value;
+            
+            const hiddenPassword = document.createElement('input');
+            hiddenPassword.type = 'hidden';
+            hiddenPassword.name = 'password';
+            hiddenPassword.value = originalPassword;
+            loginForm.appendChild(hiddenPassword);
+            
+            loginForm.submit();
         });
      }
 });

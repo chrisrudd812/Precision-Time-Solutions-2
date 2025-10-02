@@ -79,7 +79,7 @@
             accrualRowsHtml = ShowAccruals.showAccruals(tenantId);
         } catch (Throwable t) {
             dataFetchError = "A critical error occurred while loading page data: " + t.toString();
-            jspLogger.log(Level.SEVERE, "[accruals.JSP DEBUG] CRITICAL FAILURE in data fetching block.", t);
+
         }
     } else {
         dataFetchError = "Invalid session or tenant context.";

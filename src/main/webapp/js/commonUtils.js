@@ -77,12 +77,7 @@ function showModal(modalElement) {
         requestAnimationFrame(() => {
              modalElement.classList.add('modal-visible');
         });
-        const content = modalElement.querySelector('.modal-content');
-        if (!content) {
-            console.error("[DEBUG] FATAL: .modal-content div not found inside", modalElement.id);
-        }
-    } else {
-        console.error("[DEBUG] FATAL: showModal received an invalid or null element.");
+
     }
 }
 window.showModal = showModal;

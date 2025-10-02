@@ -56,7 +56,7 @@
             <li>Successful punch subject to restrictions if enabled</li>
             <li>Time / Day Restrictions</li>
             <li>Device Restrictions</li>
-            <li>Location Restrictions</li>
+            <li>Location Restrictions</li></ol>
         </div>
         <img src="Images/timecards_individual.webp" alt="Time Clock">
         <br>

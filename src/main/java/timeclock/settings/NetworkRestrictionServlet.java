@@ -61,7 +61,6 @@ public class NetworkRestrictionServlet extends HttpServlet {
                                 String initialPageLoadError, boolean fromWizardContextOnGet)
             throws ServletException, IOException {
         String logPrefix = "[NetworkRestrictionServlet loadAndForward T:" + (tenantId != null ? tenantId : "null") + "] ";
-        logger.info(logPrefix + "Called. initialPageLoadError: '" + initialPageLoadError + "', fromWizardContextOnGet: " + fromWizardContextOnGet);
         
         List<Map<String, Object>> allowedNetworks = new ArrayList<>();
         String effectivePageLoadError = initialPageLoadError;
@@ -81,7 +80,6 @@ public class NetworkRestrictionServlet extends HttpServlet {
         }
         request.setAttribute("pageIsInWizardMode", actualWizardModeForJSP);
         request.setAttribute("wizardReturnStepForJSP", wizardReturnStepForJSP);
-        logger.info(logPrefix + "Request attributes set: pageIsInWizardMode=" + actualWizardModeForJSP + ", wizardReturnStepForJSP='" + wizardReturnStepForJSP + "'");
 
         if (tenantId != null && tenantId > 0) {
             String sql = "SELECT NetworkID, NetworkName, CIDR, Description, IsEnabled FROM allowed_networks WHERE TenantID = ? ORDER BY NetworkName ASC";
@@ -99,7 +97,6 @@ public class NetworkRestrictionServlet extends HttpServlet {
                         allowedNetworks.add(network);
                     }
                 }
-                logger.info(logPrefix + "Fetched " + allowedNetworks.size() + " allowed networks.");
             } catch (SQLException e) {
                 logger.log(Level.SEVERE, logPrefix + "Error fetching allowed networks.", e);
                 if (effectivePageLoadError == null) effectivePageLoadError = "Error loading network configurations: " + e.getMessage();
@@ -115,7 +112,6 @@ public class NetworkRestrictionServlet extends HttpServlet {
         if (effectivePageLoadError != null) request.setAttribute("pageLoadErrorMessage", effectivePageLoadError);
         // Success/error messages from POST are set as request attributes directly in doPost before calling this
         
-        logger.info(logPrefix + "Forwarding to /configureNetworkRestrictions.jsp");
         request.getRequestDispatcher("/configureNetworkRestrictions.jsp").forward(request, response);
     }
 
@@ -125,7 +121,6 @@ public class NetworkRestrictionServlet extends HttpServlet {
             throws ServletException, IOException {
         Integer tenantId = getTenantId(request);
         String logPrefix = "[NetworkRestrictionServlet doGet T:" + (tenantId != null ? tenantId : "null") + "] ";
-        logger.info(logPrefix + "Called.");
         String pageLoadError = null;
 
         if (tenantId == null) {
@@ -146,9 +141,7 @@ public class NetworkRestrictionServlet extends HttpServlet {
             if (WIZARD_RETURN_STEP_settings.equals(sessionWizardStep)){
                  fromWizardOnGet = true;
             }
-             logger.info(logPrefix + "Wizard mode check: startSetupWizard=" + session.getAttribute("startSetupWizard") + ", sessionWizardStep='" + sessionWizardStep + "', fromWizardOnGet=" + fromWizardOnGet);
         } else {
-            logger.info(logPrefix + "Not in wizard mode (session flags not set for this stage).");
         }
         
         // All SQLExceptions from loadAndForward are now declared and must be handled here or re-thrown
@@ -170,7 +163,6 @@ public class NetworkRestrictionServlet extends HttpServlet {
         Integer tenantId = getTenantId(request);
         String action = request.getParameter("action");
         String logPrefix = "[NetworkRestrictionServlet doPost T:" + (tenantId != null ? tenantId : "null") + " A:" + action + "] ";
-        logger.info(logPrefix + "Called.");
 
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");

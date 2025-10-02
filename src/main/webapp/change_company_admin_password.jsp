@@ -110,12 +110,12 @@
             </div>
             <div class="form-group">
                 <label for="newPassword">New Admin Password <span class="required">*</span></label>
-                <input type="password" id="newPassword" name="newPassword" required minlength="8" autocomplete="new-password">
+                <input type="password" id="newPassword" name="newPassword" required data-minlength="8" autocomplete="new-password">
                 <small>Minimum 8 characters.</small>
             </div>
             <div class="form-group">
                 <label for="confirmNewPassword">Confirm New Admin Password <span class="required">*</span></label>
-                <input type="password" id="confirmNewPassword" name="confirmNewPassword" required minlength="8" autocomplete="new-password">
+                <input type="password" id="confirmNewPassword" name="confirmNewPassword" required data-minlength="8" autocomplete="new-password">
             </div>
             <div class="form-actions">
                  <%-- FIX: Simplified the button class to ensure consistent styling. --%>

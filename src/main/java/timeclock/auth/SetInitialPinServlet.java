@@ -72,11 +72,9 @@ public class SetInitialPinServlet extends HttpServlet {
                 int rowsAffected = pstmt.executeUpdate();
 
                 if (rowsAffected > 0) {
-                    logger.info("Successfully set initial PIN for EID: " + eid);
                     
                     // [FIX] Set the correct 4-hour session timeout for the administrator
                     session.setMaxInactiveInterval(4 * 60 * 60); // 4 hours in seconds
-                    logger.info("Administrator session timeout set to 4 hours for EID: " + eid);
 
                     session.setAttribute("wizardStep", "settings_setup");
                     response.sendRedirect("settings.jsp?setup_wizard=true&step=settings_setup");

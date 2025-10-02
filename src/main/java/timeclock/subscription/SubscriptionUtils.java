@@ -29,11 +29,8 @@ public class SubscriptionUtils {
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     int maxUsers = rs.getInt("MaxUsers");
-                    logger.info("[DEBUG] TenantID: " + tenantId + ", MaxUsers: " + maxUsers + ", isPro: " + (maxUsers == 100));
                     // Pro plan has 100 max users
                     return maxUsers == 100;
-                } else {
-                    logger.warning("[DEBUG] No tenant found for TenantID: " + tenantId);
                 }
             }
         } catch (SQLException e) {

@@ -27,13 +27,11 @@ public class StripeInitializer implements ServletContextListener {
             // Read the Stripe API Key from an environment variable
             String stripeApiKey = getEnvVariable(STRIPE_API_KEY_ENV);
             Stripe.apiKey = stripeApiKey;
-            logger.info("Stripe API Key initialized successfully from environment variable.");
 
             // Read the Stripe Webhook Secret from an environment variable
             String webhookSecret = getEnvVariable(STRIPE_WEBHOOK_SECRET_ENV);
             ServletContext context = sce.getServletContext();
             context.setAttribute(WEBHOOK_SECRET_KEY, webhookSecret);
-            logger.info("Stripe Webhook Secret loaded successfully from environment variable and set in ServletContext.");
 
         } catch (Exception e) {
             // If any variable is missing, the getEnvVariable method will throw an exception.

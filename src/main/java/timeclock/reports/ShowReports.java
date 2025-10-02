@@ -21,10 +21,11 @@ import java.util.logging.Logger;
 
 import timeclock.db.DatabaseConnection;
 import timeclock.punches.ShowPunches;
+import timeclock.util.Helpers;
 
 public class ShowReports {
     private static final Logger logger = Logger.getLogger(ShowReports.class.getName());
-    private static final String NOT_APPLICABLE_DISPLAY = "N/A";
+
     private static final String UTC_ZONE_ID = "UTC";
 
     private static String escapeHtml(String input) {
@@ -96,7 +97,7 @@ public class ShowReports {
         
         ZoneId displayZoneId;
         try {
-            if (!ShowPunches.isValid(userTimeZoneIdStr)) { throw new Exception("User TimeZoneId string is invalid or null."); }
+            if (!Helpers.isStringValid(userTimeZoneIdStr)) { throw new Exception("User TimeZoneId string is invalid or null."); }
             displayZoneId = ZoneId.of(userTimeZoneIdStr);
         } catch (Exception e) {
             displayZoneId = ZoneId.of(UTC_ZONE_ID);
@@ -180,19 +181,12 @@ public class ShowReports {
             
             ps.setInt(paramIndex++, tenantId); // For the outer query
 
-            // [DEBUG LOG] Log the exact query being sent to the database
-            logger.info("[TardyReportDebug] FINAL EXECUTED QUERY: " + ps.toString());
-
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    found = true; 
-                    
-                    // [DEBUG LOG] Log the aggregated results as they come back from the database
+                    found = true;
                     int eid = rs.getInt("EID");
                     int lateCount = rs.getInt("total_late_punches");
                     int earlyOutCount = rs.getInt("total_early_outs");
-                    logger.info("[TardyReportDebug] DB returned aggregated row -> EID: " + eid + ", Late Count: " + lateCount + ", Early Out Count: " + earlyOutCount);
-
                     Integer tENo = rs.getObject("TenantEmployeeNumber") != null ? rs.getInt("TenantEmployeeNumber") : null; 
                     String dEID = (tENo != null && tENo > 0) ? String.valueOf(tENo) : String.valueOf(eid);
                     html.append("<tr data-eid=\"").append(eid).append("\"><td>").append(dEID).append("</td><td>")
@@ -210,8 +204,6 @@ public class ShowReports {
             return "<tr><td colspan='5' class='report-error-row'>Error retrieving tardy report.</td></tr>"; 
         }
 
-        // [DEBUG LOG] Log the final HTML that will be sent to the browser
-        logger.info("[TardyReportDebug] Final HTML generated:\n" + html.toString());
         return html.toString();
     }
 

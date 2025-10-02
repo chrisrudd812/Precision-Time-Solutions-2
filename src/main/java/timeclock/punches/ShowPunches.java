@@ -451,8 +451,10 @@ public class ShowPunches {
 
                                 if (hoursOnSeventhDay > seventhDayDTThreshold) {
                                     seventhDayDt = hoursOnSeventhDay - seventhDayDTThreshold;
+                                    seventhDayOt = seventhDayDTThreshold - seventhDayOTThreshold;
+                                } else if (hoursOnSeventhDay > seventhDayOTThreshold) {
+                                    seventhDayOt = hoursOnSeventhDay - seventhDayOTThreshold;
                                 }
-                                seventhDayOt = hoursOnSeventhDay - seventhDayDt;
 
                                 calculatedPeriodDt += seventhDayDt;
                                 calculatedPeriodOt += seventhDayOt;

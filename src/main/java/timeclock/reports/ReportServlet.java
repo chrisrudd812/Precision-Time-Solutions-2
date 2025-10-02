@@ -21,6 +21,7 @@ import java.util.logging.Logger;
 
 import timeclock.Configuration;
 import timeclock.punches.ShowPunches;
+import timeclock.util.Helpers;
 
 @WebServlet("/ReportServlet")
 public class ReportServlet extends HttpServlet {
@@ -48,42 +49,35 @@ public class ReportServlet extends HttpServlet {
         HttpSession session = request.getSession(false);
         Integer tenantIdObject = null;
         String userTimeZoneId = null;
-        Integer sessionEidForLog = null;
-
-
         if (session != null) {
             Object tenantIdObjSession = session.getAttribute("TenantID");
             if (tenantIdObjSession instanceof Integer) {
                 tenantIdObject = (Integer) tenantIdObjSession;
-            }
-            Object eidObj = session.getAttribute("EID");
-             if (eidObj instanceof Integer) {
-                sessionEidForLog = (Integer) eidObj;
             }
 
             final String PACIFIC_TIME_FALLBACK = "America/Los_Angeles";
             final String DEFAULT_TENANT_FALLBACK_TIMEZONE = "America/Denver";
 
             Object userTimeZoneIdObj = session.getAttribute("userTimeZoneId");
-            if (userTimeZoneIdObj instanceof String && ShowPunches.isValid((String)userTimeZoneIdObj)) {
+            if (userTimeZoneIdObj instanceof String && Helpers.isStringValid((String)userTimeZoneIdObj)) {
                 userTimeZoneId = (String) userTimeZoneIdObj;
             }
 
             if (tenantIdObject != null && tenantIdObject > 0) {
-                if (!ShowPunches.isValid(userTimeZoneId)) {
+                if (!Helpers.isStringValid(userTimeZoneId)) {
                     String tenantDefaultTz = Configuration.getProperty(tenantIdObject, "DefaultTimeZone");
-                    if (ShowPunches.isValid(tenantDefaultTz)) {
+                    if (Helpers.isStringValid(tenantDefaultTz)) {
                         userTimeZoneId = tenantDefaultTz;
                     } else {
                         userTimeZoneId = DEFAULT_TENANT_FALLBACK_TIMEZONE;
                     }
                 }
-            } else if (!ShowPunches.isValid(userTimeZoneId)){
+            } else if (!Helpers.isStringValid(userTimeZoneId)){
                  userTimeZoneId = PACIFIC_TIME_FALLBACK;
             }
 
 
-            if (!ShowPunches.isValid(userTimeZoneId)) {
+            if (!Helpers.isStringValid(userTimeZoneId)) {
                 userTimeZoneId = PACIFIC_TIME_FALLBACK;
             }
 
@@ -101,7 +95,7 @@ public class ReportServlet extends HttpServlet {
             writeJsonResponse(response, false, null, "Session expired or invalid tenant. Please log in.", HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
-        if (!ShowPunches.isValid(userTimeZoneId)){
+        if (!Helpers.isStringValid(userTimeZoneId)){
             userTimeZoneId = "America/Denver";
         }
 
@@ -116,7 +110,7 @@ public class ReportServlet extends HttpServlet {
             }
         }
 
-        logger.info("ReportServlet received request for TenantID: " + tenantId + ", reportType: " + reportType + ", filterValue: " + filterValue + ", EffectiveTZ: " + userTimeZoneId);
+
 
         String reportHtml = null;
         String message = null;
@@ -135,7 +129,7 @@ public class ReportServlet extends HttpServlet {
                         try {
                             String startStr = Configuration.getProperty(tenantId, "PayPeriodStartDate");
                             String endStr = Configuration.getProperty(tenantId, "PayPeriodEndDate");
-                            if (ShowPunches.isValid(startStr) && ShowPunches.isValid(endStr)) {
+                            if (Helpers.isStringValid(startStr) && Helpers.isStringValid(endStr)) {
                                 periodStartDateEx = LocalDate.parse(startStr.trim());
                                 periodEndDateEx = LocalDate.parse(endStr.trim());
                             } else { message = "Pay period dates not configured in settings."; }
@@ -176,7 +170,7 @@ public class ReportServlet extends HttpServlet {
                         try {
                             String startDateStr = request.getParameter("startDate");
                             String endDateStr = request.getParameter("endDate");
-                            if (!ShowPunches.isValid(startDateStr) || !ShowPunches.isValid(endDateStr)) {
+                            if (!Helpers.isStringValid(startDateStr) || !Helpers.isStringValid(endDateStr)) {
                                 message = "Start and End dates are required.";
                                 statusCode = HttpServletResponse.SC_BAD_REQUEST;
                             } else {

@@ -19,7 +19,6 @@ public class DatabaseConnection implements ServletContextListener {
 
     @Override
     public void contextInitialized(ServletContextEvent sce) {
-        logger.info("Initializing HikariCP database connection pool...");
         try {
             // --- ADD THIS LINE TO EXPLICITLY LOAD THE DRIVER ---
             Class.forName("com.mysql.cj.jdbc.Driver");
@@ -43,7 +42,6 @@ public class DatabaseConnection implements ServletContextListener {
             config.setMaximumPoolSize(20);
 
             dataSource = new HikariDataSource(config);
-            logger.info("Database connection pool initialized successfully.");
         } catch (Exception e) {
             logger.log(Level.SEVERE, "FATAL: Database connection pool could not be initialized!", e);
             throw new RuntimeException(e);
@@ -53,7 +51,6 @@ public class DatabaseConnection implements ServletContextListener {
     @Override
     public void contextDestroyed(ServletContextEvent sce) {
         if (dataSource != null) {
-            logger.info("Closing database connection pool.");
             dataSource.close();
         }
     }

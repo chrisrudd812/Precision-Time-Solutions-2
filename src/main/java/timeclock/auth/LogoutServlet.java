@@ -23,14 +23,13 @@ public class LogoutServlet extends HttpServlet {
         String autoLogoutFlag = request.getParameter("autoLogout");
         String autoLogoutReason = request.getParameter("reason");
 
-        logger.info("Logout attempt. Session ID: " + (session != null ? session.getId() : "null") + 
-                    ", autoLogoutFlag: " + autoLogoutFlag);
+
 
         if (session != null) {
             session.invalidate(); 
-            logger.info("Session invalidated.");
+
         } else {
-            logger.info("No active session found to invalidate during logout.");
+
         }
 
         response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); 
@@ -47,7 +46,7 @@ public class LogoutServlet extends HttpServlet {
             loginPageUrl += "?reason=" + URLEncoder.encode(autoLogoutReason, StandardCharsets.UTF_8.name());
         }
         
-        logger.info("Redirecting to login page: " + loginPageUrl);
+
         response.sendRedirect(loginPageUrl);
     }
 

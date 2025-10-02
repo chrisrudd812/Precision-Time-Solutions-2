@@ -39,7 +39,6 @@ public class ShowSchedules {
         StringBuilder tableRows = new StringBuilder();
         final int numberOfColumns = 9;
 
-        logger.info("[ShowSchedules] Called showSchedules for TenantID: " + tenantId);
 
         if (tenantId <= 0) {
             logger.warning("[ShowSchedules] Invalid TenantID: " + tenantId);
@@ -49,7 +48,6 @@ public class ShowSchedules {
         String sql = "SELECT NAME, SHIFT_START, LUNCH_START, LUNCH_END, SHIFT_END, " +
                      "DAYS_WORKED, AUTO_LUNCH, HRS_REQUIRED, LUNCH_LENGTH " +
                      "FROM schedules WHERE TenantID = ? ORDER BY NAME ASC";
-        logger.info("[ShowSchedules] SQL: " + sql + " with TenantID: " + tenantId);
 
         try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {

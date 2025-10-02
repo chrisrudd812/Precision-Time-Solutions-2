@@ -25,6 +25,7 @@ import java.util.logging.Logger;
 import timeclock.Configuration;
 import timeclock.db.DatabaseConnection;
 import timeclock.punches.ShowPunches;
+import timeclock.util.Helpers;
 import timeclock.settings.StateOvertimeRules;
 import timeclock.settings.StateOvertimeRuleDetail;
 import timeclock.subscription.SubscriptionUtils;
@@ -169,7 +170,7 @@ public class ShowPayroll {
                 String employeeTimeZoneIdStr = (String) empInfo.get("TimeZoneId");
                 ZoneId employeeProcessingZone;
                 try {
-                    if (!ShowPunches.isValid(employeeTimeZoneIdStr)) throw new Exception("Employee TimeZoneId is null or invalid.");
+                    if (!Helpers.isStringValid(employeeTimeZoneIdStr)) throw new Exception("Employee TimeZoneId is null or invalid.");
                     employeeProcessingZone = ZoneId.of(employeeTimeZoneIdStr);
                 } catch (Exception e) {
                     employeeProcessingZone = ZoneId.of(tenantDefaultTimeZoneId); // Fallback to tenant default
@@ -181,16 +182,8 @@ public class ShowPayroll {
                 
                 // Get state-specific overtime rules based on overtime type setting
                 StateOvertimeRuleDetail stateRules = null;
-                logger.info("[StateOT_DEBUG] TenantID: " + tenantId + ", hasProPlan: " + hasProPlan + ", overtimeType: " + overtimeType + ", employeeState: " + employeeState + ", EID: " + globalEID);
                 if (hasProPlan && "employee_state".equals(overtimeType) && employeeState != null && !employeeState.trim().isEmpty()) {
                     stateRules = StateOvertimeRules.getRulesForState(employeeState);
-                    if (stateRules != null) {
-                        logger.info("[StateOT] Applying employee state-based overtime rules for employee in state: " + employeeState + " (TenantID: " + tenantId + ")");
-                    } else {
-                        logger.info("[StateOT_DEBUG] No state rules found for state: " + employeeState);
-                    }
-                } else {
-                    logger.info("[StateOT_DEBUG] State-based OT not applied - hasProPlan: " + hasProPlan + ", overtimeType: " + overtimeType + ", employeeState: " + employeeState);
                 }
                 
                 // Use state rules if available, otherwise use FLSA standards for employee_state mode
@@ -355,7 +348,7 @@ public class ShowPayroll {
             logger.log(Level.SEVERE, "SQL error during payroll calculation for TenantID: " + tenantId, e);
         }
 
-        logger.info("Payroll calculation complete for TenantID: " + tenantId + ". Employees processed: " + payrollResults.size());
+
         return payrollResults;
     }
 
@@ -458,7 +451,7 @@ public class ShowPayroll {
 
         ZoneId displayZoneId;
         try {
-            if (!ShowPunches.isValid(userTimeZoneIdStr)) {
+            if (!Helpers.isStringValid(userTimeZoneIdStr)) {
                 throw new IllegalArgumentException("User TimeZoneId string is invalid or null for Exception Report.");
             }
             displayZoneId = ZoneId.of(userTimeZoneIdStr);

@@ -67,7 +67,6 @@
     } else {
         // PIN change IS required, extend session timeout for this page
         cpSession.setMaxInactiveInterval(PIN_CHANGE_TIMEOUT_SECONDS);
-        jspChangePasswordLogger.info("[change_password.jsp] PIN change required. Extended session timeout to " + PIN_CHANGE_TIMEOUT_SECONDS + " seconds for EID: " + userEidForPinChange);
     }
 %>
 <!DOCTYPE html>
@@ -78,7 +77,7 @@
     <title>Set New PIN - YourTimeClock</title>
     <%@ include file="/WEB-INF/includes/common-head.jspf" %>
     <link rel="stylesheet" href="css/login.css?v=<%= System.currentTimeMillis() %>">   
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
     <style>
         .change-password-container { max-width: 520px; margin-top: 5%; }
         .change-password-header .logo-link { font-size: 2em; }
@@ -86,7 +85,7 @@
         .change-password-header p { font-size: 0.95em; line-height: 1.5; color: #444;}
         .required { color: #dc3545; margin-left: 2px; }
     </style>
-</head>
+</head>H
 <body>
     <div class="change-password-container login-container"> 
         <div class="change-password-header login-header">
@@ -108,11 +107,11 @@
         <form action="ChangePasswordServlet" method="POST" id="changePasswordForm" class="login-form">
             <div class="form-group">
                 <label for="newPassword">New 4-Digit PIN <span class="required">*</span></label>
-                <input type="password" id="newPassword" name="newPassword" required minlength="4" maxlength="4" pattern="\d{4}" title="Must be exactly 4 digits." inputmode="numeric" autocomplete="new-password">
+                <input type="password" id="newPassword" name="newPassword" required data-minlength="4" maxlength="4" pattern="\d{4}" title="Must be exactly 4 digits." inputmode="numeric" autocomplete="new-password">
             </div>
             <div class="form-group">
                 <label for="confirmPassword">Confirm New PIN <span class="required">*</span></label>
-                <input type="password" id="confirmPassword" name="confirmPassword" required minlength="4" maxlength="4" pattern="\d{4}" title="Must be exactly 4 digits." inputmode="numeric" autocomplete="new-password">
+                <input type="password" id="confirmPassword" name="confirmPassword" required data-minlength="4" maxlength="4" pattern="\d{4}" title="Must be exactly 4 digits." inputmode="numeric" autocomplete="new-password">
             </div>
             <div class="form-actions">
                 <button type="submit" class="glossy-button text-green login-submit-button">

@@ -14,8 +14,7 @@
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="java.net.URLEncoder" %>
 <%@ page import="java.nio.charset.StandardCharsets" %>
-<%@ page import="java.util.logging.Logger" %>
-<%@ page import="java.util.logging.Level" %>
+<%@ page import="timeclock.util.Helpers" %>
 
 <%!
     private String escapeHtml(String text) {
@@ -32,9 +31,6 @@
     }
 %>
 <%
-    // This is the smart flag set by LoginServlet. No changes here.
-    boolean locationCheckIsRequired = Boolean.TRUE.equals(session.getAttribute("locationCheckIsRequired"));
-
     // These variables capture the punch status from the URL for the debug script block at the bottom.
     String punchMessage = request.getParameter("message");
     String punchError = request.getParameter("error");
@@ -50,6 +46,12 @@
         sessionEid_timeclock = (Integer) currentSession_timeclock.getAttribute("EID");
         userPermissions_timeclock = (String) currentSession_timeclock.getAttribute("Permissions");
     }
+    
+    // Check if location restrictions are actually required (enabled + configured locations)
+    boolean locationCheckIsRequired = false;
+    if (tenantId_timeclock != null) {
+        locationCheckIsRequired = Helpers.isLocationCheckRequired(tenantId_timeclock);
+    }
 
     if (tenantId_timeclock == null || sessionEid_timeclock == null) {
         response.sendRedirect(request.getContextPath() + "/login.jsp?error=" + URLEncoder.encode("Session expired.", StandardCharsets.UTF_8.name()));
@@ -59,7 +61,7 @@
     boolean reportMode = "true".equalsIgnoreCase(request.getParameter("reportMode"));
     String titleSuffix = reportMode ? " Report" : "";
     String userTimeZoneId = (String) currentSession_timeclock.getAttribute("userTimeZoneId");
-    if (!ShowPunches.isValid(userTimeZoneId)) {
+    if (!Helpers.isStringValid(userTimeZoneId)) {
         userTimeZoneId = Configuration.getProperty(tenantId_timeclock, "DefaultTimeZone", "America/Denver");
     }
 
@@ -68,7 +70,7 @@
     if ("Administrator".equalsIgnoreCase(userPermissions_timeclock)) {
         employeeDropdownList = ShowPunches.getActiveEmployeesForDropdown(tenantId_timeclock);
         String eidParam = request.getParameter("eid");
-        if (ShowPunches.isValid(eidParam)) {
+        if (Helpers.isStringValid(eidParam)) {
             try { globalEidForDisplay = Integer.parseInt(eidParam.trim()); } catch (NumberFormatException nfe) { globalEidForDisplay = 0; }
         } else {
             globalEidForDisplay = reportMode ? 0 : sessionEid_timeclock;
@@ -325,6 +327,7 @@
                         <input type="hidden" name="deviceFingerprintHash" id="deviceFingerprintHash_IN" value="">
                         <input type="hidden" name="latitude" id="latitude_IN" value="">
                         <input type="hidden" name="longitude" id="longitude_IN" value="">
+                        <input type="hidden" name="accuracy" id="accuracy_IN" value="">
                         <input type="hidden" name="browserTimeZoneId" id="browserTimeZoneId_IN" value="">
                         <input type="hidden" name="deviceType" id="deviceType_IN" value="">
                         <button type="submit" class="punch-button punch-in">PUNCH IN</button>
@@ -335,6 +338,7 @@
                         <input type="hidden" name="deviceFingerprintHash" id="deviceFingerprintHash_OUT" value="">
                         <input type="hidden" name="latitude" id="latitude_OUT" value="">
                         <input type="hidden" name="longitude" id="longitude_OUT" value="">
+                        <input type="hidden" name="accuracy" id="accuracy_OUT" value="">
                         <input type="hidden" name="browserTimeZoneId" id="browserTimeZoneId_OUT" value="">
                         <input type="hidden" name="deviceType" id="deviceType_OUT" value="">
                         <button type="submit" class="punch-button punch-out">PUNCH OUT</button>
@@ -366,10 +370,10 @@
 
 	<script type="text/javascript">
         const locationCheckIsTrulyRequired = <%= locationCheckIsRequired %>;
+        const timeRestrictionEnabled = <%= "true".equalsIgnoreCase(Configuration.getProperty(tenantId_timeclock, "RestrictByTimeDay", "false")) %>;
         
-     // ADD THIS LINE FOR DEBUGGING
-        console.log("DEBUG: Client-side flag 'locationCheckIsTrulyRequired' is set to:", locationCheckIsTrulyRequired);        
-        
+        console.log("DEBUG: Client-side flag 'locationCheckIsTrulyRequired' is set to:", locationCheckIsTrulyRequired);
+        console.log("DEBUG: Time restrictions enabled:", timeRestrictionEnabled);
         
         const currentUserPermissions_tc = "<%= escapeForJavaScriptString(userPermissions_timeclock) %>";
         const sessionTimeoutDuration_Js = <%= currentSession_timeclock.getMaxInactiveInterval() %>;

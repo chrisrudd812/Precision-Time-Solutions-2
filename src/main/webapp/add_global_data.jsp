@@ -39,7 +39,6 @@
     }
 
     if (tenantId == null || tenantId <= 0 || !"Administrator".equalsIgnoreCase(userPermissions)) {
-        jspLogger.warning("Access Denied to add_global_data.jsp. TenantID: " + tenantId + ", UserPermissions: " + userPermissions);
         if(globalSession != null) globalSession.invalidate();
         response.sendRedirect(request.getContextPath() + "/login.jsp?error=" + URLEncoder.encode("Access Denied. Administrator privileges required.", StandardCharsets.UTF_8.name()));
         return;
@@ -64,7 +63,6 @@
             errorMessage = "Current pay period is not configured. Please set it in Company Settings.";
         }
     } catch (Exception e) {
-        jspLogger.log(Level.SEVERE, "Error getting current pay period for TenantID: " + tenantId, e);
         errorMessage = "Error loading current pay period information.";
     }
 %>

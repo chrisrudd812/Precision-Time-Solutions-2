@@ -1,0 +1,14 @@
+/* Mobile radio button color fix */
+input[type="radio"] {
+    accent-color: #28a745; /* Green - change to #007bff for blue */
+}
+
+/* Alternative method for older browsers */
+input[type="radio"]:checked {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+input[type="radio"]:focus {
+    box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.25);
+}

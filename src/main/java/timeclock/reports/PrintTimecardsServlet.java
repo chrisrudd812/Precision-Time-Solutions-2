@@ -62,15 +62,14 @@ public class PrintTimecardsServlet extends HttpServlet {
             return;
         }
         
-        if (!ShowPunches.isValid(userTimeZoneId)) {
+        if (userTimeZoneId == null || userTimeZoneId.trim().isEmpty()) {
             userTimeZoneId = Configuration.getProperty(tenantId, "DefaultTimeZone", "America/Denver");
         }
 
         String filterType = request.getParameter("filterType");
         String filterValue = request.getParameter("filterValue");
 
-        // [DEBUG LOG]
-        logger.info("[PrintTimecardsServlet-Debug] Received request. filterType=" + filterType + ", filterValue=" + filterValue);
+
 
         List<Map<String, Object>> printableTimecardsData = new ArrayList<>();
         List<Map<String, String>> allEmployees = new ArrayList<>();
@@ -96,8 +95,7 @@ public class PrintTimecardsServlet extends HttpServlet {
 
             List<Integer> employeeIdsToProcess = getEmployeeIdsForReport(tenantId, filterType, filterValue);
 
-            // [DEBUG LOG]
-            logger.info("[PrintTimecardsServlet-Debug] EIDs to process after DB query: " + employeeIdsToProcess.toString());
+
 
             if (employeeIdsToProcess.isEmpty()) {
                 errorMessage = "No active employees found for the selected filter criteria.";

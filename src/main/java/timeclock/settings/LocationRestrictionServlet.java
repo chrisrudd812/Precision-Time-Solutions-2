@@ -13,7 +13,6 @@ import timeclock.util.Helpers; // <-- NEW: IMPORT THE HELPERS CLASS
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -41,8 +40,7 @@ public class LocationRestrictionServlet extends HttpServlet {
         if (session == null) return;
         boolean locationCheckIsRequired = Helpers.isLocationCheckRequired(tenantId);
         session.setAttribute("locationCheckIsRequired", locationCheckIsRequired);
-        // Log this important change with a high visibility level
-        logger.log(Level.WARNING, "[LocationRestrictionServlet] >>> Session attribute 'locationCheckIsRequired' has been updated to: " + locationCheckIsRequired);
+
     }
 
     private Integer getTenantId(HttpServletRequest request) {

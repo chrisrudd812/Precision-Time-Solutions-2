@@ -101,16 +101,13 @@ public class MobileTimecardServlet extends HttpServlet {
             Object hoursReq = employeeInfo.get("hoursRequired");
             Object lunchLength = employeeInfo.get("lunchLength");
             
-            logger.info("DEBUG: autoLunch=" + autoLunch + ", hoursReq=" + hoursReq + ", lunchLength=" + lunchLength);
             
             if (Boolean.TRUE.equals(autoLunch) && hoursReq != null && lunchLength != null) {
                 employee.put("autoLunch", "On");
                 employee.put("lunchThreshold", hoursReq);
                 employee.put("lunchLength", lunchLength);
-                logger.info("DEBUG: Setting autoLunch=On, lunchThreshold=" + hoursReq + ", lunchLength=" + lunchLength);
             } else {
                 employee.put("autoLunch", "Off");
-                logger.info("DEBUG: Setting autoLunch=Off");
             }
             
             employee.put("vacationHours", employeeInfo.get("vacationHours"));
@@ -205,12 +202,10 @@ public class MobileTimecardServlet extends HttpServlet {
             e.printStackTrace();
             responseMap.put("success", false);
             responseMap.put("message", e.getMessage());
-            logger.info("DEBUG: Error response: " + gson.toJson(responseMap));
         }
 
         try (PrintWriter out = response.getWriter()) {
             String jsonResponse = gson.toJson(responseMap);
-            logger.info("DEBUG: Full JSON response: " + jsonResponse);
             out.print(jsonResponse);
             out.flush();
         }

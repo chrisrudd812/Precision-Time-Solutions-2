@@ -12,7 +12,6 @@ import timeclock.util.Helpers; // Import the helpers class
 
 import java.io.IOException;
 import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -40,7 +39,6 @@ public class PunchInAndOutServlet extends HttpServlet {
     private static final Logger logger = Logger.getLogger(PunchInAndOutServlet.class.getName());
     private static final String DEFAULT_TENANT_FALLBACK_TIMEZONE = "America/Denver";
     
-    // Helper methods (getScheduleDetails, hasOpenPunch, all check... methods) are unchanged.
     private Map<String, Object> getScheduleDetails(Connection con, int tenantId, int eid) throws SQLException {
         Map<String, Object> scheduleDetails = new HashMap<>();
         String sql = "SELECT s.SHIFT_START, s.SHIFT_END, s.DAYS_WORKED " +
@@ -59,6 +57,7 @@ public class PunchInAndOutServlet extends HttpServlet {
         }
         return scheduleDetails;
     }
+
     
     private boolean hasOpenPunch(Connection con, int tenantId, int eid) throws SQLException {
         String sql = "SELECT IN_1 FROM punches WHERE TenantID = ? AND EID = ? AND OUT_1 IS NULL AND PUNCH_TYPE IN ('User Initiated', 'Supervisor Override', 'Regular') ORDER BY IN_1 DESC LIMIT 1";
@@ -80,8 +79,10 @@ public class PunchInAndOutServlet extends HttpServlet {
     }
 
     private void checkTimeDayRestriction(Connection con, int tenantId, ZonedDateTime punchTimeInUserZone) throws Exception {
-        boolean isRestrictionGloballyEnabled = "true".equalsIgnoreCase(Configuration.getProperty(tenantId, "RestrictByTimeDay", "false"));
-        if (!isRestrictionGloballyEnabled) return;
+        // Fast exit if time restrictions are disabled globally
+        if (!"true".equalsIgnoreCase(Configuration.getProperty(tenantId, "RestrictByTimeDay", "false"))) {
+            return;
+        }
         String dayOfWeek = punchTimeInUserZone.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.ENGLISH);
         LocalTime currentTime = punchTimeInUserZone.toLocalTime();
         String sql = "SELECT IsRestricted, AllowedStartTime, AllowedEndTime FROM day_time_restrictions WHERE TenantID = ? AND DayOfWeek = ?";
@@ -107,7 +108,7 @@ public class PunchInAndOutServlet extends HttpServlet {
         }
     }
     
-    private void checkDeviceRestriction(Connection con, int tenantId, int eid, String deviceFingerprint) throws Exception {
+    private void checkDeviceRestriction(Connection con, int tenantId, int eid, String deviceFingerprint, HttpServletRequest request) throws Exception {
         boolean isRestrictionEnabled = "true".equalsIgnoreCase(Configuration.getProperty(tenantId, "RestrictByDevice", "false"));
         if (!isRestrictionEnabled) return;
         if (!Helpers.isStringValid(deviceFingerprint)) {
@@ -144,18 +145,55 @@ public class PunchInAndOutServlet extends HttpServlet {
         }
         int maxDevices = Integer.parseInt(Configuration.getProperty(tenantId, "MaxDevicesPerUserGlobal", "2"));
         if (registeredDevices.size() < maxDevices) {
-            String insertSql = "INSERT INTO employee_devices (TenantID, EID, DeviceFingerprintHash, DeviceDescription, RegisteredDate, LastUsedDate, IsEnabled) VALUES (?, ?, ?, ?, NOW(), NOW(), TRUE)";
+            String insertSql = "INSERT INTO employee_devices (TenantID, EID, DeviceFingerprintHash, DeviceDescription, RegisteredDate, LastUsedDate, IsEnabled, UserAgentAtRegistration, IPAddressAtRegistration) VALUES (?, ?, ?, ?, NOW(), NOW(), TRUE, ?, ?)";
             try (PreparedStatement psInsert = con.prepareStatement(insertSql)) {
                 psInsert.setInt(1, tenantId);
                 psInsert.setInt(2, eid);
                 psInsert.setString(3, deviceFingerprint);
-                psInsert.setString(4, "New Device (Auto-Registered)");
+                psInsert.setString(4, generateDeviceDescription(request.getHeader("User-Agent")));
+                String userAgent = request.getHeader("User-Agent");
+                psInsert.setString(5, userAgent != null ? userAgent.substring(0, Math.min(userAgent.length(), 100)) : null);
+                psInsert.setString(6, getClientIpAddress(request));
                 psInsert.executeUpdate();
                 return;
             }
         } else {
             throw new Exception("You have reached the maximum number of registered devices. To use this device, an administrator must remove an existing one first.");
         }
+    }
+    
+    private String generateDeviceDescription(String userAgent) {
+        if (userAgent == null || userAgent.isEmpty()) {
+            return "Unknown Device";
+        }
+        
+        // Check for mobile devices
+        if (userAgent.contains("Mobile") || userAgent.contains("Android") || userAgent.contains("iPhone")) {
+            if (userAgent.contains("iPhone")) return "iPhone";
+            if (userAgent.contains("iPad")) return "iPad";
+            if (userAgent.contains("Android")) return "Android Device";
+            return "Mobile Device";
+        }
+        
+        // Check for desktop browsers
+        if (userAgent.contains("Chrome")) return "Desktop - Chrome";
+        if (userAgent.contains("Firefox")) return "Desktop - Firefox";
+        if (userAgent.contains("Safari") && !userAgent.contains("Chrome")) return "Desktop - Safari";
+        if (userAgent.contains("Edge")) return "Desktop - Edge";
+        
+        return "Desktop Computer";
+    }
+    
+    private String getClientIpAddress(HttpServletRequest request) {
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isEmpty() && !"unknown".equalsIgnoreCase(xForwardedFor)) {
+            return xForwardedFor.split(",")[0].trim();
+        }
+        String xRealIp = request.getHeader("X-Real-IP");
+        if (xRealIp != null && !xRealIp.isEmpty() && !"unknown".equalsIgnoreCase(xRealIp)) {
+            return xRealIp;
+        }
+        return request.getRemoteAddr();
     }
     
     private double calculateHaversineDistance(double lat1, double lon1, double lat2, double lon2) {
@@ -169,12 +207,9 @@ public class PunchInAndOutServlet extends HttpServlet {
         return R * c;
     }
 
-    private void checkLocationRestriction(Connection con, int tenantId, double userLat, double userLon) throws Exception {
-        if (!Helpers.isLocationCheckRequired(tenantId)) {
-            return;
-        }
+    private void checkLocationRestriction(Connection con, int tenantId, double userLat, double userLon, String accuracyStr) throws Exception {
         if (Double.isNaN(userLat) || Double.isNaN(userLon)) {
-             throw new Exception("Location access is required but was not provided. On mobile devices, please tap the location icon in your browser's address bar and select 'Allow', then try punching again. If the issue persists, ensure location services are enabled on your device.");
+            throw new Exception("Location access is required but was not provided. Please ensure location services are enabled and try again.");
         }
         List<Map<String, Object>> enabledLocations = new ArrayList<>();
         String getLocationsSql = "SELECT Latitude, Longitude, RadiusMeters FROM geofence_locations WHERE TenantID = ? AND IsEnabled = TRUE";
@@ -199,7 +234,16 @@ public class PunchInAndOutServlet extends HttpServlet {
             }
         }
         if (!isWithinAnyFence) {
-            throw new Exception("You are not within an authorized punch location. Please move closer to an approved area and try again.");
+            String accuracyInfo = "";
+            if (accuracyStr != null && !accuracyStr.isEmpty()) {
+                try {
+                    double accuracy = Double.parseDouble(accuracyStr);
+                    accuracyInfo = " (Location accuracy: " + Math.round(accuracy) + " meters)";
+                } catch (NumberFormatException e) {
+                    // Ignore if accuracy parsing fails
+                }
+            }
+            throw new Exception("You are not within an authorized punch location. Please move closer to an approved area and try again." + accuracyInfo);
         }
     }
 
@@ -207,10 +251,6 @@ public class PunchInAndOutServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String punchAction = request.getParameter("punchAction");
         String eidStr = request.getParameter("punchEID");
-        String browserTimeZoneIdStr = request.getParameter("browserTimeZoneId");
-        String latitudeStr = request.getParameter("latitude");
-        String longitudeStr = request.getParameter("longitude");
-        String deviceFingerprintHash = request.getParameter("deviceFingerprintHash");
         
         HttpSession session = request.getSession(false);
         String messageForRedirect = null;
@@ -228,13 +268,8 @@ public class PunchInAndOutServlet extends HttpServlet {
         Connection con = null;
         try {
             con = DatabaseConnection.getConnection();
-            con.setAutoCommit(false);
             
-            // =================================================================
-            //  OPTIMIZED ORDER OF OPERATIONS
-            // =================================================================
-
-            // STEP 1 (FASTEST): Check for invalid punch actions first.
+            // STEP 1 (FASTEST): Check punch status FIRST - fail immediately if already punched in/out
             if ("IN".equals(punchAction)) {
                 if (hasOpenPunch(con, tenantId, punchEID)) {
                     throw new Exception("You are already clocked in. Please clock out before clocking in again.");
@@ -247,7 +282,16 @@ public class PunchInAndOutServlet extends HttpServlet {
                 throw new Exception("Invalid punch action specified.");
             }
 
-            // If the action is valid, get the current time and proceed.
+            // Only get other parameters if punch status check passes
+            String browserTimeZoneIdStr = request.getParameter("browserTimeZoneId");
+            String latitudeStr = request.getParameter("latitude");
+            String longitudeStr = request.getParameter("longitude");
+            String accuracyStr = request.getParameter("accuracy");
+            String deviceFingerprintHash = request.getParameter("deviceFingerprintHash");
+            
+            con.setAutoCommit(false);
+            
+            // Get current time for valid punches
             Timestamp punchTimestampUtc = Timestamp.from(Instant.now());
             ZoneId effectiveZoneId;
             try {
@@ -258,18 +302,57 @@ public class PunchInAndOutServlet extends HttpServlet {
             }
             ZonedDateTime punchTimeInUserZone = ZonedDateTime.ofInstant(punchTimestampUtc.toInstant(), effectiveZoneId);
 
-            // STEP 2: Restriction Checks (in order from fastest to slowest overall process)
+            // STEP 2: Additional restriction checks (only for valid punches)
             checkTimeDayRestriction(con, tenantId, punchTimeInUserZone);
-            checkDeviceRestriction(con, tenantId, punchEID, deviceFingerprintHash);
+            checkDeviceRestriction(con, tenantId, punchEID, deviceFingerprintHash, request);
             
-            double userLat = Helpers.isStringValid(latitudeStr) ? Double.parseDouble(latitudeStr) : Double.NaN;
-            double userLon = Helpers.isStringValid(longitudeStr) ? Double.parseDouble(longitudeStr) : Double.NaN;
-            checkLocationRestriction(con, tenantId, userLat, userLon);
+            if (Helpers.isLocationCheckRequired(tenantId)) {
+                double userLat = Helpers.isStringValid(latitudeStr) ? Double.parseDouble(latitudeStr) : Double.NaN;
+                double userLon = Helpers.isStringValid(longitudeStr) ? Double.parseDouble(longitudeStr) : Double.NaN;
+                checkLocationRestriction(con, tenantId, userLat, userLon, accuracyStr);
+            }
 
-            // STEP 3: All checks passed. Process the punch.
+            // STEP 3: Process the punch
             LocalDate punchDateForDb = punchTimeInUserZone.toLocalDate();
+            
+            // Get schedule details for late/early calculations
+            Map<String, Object> scheduleDetails = getScheduleDetails(con, tenantId, punchEID);
+            Time shiftStart = (Time) scheduleDetails.get("shiftStart");
+            Time shiftEnd = (Time) scheduleDetails.get("shiftEnd");
+            
+            // Calculate late/early status
             boolean isLate = false;
             boolean isEarlyOut = false;
+            
+            // Check if today is a scheduled work day
+            String daysWorkedStr = (String) scheduleDetails.get("daysWorkedStr");
+            
+            // Convert day of week to single letter format: M=Monday, T=Tuesday, W=Wednesday, H=Thursday, F=Friday, S=Saturday, U=Sunday
+            String todayLetter = "";
+            switch (punchTimeInUserZone.getDayOfWeek()) {
+                case MONDAY: todayLetter = "M"; break;
+                case TUESDAY: todayLetter = "T"; break;
+                case WEDNESDAY: todayLetter = "W"; break;
+                case THURSDAY: todayLetter = "H"; break;
+                case FRIDAY: todayLetter = "F"; break;
+                case SATURDAY: todayLetter = "S"; break;
+                case SUNDAY: todayLetter = "U"; break;
+            }
+            
+            boolean isTodayScheduled = (daysWorkedStr != null && daysWorkedStr.contains(todayLetter));
+            
+            // Only calculate late/early if it's a scheduled work day and schedule times exist
+            if (isTodayScheduled && shiftStart != null && shiftEnd != null) {
+                if ("IN".equals(punchAction)) {
+                    int gracePeriodMinutes = Integer.parseInt(Configuration.getProperty(tenantId, "GracePeriod", "0"));
+                    LocalTime punchTime = punchTimeInUserZone.toLocalTime();
+                    LocalTime allowedStartTime = shiftStart.toLocalTime().plusMinutes(gracePeriodMinutes);
+                    isLate = punchTime.isAfter(allowedStartTime);
+                } else if ("OUT".equals(punchAction)) {
+                    LocalTime punchTime = punchTimeInUserZone.toLocalTime();
+                    isEarlyOut = punchTime.isBefore(shiftEnd.toLocalTime());
+                }
+            }
 
             if ("IN".equals(punchAction)) {
                 String insertSql = "INSERT INTO punches (TenantID, EID, DATE, IN_1, PUNCH_TYPE, LATE) VALUES (?, ?, ?, ?, 'User Initiated', ?)";

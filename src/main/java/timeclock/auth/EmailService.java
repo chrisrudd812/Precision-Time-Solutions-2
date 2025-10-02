@@ -20,7 +20,6 @@ import jakarta.mail.util.ByteArrayDataSource;
 import jakarta.servlet.http.Part;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.Base64;
 
 
 public class EmailService {
@@ -106,7 +105,6 @@ public class EmailService {
             message.setContent(multipart);
 
             Transport.send(message);
-            logger.info("Email sent successfully to " + to);
             return true;
 
         } catch (MessagingException | IOException e) {
@@ -160,9 +158,7 @@ public class EmailService {
         
         message.setContent(multipart);
 
-        logger.info("Attempting to send bulk email to " + recipients.size() + " recipients via " + smtpHost);
         Transport.send(message);
-        logger.info("Bulk email sent successfully.");
     }
     
     public static void send(String recipient, String subject, String body, byte[] attachmentData, String attachmentFilename) throws MessagingException {
@@ -216,7 +212,6 @@ public class EmailService {
             
             message.setContent(multipart);
             Transport.send(message);
-            logger.info("Email with attachment sent successfully to " + recipient);
         } catch (MessagingException e) {
             logger.log(Level.SEVERE, "Error sending email with attachment", e);
             throw e;
