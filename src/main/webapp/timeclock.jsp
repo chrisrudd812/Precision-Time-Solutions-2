@@ -174,6 +174,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="<%= request.getContextPath() %>/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="<%= request.getContextPath() %>/css/common.css?v=<%= System.currentTimeMillis() %>">
     <link rel="stylesheet" href="<%= request.getContextPath() %>/css/navbar.css?v=<%= System.currentTimeMillis() %>">
     <link rel="stylesheet" href="<%= request.getContextPath() %>/css/modals.css?v=<%= System.currentTimeMillis() %>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -356,6 +357,8 @@
             </a>
         </div>
     <% } %>
+
+    <%@ include file="/WEB-INF/includes/modals.jspf" %>
 
     <div id="notificationModal" class="modal">
         <div class="modal-content">

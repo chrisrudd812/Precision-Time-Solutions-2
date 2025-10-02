@@ -1,6 +1,13 @@
 <%-- /WEB-INF/includes/modals.jspf --%>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="java.util.List, java.util.Map, jakarta.servlet.http.HttpSession" %>
+<%
+    System.out.println("========== MODALS.JSPF START ==========");
+    HttpSession modalSession = request.getSession(false);
+    Integer debugEID = (modalSession != null) ? (Integer) modalSession.getAttribute("EID") : null;
+    System.out.println("Session exists: " + (modalSession != null));
+    System.out.println("EID in session: " + debugEID);
+    System.out.println("========================================");
+%>
 
 <%-- 1. General purpose notification modal --%>
 <div id="notificationModalGeneral" class="modal">
@@ -51,11 +58,9 @@
 
 <%-- 4. Modal for displaying unread messages upon login --%>
 <%
-    HttpSession modalSession = request.getSession(false);
-    List<Map<String, String>> unreadMessages = null;
-    if (modalSession != null) {
-        unreadMessages = (List<Map<String, String>>) modalSession.getAttribute("unreadLoginMessages");
-    }
+    System.out.println("========== LOGIN MESSAGE MODAL SECTION ==========");
+    try {
+        System.out.println("Rendering login message modal");
 %>
 <div id="loginMessageModal" class="modal">
     <div class="modal-content modal-form-blue-state">
@@ -63,25 +68,23 @@
             <h2><i class="fas fa-envelope"></i> <span>Important Message</span></h2>
         </div>
         <div class="login-message-body modal-body">
-            <%
-                if (unreadMessages != null && !unreadMessages.isEmpty()) {
-                    for (Map<String, String> message : unreadMessages) {
-            %>
-                <div class="message-item">
-                    <h3><%= message.get("subject") %></h3>
-                    <p><%= message.get("body").replace("\n", "<br>") %></p>
-                </div>
-            <%
-                    }
-                    modalSession.removeAttribute("unreadLoginMessages");
-                }
-            %>
         </div>
         <div class="button-row" style="justify-content: center;">
             <button type="button" id="okButtonLoginMessage" class="glossy-button text-green close-modal-btn">OK</button>
         </div>
     </div>
 </div>
+<%
+        System.out.println("Login message modal rendered OK");
+    } catch (Exception e) {
+        System.out.println("ERROR: " + e.getMessage());
+        e.printStackTrace();
+    }
+    System.out.println("=================================================");
+%>
 
 <%-- 5. Toast Notification Container --%>
 <div id="toast-notification-container"></div>
+<%
+    System.out.println("========== MODALS.JSPF END ==========");
+%>

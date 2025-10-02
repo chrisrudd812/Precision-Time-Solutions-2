@@ -544,7 +544,7 @@
                     <li><strong>Pay Period Start Date:</strong> A calendar date that one of your pay periods begins on.<li>Pay period End Date is calculated automatically</li>
                     <li><strong>Grace Period (Minutes):</strong> How many minutes an employee can punch in late (or leave early) before being marked as "Tardy". Tardies are recorded for reporting purposes and displayed in red on time card.</li>
                  </ul>
-                <img src="Images/settings_pay_period.webp" alt="Pay period settings">
+                <img src="Images/settings_pay_period.webp" style="max-width:1200px" alt="Pay period settings">
 
                 <h3>Overtime Rules</h3>
                 <p>Configure how overtime is calculated for daily, weekly, and 7th-day overtime (OT) and double-time (DT) rules.</p>

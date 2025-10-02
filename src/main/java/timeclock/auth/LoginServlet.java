@@ -107,7 +107,6 @@ public class LoginServlet extends HttpServlet {
 
 					String subscriptionStatus = syncSubscriptionStatus(conn, tenantId);
 					session.setAttribute("SubscriptionStatus", subscriptionStatus);
-                    checkForAndClearLoginMessages(conn, eid, session);
 
 					if ("Administrator".equalsIgnoreCase(userPermissions)
 							&& ("canceled".equalsIgnoreCase(subscriptionStatus)
@@ -154,42 +153,7 @@ public class LoginServlet extends HttpServlet {
 	}
 
 
-    // The rest of the methods in this class are unchanged...
-    private void checkForAndClearLoginMessages(Connection conn, int eid, HttpSession session) {
-        List<Map<String, String>> messages = new ArrayList<>();
-        List<Integer> messageIdsToDelete = new ArrayList<>();
-        String selectSql = "SELECT MessageID, Subject, Body FROM login_messages WHERE RecipientEID = ? ORDER BY CreatedAt ASC";
 
-        try {
-            conn.setAutoCommit(false); 
-            try (PreparedStatement psSelect = conn.prepareStatement(selectSql)) {
-                psSelect.setInt(1, eid);
-                try (ResultSet rs = psSelect.executeQuery()) {
-                    while (rs.next()) {
-                        Map<String, String> message = new HashMap<>();
-                        message.put("subject", rs.getString("Subject"));
-                        message.put("body", rs.getString("Body"));
-                        messages.add(message);
-                        messageIdsToDelete.add(rs.getInt("MessageID"));
-                    }
-                }
-            }
-            if (!messageIdsToDelete.isEmpty()) {
-                String deleteSql = "DELETE FROM login_messages WHERE MessageID IN (" +
-                                   messageIdsToDelete.stream().map(String::valueOf).collect(Collectors.joining(",")) + ")";
-                try (PreparedStatement psDelete = conn.prepareStatement(deleteSql)) {
-                    psDelete.executeUpdate();
-                }
-                session.setAttribute("unreadLoginMessages", messages);
-            }
-            conn.commit();
-        } catch (SQLException e) {
-            logger.log(Level.SEVERE, "Error fetching or deleting login messages for EID " + eid, e);
-            try { conn.rollback(); } catch (SQLException ex) { logger.log(Level.SEVERE, "Failed to rollback login message transaction", ex); }
-        } finally {
-             try { conn.setAutoCommit(true); } catch (SQLException e) { logger.log(Level.SEVERE, "Failed to restore autocommit state", e); }
-        }
-    }
 
 	private String syncSubscriptionStatus(Connection conn, int tenantId) {
 		String currentDbStatus = "error";
@@ -329,7 +293,6 @@ public class LoginServlet extends HttpServlet {
 
 				String subscriptionStatus = syncSubscriptionStatus(conn, tenantId);
 				session.setAttribute("SubscriptionStatus", subscriptionStatus);
-				checkForAndClearLoginMessages(conn, eid, session);
 
 				if ("Administrator".equalsIgnoreCase(userPermissions)
 						&& ("canceled".equalsIgnoreCase(subscriptionStatus)
