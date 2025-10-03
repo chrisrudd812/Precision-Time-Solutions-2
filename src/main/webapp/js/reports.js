@@ -4,7 +4,6 @@
  */
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("Reports JS Loaded");
 
     const reportOutputDiv = document.getElementById('reportOutput');
     const loadingIndicator = document.getElementById('loadingIndicator');

@@ -21,9 +21,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return; // Stop further execution if core data is missing
     }
 
-    console.log("reassign.js: Loaded. Initial type from JSP:", initialReassignTypeJS);
-    console.log("reassign.js: Data source 'allData':", allData);
-
     function populateFromToDropdowns() {
         const selectedType = reassignTypeSelect.value;
         let dataList = [];
@@ -138,8 +135,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (validationMessageDiv) validationMessageDiv.style.display = 'none';
             if (applyButton) applyButton.disabled = false;
             
-            console.log("reassign.js: Form submission allowed. Type:", reassignTypeSelect.value, "From:", fromVal, "To:", toVal);
-            // Actual submission logic will be handled by the browser now unless further prevented.
         });
     } else {
         console.error("reassign.js: #reassignForm not found.");

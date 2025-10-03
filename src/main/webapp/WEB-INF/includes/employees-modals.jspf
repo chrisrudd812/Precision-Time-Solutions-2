@@ -187,17 +187,16 @@
 </div>
 
 <script type="text/javascript">
-// Set wizard mode fields and hide/show elements if parent page is in wizard mode
-if (typeof window.inWizardMode_Page !== 'undefined' && window.inWizardMode_Page) {
-    var setupField = document.getElementById('addEmployeeSetupWizardField');
-    if (setupField) setupField.value = 'true';
-    
-    // Hide welcome email section in wizard mode
-    var welcomeEmailSection = document.getElementById('addEmployeeWelcomeEmailSection');
-    if (welcomeEmailSection) welcomeEmailSection.style.display = 'none';
-    
-    // Hide cancel button in edit modal during wizard mode
-    var editCancelBtn = document.getElementById('editEmployeeCancelBtn');
-    if (editCancelBtn) editCancelBtn.style.display = 'none';
-}
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof window.inSetupWizardMode_Page !== 'undefined' && window.inSetupWizardMode_Page) {
+        var setupField = document.getElementById('addEmployeeSetupWizardField');
+        if (setupField) setupField.value = 'true';
+        
+        var welcomeEmailSection = document.getElementById('addEmployeeWelcomeEmailSection');
+        if (welcomeEmailSection) welcomeEmailSection.style.display = 'none';
+        
+        var editCancelBtn = document.getElementById('editEmployeeCancelBtn');
+        if (editCancelBtn) editCancelBtn.style.display = 'none';
+    }
+});
 </script>

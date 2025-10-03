@@ -1,7 +1,6 @@
 // js/payroll_history.js - v3 (Sorting is now handled by commonUtils.js)
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("payroll_history.js v3 loaded");
 
     const tableBody = document.getElementById('historyTableBody');
     const btnViewDetails = document.getElementById('btnViewDetails');

@@ -1,7 +1,6 @@
 // js/account.js - vFinalWithCorrectUpdate
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("account.js loaded (vFinalWithCorrectUpdate).");
-
+    
     // --- Element Selectors ---
     const editCompanyDetailsBtn = document.getElementById('editCompanyDetailsBtn');
     const manageBillingBtn = document.getElementById('manageBillingBtn');

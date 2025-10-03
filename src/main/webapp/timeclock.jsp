@@ -375,9 +375,6 @@
         const locationCheckIsTrulyRequired = <%= locationCheckIsRequired %>;
         const timeRestrictionEnabled = <%= "true".equalsIgnoreCase(Configuration.getProperty(tenantId_timeclock, "RestrictByTimeDay", "false")) %>;
         
-        console.log("DEBUG: Client-side flag 'locationCheckIsTrulyRequired' is set to:", locationCheckIsTrulyRequired);
-        console.log("DEBUG: Time restrictions enabled:", timeRestrictionEnabled);
-        
         const currentUserPermissions_tc = "<%= escapeForJavaScriptString(userPermissions_timeclock) %>";
         const sessionTimeoutDuration_Js = <%= currentSession_timeclock.getMaxInactiveInterval() %>;
         const app_contextPath = "<%= request.getContextPath() %>";

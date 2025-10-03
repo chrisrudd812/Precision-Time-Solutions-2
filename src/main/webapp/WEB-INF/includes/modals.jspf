@@ -1,12 +1,9 @@
 <%-- /WEB-INF/includes/modals.jspf --%>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%
-    System.out.println("========== MODALS.JSPF START ==========");
     HttpSession modalSession = request.getSession(false);
     Integer debugEID = (modalSession != null) ? (Integer) modalSession.getAttribute("EID") : null;
-    System.out.println("Session exists: " + (modalSession != null));
-    System.out.println("EID in session: " + debugEID);
-    System.out.println("========================================");
+    
 %>
 
 <%-- 1. General purpose notification modal --%>
@@ -58,9 +55,7 @@
 
 <%-- 4. Modal for displaying unread messages upon login --%>
 <%
-    System.out.println("========== LOGIN MESSAGE MODAL SECTION ==========");
     try {
-        System.out.println("Rendering login message modal");
 %>
 <div id="loginMessageModal" class="modal">
     <div class="modal-content modal-form-blue-state">
@@ -75,16 +70,10 @@
     </div>
 </div>
 <%
-        System.out.println("Login message modal rendered OK");
+        
     } catch (Exception e) {
-        System.out.println("ERROR: " + e.getMessage());
-        e.printStackTrace();
     }
-    System.out.println("=================================================");
 %>
 
 <%-- 5. Toast Notification Container --%>
 <div id="toast-notification-container"></div>
-<%
-    System.out.println("========== MODALS.JSPF END ==========");
-%>

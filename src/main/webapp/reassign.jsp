@@ -247,13 +247,6 @@
         };
         const initialReassignTypeJS = "<%= escapeForJS(initialReassignTypeFromJSP) %>";
 
-        // For debugging:
-        console.log("reassign.jsp: initialReassignTypeJS =", initialReassignTypeJS);
-        // To avoid overly long console output, just log presence or counts
-        console.log("reassign.jsp: allData.department count =", allData.department ? allData.department.length : 0);
-        console.log("reassign.jsp: allData.schedule count =", allData.schedule ? allData.schedule.length : 0);
-        console.log("reassign.jsp: allData.accrual_policy count =", allData.accrual_policy ? allData.accrual_policy.length : 0);
-        console.log("reassign.jsp: allData.supervisor count =", allData.supervisor ? allData.supervisor.length : 0);
     </script>
     <script src="${pageContext.request.contextPath}/js/reassign.js?v=<%= System.currentTimeMillis() %>"></script>
     <%@ include file="/WEB-INF/includes/common-scripts.jspf" %>

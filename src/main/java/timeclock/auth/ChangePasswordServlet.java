@@ -54,13 +54,11 @@ public class ChangePasswordServlet extends HttpServlet {
             wizardAdminEid = (Integer) session.getAttribute("wizardAdminEid");
 
         } else {
-            logger.warning("[ChangePasswordServlet] No active session. Redirecting to login.");
             response.sendRedirect("login.jsp?error=" + URLEncoder.encode("Session expired. Please log in.", StandardCharsets.UTF_8.name()));
             return;
         }
 
         if (tenantId == null || eid == null || eid <= 0) {
-            logger.warning("[ChangePasswordServlet] Session missing EID or TenantID. EID: " + eid + ", TenantID: " + tenantId);
             if (session != null) {
                 session.setAttribute("errorMessage", "Invalid session data. Please log in again.");
             }

@@ -138,7 +138,9 @@
             <h1>Set Your Login PIN</h1>
             <p class="welcome-message">
                 Welcome, <%= escapeHtml(adminFirstNameForDisplay) %>! This is the first step in setting up your user account for 
-                <strong><%= escapeHtml(companyNameSignup_InitialPin) %></strong>.
+                <strong><%= escapeHtml(companyNameSignup_InitialPin) %></strong>.<br>
+                <br>
+            It is separate from your Company Administrator <em>Password</em> (if applicable), which is used for company-wide settings (subscription, billing, company info, etc.).
             </p>
         </div>
 
@@ -195,7 +197,6 @@
     <%@ include file="/WEB-INF/includes/common-scripts.jspf" %>
     <script type="text/javascript">
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("[set_initial_pin.jsp CLIENT] DOMContentLoaded.");
             const form = document.getElementById('setInitialPinForm');
             const newPinField = document.getElementById('newPin');
             const confirmPinField = document.getElementById('confirmNewPin');
@@ -206,7 +207,6 @@
             const companyIdElementForCopy = document.getElementById('copyCompanyIdValue'); 
 
             function hideSuccessModalAndFocusPin() {
-                console.log("[set_initial_pin.jsp CLIENT] Hiding success modal and focusing PIN field.");
                 if (successModal) {
                     successModal.classList.remove('modal-visible');
                     successModal.style.display = 'none'; 
@@ -214,7 +214,6 @@
                 if (newPinField) {
                     setTimeout(function() { 
                         newPinField.focus();
-                        console.log("[set_initial_pin.jsp CLIENT] Focus attempted on newPinField.");
                     }, 50);
                 }
             }
@@ -225,12 +224,9 @@
 
 
             if (newPinField && (!successModal || !successModal.classList.contains('modal-visible'))) {
-                console.log("[set_initial_pin.jsp CLIENT] Success modal not initially visible. Focusing newPinField.");
                 newPinField.focus();
-            } else if (successModal && successModal.classList.contains('modal-visible')) {
-                 console.log("[set_initial_pin.jsp CLIENT] Success modal IS initially visible.");
-            }
-
+            } 
+            
             if (copyButton && companyIdElementForCopy) {
                 const companyIdToCopy = companyIdElementForCopy.textContent;
                 if (companyIdToCopy && companyIdToCopy.trim() !== "") {
@@ -239,20 +235,15 @@
                             alert('Company ID "' + companyIdToCopy.trim() + '" copied to clipboard!');
                         }, function(err) {
                             prompt("Failed to auto-copy. Please copy manually:", companyIdToCopy.trim());
-                            console.warn("[set_initial_pin.jsp CLIENT] Could not copy text automatically: ", err);
                         });
                     });
                 } else {
-                    console.warn("[set_initial_pin.jsp CLIENT] 'copyCompanyIdValue' element found, but its textContent is empty. Hiding copy button.");
                     copyButton.style.display = 'none';
                 }
             } else if (copyButton) {
-                 console.warn("[set_initial_pin.jsp CLIENT] 'copyCompanyIdButton_pinPage' found, but 'copyCompanyIdValue' element (target for copy) not found. Hiding copy button.");
                  copyButton.style.display = 'none';
-            } else {
-                 console.log("[set_initial_pin.jsp CLIENT] Copy Company ID button not found.");
-            }
-
+            } 
+            
             if (form) {
                 form.addEventListener('submit', function(event) {
                     let isValid = true;
@@ -296,7 +287,6 @@
                     }
                 }
             }
-            console.log("[set_initial_pin.jsp CLIENT] DOMContentLoaded setup complete.");
         });
     </script>
 </body>

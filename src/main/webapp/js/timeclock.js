@@ -3,13 +3,11 @@
 function setupInactivityDetection() {
     // Only apply timeout to non-administrator users
     if (typeof currentUserPermissions_tc !== 'undefined' && currentUserPermissions_tc === 'Administrator') {
-        console.log('Administrator user - no inactivity timeout applied');
         return;
     }
     
     // Only apply timeout if session timeout duration is available
     if (typeof sessionTimeoutDuration_Js === 'undefined' || sessionTimeoutDuration_Js <= 0) {
-        console.log('No valid session timeout duration - no inactivity timeout applied');
         return;
     }
     
@@ -45,9 +43,7 @@ function setupInactivityDetection() {
     // Start the timers
     resetTimers();
     
-    console.log('Inactivity timeout set for non-administrator user:', timeoutDuration / 1000, 'seconds');
 }
-
 
 async function getDeviceFingerprint() {
     if (window.FingerprintJS) {
@@ -141,9 +137,7 @@ function navigateToEmployee(selectedEid, isCurrentlyReportMode) {
 
 
 function showTimeclockNotificationModal(message, isError) {
-    console.log("DEBUG: --- Inside showTimeclockNotificationModal ---");
-    console.log("DEBUG: Received message:", message);
-    
+   
     const modal = document.getElementById("notificationModal");
     if (!modal) {
         console.error("DEBUG: ABORTING. Modal element NOT FOUND in the DOM.");
@@ -341,8 +335,11 @@ function applyRowBandingByDay() {
     });
 }
 
+function updateClockPosition() {
+    // Clock position is now handled by CSS
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("DEBUG: DOMContentLoaded event fired.");
 
     const punchInForm = document.getElementById('punchInForm');
     if (punchInForm) punchInForm.addEventListener('submit', handlePunchSubmit);
@@ -368,10 +365,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnPrintThisTimecard = document.getElementById('btnPrintThisTimecard');
     if (btnPrintThisTimecard) btnPrintThisTimecard.addEventListener('click', printTimecard);
 
-    // Setup inactivity detection (only for non-admin users)
     setupInactivityDetection();
     formatMobileDatesTimes();
     applyRowBandingByDay();
+
     
     const timecardTableContainer = document.getElementById('timecardTableContainer');
     if (timecardTableContainer && timecardTableContainer.scrollHeight > timecardTableContainer.clientHeight) {
@@ -380,8 +377,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 150);
     }
     
-    // Auto-scroll to bottom of page to show punch buttons
     setTimeout(() => {
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }, 300);
 });
+

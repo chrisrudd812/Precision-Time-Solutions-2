@@ -78,7 +78,6 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     function updateWizardView(stageKey) {
-        console.log("DEBUG: updateWizardView called with stage:", stageKey);
         if (!wizardModal || !wizardStages[stageKey] || !wizardTitle) return;
         const stage = wizardStages[stageKey];
         
@@ -545,13 +544,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 isFormValid = false;
             }
         });
-        
-        if (!isFormValid) {
-            console.log('Form validation failed. Invalid fields:', invalidFields);
-        } else {
-            console.log('Form validation passed');
-        }
-        
+                
         if (firstInvalidField) {
             firstInvalidField.focus();
         }
@@ -568,18 +561,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if(form) {
             form.setAttribute('novalidate', 'true'); 
             form.addEventListener('submit', event => {
-                console.log('Form submit event triggered for:', form.id);
                 if (!validateForm(form)) {
-                    console.log('Form validation failed for:', form.id);
                     event.preventDefault(); 
                 } else if (form.id === 'editEmployeeForm') {
                      // The JSON submission for edit form is handled separately
-                     console.log('Edit form - preventing default, will handle via fetch');
                      event.preventDefault();
                 } else {
-                    console.log('Add form - allowing normal submission');
-                    console.log('Form action:', form.action);
-                    console.log('Form method:', form.method);
                     
                     // Remove commas from pay rate before submission for add form
                     const payRateInput = form.querySelector('#addPayRate');
@@ -614,10 +601,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     editForm?.addEventListener('submit', function (event) {
-        console.log('Edit form submit handler called');
         event.preventDefault();
         if (!validateForm(this)) {
-            console.log('Edit form validation failed');
             return;
         }
 
@@ -647,19 +632,15 @@ document.addEventListener('DOMContentLoaded', function() {
             return response.text();
         })
         .then(data => {
-            console.log('Edit form response received:', data);
             if (!data) return; 
             if (typeof data === 'object' && data.success) {
-                console.log('Edit form success, hiding modal');
                 _hideModal(editModal);
                 if (isAdminVerify) {
-                    console.log('Admin verification complete, updating wizard view');
                     const adminRow = tableBody?.querySelector(`tr[data-eid="${formData.get('eid')}"]`);
                     if(adminRow) selectRow(adminRow);
                     updateWizardView('prompt_add_employees');
                 }
             } else if (typeof data === 'object' && !data.success) {
-                console.log('Edit form error:', data.error);
                 alert('Error: ' + data.error);
             }
         })
@@ -757,13 +738,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
     
-    // DEBUG: Add debugging to see what flags are set
-    console.log("DEBUG - Wizard flags:", {
-        inWizardMode: window.inSetupWizardMode_Page,
-        itemJustAdded: window.itemJustAdded_Page,
-        currentStep: window.currentWizardStep_Page,
-        urlStep: urlParams.get('step')
-    });
     
     // PAYROLL MODAL LOGIC
     if (window.showPayrollModal) {
@@ -792,24 +766,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const stepFromUrl = urlParams.get('step');
         
         if (window.itemJustAdded_Page) {
-            console.log("DEBUG: Employee was just added, preparing callback");
             const wizardUpdateCallback = () => {
-                console.log("DEBUG: Success notification dismissed, showing after_add_employee_prompt");
                 updateWizardView('after_add_employee_prompt');
                 selectAndScrollToEmployee();
             };
 
             if (successDiv && successDiv.textContent.trim()) {
-                console.log("DEBUG: Found success message, showing notification with callback");
                 showPageNotification(successDiv.innerHTML, false, wizardUpdateCallback, 'Success');
                 successDiv.style.display = 'none';
             } else {
-                console.log("DEBUG: No success message, showing wizard directly");
                 updateWizardView('after_add_employee_prompt');
                 selectAndScrollToEmployee();
             }
         } else {
-            console.log("DEBUG: No employee just added, using step:", stepFromUrl || window.currentWizardStep_Page);
             let stage = stepFromUrl || window.currentWizardStep_Page || 'verify_admin_prompt';
             setTimeout(() => {
                 updateWizardView(stage);

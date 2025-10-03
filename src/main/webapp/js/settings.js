@@ -15,7 +15,6 @@ function saveSetting(element, valueToSave) {
 
     if (key.includes("Threshold") || key.endsWith("Rate")) {
         if (value === null || String(value).trim() === '') {
-            console.log(`[saveSetting] Skipped saving empty value for numeric key: ${key}`);
             return;
         }
     }
@@ -103,7 +102,6 @@ function toggleThresholdInput(enableCheckbox, thresholdInputId, detailsBlockId =
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("Settings Page DOMContentLoaded");
 
     const payPeriodTypeSelect = document.getElementById('payPeriodType'), firstDayOfWeekSelect = document.getElementById('firstDayOfWeek'), payPeriodStartDateInput = document.getElementById('payPeriodStartDate'), payPeriodEndDateDisplaySpan = document.getElementById('payPeriodEndDateDisplay');
     const firstDayOfWeekBlock = document.getElementById('firstDayOfWeekBlock'), payPeriodStartDateBlock = document.getElementById('payPeriodStartDateBlock'), payPeriodEndDateBlock = document.getElementById('payPeriodEndDateBlock'); 

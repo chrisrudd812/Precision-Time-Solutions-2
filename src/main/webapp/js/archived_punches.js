@@ -1,8 +1,7 @@
 // js/archived_punches.js
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("archived_punches.js loaded");
-
+    
     const printArchivedBtn = document.getElementById('printArchivedPunchesBtn');
 
     // MODIFIED: Removed local table sorting logic.

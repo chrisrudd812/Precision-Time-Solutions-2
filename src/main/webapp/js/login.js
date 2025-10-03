@@ -1,6 +1,5 @@
 // js/login.js - v16 (Added WebAuthn Fingerprint Support)
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("login.js loaded (v16 - Added WebAuthn Fingerprint Support)");
 
     function isBiometricSupported() {
         return window.PublicKeyCredential && 'credentials' in navigator;

@@ -2,12 +2,8 @@
 <%@ page import="jakarta.servlet.http.HttpSession" %>
 <%@ page import="java.net.URLEncoder" %>
 <%@ page import="java.nio.charset.StandardCharsets" %>
-<%@ page import="java.util.logging.Logger" %> 
-<%@ page import="java.util.logging.Level" %>  
 
 <%!
-    private static final Logger jspChangePasswordLogger = Logger.getLogger("change_password_jsp_v3");
-
     private String escapeHtml(String input) { 
         if (input == null) return "";
         return input.replace("&", "&amp;")
@@ -54,11 +50,9 @@
         }
     }
 
-    // This security check now works correctly.
     if (cpSession == null || userEidForPinChange == null || userEidForPinChange <= 0 || 
         requiresChangeSessionFlag == null || !requiresChangeSessionFlag.booleanValue()) { 
         String redirectErrorMsg = "PIN change not currently required or session invalid.";
-        jspChangePasswordLogger.warning("[change_password.jsp] Redirecting to login. Conditions not met for PIN change page.");
         if(cpSession != null) {
              cpSession.setAttribute("errorMessage", redirectErrorMsg);
         }
@@ -79,24 +73,23 @@
     <link rel="stylesheet" href="css/login.css?v=<%= System.currentTimeMillis() %>">   
 
     <style>
-        .change-password-container { max-width: 520px; margin-top: 5%; }
+        .change-password-container { max-width: 550px; margin-top: 5%; max-height: auto;}
         .change-password-header .logo-link { font-size: 2em; }
         .change-password-header h1 { font-size: 1.6em; margin-bottom: 10px;}
         .change-password-header p { font-size: 0.95em; line-height: 1.5; color: #444;}
         .required { color: #dc3545; margin-left: 2px; }
     </style>
-</head>H
+</head>
 <body>
     <div class="change-password-container login-container"> 
         <div class="change-password-header login-header">
             <a href="index.jsp" class="logo-link">
-    <img src="<%= request.getContextPath() %>/images/logo.webp" alt="Company Logo" style="height: 32px; vertical-align: middle; margin-right: 8px;"> 
-    Precision Time Solutions
+    <img src="<%= request.getContextPath() %>/Images/logo.webp" alt="Company Logo" style="height: 128px; vertical-align: middle;"> 
+    
 </a>
-            <h1>Set Your New Login PIN</h1>
-            <p>Hi <%= escapeHtml(userFirstNameForDisplay) %>, your temporary PIN for your <strong>user account login</strong> needs to be changed.
-            <br>This PIN is used for clocking in/out and accessing your user-specific features.
-            It is separate from your Company Administrator password (if applicable, which is used for company-wide settings).
+            <h1>Set Your New Login PIN</h1><br>
+            <p>Hi <%= escapeHtml(userFirstNameForDisplay) %>.<br>Your temporary PIN for your <strong>user account login</strong> needs to be changed.<br>
+            <br>This <em>PIN</em> is used for clocking in/out and accessing your user-specific features.<br><br>
             <br>Please set your new 4-digit numeric PIN below.</p>
         </div>
 
