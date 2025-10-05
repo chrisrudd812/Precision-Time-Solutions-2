@@ -130,6 +130,16 @@
                         <h3>Expert Support</h3>
                         <p>Get help when you need it with our responsive customer support team and comprehensive help documentation.</p>
                     </div>
+                    <div class="feature-item">
+                        <div class="feature-icon"><i class="fas fa-calendar-check"></i></div>
+                        <h3>Smart Scheduling and Tardy Tracking</h3>
+                        <p>Create employee schedules and automatically track tardiness. Tardies are highlighted in red on time card, and the Tardy Report helps you maintain accountability and improve punctuality.</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon"><i class="fas fa-utensils"></i></div>
+                        <h3>Automatic Lunch Deduction</h3>
+                        <p>Set a time threshold and the system automatically deducts lunch breaks - no need for employees to punch out. Ensures compliance with labor laws while simplifying the punch process.</p>
+                    </div>
                 </div>
             </div>
         </section>
@@ -216,7 +226,7 @@
                         <p class="description">Essential time tracking for small teams</p>
                         <p class="price">$19.99<span>/ per month</span></p>
                         <div class="plan-features">• Time clock with GPS tracking<br>• Basic reporting<br>• Automated overtime calculations<br>• Up to 25 active employees</div>
-                        <a href="signup_company_info.jsp?priceId=price_1RWNdXBtvyYfb2KWWt6p9F4X" class="btn btn-primary btn-block">Start Trial</a>
+                        <a href="signup_company_info.jsp?priceId=price_1S2mCSBtvyYfb2KWetkP2Tcf" class="btn btn-primary btn-block">Start Trial</a>
                     </div>
                     
                     <!-- Business Plan -->
@@ -227,7 +237,7 @@
                         <p class="description">Advanced features for growing businesses</p>
                         <p class="price">$29.99<span>/ per month</span></p>
                         <div class="plan-features">• Everything in Basic<br>• Employee messaging capabilities<br>• Advanced reporting and analytics<br>• Up to 50 active employees</div>
-                        <a href="signup_company_info.jsp?priceId=price_1RttGyBtvyYfb2KWNRui8ev1" class="btn btn-primary btn-block">Start Trial</a>
+                        <a href="signup_company_info.jsp?priceId=price_1S2mCXBtvyYfb2KWGl0R6gXA" class="btn btn-primary btn-block">Start Trial</a>
                     </div>
                     
                     <!-- Pro Plan -->
@@ -237,7 +247,7 @@
                         <p class="description">Complete workforce management solution</p>
                         <p class="price">$39.99<span>/ per month</span></p>
                         <div class="plan-features">• Everything in Business<br>• Overtime by state capability<br>• Priority support<br>• Up to 100 employees</div>
-                        <a href="signup_company_info.jsp?priceId=price_1RttIyBtvyYfb2KW86IvsAvX" class="btn btn-primary btn-block">Start Trial</a>
+                        <a href="signup_company_info.jsp?priceId=price_1S2mCbBtvyYfb2KWSQz9TkXt" class="btn btn-primary btn-block">Start Trial</a>
                     </div>
                 </div>
             </div>

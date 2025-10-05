@@ -13,19 +13,19 @@
     JSONObject plan = new JSONObject();
 
     if (priceId == null || priceId.trim().isEmpty()) {
-        priceId = "price_1RWNdXBtvyYfb2KWWt6p9F4X"; 
+        priceId = "price_1S2mCSBtvyYfb2KWetkP2Tcf"; 
     }
 
     // Quick hardcoded plan data to avoid database query delay
-    if ("price_1RWNdXBtvyYfb2KWWt6p9F4X".equals(priceId)) {
+    if ("price_1S2mCSBtvyYfb2KWetkP2Tcf".equals(priceId)) {
         plan.put("name", "Starter");
         plan.put("price", 19.99);
         plan.put("users", 25);
-    } else if ("price_1RttGyBtvyYfb2KWNRui8ev1".equals(priceId)) {
+    } else if ("price_1S2mCXBtvyYfb2KWGl0R6gXA".equals(priceId)) {
         plan.put("name", "Business");
         plan.put("price", 29.99);
         plan.put("users", 50);
-    } else if ("price_1RttIyBtvyYfb2KW86IvsAvX".equals(priceId)) {
+    } else if ("price_1S2mCbBtvyYfb2KWSQz9TkXt".equals(priceId)) {
         plan.put("name", "Pro");
         plan.put("price", 39.99);
         plan.put("users", 100);

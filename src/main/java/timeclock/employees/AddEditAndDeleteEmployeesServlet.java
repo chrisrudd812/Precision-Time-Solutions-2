@@ -659,11 +659,11 @@ public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
         if ("Administrator".equalsIgnoreCase(permissions)) {
             body.append("As an administrator, you have full access to manage employees, schedules, and payroll.\n\n");
             body.append("For help getting started, visit our administrator help center:\n");
-            body.append(getBaseUrl()).append("/help.jsp");
+            body.append(getBaseUrl()).append("/help.jsp?public=true\n");
         } else {
             body.append("You can punch in and out using our easy-to-use time clock.\n\n");
             body.append("For help using the time clock, visit our user guide:\n");
-            body.append(getBaseUrl()).append("/help_user.jsp");
+            body.append(getBaseUrl()).append("/help_user.jsp?public=true\n");
         }
         
         List<String> recipients = new ArrayList<>();

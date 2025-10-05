@@ -179,7 +179,7 @@
                                 </div>
                                 <div class="form-item">
                                     <label for="adjustmentHours">Hours: <span class="required-asterisk">*</span></label>
-                                    <input type="number" id="adjustmentHours" name="accrualHours" step="0.01" min="0" placeholder="e.g., 8.0" required>
+                                    <input type="number" id="adjustmentHours" name="accrualHours" step="0.01" min="0" max="350" placeholder="e.g., 8.0" required>
                                 </div>
                             </div>
                             <div class="form-item">

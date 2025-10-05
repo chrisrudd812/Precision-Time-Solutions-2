@@ -15,7 +15,7 @@
     top: 0; 
     width: 100%; 
     height: 100%; 
-    overflow: auto; 
+    overflow: hidden; 
     background-color: rgba(0,0,0,0.6); 
 }
 
@@ -27,6 +27,7 @@
     display: flex !important; 
     align-items: center; 
     justify-content: center; 
+    overflow-y: auto;
 }
 
 .modal-content {
@@ -37,11 +38,17 @@
     min-width: 400px; 
     max-width: 600px; 
     max-height: 90vh; 
+    height: auto;
     position: relative; 
     display: flex; 
     flex-direction: column; 
     overflow: hidden;
     text-align: center;
+}
+
+.modal-content.wide-modal {
+    max-height: 95vh !important;
+    margin: auto;
 }
 
 .modal-form-yellow-state .modal-header,

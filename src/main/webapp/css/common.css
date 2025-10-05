@@ -30,6 +30,7 @@ h1 {
     border: 1px solid #d1fae5;
     border-radius: 8px;
     padding: 15px 20px;
+    margin-top: 20px;
     margin-bottom: 30px;
     font-weight: 600;
     font-size: 1.6em;
@@ -40,7 +41,7 @@ h1 {
 
 /* --- Container Styles --- */
 .parent-container {
-    padding: 20px 30px;
+    padding: 0px 30px 20px 30px;
     max-width: 1200px; 
     width: 100%;
     margin: 0 auto 20px auto;

@@ -223,8 +223,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const companyName = window.companyNameSignup || 'Your Company';
             const companyId = window.companyIdentifier || '';
             const loginLink = `${window.location.origin}${appRoot}/login.jsp?companyId=${encodeURIComponent(companyId)}&focus=email`;
-            const adminHelpLink = `${window.location.origin}${appRoot}/help.jsp`;
-            const userHelpLink = `${window.location.origin}${appRoot}/help_user.jsp`;
+            const adminHelpLink = `${window.location.origin}${appRoot}/help.jsp?public=true`;
+            const userHelpLink = `${window.location.origin}${appRoot}/help_user.jsp?public=true`;
             
             const subject = `Welcome to ${companyName}!`;
             const baseBody = `Welcome to your new time and attendance system!\n\n` +
@@ -688,6 +688,64 @@ document.addEventListener('DOMContentLoaded', function() {
     if(editPhoneInput) editPhoneInput.addEventListener('input', formatPhoneNumber);
     if(addPayRateInput) addPayRateInput.addEventListener('blur', formatPayRate);
     if(editPayRateInput) editPayRateInput.addEventListener('blur', formatPayRate);
+    
+    // Auto-scroll when hire date fields get focus
+    const addHireDateInput = document.getElementById('addHireDate');
+    const editHireDateInput = document.getElementById('editHireDate');
+    
+    if (addHireDateInput) {
+        addHireDateInput.addEventListener('focus', () => {
+            setTimeout(() => {
+                const hireDateSection = addModal.querySelector('.form-body-container:nth-child(2)');
+                if (hireDateSection) hireDateSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 50);
+        });
+    }
+    
+    if (editHireDateInput) {
+        editHireDateInput.addEventListener('focus', () => {
+            setTimeout(() => {
+                const hireDateSection = editModal.querySelector('.form-body-container:nth-child(2)');
+                if (hireDateSection) hireDateSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 50);
+        });
+    }
+    
+    // Auto-scroll to bottom when work schedule fields get focus
+    const addWorkScheduleInput = document.getElementById('addWorkSchedule');
+    const editWorkScheduleInput = document.getElementById('editWorkSchedule');
+    
+    if (addWorkScheduleInput) {
+        addWorkScheduleInput.addEventListener('focus', () => {
+            setTimeout(() => {
+                const modalBody = addModal.querySelector('.modal-body');
+                if (modalBody) modalBody.scrollTo({ top: modalBody.scrollHeight, behavior: 'smooth' });
+            }, 50);
+        });
+    }
+    
+    if (editWorkScheduleInput) {
+        editWorkScheduleInput.addEventListener('focus', () => {
+            setTimeout(() => {
+                const modalBody = editModal.querySelector('.modal-body');
+                if (modalBody) modalBody.scrollTo({ top: modalBody.scrollHeight, behavior: 'smooth' });
+            }, 50);
+        });
+    }
+    
+    // Dynamic sticky header positioning
+    function updateStickyHeaderPosition() {
+        const navbar = document.querySelector('.main-navbar');
+        const header = document.querySelector('body.employees-page h1');
+        
+        if (navbar && header) {
+            const navbarHeight = navbar.offsetHeight;
+            header.style.top = `${navbarHeight}px`;
+        }
+    }
+    
+    updateStickyHeaderPosition();
+    window.addEventListener('resize', updateStickyHeaderPosition);
 
     addBtn?.addEventListener('click', () => openAddModal());
     editBtn?.addEventListener('click', () => {
@@ -727,13 +785,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const successDiv = document.getElementById('pageNotificationDiv_Success_Emp');
     const errorDiv = document.getElementById('pageNotificationDiv_Error_Emp');
 
-    const selectAndScrollToEmployee = () => {
+    const selectAndScrollToEmployee = (shouldScroll = true) => {
         const eid = urlParams.get('eid');
         if (eid) {
             const rowToSelect = tableBody?.querySelector(`tr[data-eid="${eid}"]`);
             if (rowToSelect) {
                 selectRow(rowToSelect);
-                rowToSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                if (shouldScroll) {
+                    rowToSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
             }
         }
     };
@@ -829,8 +889,10 @@ document.addEventListener('DOMContentLoaded', function() {
             reactivateModal.querySelector('.cancel-btn').onclick = () => _hideModal(reactivateModal);
         } else {
             const selectedEid = urlParams.get('eid');
-            if (selectedEid && !urlParams.has('message')) {
-                selectAndScrollToEmployee();
+            if (selectedEid && urlParams.has('message')) {
+                selectAndScrollToEmployee(true);
+            } else if (selectedEid && !urlParams.has('message')) {
+                selectAndScrollToEmployee(false);
             } else if (!selectedEid && tableBody?.rows.length > 0) {
                 selectRow(tableBody.rows[0]);
             }

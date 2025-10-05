@@ -57,14 +57,14 @@
                         <div class="form-item"><label for="addPayRate">Wage <span class="required-asterisk">*</span></label><div class="input-with-prefix"><span class="input-prefix">$</span><input type="number" id="addPayRate" name="wage" step="0.01" min="0" placeholder="Hourly or Annual" required autocomplete="new-password"></div></div>
                     </div>
                 </div>
-            </div>
-            <div id="addEmployeeWelcomeEmailSection" class="form-body-container" style="display: flex; justify-content: center; align-items: center; padding: 10px 20px; margin-top: -20px;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <label style="margin: 0; font-weight: 500; font-size: 0.9em; color: #6c757d;">Send Welcome Email</label>
-                    <label class="switch">
-                        <input type="checkbox" id="sendWelcomeEmail" name="sendWelcomeEmail" value="true" checked>
-                        <span class="slider round"></span>
-                    </label>
+                <div id="addEmployeeWelcomeEmailSection" class="form-body-container" style="display: flex; justify-content: center; align-items: center; padding: 20px; margin: 20px 0;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <label style="margin: 0; font-weight: 500; font-size: 0.9em; color: #6c757d;">Send Welcome Email</label>
+                        <label class="switch">
+                            <input type="checkbox" id="sendWelcomeEmail" name="sendWelcomeEmail" value="true" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
                 </div>
             </div>
             <div class="button-row">

@@ -74,6 +74,7 @@ function showModal(modalElement) {
         currentMaxZIndex++;
         modalElement.style.zIndex = currentMaxZIndex;
         modalElement.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
         requestAnimationFrame(() => {
              modalElement.classList.add('modal-visible');
         });
@@ -94,6 +95,9 @@ function hideModal(modalElement) {
                  content.style.top = '';
                  content.style.margin = '';
                  content.style.transform = '';
+            }
+            if (!document.querySelector('.modal.modal-visible')) {
+                document.body.style.overflow = '';
             }
         }, 300);
     }

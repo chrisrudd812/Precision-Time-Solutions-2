@@ -1,3 +1,7 @@
+<%
+    String publicParam = request.getParameter("public");
+    boolean isPublicView = "true".equalsIgnoreCase(publicParam);
+%>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -74,25 +78,12 @@
 
         main {
             margin-left: 280px;
-            padding-top: 200px;
-            padding-left: 40px;
-            padding-right: 40px;
-            padding-bottom: 20px;
+            padding: 20px 40px;
             width: calc(100% - 280px);
             box-sizing: border-box;
         }
 
-        /* Laptop (1024px - 1440px) */
-        @media (min-width: 1024px) and (max-width: 1440px) {
-            header {
-                top: calc(12vh + 37px) !important;
-            }
-            
-            nav#table-of-contents {
-                top: calc(6.5vh + 72px) !important;
-                height: calc(92vh - 20px) !important;
-            }
-        }
+
 
         /* Responsive Design */
         @media (max-width: 992px) {
@@ -106,14 +97,8 @@
                 border-radius: 8px;
             }
             header {
-                position: static !important;
-                top: auto !important;
-                left: auto !important;
-                right: auto !important;
-                width: auto !important;
                 margin: 20px 40px;
                 border-radius: 8px;
-                z-index: auto !important;
             }
             main {
                 margin-left: 0;
@@ -179,9 +164,6 @@
                 padding: 15px !important;
                 width: calc(100vw - 20px) !important;
                 margin: 10px !important;
-                top: auto !important;
-                left: auto !important;
-                right: auto !important;
             }
             
             h1 {
@@ -203,11 +185,6 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-            position: fixed;
-            top: 6.5vh;
-            left: 320px;
-            right: 40px;
-            z-index: 100;
         }
 
         h1 {
@@ -274,10 +251,12 @@
 
     </style>
 </head>
-<body class="reports-page">
+<body class="reports-page<% if (isPublicView) { %> no-navbar<% } %>">
     
-    <%-- Include the standard navigation bar --%>
-    <%@ include file="/WEB-INF/includes/navbar.jspf" %>
+    <%-- Include the standard navigation bar only if not public view --%>
+    <% if (!isPublicView) { %>
+        <%@ include file="/WEB-INF/includes/navbar.jspf" %>
+    <% } %>
 
     <div class="layout-container">
         <nav id="table-of-contents">
@@ -300,7 +279,7 @@
                 <li><a href="#overtime-calculation">Overtime Calculations</a></li>
                 <li><a href="#reports">Reports</a></li>
                 <li><a href="#account">Account Settings</a></li>
-                <li><a href="contact.jsp">Contact Support</a></li>
+                <li><a href="contact.jsp<% if (isPublicView) { %>?public=true<% } %>">Contact Support</a></li>
             </ul>
         </nav>
 

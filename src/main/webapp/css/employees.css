@@ -13,12 +13,10 @@ body.employees-page .parent-container {
     overflow-x: auto;
     border: 1px solid #e2e8f0;
     margin-bottom: 25px;
-    clip-path: inset(0 round 8px);
 }
 
 #reportOutput_employees.report-table-container table.report-table {
     border-radius: 8px;
-    overflow: hidden;
 }
 
 #reportOutput_employees.report-table-container table.report-table thead th:first-child {
@@ -52,17 +50,8 @@ body.employees-page .parent-container {
     max-width: 32%;
 }
 
-#employeesTable {
-    border-radius: 8px;
-    overflow: hidden;
-}
-
 #employeesTable thead th {
     white-space: nowrap;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background-color: inherit;
 }
 
 #employeesTable th:nth-child(1), #employeesTable td:nth-child(1) { min-width: 50px; text-align: center; }
@@ -79,35 +68,7 @@ body.employees-page .parent-container {
     display: none;
 }
 
-/* Modal scrollable content */
-#addEmployeeModal .modal-content,
-#editEmployeeModal .modal-content {
-    max-height: 90vh;
-    overflow-y: auto;
-    overflow-x: hidden;
-}
 
-#addEmployeeModal .modal-content::-webkit-scrollbar,
-#editEmployeeModal .modal-content::-webkit-scrollbar {
-    width: 8px;
-}
-
-#addEmployeeModal .modal-content::-webkit-scrollbar-track,
-#editEmployeeModal .modal-content::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 4px;
-}
-
-#addEmployeeModal .modal-content::-webkit-scrollbar-thumb,
-#editEmployeeModal .modal-content::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 4px;
-}
-
-#addEmployeeModal .modal-content::-webkit-scrollbar-thumb:hover,
-#editEmployeeModal .modal-content::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
-}
 
 /* Responsive design */
 @media (max-width: 1200px) {
@@ -477,16 +438,15 @@ body.employees-page .parent-container {
     box-shadow: 0 0 0 0.2rem rgba(34, 197, 94, 0.25);
 }
 
-/* MODIFIED: Increased max-height to 95vh to fit all content */
+/* Employee modal specific styling */
 #editEmployeeModal .modal-content,
 #addEmployeeModal .modal-content {
-    display: flex;
-    flex-direction: column;
-    max-height: 95vh;
+    height: 95vh !important;
+    max-height: 95vh !important;
 }
 #editEmployeeModal .modal-body,
 #addEmployeeModal .modal-body {
-    overflow-y: auto;
-    flex-grow: 1;
-    overscroll-behavior: contain;
+    height: calc(95vh - 200px) !important;
+    overflow-y: scroll !important;
+    overflow-x: hidden !important;
 }

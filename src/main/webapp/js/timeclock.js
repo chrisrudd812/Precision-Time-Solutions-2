@@ -238,7 +238,7 @@ async function handlePunchSubmit(event) {
         
         // Step 2: Get device fingerprint and basic data
         if (submitButton) {
-            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Please Wait...';
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Getting Location...';
         }
         
         const fingerprint = await getDeviceFingerprint();

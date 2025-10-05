@@ -332,6 +332,60 @@ document.addEventListener('DOMContentLoaded', function() {
 
     setupAutoLunchToggle(addAutoLunchCheckbox, addHoursRequiredInput, addLunchLengthInput, true);
     setupAutoLunchToggle(editAutoLunchCheckbox, editHoursRequiredInput, editLunchLengthInput, false);
+    
+    // Auto-scroll when tabbing from schedule name to time fields
+    const addScheduleNameInput = document.getElementById('addScheduleName');
+    const editScheduleNameInput = document.getElementById('editScheduleName');
+    
+    if (addScheduleNameInput) {
+        addScheduleNameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                setTimeout(() => {
+                    const timeSection = addScheduleModal.querySelector('.form-body-container:nth-child(2)');
+                    if (timeSection) timeSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 50);
+            }
+        });
+    }
+    
+    if (editScheduleNameInput) {
+        editScheduleNameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                setTimeout(() => {
+                    const timeSection = editScheduleModal.querySelector('.form-body-container:nth-child(2)');
+                    if (timeSection) timeSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 50);
+            }
+        });
+    }
+    
+    // Auto-scroll for edit modal time fields on focus
+    const editTimeFields = ['editShiftStart', 'editShiftEnd', 'editLunchStart', 'editLunchEnd'];
+    editTimeFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('focus', () => {
+                const timeSection = editScheduleModal.querySelector('.form-body-container:nth-child(2)');
+                if (timeSection) timeSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
+    });
+    
+    // Scroll to bottom when day checkboxes are clicked or focused
+    const dayCheckboxes = document.querySelectorAll('#addScheduleModal input[name="days"], #editScheduleModal input[name="days"]');
+    dayCheckboxes.forEach(checkbox => {
+        const scrollToBottom = () => {
+            const modal = checkbox.closest('.modal');
+            const modalBody = modal.querySelector('.modal-body');
+            if (modalBody) {
+                setTimeout(() => {
+                    modalBody.scrollTo({ top: modalBody.scrollHeight, behavior: 'smooth' });
+                }, 50);
+            }
+        };
+        checkbox.addEventListener('click', scrollToBottom);
+        checkbox.addEventListener('focus', scrollToBottom);
+    });
     if(addScheduleModal) {
         setupTimePairValidation(document.getElementById('addShiftStart'), document.getElementById('addShiftEnd'));
         setupTimePairValidation(document.getElementById('addLunchStart'), document.getElementById('addLunchEnd'));

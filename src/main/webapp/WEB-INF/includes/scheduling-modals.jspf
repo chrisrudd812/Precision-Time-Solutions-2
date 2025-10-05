@@ -1,5 +1,7 @@
 <%-- /WEB-INF/includes/scheduling-modals.jspf --%>
 
+
+
 <%-- Add Schedule Modal --%>
 <div id="addScheduleModal" class="modal">
     <div class="modal-content modal-form-green-state">
@@ -8,7 +10,7 @@
             <div class="modal-header">
                 <h2 class="modal-title-success"><i class="fas fa-calendar-plus"></i> <span>Add New Schedule</span></h2>
             </div>
-            <div class="modal-body">
+            <div class="modal-body" style="max-height: 55vh; overflow-y: auto; padding-top: 10px; padding-bottom: 2px;">
                 <div class="form-body-container">
                     <div class="form-item">
                         <label for="addScheduleName">Schedule Name <span class="required-asterisk">*</span></label>
@@ -29,13 +31,13 @@
                     <div class="form-item">
                         <label>Days Worked</label>
                         <div class="checkbox-group">
-                            <span class="styled-checkbox"><input type="checkbox" id="addDaySun" name="days" value="Sun"><label for="addDaySun">Sun</label></span>
-                            <span class="styled-checkbox"><input type="checkbox" id="addDayMon" name="days" value="Mon"><label for="addDayMon">Mon</label></span>
-                            <span class="styled-checkbox"><input type="checkbox" id="addDayTue" name="days" value="Tue"><label for="addDayTue">Tue</label></span>
-                            <span class="styled-checkbox"><input type="checkbox" id="addDayWed" name="days" value="Wed"><label for="addDayWed">Wed</label></span>
-                            <span class="styled-checkbox"><input type="checkbox" id="addDayThu" name="days" value="Thu"><label for="addDayThu">Thu</label></span>
-                            <span class="styled-checkbox"><input type="checkbox" id="addDayFri" name="days" value="Fri"><label for="addDayFri">Fri</label></span>
-                            <span class="styled-checkbox"><input type="checkbox" id="addDaySat" name="days" value="Sat"><label for="addDaySat">Sat</label></span>
+                            <span class="styled-checkbox"><input type="checkbox" id="addDaySun" name="days" value="Sun" tabindex="0"><label for="addDaySun">Sun</label></span>
+                            <span class="styled-checkbox"><input type="checkbox" id="addDayMon" name="days" value="Mon" tabindex="0"><label for="addDayMon">Mon</label></span>
+                            <span class="styled-checkbox"><input type="checkbox" id="addDayTue" name="days" value="Tue" tabindex="0"><label for="addDayTue">Tue</label></span>
+                            <span class="styled-checkbox"><input type="checkbox" id="addDayWed" name="days" value="Wed" tabindex="0"><label for="addDayWed">Wed</label></span>
+                            <span class="styled-checkbox"><input type="checkbox" id="addDayThu" name="days" value="Thu" tabindex="0"><label for="addDayThu">Thu</label></span>
+                            <span class="styled-checkbox"><input type="checkbox" id="addDayFri" name="days" value="Fri" tabindex="0"><label for="addDayFri">Fri</label></span>
+                            <span class="styled-checkbox"><input type="checkbox" id="addDaySat" name="days" value="Sat" tabindex="0"><label for="addDaySat">Sat</label></span>
                         </div>
                     </div>
                 </div>
@@ -72,7 +74,7 @@
             <div class="modal-header">
                 <h2 class="modal-title-warning"><i class="fas fa-edit"></i> <span>Edit Schedule</span></h2>
             </div>
-            <div class="modal-body">
+            <div class="modal-body" style="max-height: 55vh; overflow-y: auto; padding-top: 10px; padding-bottom: 2px;">
                 <div class="form-body-container">
                     <div class="form-item">
                         <label for="editScheduleName">Schedule Name</label>
@@ -93,13 +95,13 @@
                     <div class="form-item">
                         <label>Days Worked</label>
                         <div class="checkbox-group">
-                           <span class="styled-checkbox"><input type="checkbox" id="editDaySun" name="days" value="Sun"><label for="editDaySun">Sun</label></span>
-                           <span class="styled-checkbox"><input type="checkbox" id="editDayMon" name="days" value="Mon"><label for="editDayMon">Mon</label></span>
-                           <span class="styled-checkbox"><input type="checkbox" id="editDayTue" name="days" value="Tue"><label for="editDayTue">Tue</label></span>
-                           <span class="styled-checkbox"><input type="checkbox" id="editDayWed" name="days" value="Wed"><label for="editDayWed">Wed</label></span>
-                           <span class="styled-checkbox"><input type="checkbox" id="editDayThu" name="days" value="Thu"><label for="editDayThu">Thu</label></span>
-                           <span class="styled-checkbox"><input type="checkbox" id="editDayFri" name="days" value="Fri"><label for="editDayFri">Fri</label></span>
-                           <span class="styled-checkbox"><input type="checkbox" id="editDaySat" name="days" value="Sat"><label for="editDaySat">Sat</label></span>
+                           <span class="styled-checkbox"><input type="checkbox" id="editDaySun" name="days" value="Sun" tabindex="0"><label for="editDaySun">Sun</label></span>
+                           <span class="styled-checkbox"><input type="checkbox" id="editDayMon" name="days" value="Mon" tabindex="0"><label for="editDayMon">Mon</label></span>
+                           <span class="styled-checkbox"><input type="checkbox" id="editDayTue" name="days" value="Tue" tabindex="0"><label for="editDayTue">Tue</label></span>
+                           <span class="styled-checkbox"><input type="checkbox" id="editDayWed" name="days" value="Wed" tabindex="0"><label for="editDayWed">Wed</label></span>
+                           <span class="styled-checkbox"><input type="checkbox" id="editDayThu" name="days" value="Thu" tabindex="0"><label for="editDayThu">Thu</label></span>
+                           <span class="styled-checkbox"><input type="checkbox" id="editDayFri" name="days" value="Fri" tabindex="0"><label for="editDayFri">Fri</label></span>
+                           <span class="styled-checkbox"><input type="checkbox" id="editDaySat" name="days" value="Sat" tabindex="0"><label for="editDaySat">Sat</label></span>
                         </div>
                     </div>
                 </div>

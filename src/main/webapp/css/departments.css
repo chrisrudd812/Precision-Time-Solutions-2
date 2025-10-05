@@ -1,12 +1,15 @@
 /* === css/departments.css === */
 
-/* Fix table container height - copied from accruals.css */
+/* Fix table container height and scrolling */
 .content-display-area:has(.department-table-container) {
     min-height: 0;
     flex-grow: 0;
+    overflow: visible;
 }
-.table-container.report-table-container {
-    max-height: 60vh;
+.department-table-container {
+    max-height: 30vh;
+    overflow-y: auto;
+    overflow-x: auto;
 }
 
 /* === REMOVED: Modern & Unified Modal Styling is now in modals.css === */
