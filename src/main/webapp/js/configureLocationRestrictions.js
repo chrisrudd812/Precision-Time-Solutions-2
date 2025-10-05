@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function updateMapAndInputs(lat, lng, radius = 100) {
+    function updateMapAndInputs(lat, lng, radius = 250) {
         if (!map) initializeMap();
         
         latitudeInput.value = lat.toFixed(8);
@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
             initializeMap();
             map.invalidateSize();
-            updateMapAndInputs(boulderCoords[0], boulderCoords[1]);
+            updateMapAndInputs(boulderCoords[0], boulderCoords[1], 250);
         }, 100);
     }
 

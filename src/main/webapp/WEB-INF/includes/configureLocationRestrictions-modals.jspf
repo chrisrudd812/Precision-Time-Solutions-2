@@ -51,7 +51,7 @@
                 </div>
                 
                 <div class="radius-enabled-row">
-                    <div class="form-item"><label for="radiusMetersInput">Radius (meters):<span class="required-asterisk">*</span></label><input type="number" id="radiusMetersInput" name="radiusMeters" required min="10" max="10000" step="1" value="100"></div>
+                    <div class="form-item"><label for="radiusMetersInput">Radius (meters):<span class="required-asterisk">*</span></label><input type="number" id="radiusMetersInput" name="radiusMeters" required min="10" max="10000" step="1" value="250"></div>
                     
                     <div class="form-item" style="display: flex; align-items: center; gap: 10px;">
                         <label for="locationIsEnabledInput" class="slider-label" style="margin-bottom: 0;">Enabled:</label>

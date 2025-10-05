@@ -19,7 +19,7 @@ body.reports-page .parent-container {
     min-width: unset; 
     max-width: 1200px;
     width: 90%;
-    /* margin: 3.5% auto 0 auto; */
+    margin: 2.5% auto 0 auto;
     padding: 0px 20px 20px 20px; 
     background-color: #ffffff;
     min-height: fit-content;

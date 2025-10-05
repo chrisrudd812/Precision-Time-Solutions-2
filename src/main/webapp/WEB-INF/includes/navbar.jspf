@@ -102,13 +102,7 @@
                 <% if (isAdminForNav_jspf) { %>
                     <% if (isSubscriptionActive_jspf) { %>
         
-                        <li class="dropdown">
-                            <a href="javascript:void(0);" class="dropbtn"><i class="fas fa-edit"></i> Punch Management <i class="fas fa-chevron-down"></i></a>
-                            <ul class="dropdown-content">
-                                <li><a href="<%= request.getContextPath() %>/add_global_data.jsp">Add Global Hours (Holiday, etc.)</a></li>
-                                <li><a href="<%= request.getContextPath() %>/punches.jsp">Edit Employee Punches</a></li>
-                            </ul>
-                        </li>
+                        
                         <li class="dropdown">
                              <a href="javascript:void(0);" class="dropbtn"><i class="fas fa-users"></i> Employees <i class="fas fa-chevron-down"></i></a>
                             <ul class="dropdown-content">
@@ -122,6 +116,13 @@
                                         <li><a href="<%= request.getContextPath() %>/reassign.jsp?type=supervisor">By Supervisor</a></li>
                                     </ul>
                                 </li>
+                            </ul>
+                        </li>
+                        <li class="dropdown">
+                            <a href="javascript:void(0);" class="dropbtn"><i class="fas fa-edit"></i> Punch Management <i class="fas fa-chevron-down"></i></a>
+                            <ul class="dropdown-content">
+                                <li><a href="<%= request.getContextPath() %>/add_global_data.jsp">Add Global Hours (Holiday, etc.)</a></li>
+                                <li><a href="<%= request.getContextPath() %>/punches.jsp">Edit Employee Punches</a></li>
                             </ul>
                         </li>
                         <li><a href="<%= request.getContextPath() %>/departments.jsp" class="<%= pageName_jspf.equals("departments.jsp") ? "active" : "" %>"><i class="fas fa-building"></i> Departments</a></li>
