@@ -293,10 +293,10 @@
                     <% if (eidToLoad > 0 && periodTotalHoursForDisplay > 0.001) { %>
                     <tfoot>
                         <tr class="footer-summary-row">
-                            <td colspan="4" class="period-total-label">Period Total:</td>
-                            <td colspan="2" class="period-total-value">
-                                <%= String.format(Locale.US, "%.2f", periodTotalHoursForDisplay) %>
-                                <% if(employeeInfo != null && "Hourly".equalsIgnoreCase((String)employeeInfo.getOrDefault("wageType",""))) { %>
+                            <td colspan="5" style="text-align: right; padding-right: 9px;">Period Total: &nbsp;&nbsp;&nbsp;<%= String.format(Locale.US, "%.2f", periodTotalHoursForDisplay) %>
+                                <% if(employeeInfo != null && "Hourly".equalsIgnoreCase((String)employeeInfo.getOrDefault("wageType",""))) { %></td>
+                            <td>
+                                    
                                     <span class="hours-breakdown-span">
                                          (Reg: <%= String.format(Locale.US, "%.2f", totalRegularHoursForDisplay) %>,
                                          OT: <%= String.format(Locale.US, "%.2f", totalOvertimeHoursForDisplay) %>
@@ -304,8 +304,8 @@
                                          , DT: <%= String.format(Locale.US, "%.2f", totalDoubleTimeHoursForDisplay) %>
                                          <% } %>)
                                     </span>
-                                <% } %>
-                            </td>
+                                <% } %></td>
+                         
                         </tr>
                     </tfoot>
                     <% } %>

@@ -197,7 +197,7 @@
                 
                 <%-- [NEW] Promotional banner for the free trial --%>
                 <div class="promo-banner">
-                    <i class="fas fa-tag"></i> Limited Time Offer: Get a <strong>30-day free trial</strong> with code <span class="promo-code">30FREE</span>!
+                    <i class="fas fa-tag"></i> Limited Time Offer: Get a <span class="promo-highlight">30-day free trial</span> with code <span class="promo-code">30FREE</span>!
                 </div>
 
                 <div class="value-props">

@@ -344,29 +344,30 @@ public class ShowPunches {
                     calculatedPeriodRegular += hours;
                 }
             } else {
-                // Get employee state for state-based overtime calculation
-                String employeeState = null;
-                String sql = "SELECT STATE FROM employee_data WHERE EID = ? AND TenantID = ?";
-                try (PreparedStatement ps = con.prepareStatement(sql)) {
-                    ps.setInt(1, globalEID);
-                    ps.setInt(2, tenantId);
-                    try (ResultSet rs = ps.executeQuery()) {
-                        if (rs.next()) {
-                            employeeState = rs.getString("STATE");
-                        }
-                    }
-                } catch (SQLException e) {
-                    logger.log(Level.WARNING, "Error getting employee state for overtime calculation", e);
-                }
-                
-                // Check Pro plan and overtime type
-                boolean hasProPlan = timeclock.subscription.SubscriptionUtils.hasProPlan(tenantId);
                 String overtimeType = Configuration.getProperty(tenantId, "OvertimeType", "manual");
-                
-                // Get state-specific overtime rules
                 timeclock.settings.StateOvertimeRuleDetail stateRules = null;
-                if (hasProPlan && "employee_state".equals(overtimeType) && employeeState != null && !employeeState.trim().isEmpty()) {
-                    stateRules = timeclock.settings.StateOvertimeRules.getRulesForState(employeeState);
+                
+                if ("company_state".equals(overtimeType)) {
+                    String companyState = Configuration.getProperty(tenantId, "OvertimeState", null);
+                    if (companyState != null && !companyState.trim().isEmpty()) {
+                        stateRules = timeclock.settings.StateOvertimeRules.getRulesForState(companyState);
+                    }
+                } else if ("employee_state".equals(overtimeType)) {
+                    String sql = "SELECT STATE FROM employee_data WHERE EID = ? AND TenantID = ?";
+                    try (PreparedStatement ps = con.prepareStatement(sql)) {
+                        ps.setInt(1, globalEID);
+                        ps.setInt(2, tenantId);
+                        try (ResultSet rs = ps.executeQuery()) {
+                            if (rs.next()) {
+                                String employeeState = rs.getString("STATE");
+                                if (employeeState != null && !employeeState.trim().isEmpty()) {
+                                    stateRules = timeclock.settings.StateOvertimeRules.getRulesForState(employeeState);
+                                }
+                            }
+                        }
+                    } catch (SQLException e) {
+                        logger.log(Level.WARNING, "Error getting employee state for overtime calculation", e);
+                    }
                 }
                 
                 // Determine effective overtime settings
@@ -374,19 +375,16 @@ public class ShowPunches {
                 double dailyOtThreshold, doubleTimeThreshold;
                 
                 if (stateRules != null) {
-                    // Use state-specific rules
                     dailyOtEnabled = stateRules.isDailyOTEnabled();
                     dailyOtThreshold = stateRules.getDailyOTThreshold();
                     doubleTimeEnabled = stateRules.isDoubleTimeEnabled();
                     doubleTimeThreshold = stateRules.getDoubleTimeThreshold();
-                } else if (hasProPlan && "employee_state".equals(overtimeType)) {
-                    // Use FLSA standards for states without special rules in employee_state mode
+                } else if (("company_state".equals(overtimeType) || "employee_state".equals(overtimeType))) {
                     dailyOtEnabled = false;
                     dailyOtThreshold = 0.0;
                     doubleTimeEnabled = false;
                     doubleTimeThreshold = 0.0;
                 } else {
-                    // Use tenant configuration for other modes
                     dailyOtEnabled = "true".equalsIgnoreCase(Configuration.getProperty(tenantId, "OvertimeDaily", "false"));
                     dailyOtThreshold = getDoubleConfigProperty(tenantId, "OvertimeDailyThreshold", "8.0");
                     doubleTimeEnabled = "true".equalsIgnoreCase(Configuration.getProperty(tenantId, "OvertimeDoubleTimeEnabled", "false"));

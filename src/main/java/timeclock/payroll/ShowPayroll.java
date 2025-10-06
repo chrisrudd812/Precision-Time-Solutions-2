@@ -180,30 +180,31 @@ public class ShowPayroll {
                 double wage = (Double) empInfo.getOrDefault("Wage", 0.0);
                 String employeeState = (String) empInfo.get("State");
                 
-                // Get state-specific overtime rules based on overtime type setting
                 StateOvertimeRuleDetail stateRules = null;
-                if (hasProPlan && "employee_state".equals(overtimeType) && employeeState != null && !employeeState.trim().isEmpty()) {
+                
+                if ("company_state".equals(overtimeType)) {
+                    String companyState = Configuration.getProperty(tenantId, "OvertimeState", null);
+                    if (companyState != null && !companyState.trim().isEmpty()) {
+                        stateRules = StateOvertimeRules.getRulesForState(companyState);
+                    }
+                } else if ("employee_state".equals(overtimeType) && employeeState != null && !employeeState.trim().isEmpty()) {
                     stateRules = StateOvertimeRules.getRulesForState(employeeState);
                 }
                 
-                // Use state rules if available, otherwise use FLSA standards for employee_state mode
                 boolean effectiveDailyOtEnabled, effectiveDoubleTimeEnabled;
                 double effectiveDailyOtThreshold, effectiveDoubleTimeThreshold;
                 
                 if (stateRules != null) {
-                    // Use state-specific rules
                     effectiveDailyOtEnabled = stateRules.isDailyOTEnabled();
                     effectiveDailyOtThreshold = stateRules.getDailyOTThreshold();
                     effectiveDoubleTimeEnabled = stateRules.isDoubleTimeEnabled();
                     effectiveDoubleTimeThreshold = stateRules.getDoubleTimeThreshold();
-                } else if (hasProPlan && "employee_state".equals(overtimeType)) {
-                    // Use FLSA standards for states without special rules in employee_state mode
+                } else if ("company_state".equals(overtimeType) || "employee_state".equals(overtimeType)) {
                     effectiveDailyOtEnabled = false;
                     effectiveDailyOtThreshold = 0.0;
                     effectiveDoubleTimeEnabled = false;
                     effectiveDoubleTimeThreshold = 0.0;
                 } else {
-                    // Use tenant configuration for other modes
                     effectiveDailyOtEnabled = configDailyOtEnabled;
                     effectiveDailyOtThreshold = configDailyOtThreshold;
                     effectiveDoubleTimeEnabled = configDoubleTimeEnabled;

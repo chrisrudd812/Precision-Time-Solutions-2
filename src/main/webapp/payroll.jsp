@@ -189,8 +189,8 @@
                 <tbody><%= payrollTableHtml %></tbody>
                 <tfoot>
                     <tr>
-                        <td colspan="9">Payroll Grand Total:</td>
-                        <td><%= formattedGrandTotal %></td>
+                        <td colspan="9" style="text-align: right; padding-right: 15px;">Payroll Grand Total:</td>
+                        <td style="font-weight: bold; text-align: right;"><%= formattedGrandTotal %></td>
                     </tr>
                 </tfoot>
             </table>

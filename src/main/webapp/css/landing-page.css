@@ -129,6 +129,16 @@ body {
     max-width: 800px;
     font-size: 1.1em;
 }
+.promo-banner .promo-highlight {
+    animation: colorBlink 2s infinite;
+    font-weight: 700;
+}
+@keyframes colorBlink {
+    0%, 100% { color: #d32f2f; opacity: 1; }
+    25% { color: #f57c00; opacity: 0.8; }
+    50% { color: #388e3c; opacity: 1; }
+    75% { color: #1976d2; opacity: 0.8; }
+}
 .promo-banner .promo-code {
     background-color: #ffffff;
     padding: 3px 8px;
@@ -136,6 +146,7 @@ body {
     font-weight: 700;
     border: 1px dashed #00796b;
     margin-left: 5px;
+    color: #28a745;
 }
 .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 30px; justify-content: center; }
 .pricing-box {

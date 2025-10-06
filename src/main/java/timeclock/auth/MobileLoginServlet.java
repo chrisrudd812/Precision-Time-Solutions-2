@@ -126,6 +126,12 @@ public class MobileLoginServlet extends HttpServlet {
         userData.put("requiresPasswordChange", requiresChange);
         userData.put("maxUsers", tenantInfo.maxUsers());
         
+        boolean hasProPlan = tenantInfo.maxUsers() == 100;
+        if (hasProPlan) {
+            String overtimeType = timeclock.Configuration.getProperty(tenantInfo.id(), "OvertimeType", "manual");
+            userData.put("overtimeType", overtimeType);
+        }
+        
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
         response.put("user", userData);

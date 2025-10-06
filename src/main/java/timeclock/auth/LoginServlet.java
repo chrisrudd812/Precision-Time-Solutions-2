@@ -203,6 +203,17 @@ public class LoginServlet extends HttpServlet {
 	
 	private boolean isPayPeriodEnded(Connection conn, int tenantId) {
 		try {
+			String tzSql = "SELECT DefaultTimeZone FROM tenants WHERE TenantID = ?";
+			String timezone = "America/New_York";
+			try (PreparedStatement pstmt = conn.prepareStatement(tzSql)) {
+				pstmt.setInt(1, tenantId);
+				try (ResultSet rs = pstmt.executeQuery()) {
+					if (rs.next() && rs.getString("DefaultTimeZone") != null) {
+						timezone = rs.getString("DefaultTimeZone");
+					}
+				}
+			}
+			
 			String sql = "SELECT setting_value FROM settings WHERE TenantID = ? AND setting_key = 'PayPeriodEndDate'";
 			try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 				pstmt.setInt(1, tenantId);
@@ -211,8 +222,8 @@ public class LoginServlet extends HttpServlet {
 						String payPeriodEndStr = rs.getString("setting_value");
 						if (payPeriodEndStr != null && !payPeriodEndStr.trim().isEmpty()) {
 							java.time.LocalDate payPeriodEnd = java.time.LocalDate.parse(payPeriodEndStr.trim());
-							java.time.LocalDate today = java.time.LocalDate.now();
-							logger.info("PAY PERIOD CHECK - Today: " + today + ", PayPeriodEnd: " + payPeriodEnd + ", isAfter: " + today.isAfter(payPeriodEnd));
+							java.time.LocalDate today = java.time.LocalDate.now(java.time.ZoneId.of(timezone));
+							logger.info("PAY PERIOD CHECK - Timezone: " + timezone + ", Today: " + today + ", PayPeriodEnd: " + payPeriodEnd + ", isAfter: " + today.isAfter(payPeriodEnd));
 							return today.isAfter(payPeriodEnd);
 						}
 					}
