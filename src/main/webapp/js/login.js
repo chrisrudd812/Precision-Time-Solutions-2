@@ -42,7 +42,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const browserTimeZoneInput = document.getElementById('browserTimeZone');
     const passwordGroup = document.getElementById('passwordGroup');
     const isMobile = /Mobi|Android/i.test(navigator.userAgent);
-    let biometricAttempted = false;
 
     // PIN field is always visible and required
     passwordGroup.style.display = 'block';
@@ -188,47 +187,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // Regular PIN submission - try biometric verification on mobile after PIN validation
+            // Regular PIN submission
             if (!passwordField.value.trim()) {
                 alert('Please enter your PIN');
                 return;
             }
             
-            // Try biometric verification on mobile devices after PIN is entered
-            if (isMobile && isBiometricSupported() && !biometricAttempted) {
-                biometricAttempted = true;
-                try {
-                    submitButton.disabled = true;
-                    submitButton.innerHTML = '<i class="fas fa-fingerprint"></i> Use Fingerprint...';
-                    
-                    const originalPassword = passwordField.value;
-                    
-                    await authenticateWithBiometric();
-                    
-                    // Submit with fingerprint auth
-                    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging In...';
-                    
-                    // Add hidden fields for servlet
-                    const hiddenPassword = document.createElement('input');
-                    hiddenPassword.type = 'hidden';
-                    hiddenPassword.name = 'password';
-                    hiddenPassword.value = originalPassword;
-                    loginForm.appendChild(hiddenPassword);
-                    
-                    document.getElementById('fingerprintAuth').value = 'true';
-                    browserTimeZoneInput.value = Intl.DateTimeFormat().resolvedOptions().timeZone;
-                    loginForm.submit();
-                    return;
-                    
-                } catch (error) {
-                    alert('Biometric verification required. Please try again.');
-                    submitButton.disabled = false;
-                    submitButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> Log In';
-                    return;
-                }
-            }
-            
-            // Regular login for non-mobile devices
+            // Regular login
             if (browserTimeZoneInput) {
                 try {
                     browserTimeZoneInput.value = Intl.DateTimeFormat().resolvedOptions().timeZone;

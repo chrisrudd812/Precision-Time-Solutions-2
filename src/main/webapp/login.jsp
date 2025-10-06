@@ -90,7 +90,7 @@
                 </button>
             </div>
         </form>
-        <p class="signup-redirect">Don't have a company account? <a href="signup_company_info.jsp">Sign Up Here</a></p>
+        <p class="signup-redirect">Don't have a company account? <a href="index.jsp">Sign Up Here</a></p>
     </div>
 
     <%-- MODIFIED: Modal structure updated to match the site's standard --%>

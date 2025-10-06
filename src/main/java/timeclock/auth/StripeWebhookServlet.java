@@ -95,15 +95,23 @@ public class StripeWebhookServlet extends HttpServlet {
     private void handleSubscriptionUpdated(Subscription subscription) {
         String newStatus = subscription.getStatus();
         String customerId = subscription.getCustomer();
+        Long currentPeriodEnd = subscription.getCurrentPeriodEnd();
+        String priceId = subscription.getItems().getData().get(0).getPrice().getId();
         
-        String sql = "UPDATE tenants SET SubscriptionStatus = ? WHERE StripeCustomerID = ?";
+        String sql = "UPDATE tenants SET SubscriptionStatus = ?, CurrentPeriodEnd = FROM_UNIXTIME(?), StripePriceID = ?, " +
+                     "MaxUsers = (SELECT maxUsers FROM subscription_plans WHERE stripePriceId = ?) " +
+                     "WHERE StripeCustomerID = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
             pstmt.setString(1, newStatus);
-            pstmt.setString(2, customerId);
+            pstmt.setLong(2, currentPeriodEnd);
+            pstmt.setString(3, priceId);
+            pstmt.setString(4, priceId);
+            pstmt.setString(5, customerId);
             int rowsAffected = pstmt.executeUpdate();
             if (rowsAffected > 0) {
+                logger.info("Subscription updated for customer " + customerId + ": status=" + newStatus + ", periodEnd=" + currentPeriodEnd + ", priceId=" + priceId);
             } else {
                 logger.warning("DB UPDATE FAILED: Could not find a tenant with StripeCustomerID " + customerId);
             }

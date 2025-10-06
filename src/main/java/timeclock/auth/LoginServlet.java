@@ -37,16 +37,9 @@ public class LoginServlet extends HttpServlet {
 		String companyIdentifier = request.getParameter("companyIdentifier");
 		String email = request.getParameter("email");
 		String password = request.getParameter("password");
-		String fingerprintAuth = request.getParameter("fingerprintAuth");
 		HttpSession session = request.getSession(true);
 
-		// Handle fingerprint authentication first
-		if ("true".equals(fingerprintAuth)) {
-			handleFingerprintLogin(request, response, companyIdentifier, email, password, session);
-			return;
-		}
-
-		// Regular validation for PIN-only login
+		// Regular validation for PIN login
 		if (!Helpers.isStringValid(companyIdentifier) || !Helpers.isStringValid(email) || !Helpers.isStringValid(password)) {
 			response.sendRedirect("login.jsp?error="
 					+ URLEncoder.encode("Company ID, email, and PIN are required.", StandardCharsets.UTF_8));
@@ -217,9 +210,10 @@ public class LoginServlet extends HttpServlet {
 					if (rs.next()) {
 						String payPeriodEndStr = rs.getString("setting_value");
 						if (payPeriodEndStr != null && !payPeriodEndStr.trim().isEmpty()) {
-							java.sql.Date payPeriodEnd = java.sql.Date.valueOf(payPeriodEndStr.trim());
-							java.sql.Date today = new java.sql.Date(System.currentTimeMillis());
-							return today.after(payPeriodEnd);
+							java.time.LocalDate payPeriodEnd = java.time.LocalDate.parse(payPeriodEndStr.trim());
+							java.time.LocalDate today = java.time.LocalDate.now();
+							logger.info("PAY PERIOD CHECK - Today: " + today + ", PayPeriodEnd: " + payPeriodEnd + ", isAfter: " + today.isAfter(payPeriodEnd));
+							return today.isAfter(payPeriodEnd);
 						}
 					}
 				}
@@ -228,106 +222,5 @@ public class LoginServlet extends HttpServlet {
 			logger.log(Level.WARNING, "Error checking pay period end date for TenantID " + tenantId, e);
 		}
 		return false;
-	}
-
-	private void handleFingerprintLogin(HttpServletRequest request, HttpServletResponse response, 
-			String companyIdentifier, String email, String password, HttpSession session) throws ServletException, IOException {
-		
-		if (!Helpers.isStringValid(companyIdentifier) || !Helpers.isStringValid(email)) {
-			response.sendRedirect("login.jsp?error=" + URLEncoder.encode("Company ID and email are required.", StandardCharsets.UTF_8));
-			return;
-		}
-
-		try (Connection conn = DatabaseConnection.getConnection()) {
-			String tenantSql = "SELECT TenantID FROM tenants WHERE CompanyIdentifier = ?";
-			PreparedStatement psTenant = conn.prepareStatement(tenantSql);
-			psTenant.setString(1, companyIdentifier.trim());
-			ResultSet rsTenant = psTenant.executeQuery();
-
-			if (!rsTenant.next()) {
-				response.sendRedirect("login.jsp?error=" + URLEncoder.encode("Invalid Company ID.", StandardCharsets.UTF_8));
-				return;
-			}
-			int tenantId = rsTenant.getInt("TenantID");
-
-			String userSql = "SELECT EID, PasswordHash, PERMISSIONS, FIRST_NAME, LAST_NAME, ACTIVE, RequiresPasswordChange FROM employee_data WHERE LOWER(EMAIL) = LOWER(?) AND TenantID = ?";
-			PreparedStatement psUser = conn.prepareStatement(userSql);
-			psUser.setString(1, email.trim().toLowerCase());
-			psUser.setInt(2, tenantId);
-			ResultSet rsUser = psUser.executeQuery();
-
-			if (rsUser.next()) {
-				String storedHash = rsUser.getString("PasswordHash");
-				boolean passwordMatch = (storedHash != null) && BCrypt.checkpw(password, storedHash);
-
-				if (!passwordMatch) {
-					response.sendRedirect("login.jsp?error=" + URLEncoder.encode("Invalid PIN.", StandardCharsets.UTF_8));
-					return;
-				}
-
-				if (!rsUser.getBoolean("ACTIVE")) {
-					response.sendRedirect("login.jsp?error=" + URLEncoder.encode("Account is inactive.", StandardCharsets.UTF_8));
-					return;
-				}
-
-				// Both biometric and PIN verified
-				int eid = rsUser.getInt("EID");
-				String userPermissions = rsUser.getString("PERMISSIONS");
-				
-				session.setAttribute("EID", eid);
-				session.setAttribute("UserFirstName", rsUser.getString("FIRST_NAME"));
-				session.setAttribute("UserLastName", rsUser.getString("LAST_NAME"));
-				session.setAttribute("Permissions", userPermissions);
-				session.setAttribute("TenantID", tenantId);
-				session.setAttribute("CompanyIdentifier", companyIdentifier.trim());
-				session.setAttribute("Email", email.trim().toLowerCase());
-				
-				boolean locationCheckIsRequired = Helpers.isLocationCheckRequired(tenantId);
-				session.setAttribute("locationCheckIsRequired", locationCheckIsRequired);
-
-				if ("Administrator".equalsIgnoreCase(userPermissions)) {
-					session.setMaxInactiveInterval(4 * 60 * 60);
-				} else {
-					session.setMaxInactiveInterval(30);
-				}
-
-				String subscriptionStatus = syncSubscriptionStatus(conn, tenantId);
-				session.setAttribute("SubscriptionStatus", subscriptionStatus);
-
-				if ("Administrator".equalsIgnoreCase(userPermissions)
-						&& ("canceled".equalsIgnoreCase(subscriptionStatus)
-								|| "unpaid".equalsIgnoreCase(subscriptionStatus)
-								|| "past_due".equalsIgnoreCase(subscriptionStatus))) {
-					session.setAttribute("errorMessage",
-							"Your subscription is inactive. Please update your billing information to restore access.");
-					response.sendRedirect("account.jsp");
-					return;
-				}
-
-				if (rsUser.getBoolean("RequiresPasswordChange")) {
-					session.setAttribute("pinChangeRequired", true);
-					response.sendRedirect("change_password.jsp");
-				} else {
-					session.removeAttribute("startSetupWizard");
-					
-					if ("Administrator".equalsIgnoreCase(userPermissions)) {
-						boolean payPeriodEnded = isPayPeriodEnded(conn, tenantId);
-						if (payPeriodEnded) {
-							response.sendRedirect("employees.jsp?showPayrollModal=true");
-						} else {
-							response.sendRedirect("employees.jsp");
-						}
-					} else {
-						response.sendRedirect("timeclock.jsp");
-					}
-				}
-			} else {
-				response.sendRedirect("login.jsp?error=" + URLEncoder.encode("Invalid credentials.", StandardCharsets.UTF_8));
-			}
-
-		} catch (Exception e) {
-			logger.log(Level.SEVERE, "Error in fingerprint login process.", e);
-			response.sendRedirect("login.jsp?error=" + URLEncoder.encode("A server error occurred. Please try again.", StandardCharsets.UTF_8));
-		}
 	}
 }

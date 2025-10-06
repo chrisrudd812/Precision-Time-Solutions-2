@@ -35,12 +35,13 @@ body::before {
 
 .login-container {
     background-color: #fff;
-    padding: 30px 40px 40px 40px;
+    padding: 15px 30px 10px 30px;
     border-radius: 8px;
     box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+    max-width: 450px;
     width: 100%;
-    max-width: 420px;
     text-align: center;
+    max-height: 100vh;
 }
 
 /* --- START: LOGO STYLE FIX --- */
@@ -51,8 +52,7 @@ body::before {
 }
 
 .logo-image {
-    max-height: 30vh;
-   
+    max-height: 20vh;
 }
 /* --- END: LOGO STYLE FIX --- */
 
@@ -72,19 +72,19 @@ body::before {
     background-color: #f8fafc;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
-    padding: 25px 20px 15px 20px;
-    margin-bottom: 20px;
+    padding: 10px 20px 5px 20px;
+    margin-bottom: 10px;
 }
 
 .login-form .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 8px;
     text-align: left;
 }
 
 .login-form .form-group label {
     display: block;
-    /* margin-bottom: 5px; */
-    margin-top:25px;
+    margin-bottom: 5px;
+    margin-top: 10px;
     font-weight: 500;
     font-size: 0.9em;
     color: #495057;
@@ -115,7 +115,7 @@ body::before {
 }
 
 .login-form .form-actions {
-    margin-top: 30px;
+    margin-top: 10px;
 }
 
 .login-submit-button.glossy-button {
@@ -131,9 +131,9 @@ body::before {
 .signup-redirect,
 .forgot-password-link {
     text-align: center;
-    margin-top: 20px;
-    margin-bottom: 15px;
-    font-size: 0.9em;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    font-size: 0.85em;
 }
 .signup-redirect a,
 .forgot-password-link a {
@@ -179,7 +179,7 @@ body::before {
     margin-left: 2px;
 }
 
-/* Mobile responsive styles */
+/* Mobile responsive styles - landscape */
 @media (max-width: 768px) {
     body {
         padding: 10px;

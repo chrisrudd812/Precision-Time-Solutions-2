@@ -27,6 +27,44 @@ public class SubscriptionStatusServlet extends HttpServlet {
     private static final Logger logger = Logger.getLogger(SubscriptionStatusServlet.class.getName());
 
     @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        response.setContentType("text/plain");
+        int updated = 0;
+        int errors = 0;
+
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            String sql = "SELECT TenantID, StripeSubscriptionID FROM tenants WHERE StripeSubscriptionID IS NOT NULL";
+            try (PreparedStatement pstmt = conn.prepareStatement(sql);
+                 ResultSet rs = pstmt.executeQuery()) {
+                
+                while (rs.next()) {
+                    int tenantId = rs.getInt("TenantID");
+                    String subId = rs.getString("StripeSubscriptionID");
+                    
+                    try {
+                        Subscription sub = Subscription.retrieve(subId);
+                        String status = sub.getStatus();
+                        String priceId = sub.getItems().getData().get(0).getPrice().getId();
+                        Timestamp periodEnd = new Timestamp(sub.getCurrentPeriodEnd() * 1000L);
+                        int maxUsers = getMaxUsersForPriceId(conn, priceId);
+                        
+                        updateTenantSubscription(conn, tenantId, status, priceId, periodEnd, maxUsers);
+                        updated++;
+                    } catch (Exception e) {
+                        logger.log(Level.SEVERE, "Error syncing tenant " + tenantId, e);
+                        errors++;
+                    }
+                }
+            }
+            response.getWriter().write("Sync complete. Updated: " + updated + ", Errors: " + errors);
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Database error during sync", e);
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.getWriter().write("Database error: " + e.getMessage());
+        }
+    }
+
+    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
