@@ -61,8 +61,8 @@
             </div>
 
             <div class="button-row">
-                <button type="button" id="cancelLocationModalBtn" class="glossy-button text-red">Cancel</button>
                 <button type="submit" id="saveLocationBtn" class="glossy-button text-green">Save Location</button>
+                <button type="button" id="cancelLocationModalBtn" class="glossy-button text-red">Cancel</button>
             </div>
         </form>
     </div>

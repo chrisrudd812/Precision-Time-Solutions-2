@@ -60,8 +60,7 @@
 }
 
 .day-restriction-block { 
-    /* margin-bottom: 20px;  */
-    padding-bottom: 20px; 
+    padding: 8px 0; 
     border-bottom: 1px solid #f0f0f0;
 }
 
@@ -69,19 +68,32 @@
     border-bottom: none;
 }
 
+.day-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 25px;
+    margin-bottom: 3px;
+}
+
 .day-header { 
-    font-size: 1.2em; 
+    font-size: 1.05em; 
     font-weight: bold; 
     color: #1e3a8a;
-    margin-bottom: 12px;
+    flex-shrink: 0;
 }
 
 .day-settings-row { 
     display: flex; 
     flex-wrap: wrap; 
     align-items: center; 
-    gap: 10px 30px;
-    margin-bottom: 10px;
+    justify-content: center;
+    gap: 10px 25px;
+    margin-bottom: 0;
+}
+
+.setting-item .day-settings-row {
+    justify-content: flex-start;
 }
 
 .day-settings-row .toggle-group { 
@@ -95,6 +107,10 @@
     margin-right: 10px; 
     font-weight: normal; 
     color: #333;
+}
+
+.day-settings-row .slider-label strong {
+    margin-left: 0.3em;
 }
 
 /* Override switch style for this page */
@@ -112,9 +128,10 @@
 
 .time-inputs-group { 
     display: flex; 
-    flex-direction: column; /* MODIFIED: Stack label above inputs */
-    align-items: flex-start;
-    gap: 8px; 
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 15px; 
     flex-grow: 1;
 }
 
@@ -122,7 +139,8 @@
     font-size: 0.9em; 
     color: #555; 
     font-weight: 500; 
-    display: block; /* Ensure it takes its own line */
+    flex-grow: 1;
+    text-align: center;
 }
 
 .time-input-pair-wrapper {
@@ -167,8 +185,41 @@
     padding-top: 20px;
     border-top: 1px solid #ddd; 
     display: flex;
-    justify-content: flex-end;
+    justify-content: center;
     gap: 15px;
+}
+
+.form-actions .glossy-button {
+    width: 200px;
+    flex: 0 0 200px;
+    box-sizing: border-box;
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* Tablet/Small Desktop - screens below 675px */
+@media (max-width: 675px) {
+    .day-header-row {
+        margin-bottom: 5px;
+    }
+    
+    .time-window-label {
+        display: none;
+    }
+    
+    .time-inputs-group {
+        flex-direction: column;
+        align-items: flex-start;
+        width: 100%;
+    }
+    
+    .time-inputs-group::before {
+        content: "Allowed Time Window:";
+        font-size: 0.9em;
+        color: #555;
+        font-weight: 500;
+        margin-bottom: 5px;
+    }
 }
 
 /* Mobile Styles - ONLY for screens 480px and below */
@@ -189,7 +240,7 @@
     
     .day-settings-row {
         flex-direction: column !important;
-        align-items: stretch !important;
+        align-items: top;
         gap: 15px !important;
     }
     
@@ -249,9 +300,11 @@
     }
     
     .form-actions .glossy-button {
-        width: 100% !important;
+        width: auto !important;
+        flex: 1 !important;
         text-align: center !important;
         box-sizing: border-box !important;
+        padding: 10px 18px !important;
     }
     
     .day-restriction-block {

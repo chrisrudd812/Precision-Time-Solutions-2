@@ -219,7 +219,7 @@ table.timecard-table {
     width: 100%;
     border-collapse: collapse;
     font-family: 'Consolas', 'Courier New', Courier, monospace;
-    font-size: 0.9em;
+    font-size: 0.95em;
     margin-bottom: 0;
 }
 .timecard-table th, .timecard-table td {
@@ -231,7 +231,7 @@ table.timecard-table {
     white-space: nowrap;
     border-left: 0;
     border-right: 0;
-    font-size: 0.9em;
+    font-size: 0.95em;
 }
 .timecard-table thead th {
     background-color: #e8e1c6;
@@ -477,6 +477,7 @@ table.timecard-table {
 @media (max-width: 900px) {
     #main-clock-container {
         width: 95%;
+        top: 60px;
         font-size: 2em;
         position: sticky;
     }
@@ -486,9 +487,20 @@ table.timecard-table {
 @media (max-width: 768px) {
     #main-clock-container {
         width: 95%;
+        top: 60px;
         font-size: 1.8em;
         padding: 20px 25px;
         position: sticky;
+    }
+    
+    .timecard {
+        padding: 15px 3px !important;
+    }
+    
+    .timecard-table-container {
+        margin-left: -3px !important;
+        margin-right: -3px !important;
+        width: calc(100% + 6px) !important;
     }
 }
 
@@ -498,6 +510,8 @@ table.timecard-table {
         overflow-x: hidden;
         overflow-y: visible;
         height: auto;
+        align-items: center;
+        
     }
     
     body.timeclock-page {
@@ -511,7 +525,7 @@ table.timecard-table {
     }
     
     #main-clock-container {
-        width: 100vw !important;
+        width: 99vw !important;
         margin: 0 !important;
         padding: 10px !important;
         font-size: 1.5em !important;
@@ -534,7 +548,7 @@ table.timecard-table {
     
     .timecard-container {
         width: calc(100% - 5px) !important;
-        margin: 2.5px auto !important;
+        margin: 10px auto !important;
         padding: 0 !important;
         box-sizing: border-box !important;
     }
@@ -547,7 +561,7 @@ table.timecard-table {
     }
     
     .user-logout-container {
-        width: calc(100% - 5px) !important;
+        max-width: 98%;
         margin: 2.5px auto !important;
         padding: 0 !important;
         box-sizing: border-box !important;
@@ -560,28 +574,36 @@ table.timecard-table {
     
     .timecard-info {
         flex-direction: column;
+        margin-bottom: 5px;
     }
     
     .info-left, .info-right {
         min-width: 100%;
+        padding-left: 10px;
     }
     
     .timecard-table-container {
-        width: 100% !important;
-        margin: 15px 0 !important;
+        width: calc(100% + 6px) !important;
+        margin: 15px -3px !important;
         max-height: 30vh !important;
         overflow-y: auto !important;
         box-sizing: border-box !important;
+        border-radius: 0 !important;
+    }
+    
+    .timecard {
+        padding: 10px 3px !important;
     }
     
     .timecard-table {
-        font-size: 0.65em;
+        font-size: 0.85em !important;
         table-layout: fixed;
+        border-collapse: collapse !important;
     }
     
     .timecard-table th, .timecard-table td {
-        padding: 2px 1px;
-        font-size: 0.9em;
+        padding: 5px 2px !important;
+        font-size: 1em !important;
         white-space: normal;
         word-break: normal;
         overflow-wrap: normal;
@@ -590,6 +612,7 @@ table.timecard-table {
     
     .timecard-table th:nth-child(1), .timecard-table td:nth-child(1) {
         width: 8%;
+        padding-right: 10px !important;
     }
     
     .timecard-table th:nth-child(2), .timecard-table td:nth-child(2) {
@@ -608,21 +631,25 @@ table.timecard-table {
     
     .timecard-table th:nth-child(5), .timecard-table td:nth-child(5) {
         width: 17%;
+        padding-right: 10px !important;
     }
     
     .timecard-table th:nth-child(6), .timecard-table td:nth-child(6) {
         width: 20%;
     }
     
-
+.accrual-balances {
+	margin-top:10px;
+}
     
     .balance-item {
-        display: block;
-        margin: 10px auto;
-        padding: 10px;
-        width: 80%;
+        display: inline-block;
+        margin: 5px 2px;
+        padding: 8px 5px;
+        width: auto;
         background-color: #fcf8e3;
         border-radius: 5px;
+        font-size: 0.85em;
     }
     
     .punch-buttons {

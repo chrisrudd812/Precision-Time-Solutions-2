@@ -125,7 +125,10 @@
                     String endTime = getSettingValue(currentDaySetting, "endTime", "");
                 %>
                 <div class="day-restriction-block">
-                    <div class="day-header"><%= day %></div>
+                    <div class="day-header-row">
+                        <div class="day-header"><%= day %></div>
+                        <label class="time-window-label" id="timeWindowHeading_<%= day %>">Allowed Time Window:</label>
+                    </div>
                     <div class="day-settings-row">
                         <div class="toggle-group">
                             <label for="isRestricted_<%= day %>" class="slider-label">Enable Restriction:</label>
@@ -135,8 +138,6 @@
                             </label>
                         </div>
                         <div class="time-inputs-group" id="timeInputsGroup_<%= day %>">
-                            <%-- MODIFIED: Moved this label to be above the inputs --%>
-                            <label class="time-window-label" id="timeWindowHeading_<%= day %>">Allowed Time Window:</label>
                              <div class="time-input-pair-wrapper">
                                 <div class="time-input-pair">
                                     <label for="startTime_<%= day %>">From:</label>
@@ -152,8 +153,8 @@
                 </div>
                 <% } %>
                 <div class="form-actions">
-                    <a href="<%= cancelUrl %>" class="glossy-button text-red"><i class="fas fa-arrow-left"></i> Back to Settings</a>
                     <button type="button" id="saveTimeDaySettingsBtn" class="submit-btn glossy-button text-green"><i class="fas fa-save"></i> Save Settings</button>
+                    <a href="<%= cancelUrl %>" class="glossy-button text-red"><i class="fas fa-arrow-left"></i> Back to Settings</a>
                 </div>
             </form>
         </div>
