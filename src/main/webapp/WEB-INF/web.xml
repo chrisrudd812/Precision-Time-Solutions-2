@@ -29,4 +29,14 @@
         </cookie-config>
     </session-config>
     
+    <servlet>
+        <servlet-name>StripeWebhookServlet</servlet-name>
+        <servlet-class>timeclock.auth.StripeWebhookServlet</servlet-class>
+    </servlet>
+    
+    <servlet-mapping>
+        <servlet-name>StripeWebhookServlet</servlet-name>
+        <url-pattern>/stripe-webhook</url-pattern>
+    </servlet-mapping>
+    
 </web-app>

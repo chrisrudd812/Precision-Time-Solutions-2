@@ -48,6 +48,34 @@
     border-radius: 8px;
 }
 
+.employee-selector-section {
+    margin-bottom: 20px;
+    padding: 15px 20px;
+    background-color: #fef3c7;
+    border: 1px solid #fbbf24;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.employee-selector-section label {
+    font-weight: 600;
+    color: #78350f;
+    margin-bottom: 0;
+    white-space: nowrap;
+}
+
+.employee-selector-section select {
+    flex-grow: 1;
+    padding: 8px 12px;
+    border: 1px solid #d97706;
+    border-radius: 4px;
+    font-size: 1em;
+    background-color: #fff;
+    cursor: pointer;
+}
+
 .how-it-works-section h3 {
     margin: 0 0 15px 0;
     color: #1e40af;

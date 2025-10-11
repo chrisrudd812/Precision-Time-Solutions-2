@@ -254,6 +254,7 @@ table.timecard-table {
 .timecard-table tbody tr.band-b { background-color: #f7f7f0; }
 .timecard-table tbody tr:last-child td { border-bottom: none; }
 .lateOrEarlyOutTag { color: #c00000; font-weight: bold; }
+.overtime-bonus-text { color: #16a34a; font-weight: 500; }
 .timecard-table tfoot { position: sticky; bottom: -1px; z-index: 10; }
 .timecard-table tfoot tr { background-color: #e8e1c6; font-weight: bold; color: #5c584a; }
 .timecard-table tfoot td { background-color: inherit; border-bottom: none; padding: 8px 8px; }

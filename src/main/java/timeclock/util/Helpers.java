@@ -1,11 +1,14 @@
 package timeclock.util;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import timeclock.Configuration;
 import timeclock.db.DatabaseConnection;
 
@@ -82,6 +85,23 @@ public class Helpers {
             logger.log(Level.SEVERE, "Error checking if location check is required for TenantID: " + tenantId, e);
             // Fail-safe: If the check fails, assume restriction is on to maintain security.
             return true;
+        }
+    }
+
+    /**
+     * Performs a secure redirect that preserves HTTPS protocol when behind a load balancer.
+     * @param response The HttpServletResponse to redirect.
+     * @param request The HttpServletRequest to check for HTTPS headers.
+     * @param path The relative path to redirect to.
+     * @throws IOException if the redirect fails.
+     */
+    public static void secureRedirect(HttpServletResponse response, HttpServletRequest request, String path) throws IOException {
+        String scheme = request.getHeader("X-Forwarded-Proto");
+        if (scheme == null) scheme = request.getScheme();
+        if ("https".equals(scheme)) {
+            response.sendRedirect("https://" + request.getServerName() + request.getContextPath() + "/" + path);
+        } else {
+            response.sendRedirect(path);
         }
     }
 }

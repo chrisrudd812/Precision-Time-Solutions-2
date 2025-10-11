@@ -30,6 +30,21 @@
 
     if (pageTitle == null) pageTitle = "Time Card Print View";
     if (payPeriodMessage == null) payPeriodMessage = "Pay Period Not Set";
+    
+    // Determine what's being viewed based on request parameters
+    String filterType = request.getParameter("filterType");
+    String filterValue = request.getParameter("filterValue");
+    String viewingMessage = "";
+    
+    if ("all".equals(filterType)) {
+        viewingMessage = "Viewing: All Time Cards";
+    } else if ("department".equals(filterType) && filterValue != null) {
+        viewingMessage = "Viewing: Department - " + filterValue;
+    } else if ("schedule".equals(filterType) && filterValue != null) {
+        viewingMessage = "Viewing: Schedule - " + filterValue;
+    } else if ("supervisor".equals(filterType) && filterValue != null) {
+        viewingMessage = "Viewing: Supervisor - " + filterValue;
+    }
 %>
 <!DOCTYPE html>
 <html>
@@ -43,19 +58,25 @@
 </head>
 <body class="print-preview-body reports-page">
 
+    <% if (request.getParameter("hideNav") == null) { %>
     <%@ include file="/WEB-INF/includes/navbar.jspf" %>
+    <% } %>
 
-    <div class="print-controls">
-        <div class="report-context-message"><%= escapeJspHtml(pageTitle) %></div>
+    <div class="print-controls" style="position: fixed; top: 0; left: 0; right: 0; z-index: 1000;">
+        <div class="report-context-message"><%= !viewingMessage.isEmpty() ? escapeJspHtml(viewingMessage) : escapeJspHtml(pageTitle) %></div>
         <div>
             <button id="printTimecardsBtn" onclick="window.print();" class="print-action-btn glossy-button text-blue"><i class="fas fa-print"></i> <%= isSingleTimecard ? "Print" : "Print All" %></button>
             <button id="emailTimecardsBtn" class="print-action-btn glossy-button text-purple"><i class="fas fa-envelope"></i> <%= isSingleTimecard ? "Email" : "Email All" %></button>
+            <% if (request.getParameter("hideNav") == null) { %>
             <button id="closeTabBtn" class="print-action-btn glossy-button text-red"><i class="fas fa-times-circle"></i> Close</button>
+            <% } %>
         </div>
     </div>
 
+
+
     <% if (isSingleTimecard) { %>
-    <div class="employee-selector-section">
+    <div class="employee-selector-section" style="position: fixed; top: 90px; left: 0; right: 0; z-index: 999; background: #f8f9fa; padding: 10px 20px; border-bottom: 1px solid #ddd;">
         <div class="selector-container">
             <label for="employeeSelect">Select Employee:</label>
             <select id="employeeSelect" onchange="loadEmployeeTimecard()">
@@ -66,14 +87,14 @@
                         String name = emp.get("name");
                         String selected = (selectedEmployeeId != null && selectedEmployeeId.equals(eid)) ? "selected" : "";
                 %>
-                    <option value="<%= eid %>" <%= selected %>><%= escapeJspHtml(name) %></option>
+                    <option value="<%= eid %>" <%= selected %>><%= escapeNavbarHtml(name) %></option>
                 <% }} %>
             </select>
         </div>
     </div>
     <% } %>
 
-    <div class="print-view-main-content">
+    <div class="print-view-main-content" style="padding-top: <%= isSingleTimecard ? "130px" : "80px" %>;">
         <%
             // [FIX] Moved the formatter declaration here to resolve the scope issue.
             NumberFormat hoursPrintFormatter = NumberFormat.getNumberInstance(Locale.US);
@@ -131,7 +152,13 @@
                                     } else if (punchesList != null && !punchesList.isEmpty()) {
                                         for (Map<String, String> punch : punchesList) {
                                 %>
-                                    <tr>
+                                    <%
+                                        boolean isHourly = "Hourly".equalsIgnoreCase((String)cardData.getOrDefault("wageType",""));
+                                        boolean isHolidayOT = isHourly && "true".equals(punch.get("isHolidayOvertime"));
+                                        boolean isDaysOffOT = isHourly && "true".equals(punch.get("isDaysOffOvertime"));
+                                        String rowClass = (isHolidayOT || isDaysOffOT) ? " class=\"overtime-bonus-row\"" : "";
+                                    %>
+                                    <tr<%= rowClass %>>
                                         <td><%= escapeJspHtml(punch.get("dayOfWeek")) %></td>
                                         <td><%= escapeJspHtml(punch.get("friendlyPunchDate")) %></td>
                                         <td><%= punch.get("timeIn") %></td>
@@ -160,9 +187,13 @@
                                               double totalRegular = (Double)cardData.getOrDefault("totalRegularHours", 0.0);
                                               double totalOvertime = (Double)cardData.getOrDefault("totalOvertimeHours", 0.0);
                                               double totalDoubleTime = (Double)cardData.getOrDefault("totalDoubleTimeHours", 0.0);
+                                              double totalHolidayOvertime = (Double)cardData.getOrDefault("totalHolidayOvertimeHours", 0.0);
+                                              double totalDaysOffOvertime = (Double)cardData.getOrDefault("totalDaysOffOvertimeHours", 0.0);
                                          %>
                                             (Reg: <%= hoursPrintFormatter.format(totalRegular) %> |
                                               OT: <%= hoursPrintFormatter.format(totalOvertime) %>
+                                             <% if (totalHolidayOvertime > 0.001) { %> | <span class="overtime-highlight">Holiday OT: <%= hoursPrintFormatter.format(totalHolidayOvertime) %></span><% } %>
+                                             <% if (totalDaysOffOvertime > 0.001) { %> | <span class="overtime-highlight">Days Off OT: <%= hoursPrintFormatter.format(totalDaysOffOvertime) %></span><% } %>
                                              <% if (totalDoubleTime > 0.001) { %> | DT: <%= hoursPrintFormatter.format(totalDoubleTime) %><% } %>)
                                          <% } %>
                                     </td>

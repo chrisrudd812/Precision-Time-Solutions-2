@@ -41,6 +41,30 @@ public class SubscriptionUtils {
     }
     
     /**
+     * Check if a tenant has at least the Business plan (50+ max users).
+     * Business plan users get holiday and days off overtime features.
+     */
+    public static boolean hasBusinessPlan(int tenantId) {
+        String sql = "SELECT MaxUsers FROM tenants WHERE TenantID = ?";
+        
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, tenantId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    int maxUsers = rs.getInt("MaxUsers");
+                    return maxUsers >= 50;
+                }
+            }
+        } catch (SQLException e) {
+            logger.log(Level.WARNING, "Error checking Business plan status for TenantID: " + tenantId, e);
+        }
+        
+        return false;
+    }
+    
+    /**
      * Get the plan name for a tenant.
      */
     public static String getPlanName(int tenantId) {

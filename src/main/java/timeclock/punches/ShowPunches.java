@@ -28,6 +28,8 @@ import java.util.logging.Logger;
 import timeclock.Configuration;
 import timeclock.db.DatabaseConnection;
 import timeclock.util.Helpers; // Import the helpers class
+import timeclock.util.HolidayCalculator;
+import timeclock.util.ScheduleUtils;
 
 public class ShowPunches {
 
@@ -226,6 +228,8 @@ public class ShowPunches {
         result.put("totalRegularHours", 0.0);
         result.put("totalOvertimeHours", 0.0);
         result.put("totalDoubleTimeHours", 0.0);
+        result.put("totalHolidayOvertimeHours", 0.0);
+        result.put("totalDaysOffOvertimeHours", 0.0);
 
         if (tenantId <= 0 || globalEID <= 0 || payPeriodStartDate == null || payPeriodEndDate == null || employeeInfo == null || !Helpers.isStringValid(userTimeZoneIdStr)) {
             result.put("error", "Invalid input or timezone to load timecard data.");
@@ -266,6 +270,17 @@ public class ShowPunches {
             psGetPunches.setDate(6, java.sql.Date.valueOf(payPeriodEndDate));
 
             Map<LocalDate, Double> dailyAggregatedWorkHours = new LinkedHashMap<>();
+            Map<LocalDate, Double> dailyHolidayWorkHours = new LinkedHashMap<>();
+            Map<LocalDate, Double> dailyDaysOffWorkHours = new LinkedHashMap<>();
+            
+            // Holiday overtime settings
+            boolean holidayOTEnabled = "true".equalsIgnoreCase(Configuration.getProperty(tenantId, "OvertimeHolidayEnabled", "false"));
+            
+            // Days off overtime settings
+            boolean daysOffOTEnabled = "true".equalsIgnoreCase(Configuration.getProperty(tenantId, "OvertimeDaysOffEnabled", "false"));
+            
+            // Check if employee is hourly for overtime calculations
+            boolean isHourlyEmployee = "Hourly".equalsIgnoreCase((String) employeeInfo.getOrDefault("wageType", ""));
 
             try (ResultSet rsPunches = psGetPunches.executeQuery()) {
                 while (rsPunches.next()) {
@@ -330,6 +345,17 @@ public class ShowPunches {
 
                     if (isWorkPunchType(punchType) && !rsPunches.wasNull()) {
                          dailyAggregatedWorkHours.put(displayPunchDate, dailyAggregatedWorkHours.getOrDefault(displayPunchDate, 0.0) + totalHours);
+                         
+                         // Check if this is holiday work (only for hourly employees)
+                         if (isHourlyEmployee && holidayOTEnabled && HolidayCalculator.isConfiguredHoliday(displayPunchDate, tenantId)) {
+                             dailyHolidayWorkHours.put(displayPunchDate, dailyHolidayWorkHours.getOrDefault(displayPunchDate, 0.0) + totalHours);
+                             punchMap.put("isHolidayOvertime", "true");
+                         }
+                         // Check if this is days off work (only if not already a holiday and only for hourly employees)
+                         else if (isHourlyEmployee && daysOffOTEnabled && ScheduleUtils.isScheduledDayOff(tenantId, globalEID, displayPunchDate)) {
+                             dailyDaysOffWorkHours.put(displayPunchDate, dailyDaysOffWorkHours.getOrDefault(displayPunchDate, 0.0) + totalHours);
+                             punchMap.put("isDaysOffOvertime", "true");
+                         }
                     }
                 }
             }
@@ -337,6 +363,8 @@ public class ShowPunches {
             double calculatedPeriodRegular = 0.0;
             double calculatedPeriodOt = 0.0;
             double calculatedPeriodDt = 0.0;
+            double calculatedPeriodHolidayOt = 0.0;
+            double calculatedPeriodDaysOffOt = 0.0;
             String wageType = (String) employeeInfo.getOrDefault("wageType", "");
 
             if (!"Hourly".equalsIgnoreCase(wageType)) {
@@ -408,6 +436,20 @@ public class ShowPunches {
                     double todaysReg = hoursWorkedToday;
                     double todaysOt = 0;
                     double todaysDt = 0;
+                    
+                    // Check if this is a holiday - if so, all hours are holiday overtime
+                    if (holidayOTEnabled && dailyHolidayWorkHours.containsKey(date)) {
+                        calculatedPeriodHolidayOt += hoursWorkedToday;
+                        dailyNetRegularHours.put(date, 0.0);
+                        continue; // Skip normal overtime calculations for holiday work
+                    }
+                    
+                    // Check if this is a scheduled day off - if so, all hours are days off overtime
+                    if (daysOffOTEnabled && dailyDaysOffWorkHours.containsKey(date)) {
+                        calculatedPeriodDaysOffOt += hoursWorkedToday;
+                        dailyNetRegularHours.put(date, 0.0);
+                        continue; // Skip normal overtime calculations for days off work
+                    }
 
                     if (doubleTimeEnabled && todaysReg > doubleTimeThreshold) {
                         todaysDt = todaysReg - doubleTimeThreshold;
@@ -436,6 +478,15 @@ public class ShowPunches {
                            daysWorkedInWeek++;
                         }
                         if (payPeriodStartDate.isAfter(dateInWeek) || payPeriodEndDate.isBefore(dateInWeek)) continue;
+                        
+                        // Skip holiday and days off from weekly overtime calculations since they're already handled
+                        if (holidayOTEnabled && dailyHolidayWorkHours.containsKey(dateInWeek)) {
+                            continue;
+                        }
+                        if (daysOffOTEnabled && dailyDaysOffWorkHours.containsKey(dateInWeek)) {
+                            continue;
+                        }
+                        
                         weeklyNetRegularSum += dailyNetRegularHours.getOrDefault(dateInWeek, 0.0);
                     }
 
@@ -473,7 +524,7 @@ public class ShowPunches {
                 for (double hours : dailyAggregatedWorkHours.values()) {
                     totalWorkHours += hours;
                 }
-                calculatedPeriodRegular = Math.max(0, totalWorkHours - calculatedPeriodOt - calculatedPeriodDt);
+                calculatedPeriodRegular = Math.max(0, totalWorkHours - calculatedPeriodOt - calculatedPeriodDt - calculatedPeriodHolidayOt - calculatedPeriodDaysOffOt);
             }
             
             double nonWorkPaidHoursTotal = 0;
@@ -487,6 +538,8 @@ public class ShowPunches {
             result.put("totalRegularHours", Math.max(0, Math.round(calculatedPeriodRegular * FINAL_ROUNDING_HOURS) / FINAL_ROUNDING_HOURS));
             result.put("totalOvertimeHours", Math.max(0, Math.round(calculatedPeriodOt * FINAL_ROUNDING_HOURS) / FINAL_ROUNDING_HOURS));
             result.put("totalDoubleTimeHours", Math.max(0, Math.round(calculatedPeriodDt * FINAL_ROUNDING_HOURS) / FINAL_ROUNDING_HOURS));
+            result.put("totalHolidayOvertimeHours", Math.max(0, Math.round(calculatedPeriodHolidayOt * FINAL_ROUNDING_HOURS) / FINAL_ROUNDING_HOURS));
+            result.put("totalDaysOffOvertimeHours", Math.max(0, Math.round(calculatedPeriodDaysOffOt * FINAL_ROUNDING_HOURS) / FINAL_ROUNDING_HOURS));
         } catch (Exception e) {
             logger.log(Level.SEVERE, "[ShowPunches.getTimecardPunchData] Error for T:" + tenantId + ", EID:" + globalEID, e);
             result.put("error", "Failed to retrieve or calculate timecard data: " + e.getMessage());

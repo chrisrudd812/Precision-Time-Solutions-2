@@ -369,7 +369,7 @@
 					<li>On the Navbar go to Employees > Re-assign Employees by ></li>
 					
 					<li>In the "Re-Assign Employees" modal, choose the new
-						department, schedule, or accrual policy from the dropdowns.</li>
+						department, schedule, or PTO policy from the dropdowns.</li>
 					<li>Click <strong>"Apply Reassignment"</strong> to apply the changes to
 						all selected employees.
 					</li>
@@ -488,23 +488,23 @@
             </section>
 
             <section id="accruals">
-                <h2>Managing Accrual Policies</h2>
+                <h2>Managing PTO Policies</h2>
                 <p>Accrual policies define how employees earn paid time off (PTO). The system automatically adds prorated hours to each employee's PTO balance when each pay period is closed.
-                <br>You can also add to, subtract from, or set the PTO balance for individuals or all employees in the Adjust Employee Accrual Balance section. (Especially useful during initial setup)</p>
-                <img src="Images/accruals_main.webp" style="max-width: 1200px" alt="Accrual policies main page">
+                <br>You can also add to, subtract from, or set the PTO balance for individuals or all employees in the Adjust Employee PTO Balance section. (Especially useful during initial setup)</p>
+                <img src="Images/accruals_main.webp" style="max-width: 1200px" alt="PTO policies main page">
                 
-                <h3>Adding a New Accrual Policy</h3>
+                <h3>Adding a New PTO Policy</h3>
                 <p>Click "Add Policy", give it a unique name, and enter the annual hours for Vacation, Sick, and Personal time.</p>
-                <img src="Images/accruals_add.webp"  style="max-width:600px" alt="Add new accrual policy form">
+                <img src="Images/accruals_add.webp"  style="max-width:600px" alt="Add new PTO policy form">
 
-                <h3>Editing an Accrual Policy</h3>
+                <h3>Editing an PTO Policy</h3>
                 <p>Select a policy, click "Edit Policy", and adjust the time-off hours. Note: The policy name cannot be changed. To rename, you must create a new policy and reassign employees before deleting the old one.</p> 
-                <img src="Images/accruals_edit.webp"  style="max-width:600px" alt="Edit accrual policy form">
+                <img src="Images/accruals_edit.webp"  style="max-width:600px" alt="Edit PTO policy form">
 
-                <h3>Deleting an Accrual Policy</h3>
+                <h3>Deleting an PTO Policy</h3>
                 <p>Select a policy and click "Delete Policy". You will be required to re-assign employees to a different policy before confirming the deletion.
                 <br><span class="red">Note: Deleting "None" policy is not allowed as is serves as a system default.</span></p> 
-                <img src="Images/accruals_delete.webp"  style="max-width:600px" alt="Delete accrual policy confirmation modal">
+                <img src="Images/accruals_delete.webp"  style="max-width:600px" alt="Delete PTO policy confirmation modal">
                 
                 <h3>Adjusting PTO</h3>
                 <ol><li>Select an individual or all employees</li><li>Select PTO type</li><li>Select action</li><li>Define hours</li><li>Click Apply Adjustment</ol>

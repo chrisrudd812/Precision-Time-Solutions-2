@@ -114,8 +114,8 @@ body.reports-page .parent-container {
 }
 
 .form-body-container {
-    background-color: #f8fafc;
-    border: 1px solid #e2e8f0;
+    background: transparent;
+    border: 1px solid rgba(226, 232, 240, 0.5);
     border-radius: 8px;
     padding: 25px;
     margin-top: 15px;
@@ -205,9 +205,9 @@ h4.section-heading .fas, h4.section-heading .far { margin-right: 10px; color: #1
     line-height: 1.5;
     width: 100%;
     box-sizing: border-box;
-    background-color: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-left: 4px solid #3b82f6;
+    background-color: #fefce8;
+    border: 1px solid #fef08a;
+    border-left: 4px solid #facc15;
     color: #1e293b; 
 }
 .setting-info a .fas { font-size: 0.8em; margin-left: 3px; }
@@ -262,8 +262,8 @@ h4.section-heading .fas, h4.section-heading .far { margin-right: 10px; color: #1
 }
 
 .sub-form-section {
-    background-color: #ffffff;
-    border: 1px solid #e2e8f0;
+    background: transparent;
+    border: 1px solid rgba(226, 232, 240, 0.5);
     border-radius: 8px;
     padding: 20px;
     margin-top: 15px; 
@@ -369,4 +369,54 @@ h4.section-heading .fas, h4.section-heading .far { margin-right: 10px; color: #1
     text-transform: uppercase;
     letter-spacing: 0.5px;
     box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+
+
+
+/* Holiday checkbox styling */
+.holiday-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #9ca3af;
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+    background-color: white;
+    transition: all 0.2s ease;
+    opacity: 1 !important;
+}
+
+.holiday-checkbox:disabled {
+    opacity: 1 !important;
+    cursor: pointer !important;
+}
+
+.holiday-checkbox:checked {
+    background-color: #10b981 !important;
+    border-color: #059669 !important;
+    opacity: 1 !important;
+}
+
+.holiday-checkbox:checked::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.holiday-checkbox:hover {
+    border-color: #10b981;
+}
+
+.holiday-checkbox:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
 }

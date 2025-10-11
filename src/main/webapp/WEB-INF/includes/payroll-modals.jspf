@@ -81,6 +81,68 @@
     </div>
 </div>
 
+<%-- Export Options Modal --%>
+<div id="exportOptionsModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title-success"><i class="fas fa-download"></i> <span>Export Payroll</span></h2>
+        </div>
+        <div class="modal-body">
+            <form id="exportOptionsForm" action="PayrollServlet" method="post">
+                <input type="hidden" name="action" value="exportPayroll">
+                
+                <div class="form-item">
+                    <label>Export Format:</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="exportFormat" value="excel" checked> <i class="fas fa-file-excel"></i> Excel (.xlsx)</label>
+                        <label><input type="radio" name="exportFormat" value="csv"> <i class="fas fa-file-csv"></i> CSV (.csv)</label>
+                    </div>
+                </div>
+                
+                <div class="form-item">
+                    <label>Select Columns to Export:</label>
+                    <div class="column-selection-container">
+                        <div class="available-columns">
+                            <h4>Available Columns</h4>
+                            <div id="availableColumns" class="column-list">
+                                <div class="column-item" data-column="WageType">Wage Type</div>
+                                <div class="column-item" data-column="DoubleTimeHours">Double Time Hours</div>
+                                <div class="column-item" data-column="HolidayOTHours">Holiday OT Hours</div>
+                                <div class="column-item" data-column="DaysOffOTHours">Days Off OT Hours</div>
+                                <div class="column-item" data-column="OvertimeHours">Overtime Hours</div>
+                                <div class="column-item" data-column="TotalPaidHours">Total Paid Hours</div>
+                            </div>
+                        </div>
+                        <div class="column-controls">
+                            <button type="button" id="addColumnBtn" class="glossy-button text-blue"><i class="fas fa-arrow-right"></i></button>
+                            <button type="button" id="removeColumnBtn" class="glossy-button text-orange"><i class="fas fa-arrow-left"></i></button>
+                            <button type="button" id="moveUpBtn" class="glossy-button text-purple"><i class="fas fa-arrow-up"></i></button>
+                            <button type="button" id="moveDownBtn" class="glossy-button text-purple"><i class="fas fa-arrow-down"></i></button>
+                        </div>
+                        <div class="selected-columns">
+                            <h4>Selected Columns (Export Order)</h4>
+                            <div id="selectedColumns" class="column-list">
+                                <div class="column-item selected" data-column="EID">Employee ID</div>
+                                <div class="column-item selected" data-column="FirstName">First Name</div>
+                                <div class="column-item selected" data-column="LastName">Last Name</div>
+                                <div class="column-item selected" data-column="RegularHours">Regular Hours</div>
+                                <div class="column-item selected" data-column="TotalOvertimeHours">Total Overtime</div>
+                                <div class="column-item selected" data-column="Wage">Wage</div>
+                                <div class="column-item selected" data-column="TotalPay">Total Pay</div>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="selectedColumnsInput" name="selectedColumns" value="EID,FirstName,LastName,RegularHours,TotalOvertimeHours,Wage,TotalPay">
+                </div>
+            </form>
+        </div>
+        <div class="button-row">
+            <button type="button" id="exportPayrollBtn" class="glossy-button text-green"><i class="fas fa-download"></i> Export</button>
+            <button type="button" id="cancelExportBtn" class="glossy-button text-red"><i class="fas fa-times"></i> Cancel</button>
+        </div>
+    </div>
+</div>
+
 <script type="text/javascript">
 // Set timezone field from parent page variable
 if (typeof window.effectiveTimeZoneIdJs !== 'undefined') {

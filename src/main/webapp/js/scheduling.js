@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', function() {
             text2: "Examples: 'Day Shift 8-5', 'Night Shift', 'Open Shift', etc. You can assign these to employees later.",
             buttons: [
                 { id: "wizardActionAddSchedule", text: "Add a Schedule", class: "text-green", actionKey: "openAddScheduleModalViaWizard" },
-                { id: "wizardActionNextToAccruals", text: "Next: Accrual Policy Setup", class: "text-blue", actionKey: "advanceToAccruals" }
+                { id: "wizardActionNextToAccruals", text: "Next: PTO Policy Setup", class: "text-blue", actionKey: "advanceToAccruals" }
             ]
         },
         "schedules_after_add_prompt": {
@@ -146,7 +146,7 @@ document.addEventListener('DOMContentLoaded', function() {
             text2: "You can add more schedules now, or proceed to set up time off policies.",
             buttons: [
                 { id: "wizardActionAddAnotherSchedule", text: "Add Another Schedule", class: "text-green", actionKey: "openAddScheduleModalViaWizard" },
-                { id: "wizardActionNextAfterAddToAccruals", text: "Next: Accrual Policy Setup", class: "text-blue", actionKey: "advanceToAccruals" }
+                { id: "wizardActionNextAfterAddToAccruals", text: "Next: PTO Policy Setup", class: "text-blue", actionKey: "advanceToAccruals" }
             ]
         }
     };

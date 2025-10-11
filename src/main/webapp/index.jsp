@@ -82,7 +82,7 @@
         <section class="hero-section">
              <div class="container">
                 <h1>Stop Payroll Headaches with Professional Time Tracking</h1>
-                <p class="subtitle">Eliminate buddy punching, reduce payroll errors by 95%, and save 8+ hours per week on time management. Trusted by 500+ businesses nationwide.</p>
+                <p class="subtitle">Eliminate buddy punching, reduce payroll errors by 95%, and save 8+ hours per week on time management. Trusted by 500+ businesses nationwide with 99.9% uptime.</p>
                 <div class="hero-benefits">
                     <div class="benefit-item"><i class="fas fa-check-circle"></i> GPS Location Tracking</div>
                     <div class="benefit-item"><i class="fas fa-check-circle"></i> Automated Overtime Calculations</div>
@@ -92,7 +92,7 @@
                     <a href="#pricing" class="btn btn-primary btn-large">Start Free 30-Day Trial</a>
                     <a href="#features" class="btn btn-secondary btn-large">See How It Works</a>
                 </div>
-                <p class="trial-note">✓ Setup in under 5 minutes ✓ Cancel anytime</p>
+                <p class="trial-note">✓ Setup in under 5 minutes ✓ Cancel anytime ✓ Secure data handling</p>
             </div>
         </section>
         
@@ -121,10 +121,16 @@
                         <p>Device restrictions and biometric verification on mobile devices, help ensure only authorized employees can punch in, saving you thousands in labor costs.</p>
                     </div>
                     <div class="feature-item">
-                        <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
-                        <h3>Detailed Analytics</h3>
-                        <p>Track productivity trends, identify attendance patterns, and make data-driven decisions with comprehensive reporting tools.</p>
+                        <div class="feature-icon"><i class="fas fa-coins"></i></div>
+                        <h3>Advanced Overtime Management</h3>
+                        <p>Comprehensive overtime calculations including daily, weekly, double-time, holiday overtime, and days-off overtime. Supports state-specific labor laws with automatic priority handling to prevent double-counting and ensure accurate payroll.</p>
                     </div>
+                    <div class="feature-item">
+                        <div class="feature-icon"><i class="fas fa-umbrella-beach"></i></div>
+                        <h3>Automated PTO Management</h3>
+                        <p>Streamline paid time off tracking with automatic balance updates. Every payroll close automatically accrues PTO hours based on your policies, and balances are instantly updated when employees use their time off.</p>
+                    </div>
+                    
                     <div class="feature-item">
                         <div class="feature-icon"><i class="fas fa-headset"></i></div>
                         <h3>Expert Support</h3>
@@ -139,6 +145,11 @@
                         <div class="feature-icon"><i class="fas fa-utensils"></i></div>
                         <h3>Automatic Lunch Deduction</h3>
                         <p>Set a time threshold and the system automatically deducts lunch breaks - no need for employees to punch out. Ensures compliance with labor laws while simplifying the punch process.</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
+                        <h3>Detailed Analytics</h3>
+                        <p>Track productivity trends, identify attendance patterns, and make data-driven decisions with comprehensive reporting tools.</p>
                     </div>
                 </div>
             </div>
@@ -164,6 +175,113 @@
                         <div class="testimonial-author">- Jennifer L., HR Director</div>
                     </div>
                 </div>
+            </div>
+        </section>
+        
+        <section class="industry-section">
+            <div class="container">
+                <h2>Built for Your Industry</h2>
+                <div class="industry-grid">
+                    <div class="industry-item">
+                        <div class="industry-icon"><i class="fas fa-hard-hat"></i></div>
+                        <h3>Construction & Field Work</h3>
+                        <p>Perfect for crews working across multiple job sites with GPS tracking, mobile punch-in, and prevailing wage compliance.</p>
+                        <ul class="industry-features">
+                            <li>✓ Optional GPS location verification for job sites</li>
+                            <li>✓ Mobile punch-in from any location</li>
+                            <li>✓ Prevailing wage and union compliance</li>
+                        </ul>
+                    </div>
+                    <div class="industry-item">
+                        <div class="industry-icon"><i class="fas fa-store"></i></div>
+                        <h3>Retail & Customer Service</h3>
+                        <p>Streamline retail workforce management with flexible scheduling. Perfect for seasonal or temp workers and complex shift patterns.</p>
+                        <ul class="industry-features">
+                            <li>✓ Flexible scheduling for peak hours</li>
+                            <li>✓ Part-time and seasonal worker tracking</li>
+                            <li>✓ Break compliance and customer coverage</li>
+                            <li>✓ Optional Holiday and day off premium rates</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section class="faq-section">
+            <div class="container">
+                <h2>Frequently Asked Questions</h2>
+                <div class="faq-grid">
+                    <div class="faq-item">
+                        <h4>How does the overtime calculation work?</h4>
+                        <p>Our system automatically calculates daily, weekly, double-time, holiday, and days-off overtime based on federal and state labor laws. <a href="#overtime-calculator" class="faq-link">See our overtime details</a> to understand how all the different overtime types work together.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h4>Can employees punch in from their phones?</h4>
+                        <p>Yes! Our mobile-friendly interface works on any smartphone, tablet, or computer. You can optionally enable GPS restrictions and biometric verification for added security.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h4>How quickly can we get set up?</h4>
+                        <p>Most businesses are up and running in under 5 minutes. Simply add your employees, set their schedules, and they can start punching in immediately. No complex installation required.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h4>What if we have employees in different states?</h4>
+                        <p>Our Pro plan includes state-specific overtime rules that automatically apply the correct labor laws based on each employee's location. This ensures compliance across all jurisdictions.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h4>Can we export data to our payroll system?</h4>
+                        <p>Absolutely! Export your payroll data directly to XLSX or CSV files with all overtime calculations included.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h4>What happens during the free trial?</h4>
+                        <p>You get full access to all features of your chosen plan for 30 days. Add up to your plan's employee limit and test everything. Cancel anytime with no fees.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="overtime-calculator" class="overtime-calculator-section">
+            <div class="container">
+                <h2>Understanding Our Advanced Overtime System</h2>
+                <p class="calculator-intro">Our sophisticated overtime engine handles complex scenarios automatically, ensuring accurate payroll every time.</p>
+                
+                <div class="overtime-types">
+                    <div class="overtime-type">
+                        <div class="overtime-icon"><i class="fas fa-clock"></i></div>
+                        <h4>Daily Overtime</h4>
+                        <p>Automatically applies overtime rates after 8 hours per day (or your custom threshold). Configurable by state requirements.</p>
+                    </div>
+                    <div class="overtime-type">
+                        <div class="overtime-icon"><i class="fas fa-calendar-week"></i></div>
+                        <h4>Weekly Overtime</h4>
+                        <p>FLSA-compliant 40-hour weekly overtime with customizable work week start day. Handles complex pay period scenarios.</p>
+                    </div>
+                    <div class="overtime-type">
+                        <div class="overtime-icon"><i class="fas fa-coins"></i></div>
+                        <h4>Double Time</h4>
+                        <p>Automatic double-time rates after 12 hours per day or 7th consecutive day worked, where required by state law. Fully configurable thresholds.</p>
+                    </div>
+                    <div class="overtime-type">
+                        <div class="overtime-icon"><i class="fas fa-gift"></i></div>
+                        <h4>Holiday Overtime</h4>
+                        <p>Optional Premium rates for work on federal holidays or your custom holiday calendar. Automatically highlighted in green on timecards.</p>
+                    </div>
+                    <div class="overtime-type">
+                        <div class="overtime-icon"><i class="fas fa-calendar-times"></i></div>
+                        <h4>Days Off Overtime</h4>
+                        <p>Optional Premium pay when employees work on their scheduled days off. Integrates with employee schedules automatically.</p>
+                    </div>
+                    <div class="overtime-type">
+                        <div class="overtime-icon"><i class="fas fa-balance-scale"></i></div>
+                        <h4>Priority System</h4>
+                        <p>Smart priority handling prevents double-counting: Holiday OT > Days Off OT > Regular OT > Double Time. Always accurate.</p>
+                    </div>
+                    <div class="overtime-type">
+                        <div class="overtime-icon"><i class="fas fa-cogs"></i></div>
+                        <h4>Fully Customizable</h4>
+                        <p>Every overtime setting can be set to manual override or disabled entirely. Thresholds, rates, and rules are infinitely adjustable to match your exact business needs and labor agreements.</p>
+                    </div>
+                </div>
+               
             </div>
         </section>
         
@@ -271,23 +389,23 @@
                     <ul>
                         <li><a href="#features">Features</a></li>
                         <li><a href="#pricing">Pricing</a></li>
-                        <li><a href="help.jsp">Help Center</a></li>
+                        <li><a href="help.jsp?public=true">Help Center</a></li>
                     </ul>
                 </div>
                 <div class="footer-section">
                     <h4>Company</h4>
                     <ul>
-                        <li><a href="contact.jsp">Contact Us</a></li>
-                        <li><a href="privacy.jsp">Privacy Policy</a></li>
-                        <li><a href="terms.jsp">Terms of Service</a></li>
+                        <li><a href="contact.jsp?public=true">Contact Us</a></li>
+                        <li><a href="privacy.jsp?public=true">Privacy Policy</a></li>
+                        <li><a href="terms.jsp?public=true">Terms of Service</a></li>
                     </ul>
                 </div>
                 <div class="footer-section">
                     <h4>Support</h4>
                     <ul>
                         <li><a href="login.jsp">Login</a></li>
-                        <li><a href="contact.jsp">Get Help</a></li>
-                        <li><a href="help.jsp">Documentation</a></li>
+                        <li><a href="contact.jsp?public=true">Get Help</a></li>
+                        <li><a href="help.jsp?public=true">Documentation</a></li>
                     </ul>
                 </div>
             </div>
@@ -296,8 +414,6 @@
             </div>
         </div>
     </footer>
-
-
 
 </body>
 </html>

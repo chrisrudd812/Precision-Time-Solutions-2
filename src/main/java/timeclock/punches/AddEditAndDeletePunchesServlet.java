@@ -317,7 +317,7 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
             
             String successMsg = "Punch record updated successfully.";
             if (accrualAdjusted) {
-                successMsg += " Accrual balance adjusted.";
+                successMsg += " PTO balance adjusted.";
             }
             successMsg += " Overtime will be recalculated during payroll processing.";
             sendJsonResponse(response, HttpServletResponse.SC_OK, true, successMsg, null);
@@ -422,7 +422,7 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
                 }
             }
             con.commit();
-            String successMessage = escapeHtml(punchType) + (isHoursOnly ? " hours" : " punch") + " added successfully." + (isHoursOnly && accrualColumn != null ? " Accrual balance adjusted." : "");
+            String successMessage = escapeHtml(punchType) + (isHoursOnly ? " hours" : " punch") + " added successfully." + (isHoursOnly && accrualColumn != null ? " PTO balance adjusted." : "");
             sendJsonResponse(response, HttpServletResponse.SC_OK, true, successMessage, null);
         } catch (SQLException e_sql) {
             rollback(con); logger.log(Level.SEVERE, "SQL Error in handleAddHoursOrTimedPunch for EID " + eid, e_sql);
@@ -436,8 +436,12 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
     }
 
     private void handleAddGlobalHours(HttpServletRequest request, HttpServletResponse response, Integer tenantId, int loggedInUserEid) throws IOException {
+        // Check for hideNav parameter to preserve modal context
+        String hideNavParam = request.getParameter("hideNav");
+        String navParam = "true".equalsIgnoreCase(hideNavParam) ? "&hideNav=true" : "";
+        
         if (tenantId == null || tenantId <= 0) {
-             response.sendRedirect("add_global_data.jsp?error=" + URLEncoder.encode("Invalid Tenant context.", StandardCharsets.UTF_8.name()));
+             response.sendRedirect("add_global_data.jsp?error=" + URLEncoder.encode("Invalid Tenant context.", StandardCharsets.UTF_8.name()) + navParam);
              return;
         }
         String dateStr = request.getParameter("addHoursDate");
@@ -447,7 +451,7 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
 
 
         if (!isValid(dateStr) || !isValid(totalHoursStr) || !isValid(punchTypeStr)) {
-            response.sendRedirect("add_global_data.jsp?error=" + URLEncoder.encode("Date, Total Hours, and Punch Type are required.", StandardCharsets.UTF_8.name()));
+            response.sendRedirect("add_global_data.jsp?error=" + URLEncoder.encode("Date, Total Hours, and Punch Type are required.", StandardCharsets.UTF_8.name()) + navParam);
             return;
         }
 
@@ -456,17 +460,17 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
             localPunchDate = LocalDate.parse(dateStr.trim(), DATE_FORMATTER_FROM_USER);
             totalHours = Double.parseDouble(totalHoursStr.trim());
             if (totalHours <= 0.00 || totalHours > 160) {
-                response.sendRedirect("add_global_data.jsp?error=" + URLEncoder.encode("Total Hours must be > 0 and <= 160.", StandardCharsets.UTF_8.name()));
+                response.sendRedirect("add_global_data.jsp?error=" + URLEncoder.encode("Total Hours must be > 0 and <= 160.", StandardCharsets.UTF_8.name()) + navParam);
                 return;
             }
             totalHours = Math.round(totalHours * 100.0) / 100.0;
         } catch (DateTimeParseException | NumberFormatException e) {
-            response.sendRedirect("add_global_data.jsp?error=" + URLEncoder.encode("Invalid date or hours format.", StandardCharsets.UTF_8.name()));
+            response.sendRedirect("add_global_data.jsp?error=" + URLEncoder.encode("Invalid date or hours format.", StandardCharsets.UTF_8.name()) + navParam);
             return;
         }
 
         if (!isHoursOnlyType(punchType)) {
-            response.sendRedirect("add_global_data.jsp?error=" + URLEncoder.encode("Invalid punch type for global entry. Only hours-based types are allowed.", StandardCharsets.UTF_8.name()));
+            response.sendRedirect("add_global_data.jsp?error=" + URLEncoder.encode("Invalid punch type for global entry. Only hours-based types are allowed.", StandardCharsets.UTF_8.name()) + navParam);
             return;
         }
 
@@ -479,7 +483,7 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
                 try (ResultSet rs = psFetch.executeQuery()) { while (rs.next()) { activeEmployeeIds.add(rs.getInt("EID")); } }
             }
             if (activeEmployeeIds.isEmpty()) {
-                response.sendRedirect("add_global_data.jsp?message=" + URLEncoder.encode("No active employees found to add global hours to.", StandardCharsets.UTF_8.name()));
+                response.sendRedirect("add_global_data.jsp?message=" + URLEncoder.encode("No active employees found to add global hours to.", StandardCharsets.UTF_8.name()) + navParam);
                 return;
             }
             String insertPunchSql = "INSERT INTO punches (TenantID, EID, DATE, IN_1, OUT_1, TOTAL, PUNCH_TYPE, OT, LATE, EARLY_OUTS) VALUES (?, ?, ?, NULL, NULL, ?, ?, 0.0, FALSE, FALSE)";
@@ -508,14 +512,14 @@ public class AddEditAndDeletePunchesServlet extends HttpServlet {
                 }
             }
             con.commit();
-            String successMsg = String.format("%s (%.2f hours) added globally for %d active employee(s).", escapeHtml(punchType), totalHours, employeesAffected) + (accrualColumn != null ? " Accrual balances adjusted." : "");
-            response.sendRedirect("add_global_data.jsp?message=" + URLEncoder.encode(successMsg, StandardCharsets.UTF_8.name()));
+            String successMsg = String.format("%s (%.2f hours) added globally for %d active employee(s).", escapeHtml(punchType), totalHours, employeesAffected) + (accrualColumn != null ? " PTO balances adjusted." : "");
+            response.sendRedirect("add_global_data.jsp?message=" + URLEncoder.encode(successMsg, StandardCharsets.UTF_8.name()) + navParam);
         } catch (SQLException e_sql) {
             rollback(con); logger.log(Level.SEVERE, "SQL Error in handleAddGlobalHours", e_sql);
-            response.sendRedirect("add_global_data.jsp?error=" + URLEncoder.encode("Database error: " + escapeHtml(e_sql.getMessage()), StandardCharsets.UTF_8.name()));
+            response.sendRedirect("add_global_data.jsp?error=" + URLEncoder.encode("Database error: " + escapeHtml(e_sql.getMessage()), StandardCharsets.UTF_8.name()) + navParam);
         } catch (Exception e_gen) {
             rollback(con); logger.log(Level.SEVERE, "General error in handleAddGlobalHours", e_gen);
-            response.sendRedirect("add_global_data.jsp?error=" + URLEncoder.encode("Server error: " + escapeHtml(e_gen.getMessage()), StandardCharsets.UTF_8.name()));
+            response.sendRedirect("add_global_data.jsp?error=" + URLEncoder.encode("Server error: " + escapeHtml(e_gen.getMessage()), StandardCharsets.UTF_8.name()) + navParam);
         } finally {
             if (con != null) { try { con.setAutoCommit(true); con.close(); } catch (SQLException e_close) { logger.log(Level.WARNING, "Error closing connection", e_close); } }
         }

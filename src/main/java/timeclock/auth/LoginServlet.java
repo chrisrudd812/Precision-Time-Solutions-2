@@ -32,6 +32,8 @@ public class LoginServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	private static final Logger logger = Logger.getLogger(LoginServlet.class.getName());
 
+
+
 	protected void doPost(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 		String companyIdentifier = request.getParameter("companyIdentifier");
@@ -41,7 +43,7 @@ public class LoginServlet extends HttpServlet {
 
 		// Regular validation for PIN login
 		if (!Helpers.isStringValid(companyIdentifier) || !Helpers.isStringValid(email) || !Helpers.isStringValid(password)) {
-			response.sendRedirect("login.jsp?error="
+			Helpers.secureRedirect(response, request, "login.jsp?error="
 					+ URLEncoder.encode("Company ID, email, and PIN are required.", StandardCharsets.UTF_8));
 			return;
 		}
@@ -53,7 +55,7 @@ public class LoginServlet extends HttpServlet {
 			ResultSet rsTenant = psTenant.executeQuery();
 
 			if (!rsTenant.next()) {
-				response.sendRedirect(
+				Helpers.secureRedirect(response, request,
 						"login.jsp?error=" + URLEncoder.encode("Invalid Company ID.", StandardCharsets.UTF_8));
 				return;
 			}
@@ -72,7 +74,7 @@ public class LoginServlet extends HttpServlet {
 				if (passwordMatch) {
 
 					if (!rsUser.getBoolean("ACTIVE")) {
-						response.sendRedirect(
+						Helpers.secureRedirect(response, request,
 								"login.jsp?error=" + URLEncoder.encode("Account is inactive.", StandardCharsets.UTF_8));
 						return;
 					}
@@ -107,13 +109,13 @@ public class LoginServlet extends HttpServlet {
 									|| "past_due".equalsIgnoreCase(subscriptionStatus))) {
 						session.setAttribute("errorMessage",
 								"Your subscription is inactive. Please update your billing information to restore access.");
-						response.sendRedirect("account.jsp");
+						Helpers.secureRedirect(response, request, "account.jsp");
 						return;
 					}
 
 					if (rsUser.getBoolean("RequiresPasswordChange")) {
 						session.setAttribute("pinChangeRequired", true);
-						response.sendRedirect("change_password.jsp");
+						Helpers.secureRedirect(response, request, "change_password.jsp");
 					} else {
 						session.removeAttribute("startSetupWizard");
 						
@@ -121,26 +123,26 @@ public class LoginServlet extends HttpServlet {
 						if ("Administrator".equalsIgnoreCase(userPermissions)) {
 							boolean payPeriodEnded = isPayPeriodEnded(conn, tenantId);
 							if (payPeriodEnded) {
-								response.sendRedirect("employees.jsp?showPayrollModal=true");
+								Helpers.secureRedirect(response, request, "employees.jsp?showPayrollModal=true");
 							} else {
-								response.sendRedirect("employees.jsp");
+								Helpers.secureRedirect(response, request, "employees.jsp");
 							}
 						} else {
-							response.sendRedirect("timeclock.jsp");
+							Helpers.secureRedirect(response, request, "timeclock.jsp");
 						}
 					}
 				} else {
-					response.sendRedirect(
+					Helpers.secureRedirect(response, request,
 							"login.jsp?error=" + URLEncoder.encode("Invalid credentials.", StandardCharsets.UTF_8));
 				}
 			} else {
-				response.sendRedirect(
+				Helpers.secureRedirect(response, request,
 						"login.jsp?error=" + URLEncoder.encode("Invalid credentials.", StandardCharsets.UTF_8));
 			}
 
 		} catch (Exception e) {
 			logger.log(Level.SEVERE, "Error in login process.", e);
-			response.sendRedirect("login.jsp?error="
+			Helpers.secureRedirect(response, request, "login.jsp?error="
 					+ URLEncoder.encode("A server error occurred. Please try again.", StandardCharsets.UTF_8));
 		}
 	}

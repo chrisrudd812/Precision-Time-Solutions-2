@@ -8,6 +8,23 @@ document.addEventListener('DOMContentLoaded', function() {
     const globalMaxInput = document.getElementById('globalMaxDevicesInput');
     const globalStatusIndicator = document.querySelector('.status-indicator.global-max-status');
     const employeeListContainer = document.querySelector('.employee-list-scroll-container');
+    const employeeSelect = document.getElementById('employeeSelect');
+    
+    // --- Employee Filter ---
+    if (employeeSelect) {
+        employeeSelect.addEventListener('change', function() {
+            const selectedEid = this.value;
+            const employeeSections = document.querySelectorAll('.employee-section');
+            
+            employeeSections.forEach(section => {
+                if (selectedEid === '' || section.dataset.eid === selectedEid) {
+                    section.style.display = 'block';
+                } else {
+                    section.style.display = 'none';
+                }
+            });
+        });
+    }
     
     async function sendRequest(action, params) {
         const formData = new URLSearchParams();

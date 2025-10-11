@@ -23,6 +23,10 @@
 %>
 
 <%
+    // Check if navbar should be hidden
+    String hideNavParam = request.getParameter("hideNav");
+    boolean hideNavbar = "true".equalsIgnoreCase(hideNavParam);
+    
     // Session validation
     HttpSession globalSession = request.getSession(false);
     Integer tenantId = null;
@@ -75,8 +79,10 @@
     <%@ include file="/WEB-INF/includes/common-head.jspf" %>
     <link rel="stylesheet" href="css/add_global_data.css?v=<%= System.currentTimeMillis() %>">
 </head>
-<body class="reports-page">
+<body class="reports-page<%= hideNavbar ? " no-navbar" : "" %>">
+    <% if (!hideNavbar) { %>
     <%@ include file="/WEB-INF/includes/navbar.jspf" %>
+    <% } %>
 
     <div class="parent-container reports-container">
         <h1><i class="fas fa-globe-americas"></i> Add Global Hours</h1>
@@ -95,6 +101,7 @@
 
                 <form id="addGlobalHoursForm" action="AddEditAndDeletePunchesServlet" method="post">
                     <input type="hidden" name="action" value="addGlobalHoursSubmit">
+                    <% if (hideNavbar) { %><input type="hidden" name="hideNav" value="true"><% } %>
 
                     <div class="form-item">
                         <label for="addHoursDate">Date <span class="required-asterisk">*</span></label>
@@ -141,7 +148,9 @@
             
             <% if (successMessage != null && !successMessage.isEmpty()) { %>
                 showPageNotification('<%= escapeHtml(successMessage).replace("'", "\\'") %>', false, function() {
-                    window.location.href = window.location.pathname;
+                    const params = new URLSearchParams();
+                    <% if (hideNavbar) { %>params.append('hideNav', 'true');<% } %>
+                    window.location.href = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
                 }, "Success");
             <% } %>
         });

@@ -1,4 +1,8 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%
+    String publicParam = request.getParameter("public");
+    boolean isPublicView = "true".equalsIgnoreCase(publicParam);
+%>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -56,10 +60,12 @@
         }
     </style>
 </head>
-<body class="reports-page">
+<body class="reports-page<% if (isPublicView) { %> no-navbar<% } %>">
 
-    <%-- Include the standard navigation bar --%>
-    <%@ include file="/WEB-INF/includes/navbar.jspf" %>
+    <% if (!isPublicView) { %>
+        <%-- Include the standard navigation bar --%>
+        <%@ include file="/WEB-INF/includes/navbar.jspf" %>
+    <% } %>
 
     <%-- Include common JavaScript files for navbar functionality --%>
     <%@ include file="/WEB-INF/includes/common-scripts.jspf" %>
@@ -109,7 +115,7 @@
         <p>We reserve the right to modify these Terms at any time. We will provide notice of any significant changes. Your continued use of the Service after such changes constitutes your acceptance of the new Terms.</p>
 
         <h2>9. Contact Us</h2>
-        <p>If you have any questions about these Terms, please contact us <a href="<%= request.getContextPath() %>/contact.jsp">here</a>.</p>
+        <p>If you have any questions about these Terms, please contact us <a href="<%= request.getContextPath() %>/contact.jsp?public=true">here</a>.</p>
 
     </div>
 </body>

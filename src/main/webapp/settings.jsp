@@ -102,6 +102,9 @@
     final String STD_DEFAULT_OVERTIME_RULE_MODE = "Manual"; final String STD_DEFAULT_OVERTIME_STATE = ""; final String STD_FIXED_OVERTIME_ENABLED_VALUE = "true"; final String STD_DEFAULT_OVERTIME_RATE = "1.5";
     final String STD_DEFAULT_OVERTIME_DAILY_ENABLED = "false"; final String STD_DEFAULT_OVERTIME_DAILY_THRESHOLD = "8.0"; final String STD_DEFAULT_OVERTIME_DOUBLE_TIME_ENABLED = "false"; final String STD_DEFAULT_OVERTIME_DOUBLE_TIME_THRESHOLD = "12.0";
     final String STD_DEFAULT_OVERTIME_SEVENTH_DAY_ENABLED = "false"; final String STD_DEFAULT_OVERTIME_SEVENTH_DAY_OT_THRESHOLD = "8.0"; final String STD_DEFAULT_OVERTIME_SEVENTH_DAY_DT_THRESHOLD = "8.0";
+    final String STD_DEFAULT_OVERTIME_HOLIDAY_ENABLED = "false"; final String STD_DEFAULT_OVERTIME_HOLIDAY_RATE = "1.5";
+    final String STD_DEFAULT_OVERTIME_DAYSOFF_ENABLED = "false"; final String STD_DEFAULT_OVERTIME_DAYSOFF_RATE = "1.5";
+    final String STD_DEFAULT_CUSTOM_HOLIDAY_DATE = ""; final String STD_DEFAULT_CUSTOM_HOLIDAY_NAME = "";
     
     String currentPayPeriod = STD_DEFAULT_PAY_PERIOD_TYPE;
     String currentFirstDayOfWeek = STD_DEFAULT_FIRST_DAY_OF_WEEK; String currentPayPeriodStartDate = STD_DEFAULT_PAY_PERIOD_START_DATE;
@@ -114,9 +117,15 @@
     boolean currentOvertimeDailyEnabled = Boolean.parseBoolean(STD_DEFAULT_OVERTIME_DAILY_ENABLED); String currentOvertimeDailyThreshold = STD_DEFAULT_OVERTIME_DAILY_THRESHOLD; boolean currentOvertimeDoubleTimeEnabled = Boolean.parseBoolean(STD_DEFAULT_OVERTIME_DOUBLE_TIME_ENABLED);
     String currentOvertimeDoubleTimeThreshold = STD_DEFAULT_OVERTIME_DOUBLE_TIME_THRESHOLD; boolean currentOvertimeSeventhDayEnabled = Boolean.parseBoolean(STD_DEFAULT_OVERTIME_SEVENTH_DAY_ENABLED);
     String currentOvertimeSeventhDayOTThreshold = STD_DEFAULT_OVERTIME_SEVENTH_DAY_OT_THRESHOLD; String currentOvertimeSeventhDayDTThreshold = STD_DEFAULT_OVERTIME_SEVENTH_DAY_DT_THRESHOLD;
+    boolean currentOvertimeHolidayEnabled = Boolean.parseBoolean(STD_DEFAULT_OVERTIME_HOLIDAY_ENABLED); String currentOvertimeHolidayRate = STD_DEFAULT_OVERTIME_HOLIDAY_RATE;
+    String currentOvertimeHolidays = "";
+    String currentCustomHolidayDate = STD_DEFAULT_CUSTOM_HOLIDAY_DATE; String currentCustomHolidayName = STD_DEFAULT_CUSTOM_HOLIDAY_NAME;
+    boolean currentOvertimeDaysOffEnabled = Boolean.parseBoolean(STD_DEFAULT_OVERTIME_DAYSOFF_ENABLED); String currentOvertimeDaysOffRate = STD_DEFAULT_OVERTIME_DAYSOFF_RATE;
     
+    boolean hasBusinessPlan = false;
     if (tenantId_settings != null && tenantId_settings > 0 && pageLevelError_settings == null) {
         hasProPlan = SubscriptionUtils.hasProPlan(tenantId_settings);
+        hasBusinessPlan = SubscriptionUtils.hasBusinessPlan(tenantId_settings);
         boolean isFirstWizardSettingsLoad = false;
         if (inSetupWizardMode_JSP) {
             String firstLoadCheck = Configuration.getProperty(tenantId_settings, "WizardSettingsInitialized");
@@ -135,6 +144,8 @@
             currentOvertimeDoubleTimeEnabled = false;
             currentOvertimeDoubleTimeThreshold = "12.0";
             currentOvertimeSeventhDayEnabled = false; currentOvertimeSeventhDayOTThreshold = "8.0"; currentOvertimeSeventhDayDTThreshold = "8.0";
+            currentOvertimeHolidayEnabled = false; currentOvertimeHolidayRate = "1.5"; currentOvertimeHolidays = "";
+            currentOvertimeDaysOffEnabled = false; currentOvertimeDaysOffRate = "1.5";
             try {
                 Configuration.saveProperty(tenantId_settings, "PayPeriodType", currentPayPeriod);
                 Configuration.saveProperty(tenantId_settings, "FirstDayOfWeek", currentFirstDayOfWeek); Configuration.saveProperty(tenantId_settings, "PayPeriodStartDate", currentPayPeriodStartDate); Configuration.saveProperty(tenantId_settings, "GracePeriod", currentGracePeriod); Configuration.saveProperty(tenantId_settings, "OvertimeRuleMode", currentOvertimeRuleMode); Configuration.saveProperty(tenantId_settings, "OvertimeType", currentOvertimeType); Configuration.saveProperty(tenantId_settings, "OvertimeState", currentOvertimeState);
@@ -145,6 +156,11 @@
                 Configuration.saveProperty(tenantId_settings, "OvertimeDailyThreshold", currentOvertimeDailyThreshold); Configuration.saveProperty(tenantId_settings, "OvertimeDoubleTimeEnabled", String.valueOf(currentOvertimeDoubleTimeEnabled)); Configuration.saveProperty(tenantId_settings, "OvertimeDoubleTimeThreshold", currentOvertimeDoubleTimeThreshold);
                 Configuration.saveProperty(tenantId_settings, "OvertimeSeventhDayEnabled", String.valueOf(currentOvertimeSeventhDayEnabled)); Configuration.saveProperty(tenantId_settings, "OvertimeSeventhDayOTThreshold", currentOvertimeSeventhDayOTThreshold);
                 Configuration.saveProperty(tenantId_settings, "OvertimeSeventhDayDTThreshold", currentOvertimeSeventhDayDTThreshold);
+                Configuration.saveProperty(tenantId_settings, "OvertimeHolidayEnabled", String.valueOf(currentOvertimeHolidayEnabled));
+                Configuration.saveProperty(tenantId_settings, "OvertimeHolidayRate", currentOvertimeHolidayRate);
+                Configuration.saveProperty(tenantId_settings, "OvertimeHolidays", currentOvertimeHolidays);
+                Configuration.saveProperty(tenantId_settings, "OvertimeDaysOffEnabled", String.valueOf(currentOvertimeDaysOffEnabled));
+                Configuration.saveProperty(tenantId_settings, "OvertimeDaysOffRate", currentOvertimeDaysOffRate);
                 Configuration.saveProperty(tenantId_settings, "WizardSettingsInitialized", "true");
                 if (pageLevelSuccess_settings == null) pageLevelSuccess_settings = "Initial company settings populated. Review and click 'Next'.";
             } catch (SQLException e) {
@@ -169,6 +185,13 @@
             currentOvertimeSeventhDayEnabled = "true".equalsIgnoreCase(Configuration.getProperty(tenantId_settings, "OvertimeSeventhDayEnabled", STD_DEFAULT_OVERTIME_SEVENTH_DAY_ENABLED));
             currentOvertimeSeventhDayOTThreshold = Configuration.getProperty(tenantId_settings, "OvertimeSeventhDayOTThreshold", STD_DEFAULT_OVERTIME_SEVENTH_DAY_OT_THRESHOLD);
             currentOvertimeSeventhDayDTThreshold = Configuration.getProperty(tenantId_settings, "OvertimeSeventhDayDTThreshold", STD_DEFAULT_OVERTIME_SEVENTH_DAY_DT_THRESHOLD);
+            currentOvertimeHolidayEnabled = "true".equalsIgnoreCase(Configuration.getProperty(tenantId_settings, "OvertimeHolidayEnabled", STD_DEFAULT_OVERTIME_HOLIDAY_ENABLED));
+            currentOvertimeHolidayRate = Configuration.getProperty(tenantId_settings, "OvertimeHolidayRate", STD_DEFAULT_OVERTIME_HOLIDAY_RATE);
+            currentOvertimeHolidays = Configuration.getProperty(tenantId_settings, "OvertimeHolidays", "");
+            currentCustomHolidayDate = Configuration.getProperty(tenantId_settings, "CustomHolidayDate", STD_DEFAULT_CUSTOM_HOLIDAY_DATE);
+            currentCustomHolidayName = Configuration.getProperty(tenantId_settings, "CustomHolidayName", STD_DEFAULT_CUSTOM_HOLIDAY_NAME);
+            currentOvertimeDaysOffEnabled = "true".equalsIgnoreCase(Configuration.getProperty(tenantId_settings, "OvertimeDaysOffEnabled", STD_DEFAULT_OVERTIME_DAYSOFF_ENABLED));
+            currentOvertimeDaysOffRate = Configuration.getProperty(tenantId_settings, "OvertimeDaysOffRate", STD_DEFAULT_OVERTIME_DAYSOFF_RATE);
         }
     }
 %>
@@ -302,7 +325,7 @@
                                     <% if (hasProPlan) { %>
                                     <span class="styled-radio">
                                         <input type="radio" id="otTypeEmployeeState" name="OvertimeType" value="employee_state" <% if ("employee_state".equals(currentOvertimeType)) out.print(" checked"); %>> 
-                                        <label for="otTypeEmployeeState">By Employee State</label>
+                                        <label for="otTypeEmployeeState">By Employee's State</label>
                                     </span>
                                     <% } else { %>
                                     <span class="styled-radio" style="opacity: 0.6;">
@@ -324,13 +347,12 @@
                                     <span id="OvertimeState-status" class="save-status"></span> 
                                 </div>
                             </div>
-                            <% if ("employee_state".equals(currentOvertimeType)) { %>
-                            <div class="setting-info" style="margin-top: 5px;">
-                                <strong>Note:</strong> When using "By Employee State", overtime rules are determined by each employee's individual state setting.
-                            </div>
-                            <% } %>
+                            
+                            <div id="stateSpecificNotesDisplay" class="setting-info" style="margin-top: 10px;"></div>
                         </div>
-                        <div id="stateSpecificNotesDisplay" class="setting-info" style="margin-top: 10px;"></div>
+                    </div>
+                    <div id="employeeStateNote" class="setting-info" style="margin-top: 5px; <% if (!"employee_state".equals(currentOvertimeType)) out.print("display:none;"); %>">
+                        <strong>Note:</strong> When using "By Employee's State", overtime rules are determined by each employee's individual state setting.
                     </div>
                     <div id="manualOvertimeSettings" style="margin-top:20px; border-top:1px dashed #ccc; padding-top:15px; <% if (!"manual".equals(currentOvertimeType)) { out.print("opacity:0.7;"); } %>">
                         <div class="form-row">
@@ -362,7 +384,94 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+                    <% if (hasBusinessPlan) { %>
+                    <hr style="border:0; border-top: 1px dashed #eee; margin: 15px 0;">
+                    <div id="holidayOvertimeSection" style="margin-top:20px; border-top:1px dashed #ccc; padding-top:15px;">
+                        <div class="form-row holiday-overtime-row">
+                            <div class="setting-block">
+                                <label for="overtimeHolidayEnabled" class="setting-label-fixed">Enable Holiday OT:</label>
+                                <div class="setting-controls-wrapper">
+                                    <label class="switch">
+                                        <input type="checkbox" id="overtimeHolidayEnabled" name="OvertimeHolidayEnabled" value="true" <% if (currentOvertimeHolidayEnabled) out.print(" checked"); %>>
+                                        <span class="slider round"></span>
+                                    </label>
+                                    <span id="OvertimeHolidayEnabled-status" class="save-status checkbox-status"></span>
+                                </div>
+                            </div>
+                            <div class="setting-block" id="overtimeHolidayRateBlock" style="opacity: 1 !important; <% if (!currentOvertimeHolidayEnabled) out.print("display:none;"); %>">
+                                <label class="setting-label-fixed">Holiday OT Rate:</label>
+                                <div class="setting-controls-wrapper">
+                                    <div class="radio-group">
+                                        <span class="styled-radio">
+                                            <input type="radio" id="overtimeHolidayRate1.5" name="OvertimeHolidayRate" value="1.5" <% if ("1.5".equals(currentOvertimeHolidayRate)) out.print(" checked"); %>>
+                                            <label for="overtimeHolidayRate1.5">1.5x</label>
+                                        </span> 
+                                        <span class="styled-radio">
+                                            <input type="radio" id="overtimeHolidayRate2.0" name="OvertimeHolidayRate" value="2.0" <% if ("2.0".equals(currentOvertimeHolidayRate)) out.print(" checked"); %>>
+                                            <label for="overtimeHolidayRate2.0">2.0x</label>
+                                        </span>
+                                    </div>
+                                    <span id="OvertimeHolidayRate-status" class="save-status radio-group-status"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="holidaySelectionBlock" style="margin-top: 10px; opacity: 1 !important; <% if (!currentOvertimeHolidayEnabled) out.print("display:none;"); %>">
+                            <label class="setting-label-fixed" style="margin-bottom: 10px; display: block;">Select Holidays for OT:</label>
+                            <div id="holidayCheckboxList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; width: 100%; margin-bottom: 15px;"></div>
+                            <div style="display: flex; gap: 10px;">
+                                <button type="button" id="selectAllHolidays" class="configure-button" style="padding: 5px 10px; font-size: 0.9em;">Select All</button>
+                                <button type="button" id="deselectAllHolidays" class="configure-button" style="padding: 5px 10px; font-size: 0.9em;">Deselect All</button>
+                            </div>
+                            <span id="OvertimeHolidays-status" class="save-status" style="margin-top: 10px;"></span>
+                            <hr style="border:0; border-top: 1px dashed #eee; margin: 15px 0;">
+                            <label class="setting-label-fixed" style="margin-bottom: 10px; display: block;">Custom Holiday:</label>
+                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                                <input type="checkbox" id="customHolidayCheckbox" class="holiday-checkbox" style="width: 20px; height: 20px;">
+                                <input type="date" id="customHolidayDate" name="CustomHolidayDate" value="<%= escapeHtml(currentCustomHolidayDate) %>" style="flex: 0 0 150px;" <% if (currentCustomHolidayDate.isEmpty()) out.print("disabled"); %>>
+                                <input type="text" id="customHolidayName" name="CustomHolidayName" value="<%= escapeHtml(currentCustomHolidayName) %>" placeholder="Holiday Description" style="flex: 1; min-width: 200px;" <% if (currentCustomHolidayName.isEmpty()) out.print("disabled"); %>>
+                                <span id="customHolidayCheckbox-status" class="save-status"></span>
+                            </div>
+                        </div><br>
+                        <div class="setting-info" style="margin-top: 5px; margin-bottom: 15px;">
+                            <strong>Note:</strong> Holiday overtime applies only to worked holidays, with In/Out times. PTO holiday entries (non-worked) are paid the regular rate.<br>
+                            Enable to select applicable holidays.
+                        </div>
                         <hr style="border:0; border-top: 1px dashed #eee; margin: 15px 0;">
+                        <div class="form-row">
+                            <div class="setting-block">
+                                <label for="overtimeDaysOffEnabled" class="setting-label-fixed">Enable Days Off OT:</label>
+                                <div class="setting-controls-wrapper">
+                                    <label class="switch">
+                                        <input type="checkbox" id="overtimeDaysOffEnabled" name="OvertimeDaysOffEnabled" value="true" <% if (currentOvertimeDaysOffEnabled) out.print(" checked"); %>>
+                                        <span class="slider round"></span>
+                                    </label>
+                                    <span id="OvertimeDaysOffEnabled-status" class="save-status checkbox-status"></span>
+                                </div>
+                            </div>
+                            <div class="setting-block" id="overtimeDaysOffRateBlock" style="<% if (!currentOvertimeDaysOffEnabled) out.print("display:none;"); %>">
+                                <label class="setting-label-fixed">Days Off OT Rate:</label>
+                                <div class="setting-controls-wrapper">
+                                    <div class="radio-group">
+                                        <span class="styled-radio">
+                                            <input type="radio" id="overtimeDaysOffRate1.5" name="OvertimeDaysOffRate" value="1.5" <% if ("1.5".equals(currentOvertimeDaysOffRate)) out.print(" checked"); %>>
+                                            <label for="overtimeDaysOffRate1.5">1.5x</label>
+                                        </span> 
+                                        <span class="styled-radio">
+                                            <input type="radio" id="overtimeDaysOffRate2.0" name="OvertimeDaysOffRate" value="2.0" <% if ("2.0".equals(currentOvertimeDaysOffRate)) out.print(" checked"); %>>
+                                            <label for="overtimeDaysOffRate2.0">2.0x</label>
+                                        </span>
+                                    </div>
+                                    <span id="OvertimeDaysOffRate-status" class="save-status radio-group-status"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="setting-info" style="margin-top: 5px; margin-bottom: 15px;">
+                            <strong>Note:</strong> Days Off overtime applies only to employees on a defined schedule with specific work days. Employees working on their scheduled days off will receive the selected overtime rate.
+                        </div>
+                    </div>
+                    <% } %>
+                    <div id="advancedOvertimeSettings" style="margin-top:20px; border-top:1px dashed #ccc; padding-top:15px; <% if (!"manual".equals(currentOvertimeType)) { out.print("opacity:0.7;"); } %>">
                         <div class="form-row">
                             <div class="setting-block">
                                 <label for="overtimeDaily" class="setting-label-fixed">Enable Daily OT:</label>
@@ -377,7 +486,7 @@
                             <div class="setting-block" id="overtimeDailyThresholdBlock" style="<% if (!currentOvertimeDailyEnabled && "Manual".equals(currentOvertimeRuleMode)) out.print("opacity:0.5;"); %>">
                                 <label for="overtimeDailyThreshold" class="setting-label-fixed">Daily OT After (Hrs):</label>
                                 <div class="setting-controls-wrapper">
-                                    <input type="number" id="overtimeDailyThreshold" name="OvertimeDailyThreshold" min="0.5" max="23.5" step="0.5" placeholder="e.g., 8.0" value="<%= currentOvertimeDailyThreshold %>" class="short-input">
+                                    <input type="number" id="overtimeDailyThreshold" name="OvertimeDailyThreshold" min="0.5" max="23.5" step="0.5" placeholder="e.g., 8.0" value="<%= currentOvertimeDailyThreshold %>" class="short-input" <% if (!"manual".equals(currentOvertimeType)) out.print("disabled"); %>>
                                     <span id="OvertimeDailyThreshold-status" class="save-status"></span>
                                 </div>
                             </div>
@@ -519,6 +628,13 @@
             overtimeSeventhDayEnabled: <%= currentOvertimeSeventhDayEnabled %>,
             overtimeSeventhDayOTThreshold: "<%= escapeForJavaScriptString(currentOvertimeSeventhDayOTThreshold) %>",
             overtimeSeventhDayDTThreshold: "<%= escapeForJavaScriptString(currentOvertimeSeventhDayDTThreshold) %>",
+            overtimeHolidayEnabled: <%= currentOvertimeHolidayEnabled %>,
+            overtimeHolidayRate: "<%= escapeForJavaScriptString(currentOvertimeHolidayRate) %>",
+            overtimeHolidays: "<%= escapeForJavaScriptString(currentOvertimeHolidays) %>",
+            customHolidayDate: "<%= escapeForJavaScriptString(currentCustomHolidayDate) %>",
+            customHolidayName: "<%= escapeForJavaScriptString(currentCustomHolidayName) %>",
+            overtimeDaysOffEnabled: <%= currentOvertimeDaysOffEnabled %>,
+            overtimeDaysOffRate: "<%= escapeForJavaScriptString(currentOvertimeDaysOffRate) %>",
             restrictByTimeDay: <%= currentRestrictByTimeDay %>,
             restrictByLocation: <%= currentRestrictByLocation %>,
             restrictByDevice: <%= currentRestrictByDevice %>
@@ -528,6 +644,7 @@
         window.appRootPath = "<%= request.getContextPath() %>";
     </script>
     <script src="${pageContext.request.contextPath}/js/settings.js?v=<%= System.currentTimeMillis() %>"></script>
+    <script src="${pageContext.request.contextPath}/js/settings_custom_holiday.js?v=<%= System.currentTimeMillis() %>"></script>
     <%@ include file="/WEB-INF/includes/common-scripts.jspf" %>
 </body>
 </html>

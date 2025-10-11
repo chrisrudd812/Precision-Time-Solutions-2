@@ -46,7 +46,7 @@
                     </div>
                     <div class="form-row">
                         <div class="form-item"><label for="addSchedule">Schedule</label><select id="addSchedule" name="schedulesDropDown"></select></div>
-                        <div class="form-item"><label for="addAccrualPolicy">Accrual Policy</label><select id="addAccrualPolicy" name="accrualsDropDown"></select></div>
+                        <div class="form-item"><label for="addAccrualPolicy">PTO Policy</label><select id="addAccrualPolicy" name="accrualsDropDown"></select></div>
                     </div>
                 </div>
 
@@ -121,7 +121,7 @@
                     </div>
                     <div class="form-row">
                         <div class="form-item"><label for="editSchedule">Schedule</label><select id="editSchedule" name="schedulesDropDown"></select></div>
-                        <div class="form-item"><label for="editAccrualPolicy">Accrual Policy</label><select id="editAccrualPolicy" name="accrualsDropDown"></select></div>
+                        <div class="form-item"><label for="editAccrualPolicy">PTO Policy</label><select id="editAccrualPolicy" name="accrualsDropDown"></select></div>
                     </div>
                 </div>
                 

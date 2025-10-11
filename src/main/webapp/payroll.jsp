@@ -57,7 +57,7 @@
     }
 
     boolean dataReady = false;
-    String payrollTableHtml = "<tr><td colspan='10' class='report-message-row'>Payroll data not loaded.</td></tr>";
+    String payrollTableHtml = "<tr><td colspan='13' class='report-message-row'>Payroll data not loaded.</td></tr>";
     String formattedGrandTotal = "$0.00";
     String payPeriodMessage = "Pay Period Not Set";
     LocalDate periodStartDate = null;
@@ -83,16 +83,16 @@
             List<Map<String, Object>> calculatedData = ShowPayroll.calculatePayrollData(tenantId, periodStartDate, periodEndDate);
             if (calculatedData != null) { 
                 Map<String, Object> displayData = ShowPayroll.showPayroll(calculatedData);
-                payrollTableHtml = (String) displayData.getOrDefault("payrollHtml", "<tr><td colspan='10' class='report-error-row'>Error formatting data.</td></tr>");
+                payrollTableHtml = (String) displayData.getOrDefault("payrollHtml", "<tr><td colspan='13' class='report-error-row'>Error formatting data.</td></tr>");
                 double grandTotalValue = (Double) displayData.getOrDefault("grandTotal", 0.0);
                 formattedGrandTotal = currencyFormatter.format(grandTotalValue);
                 dataReady = true; 
             } else { 
-                payrollTableHtml = "<tr><td colspan='10' class='report-message-row'>No payroll data available for this period.</td></tr>";
+                payrollTableHtml = "<tr><td colspan='13' class='report-message-row'>No payroll data available for this period.</td></tr>";
             }
         } catch (Exception e) {
             pageError = "Error processing payroll: " + e.getMessage();
-            payrollTableHtml = "<tr><td colspan='10' class='report-error-row'>Error processing payroll. Check server logs.</td></tr>";
+            payrollTableHtml = "<tr><td colspan='13' class='report-error-row'>Error processing payroll. Check server logs.</td></tr>";
         }
     } else if (pageError == null) { 
         pageError = "Pay period dates are not correctly set.";
@@ -168,7 +168,7 @@
         <% } %>
 
         <% if(dataReady) { %>
-        <p class="instructions">Review payroll below. Run the 'Exception Report' first to check for missing punches before closing the pay period.</p>
+        <p class="instructions">Review payroll below. The 'Exception Report' must be clear of missing punches before closing the pay period is enabled.</p>
         <h4 style="color: #6c757d; margin: 7px auto 10px auto; font-size: 0.9em; text-align: center;"><span class="instruction-text">💡 Click on a payroll table row to edit that employee's punches</span></h4>
         <div id="payroll-table-container" class="table-container report-table-container">
             <table id="payrollTable" class="report-table sortable">
@@ -181,6 +181,9 @@
                         <th class="sortable" data-sort-type="number">Regular Hours</th>
                         <th class="sortable" data-sort-type="number">Overtime Hours</th>
                         <th class="sortable" data-sort-type="number">Double Time Hours</th>
+                        <th class="sortable" data-sort-type="number">Holiday OT Hours</th>
+                        <th class="sortable" data-sort-type="number">Days Off OT Hours</th>
+                        <th class="sortable" data-sort-type="number">Total Overtime</th>
                         <th class="sortable" data-sort-type="number">Total Paid Hours</th>
                         <th class="sortable" data-sort-type="currency">Wage</th>
                         <th class="sortable" data-sort-type="currency">Total Pay</th>
@@ -189,7 +192,7 @@
                 <tbody><%= payrollTableHtml %></tbody>
                 <tfoot>
                     <tr>
-                        <td colspan="9" style="text-align: right; padding-right: 15px;">Payroll Grand Total:</td>
+                        <td colspan="12" style="text-align: right; padding-right: 15px;">Payroll Grand Total:</td>
                         <td style="font-weight: bold; text-align: right;"><%= formattedGrandTotal %></td>
                     </tr>
                 </tfoot>
@@ -198,7 +201,7 @@
         <div id="payroll-actions-container">
             <button id="btnExceptionReport" type="button" class="glossy-button text-orange"><i class="fas fa-exclamation-triangle"></i> Exception Report</button>
             <button id="btnAddHolidayPTO" type="button" class="glossy-button text-purple"><i class="fas fa-calendar-plus"></i> Add Holiday / PTO</button>
-            <form method="post" action="PayrollServlet"><input type="hidden" name="action" value="exportPayroll"><button id="btnExportPayroll" type="submit" class="glossy-button text-green"><i class="fas fa-file-excel"></i> Export Payroll</button></form>
+            <button id="btnExportPayroll" type="button" class="glossy-button text-green"><i class="fas fa-download"></i> Export Payroll</button>
             <button id="btnPrintPayroll" type="button" class="glossy-button text-blue"><i class="fas fa-print"></i> Print Payroll Summary</button>
             <button id="btnPrintAllTimeCards" type="button" class="glossy-button text-purple"><i class="fas fa-print"></i> Print / Email Time Cards</button>
             <form id="closePayPeriodForm" method="post" action="PayrollServlet"><input type="hidden" name="action" value="closePayPeriod"><button id="btnClosePayPeriodActual" type="button" class="glossy-button text-red"><i class="fas fa-lock"></i> Close Pay Period</button></form>

@@ -121,7 +121,7 @@
                         <li class="dropdown">
                             <a href="javascript:void(0);" class="dropbtn"><i class="fas fa-edit"></i> Punch Management <i class="fas fa-chevron-down"></i></a>
                             <ul class="dropdown-content">
-                            	<li><a href="<%= request.getContextPath() %>/punches.jsp">Edit Employee Punches</a></li>
+                            	<li><a href="<%= request.getContextPath() %>/punches.jsp">Add/Edit Employee Punches</a></li>
                                 <li><a href="<%= request.getContextPath() %>/add_global_data.jsp">Add Global Hours (Holiday, etc.)</a></li>
                             </ul>
                         </li>
@@ -177,13 +177,13 @@
                                 <li class="sub-dropdown-trigger">
                                      <a href="javascript:void(0);" class="sub-dropbtn">Time Card Reports <i class="fas fa-chevron-right"></i></a>
                                      <ul class="dropdown-content sub-dropdown-content">
-                                        <li><a href="<%= request.getContextPath() %>/PrintTimecardsServlet?filterType=single&filterValue=1" target="_blank">View Individual Timecard</a></li>
-                                        <li><a href="<%= request.getContextPath() %>/PrintTimecardsServlet?filterType=all" target="_blank">All Time Cards (Print View)</a></li>
+                                        <li><a href="javascript:void(0);" onclick="openTimeCardModal('<%= request.getContextPath() %>/PrintTimecardsServlet?filterType=single&filterValue=1&hideNav=true')">View Individual Timecard</a></li>
+                                        <li><a href="javascript:void(0);" onclick="openTimeCardModal('<%= request.getContextPath() %>/PrintTimecardsServlet?filterType=all&hideNav=true')">All Time Cards (Print View)</a></li>
                                          <li class="sub-dropdown-trigger">
                                             <a href="javascript:void(0);" class="sub-dropbtn">By Department (Print View) <i class="fas fa-chevron-right"></i></a>
                                              <ul class="dropdown-content sub-dropdown-content">
                                                 <% if (tenantIdForNav_jspf != null) { List<Map<String, String>> depts = ShowReports.getDepartmentsForTenant(tenantIdForNav_jspf); if (depts != null && !depts.isEmpty()) { for (Map<String, String> dept : depts) { String name = dept.get("name"); if (name != null && !name.trim().isEmpty()) { String encodedName = URLEncoder.encode(name, StandardCharsets.UTF_8.name()); %>
-                                                    <li><a href="<%= request.getContextPath() %>/PrintTimecardsServlet?filterType=department&filterValue=<%= encodedName %>" target="_blank"><%= escapeNavbarHtml(name) %></a></li>
+                                                    <li><a href="javascript:void(0);" onclick="openTimeCardModal('<%= request.getContextPath() %>/PrintTimecardsServlet?filterType=department&filterValue=<%= encodedName %>&hideNav=true')"><%= escapeNavbarHtml(name) %></a></li>
                                                  <% } } } else { %> <li><a href="#">No Departments</a></li> <% } } %>
                                             </ul>
                                      </li>
@@ -191,7 +191,7 @@
                                             <a href="javascript:void(0);" class="sub-dropbtn">By Schedule (Print View) <i class="fas fa-chevron-right"></i></a>
                                             <ul class="dropdown-content sub-dropdown-content">
                                                  <% if (tenantIdForNav_jspf != null) { List<Map<String, String>> scheds = ShowReports.getSchedulesForTenant(tenantIdForNav_jspf); if (scheds != null && !scheds.isEmpty()) { for (Map<String, String> sched : scheds) { String name = sched.get("name"); if (name != null && !name.trim().isEmpty()) { String encodedName = URLEncoder.encode(name, StandardCharsets.UTF_8.name()); %>
-                                                    <li><a href="<%= request.getContextPath() %>/PrintTimecardsServlet?filterType=schedule&filterValue=<%= encodedName %>" target="_blank"><%= escapeNavbarHtml(name) %></a></li>
+                                                    <li><a href="javascript:void(0);" onclick="openTimeCardModal('<%= request.getContextPath() %>/PrintTimecardsServlet?filterType=schedule&filterValue=<%= encodedName %>&hideNav=true')"><%= escapeNavbarHtml(name) %></a></li>
                                                  <% } } } else { %> <li><a href="#">No Schedules</a></li> <% } } %>
                                             </ul>
                                      </li>
@@ -199,7 +199,7 @@
                                             <a href="javascript:void(0);" class="sub-dropbtn">By Supervisor (Print View) <i class="fas fa-chevron-right"></i></a>
                                             <ul class="dropdown-content sub-dropdown-content">
                                                  <% if (tenantIdForNav_jspf != null) { List<String> sups = ShowReports.getSupervisorsForTenant(tenantIdForNav_jspf); if (sups != null && !sups.isEmpty()) { for (String supName : sups) { if (supName != null && !supName.trim().isEmpty()) { String encodedName = URLEncoder.encode(supName, StandardCharsets.UTF_8.name()); %>
-                                                    <li><a href="<%= request.getContextPath() %>/PrintTimecardsServlet?filterType=supervisor&filterValue=<%= encodedName %>" target="_blank"><%= escapeNavbarHtml(supName) %></a></li>
+                                                    <li><a href="javascript:void(0);" onclick="openTimeCardModal('<%= request.getContextPath() %>/PrintTimecardsServlet?filterType=supervisor&filterValue=<%= encodedName %>&hideNav=true')"><%= escapeNavbarHtml(supName) %></a></li>
                                                  <% } } } else { %> <li><a href="#">No Supervisors</a></li> <% } } %>
                                             </ul>
                                      </li>

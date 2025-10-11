@@ -397,3 +397,11 @@ body.print-preview-body .timecard-print-page table.timecard-table tbody tr:nth-c
 body.print-preview-body .timecard-print-page table.timecard-table tbody tr {
     transition: background-color 0.15s ease-in-out !important;
 }
+body.print-preview-body .timecard-print-page table.punches tbody tr.overtime-bonus-row td {
+    color: #16a34a !important;
+    font-weight: 500 !important;
+}
+.overtime-highlight {
+    color: #16a34a !important;
+    font-weight: 600 !important;
+}

@@ -19,6 +19,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnPrintAllTimeCards = document.getElementById('btnPrintAllTimeCards');
     const btnExportPayrollElement = document.getElementById('btnExportPayroll');
     const btnShowReport = document.getElementById('btnExceptionReport');
+    const exportOptionsModal = document.getElementById('exportOptionsModal');
+    const exportOptionsForm = document.getElementById('exportOptionsForm');
+    const availableColumns = document.getElementById('availableColumns');
+    const selectedColumns = document.getElementById('selectedColumns');
+    const selectedColumnsInput = document.getElementById('selectedColumnsInput');
+    const addColumnBtn = document.getElementById('addColumnBtn');
+    const removeColumnBtn = document.getElementById('removeColumnBtn');
+    const moveUpBtn = document.getElementById('moveUpBtn');
+    const moveDownBtn = document.getElementById('moveDownBtn');
+    const exportPayrollBtn = document.getElementById('exportPayrollBtn');
+    const cancelExportBtn = document.getElementById('cancelExportBtn');
     const closePeriodConfirmModal = document.getElementById('closePeriodConfirmModal');
     const confirmModalTitle = document.getElementById('confirmModalTitle');
     const confirmModalMessage = document.getElementById('confirmModalMessage');
@@ -136,6 +147,143 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => { window.showPageNotification("Network error saving punch: " + error.message, 'error'); });
     }
+
+    // Export Modal Functions
+    function updateSelectedColumnsInput() {
+        const selectedItems = selectedColumns.querySelectorAll('.column-item');
+        const columnValues = Array.from(selectedItems).map(item => item.dataset.column);
+        selectedColumnsInput.value = columnValues.join(',');
+    }
+
+    function moveSelectedColumn(direction) {
+        const activeItem = selectedColumns.querySelector('.column-item.active');
+        if (!activeItem) return;
+        
+        const items = Array.from(selectedColumns.querySelectorAll('.column-item'));
+        const currentIndex = items.indexOf(activeItem);
+        
+        if (direction === 'up' && currentIndex > 0) {
+            selectedColumns.insertBefore(activeItem, items[currentIndex - 1]);
+        } else if (direction === 'down' && currentIndex < items.length - 1) {
+            selectedColumns.insertBefore(items[currentIndex + 1], activeItem);
+        }
+        updateSelectedColumnsInput();
+    }
+
+    function addColumn() {
+        const activeItem = availableColumns.querySelector('.column-item.active');
+        if (!activeItem) return;
+        
+        // Check if column already exists in selected
+        const columnKey = activeItem.dataset.column;
+        const existingSelected = selectedColumns.querySelector(`[data-column="${columnKey}"]`);
+        if (existingSelected) return;
+        
+        const newItem = activeItem.cloneNode(true);
+        newItem.classList.remove('active');
+        newItem.classList.add('selected');
+        selectedColumns.appendChild(newItem);
+        activeItem.remove();
+        updateSelectedColumnsInput();
+    }
+
+    function removeColumn() {
+        const activeItem = selectedColumns.querySelector('.column-item.active');
+        if (!activeItem) return;
+        
+        // Check if column already exists in available
+        const columnKey = activeItem.dataset.column;
+        const existingAvailable = availableColumns.querySelector(`[data-column="${columnKey}"]`);
+        if (existingAvailable) {
+            activeItem.remove();
+        } else {
+            const newItem = activeItem.cloneNode(true);
+            newItem.classList.remove('active', 'selected');
+            availableColumns.appendChild(newItem);
+            activeItem.remove();
+        }
+        updateSelectedColumnsInput();
+    }
+
+    function handleColumnClick(event) {
+        const item = event.target.closest('.column-item');
+        if (!item) return;
+        
+        const container = item.closest('.column-list');
+        container.querySelectorAll('.column-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+    }
+
+    function initializeExportModal() {
+        // Ensure no duplicates exist on modal open
+        const availableItems = availableColumns.querySelectorAll('.column-item');
+        const selectedItems = selectedColumns.querySelectorAll('.column-item');
+        
+        // Remove any items from available that are already in selected
+        selectedItems.forEach(selectedItem => {
+            const columnKey = selectedItem.dataset.column;
+            const duplicateInAvailable = availableColumns.querySelector(`[data-column="${columnKey}"]`);
+            if (duplicateInAvailable) {
+                duplicateInAvailable.remove();
+            }
+        });
+        
+        updateSelectedColumnsInput();
+    }
+
+    function showExportModal() {
+        if (exportOptionsModal) {
+            initializeExportModal();
+            _showModal(exportOptionsModal);
+        }
+    }
+
+    function hideExportModal() {
+        if (exportOptionsModal) _hideModal(exportOptionsModal);
+    }
+
+    function handleExportSubmit() {
+        if (!exportOptionsForm) return;
+        
+        const formData = new FormData(exportOptionsForm);
+        const format = formData.get('exportFormat');
+        const columns = formData.get('selectedColumns');
+        
+        if (!columns || columns.trim() === '') {
+            window.showPageNotification('Please select at least one column to export.', 'error');
+            return;
+        }
+        
+        // Create a temporary form to submit the export request
+        const tempForm = document.createElement('form');
+        tempForm.method = 'POST';
+        tempForm.action = `${appRoot}/PayrollServlet`;
+        tempForm.style.display = 'none';
+        
+        const actionInput = document.createElement('input');
+        actionInput.type = 'hidden';
+        actionInput.name = 'action';
+        actionInput.value = 'exportPayroll';
+        tempForm.appendChild(actionInput);
+        
+        const formatInput = document.createElement('input');
+        formatInput.type = 'hidden';
+        formatInput.name = 'exportFormat';
+        formatInput.value = format;
+        tempForm.appendChild(formatInput);
+        
+        const columnsInput = document.createElement('input');
+        columnsInput.type = 'hidden';
+        columnsInput.name = 'selectedColumns';
+        columnsInput.value = columns;
+        tempForm.appendChild(columnsInput);
+        
+        document.body.appendChild(tempForm);
+        tempForm.submit();
+        document.body.removeChild(tempForm);
+        
+        hideExportModal();
+    }
     
     // --- EVENT LISTENERS ---
     btnShowReport?.addEventListener('click', refreshExceptionReport);
@@ -175,7 +323,7 @@ document.addEventListener('DOMContentLoaded', function() {
             buttonText = "Close Early";
         } else {
             title = "Confirm Close Pay Period";
-            message = `This will finalize overtime, archive punches, and run accruals. This action cannot be easily undone.<br><br>Are you sure you want to close the period?`;
+            message = `This will finalize overtime, archive punches, and update PTO. This action cannot be easily undone.<br><br>Are you sure you want to close the period?`;
             buttonText = "Confirm Close";
         }
         confirmModalTitle.querySelector('span').textContent = title;
@@ -231,14 +379,53 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }, 750);
     });
-    btnPrintAllTimeCards?.addEventListener('click', () => window.open(`${appRoot}/PrintTimecardsServlet?filterType=all`, '_blank'));
+    btnPrintAllTimeCards?.addEventListener('click', () => {
+        const url = `${appRoot}/PrintTimecardsServlet?filterType=all&hideNav=true`;
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:10000;display:flex;align-items:center;justify-content:center;';
+        modal.innerHTML = `<div style="width:1200px;max-width:90%;height:800px;max-height:85vh;background:#fff;border-radius:8px;position:relative;display:flex;flex-direction:column;box-shadow:0 4px 20px rgba(0,0,0,0.3);"><button onclick="this.closest('div[style*=fixed]').remove();" style="position:absolute;top:10px;right:10px;z-index:1;background:#dc3545;color:#fff;border:none;border-radius:4px;padding:8px 16px;cursor:pointer;font-size:16px;font-weight:bold;">✕ Close</button><iframe src="${url}" style="width:100%;height:100%;border:none;border-radius:8px;"></iframe></div>`;
+        document.body.appendChild(modal);
+    });
+    
+    // Export Modal Event Listeners
+    btnExportPayrollElement?.addEventListener('click', showExportModal);
+    cancelExportBtn?.addEventListener('click', hideExportModal);
+    exportPayrollBtn?.addEventListener('click', handleExportSubmit);
+    addColumnBtn?.addEventListener('click', addColumn);
+    removeColumnBtn?.addEventListener('click', removeColumn);
+    moveUpBtn?.addEventListener('click', () => moveSelectedColumn('up'));
+    moveDownBtn?.addEventListener('click', () => moveSelectedColumn('down'));
+    
+    availableColumns?.addEventListener('click', handleColumnClick);
+    selectedColumns?.addEventListener('click', handleColumnClick);
+    
+    // Double-click to add/remove columns
+    availableColumns?.addEventListener('dblclick', (event) => {
+        const item = event.target.closest('.column-item');
+        if (item) {
+            item.classList.add('active');
+            addColumn();
+        }
+    });
+    
+    selectedColumns?.addEventListener('dblclick', (event) => {
+        const item = event.target.closest('.column-item');
+        if (item) {
+            item.classList.add('active');
+            removeColumn();
+        }
+    });
     
     document.getElementById('btnAddHolidayPTO')?.addEventListener('click', () => {
-        let url = `${appRoot}/add_global_data.jsp`;
+        let url = `${appRoot}/add_global_data.jsp?hideNav=true`;
         if (window.PAY_PERIOD_START && window.PAY_PERIOD_END) {
-            url += `?startDate=${window.PAY_PERIOD_START}&endDate=${window.PAY_PERIOD_END}`;
+            url += `&startDate=${window.PAY_PERIOD_START}&endDate=${window.PAY_PERIOD_END}`;
         }
-        window.location.href = url;
+        
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:10000;display:flex;align-items:center;justify-content:center;';
+        modal.innerHTML = `<div style="width:1200px;max-width:90%;height:800px;max-height:85vh;background:#fff;border-radius:8px;position:relative;display:flex;flex-direction:column;box-shadow:0 4px 20px rgba(0,0,0,0.3);"><button onclick="this.closest('div[style*=fixed]').remove();window.location.reload();" style="position:absolute;top:10px;right:10px;z-index:1;background:#dc3545;color:#fff;border:none;border-radius:4px;padding:8px 16px;cursor:pointer;font-size:16px;font-weight:bold;">✕ Close</button><iframe src="${url}" style="width:100%;height:100%;border:none;border-radius:8px;"></iframe></div>`;
+        document.body.appendChild(modal);
     });
 
     // Add click listener to payroll table rows
@@ -259,6 +446,8 @@ document.addEventListener('DOMContentLoaded', function() {
             modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:10000;display:flex;align-items:center;justify-content:center;';
             modal.innerHTML = `<div style="width:1200px;max-width:90%;height:800px;max-height:85vh;background:#fff;border-radius:8px;position:relative;display:flex;flex-direction:column;box-shadow:0 4px 20px rgba(0,0,0,0.3);"><button onclick="this.closest('div[style*=fixed]').remove();window.location.reload();" style="position:absolute;top:10px;right:10px;z-index:1;background:#dc3545;color:#fff;border:none;border-radius:4px;padding:8px 16px;cursor:pointer;font-size:16px;font-weight:bold;">✕ Close</button><iframe src="${url}" style="width:100%;height:100%;border:none;border-radius:8px;"></iframe></div>`;
             document.body.appendChild(modal);
+            
+
             return;
             
             const width = 1200, height = 800;

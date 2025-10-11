@@ -59,12 +59,24 @@
                     </div>
                 </div>
 
+                <% if (!employeeDeviceList.isEmpty()) { %>
+                <div class="employee-selector-section">
+                    <label for="employeeSelect">Select Employee:</label>
+                    <select id="employeeSelect">
+                        <option value="">-- All Employees --</option>
+                        <% for (Map<String, Object> emp : employeeDeviceList) { %>
+                            <option value="<%= emp.get("EID") %>"><%= Helpers.escapeHtml((String) emp.get("LastName")) %>, <%= Helpers.escapeHtml((String) emp.get("FirstName")) %></option>
+                        <% } %>
+                    </select>
+                </div>
+                <% } %>
+
                 <div class="employee-list-scroll-container">
                 <% if (employeeDeviceList.isEmpty()) { %>
                     <p class="no-devices">No employees with registered devices found.</p>
                 <% } else { %>
                     <% for (Map<String, Object> employee : employeeDeviceList) { %>
-                    <div class="employee-section">
+                    <div class="employee-section" data-eid="<%= employee.get("EID") %>">
                         <div class="employee-header">
                            <span><i class="fas fa-user"></i> <%= Helpers.escapeHtml((String) employee.get("LastName")) %>, <%= Helpers.escapeHtml((String) employee.get("FirstName")) %></span>
                         </div>

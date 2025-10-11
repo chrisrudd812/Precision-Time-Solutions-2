@@ -96,7 +96,7 @@
     String employeeName = "N/A", department = "N/A", supervisor = "N/A", scheduleName = "N/A", scheduleTimeStr = "N/A", autoLunchStr = "Off", wageTypeStr = "N/A";
     double vacationHours = 0.0, sickHours = 0.0, personalHours = 0.0;
     StringBuilder timeclockPunchTableBuilder = new StringBuilder();
-    double totalRegularHours = 0.0, totalOvertimeHours = 0.0, totalDoubleTimeHours = 0.0, periodTotalHours = 0.0;
+    double totalRegularHours = 0.0, totalOvertimeHours = 0.0, totalDoubleTimeHours = 0.0, totalHolidayOvertimeHours = 0.0, totalDaysOffOvertimeHours = 0.0, periodTotalHours = 0.0;
     NumberFormat hoursFormatter = NumberFormat.getNumberInstance(Locale.US);
     hoursFormatter.setMinimumFractionDigits(2); hoursFormatter.setMaximumFractionDigits(2);
     if (globalEidForDisplay > 0 && pageError == null) {
@@ -112,7 +112,20 @@
             if (shiftStart != null && shiftEnd != null) {
                  scheduleTimeStr = shiftStart.toLocalTime().format(DateTimeFormatter.ofPattern("hh:mm a")) + " - " + shiftEnd.toLocalTime().format(DateTimeFormatter.ofPattern("hh:mm a"));
             }
-            autoLunchStr = (Boolean) employeeInfo.getOrDefault("autoLunch", false) ? "On" : "Off";
+            boolean autoLunchEnabled = (Boolean) employeeInfo.getOrDefault("autoLunch", false);
+            if (autoLunchEnabled) {
+                Object hrsReqObj = employeeInfo.get("hoursRequired");
+                Object lunchLenObj = employeeInfo.get("lunchLength");
+                double hrsRequired = (hrsReqObj instanceof Number) ? ((Number) hrsReqObj).doubleValue() : 0.0;
+                int lunchLength = (lunchLenObj instanceof Number) ? ((Number) lunchLenObj).intValue() : 0;
+                if (hrsRequired > 0 && lunchLength > 0) {
+                    autoLunchStr = String.format("On (Deduct %d min after %.1f hrs)", lunchLength, hrsRequired);
+                } else {
+                    autoLunchStr = "On";
+                }
+            } else {
+                autoLunchStr = "Off";
+            }
             wageTypeStr = escapeHtml((String) employeeInfo.getOrDefault("wageType", "N/A"));
             vacationHours = (Double) employeeInfo.getOrDefault("vacationHours", 0.0);
             sickHours = (Double) employeeInfo.getOrDefault("sickHours", 0.0);
@@ -132,24 +145,48 @@
                             String inTimeCssClass = punch.get("inTimeCssClass");
                             String outTimeCssClass = punch.get("outTimeCssClass");
                             
+                            // Check for overtime bonus (only for hourly employees)
+                            boolean isHourly = "Hourly".equalsIgnoreCase(wageTypeStr);
+                            boolean isHolidayOT = isHourly && "true".equals(punch.get("isHolidayOvertime"));
+                            boolean isDaysOffOT = isHourly && "true".equals(punch.get("isDaysOffOvertime"));
+                            boolean isOvertimeBonus = isHolidayOT || isDaysOffOT;
+                            
                             // Handle null/empty times for entries like Holiday, Vacation, Other
                             inTime = (inTime != null && !inTime.trim().isEmpty()) ? escapeHtml(inTime) : "";
                             outTime = (outTime != null && !outTime.trim().isEmpty()) ? escapeHtml(outTime) : "";
                             
+                            // Apply late/early CSS classes (red overrides green)
                             if (inTimeCssClass != null && !inTimeCssClass.isEmpty() && !inTime.isEmpty()) {
                                 inTime = "<span class='" + inTimeCssClass + "'>" + inTime + "</span>";
+                            } else if (isOvertimeBonus && !inTime.isEmpty()) {
+                                inTime = "<span class='overtime-bonus-text'>" + inTime + "</span>";
                             }
                             if (outTimeCssClass != null && !outTimeCssClass.isEmpty() && !outTime.isEmpty()) {
                                 outTime = "<span class='" + outTimeCssClass + "'>" + outTime + "</span>";
+                            } else if (isOvertimeBonus && !outTime.isEmpty()) {
+                                outTime = "<span class='overtime-bonus-text'>" + outTime + "</span>";
+                            }
+                            
+                            // Apply green text to other columns if overtime bonus (unless overridden by red)
+                            String dayOfWeek = escapeHtml(punch.get("dayOfWeek"));
+                            String friendlyDate = escapeHtml(punch.get("friendlyPunchDate"));
+                            String totalHours = escapeHtml(punch.get("totalHours"));
+                            String punchType = escapeHtml(punch.get("punchType"));
+                            
+                            if (isOvertimeBonus) {
+                                dayOfWeek = "<span class='overtime-bonus-text'>" + dayOfWeek + "</span>";
+                                friendlyDate = "<span class='overtime-bonus-text'>" + friendlyDate + "</span>";
+                                totalHours = "<span class='overtime-bonus-text'>" + totalHours + "</span>";
+                                punchType = "<span class='overtime-bonus-text'>" + punchType + "</span>";
                             }
 
                             timeclockPunchTableBuilder.append("<tr>");
-                            timeclockPunchTableBuilder.append("<td>").append(escapeHtml(punch.get("dayOfWeek"))).append("</td>");
-                            timeclockPunchTableBuilder.append("<td>").append(escapeHtml(punch.get("friendlyPunchDate"))).append("</td>");
+                            timeclockPunchTableBuilder.append("<td>").append(dayOfWeek).append("</td>");
+                            timeclockPunchTableBuilder.append("<td>").append(friendlyDate).append("</td>");
                             timeclockPunchTableBuilder.append("<td>").append(inTime).append("</td>");
                             timeclockPunchTableBuilder.append("<td>").append(outTime).append("</td>");
-                            timeclockPunchTableBuilder.append("<td style='text-align:right;'>").append(escapeHtml(punch.get("totalHours"))).append("</td>");
-                            timeclockPunchTableBuilder.append("<td>").append(escapeHtml(punch.get("punchType"))).append("</td>");
+                            timeclockPunchTableBuilder.append("<td style='text-align:right;'>").append(totalHours).append("</td>");
+                            timeclockPunchTableBuilder.append("<td>").append(punchType).append("</td>");
                             timeclockPunchTableBuilder.append("</tr>\n");
                         }
                     } else {
@@ -159,7 +196,9 @@
                 totalRegularHours = (Double) timecardData.getOrDefault("totalRegularHours", 0.0);
                 totalOvertimeHours = (Double) timecardData.getOrDefault("totalOvertimeHours", 0.0);
                 totalDoubleTimeHours = (Double) timecardData.getOrDefault("totalDoubleTimeHours", 0.0);
-                periodTotalHours = totalRegularHours + totalOvertimeHours + totalDoubleTimeHours;
+                totalHolidayOvertimeHours = (Double) timecardData.getOrDefault("totalHolidayOvertimeHours", 0.0);
+                totalDaysOffOvertimeHours = (Double) timecardData.getOrDefault("totalDaysOffOvertimeHours", 0.0);
+                periodTotalHours = totalRegularHours + totalOvertimeHours + totalDoubleTimeHours + totalHolidayOvertimeHours + totalDaysOffOvertimeHours;
             }
         }
     }
@@ -305,7 +344,7 @@
                         </tr>
                         <% if("Hourly".equalsIgnoreCase(wageTypeStr)) { %>
                         <tr class="hours-breakdown-row">
-                            <td colspan="6" style="text-align:right; padding-right:10px;">(Reg: <%= hoursFormatter.format(totalRegularHours) %> | OT: <%= hoursFormatter.format(totalOvertimeHours) %> | DT: <%= hoursFormatter.format(totalDoubleTimeHours) %>)</td>
+                            <td colspan="6" style="text-align:right; padding-right:10px;">(Reg: <%= hoursFormatter.format(totalRegularHours) %> | OT: <%= hoursFormatter.format(totalOvertimeHours) %><% if (totalHolidayOvertimeHours > 0.001) { %> | <span class="overtime-bonus-text">Holiday OT: <%= hoursFormatter.format(totalHolidayOvertimeHours) %></span><% } %><% if (totalDaysOffOvertimeHours > 0.001) { %> | <span class="overtime-bonus-text">Days Off OT: <%= hoursFormatter.format(totalDaysOffOvertimeHours) %></span><% } %><% if (totalDoubleTimeHours > 0.001) { %> | DT: <%= hoursFormatter.format(totalDoubleTimeHours) %><% } %>)</td>
                         </tr>
                         <% } %>
                     </tfoot>

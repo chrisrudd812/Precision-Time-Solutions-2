@@ -238,41 +238,182 @@ public class PayrollServlet extends HttpServlet {
             else { eMsg = "Pay period dates not defined in Settings."; }
         } catch (Exception e) { eMsg = "Error retrieving pay period settings. T:" + tenantId; logger.log(Level.SEVERE, eMsg, e); }
         if (sd == null || ed == null) { response.sendRedirect("payroll.jsp?error=" + encodeUrlParam(eMsg != null ? eMsg : "Invalid pay period.")); return; }
+        
+        String exportFormat = request.getParameter("exportFormat");
+        String selectedColumnsParam = request.getParameter("selectedColumns");
+        
+        if (exportFormat == null) exportFormat = "excel";
+        if (selectedColumnsParam == null || selectedColumnsParam.trim().isEmpty()) {
+            selectedColumnsParam = "EID,FirstName,LastName,RegularHours,OvertimeHours,TotalPay";
+        }
+        
+        String[] selectedColumns = selectedColumnsParam.split(",");
+        Map<String, String> columnMapping = getColumnMapping();
+        
         List<Map<String, Object>> expD;
         try { List<Map<String, Object>> calcD = ShowPayroll.calculatePayrollData(tenantId, sd, ed); expD = ShowPayroll.getRawPayrollData(calcD); }
         catch (Exception e) { logger.log(Level.SEVERE, "Error calculating payroll for export T:" + tenantId, e); response.sendRedirect("payroll.jsp?error=" + encodeUrlParam("Error processing data: " + e.getMessage())); return; }
-        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        String fN = "payroll_" + tenantId + "_" + sd + "_to_" + ed + ".xlsx";
-        response.setHeader("Content-Disposition", "attachment; filename=\"" + fN + "\"");
-        try (Workbook wb = new XSSFWorkbook(); OutputStream o = response.getOutputStream()) {
-            Sheet sh = wb.createSheet("Payroll_" + sd + "_" + ed); CellStyle hS = wb.createCellStyle(); Font hF = wb.createFont(); hF.setBold(true); hS.setFont(hF);
-            CreationHelper cH = wb.getCreationHelper(); CellStyle cS = wb.createCellStyle(); cS.setDataFormat(cH.createDataFormat().getFormat("$#,##0.00"));
-            CellStyle hrS = wb.createCellStyle(); hrS.setDataFormat(cH.createDataFormat().getFormat("0.00"));
-            String[] hdrs = { "EID", "First Name", "Last Name", "Wage Type", "Regular Hours", "Overtime Hours", "Double Time Hours", "Total Paid Hours", "Wage", "Total Pay" };
-            Row hrR = sh.createRow(0); for (int i = 0; i < hdrs.length; i++) { Cell c = hrR.createCell(i); c.setCellValue(hdrs[i]); c.setCellStyle(hS); }
-            int rN = 1; BigDecimal gT = BigDecimal.ZERO;
-            if (expD != null && !expD.isEmpty()) {
-                for (Map<String, Object> rD : expD) {
-                    Row r = sh.createRow(rN++);
-                    r.createCell(0).setCellValue(String.valueOf(rD.getOrDefault("EID", "")));
-                    r.createCell(1).setCellValue((String) rD.getOrDefault("FirstName", "")); r.createCell(2).setCellValue((String) rD.getOrDefault("LastName", ""));
-                    r.createCell(3).setCellValue((String) rD.getOrDefault("WageType", ""));
-                    Cell rhC = r.createCell(4); rhC.setCellValue((Double) rD.getOrDefault("RegularHours", 0.0)); rhC.setCellStyle(hrS);
-                    Cell otHC = r.createCell(5); otHC.setCellValue((Double) rD.getOrDefault("OvertimeHours", 0.0)); otHC.setCellStyle(hrS);
-                    Cell dtHC = r.createCell(6); dtHC.setCellValue((Double) rD.getOrDefault("DoubleTimeHours", 0.0)); dtHC.setCellStyle(hrS);
-                    Cell tHC = r.createCell(7); tHC.setCellValue((Double) rD.getOrDefault("TotalPaidHours", 0.0)); tHC.setCellStyle(hrS);
-                    double wV = (Double) rD.getOrDefault("Wage", 0.0); Cell wC = r.createCell(8); wC.setCellValue(wV); wC.setCellStyle(cS);
-                    Cell tPC = r.createCell(9); double tPV = (Double) rD.getOrDefault("TotalPay", 0.0); tPC.setCellValue(tPV); tPC.setCellStyle(cS);
-                    gT = gT.add(BigDecimal.valueOf(tPV));
+        
+        if ("csv".equals(exportFormat)) {
+            exportAsCSV(response, expD, selectedColumns, columnMapping, tenantId, sd, ed);
+        } else {
+            exportAsExcel(response, expD, selectedColumns, columnMapping, tenantId, sd, ed);
+        }
+    }
+    
+    private Map<String, String> getColumnMapping() {
+        Map<String, String> mapping = new HashMap<>();
+        mapping.put("EID", "Employee ID");
+        mapping.put("FirstName", "First Name");
+        mapping.put("LastName", "Last Name");
+        mapping.put("WageType", "Wage Type");
+        mapping.put("RegularHours", "Regular Hours");
+        mapping.put("OvertimeHours", "Overtime Hours");
+        mapping.put("DoubleTimeHours", "Double Time Hours");
+        mapping.put("HolidayOTHours", "Holiday OT Hours");
+        mapping.put("DaysOffOTHours", "Days Off OT Hours");
+        mapping.put("TotalOvertimeHours", "Total Overtime");
+        mapping.put("TotalPaidHours", "Total Paid Hours");
+        mapping.put("Wage", "Wage");
+        mapping.put("TotalPay", "Total Pay");
+        return mapping;
+    }
+    
+    private void exportAsCSV(HttpServletResponse response, List<Map<String, Object>> data, String[] columns, Map<String, String> columnMapping, int tenantId, LocalDate sd, LocalDate ed) throws IOException {
+        response.setContentType("text/csv;charset=UTF-8");
+        String fileName = "payroll_" + tenantId + "_" + sd + "_to_" + ed + ".csv";
+        response.setHeader("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
+        
+        try (PrintWriter writer = response.getWriter()) {
+            // Write headers
+            for (int i = 0; i < columns.length; i++) {
+                if (i > 0) writer.print(",");
+                writer.print("\"" + columnMapping.getOrDefault(columns[i], columns[i]) + "\"");
+            }
+            writer.println();
+            
+            // Write data
+            if (data != null && !data.isEmpty()) {
+                for (Map<String, Object> row : data) {
+                    for (int i = 0; i < columns.length; i++) {
+                        if (i > 0) writer.print(",");
+                        Object value = row.getOrDefault(columns[i], "");
+                        String strValue = formatValueForCSV(value, columns[i]);
+                        writer.print("\"" + strValue.replace("\"", "\"\"") + "\"");
+                    }
+                    writer.println();
                 }
-            } else { Row r = sh.createRow(rN++); r.createCell(0).setCellValue("No payroll data found for this period."); }
-            Row fR = sh.createRow(rN); Cell tLC = fR.createCell(8); tLC.setCellValue("Grand Total:"); tLC.setCellStyle(hS);
-            Cell gTC = fR.createCell(9); gTC.setCellValue(gT.doubleValue()); gTC.setCellStyle(cS);
-            for (int i = 0; i < hdrs.length; i++) { try { sh.autoSizeColumn(i); } catch (Exception ign) { logger.finest("Could not autosize column " + i + " during export."); } }
+            }
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error during CSV export T:" + tenantId, e);
+            if (!response.isCommitted()) {
+                response.sendRedirect("payroll.jsp?error=" + encodeUrlParam("Error creating CSV file: " + e.getMessage()));
+            }
+        }
+    }
+    
+    private void exportAsExcel(HttpServletResponse response, List<Map<String, Object>> data, String[] columns, Map<String, String> columnMapping, int tenantId, LocalDate sd, LocalDate ed) throws IOException {
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        String fileName = "payroll_" + tenantId + "_" + sd + "_to_" + ed + ".xlsx";
+        response.setHeader("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
+        
+        try (Workbook wb = new XSSFWorkbook(); OutputStream o = response.getOutputStream()) {
+            Sheet sh = wb.createSheet("Payroll_" + sd + "_" + ed);
+            CellStyle hS = wb.createCellStyle(); Font hF = wb.createFont(); hF.setBold(true); hS.setFont(hF);
+            hS.setFillForegroundColor(IndexedColors.LIGHT_GREEN.getIndex());
+            hS.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            CreationHelper cH = wb.getCreationHelper();
+            CellStyle cS = wb.createCellStyle(); cS.setDataFormat(cH.createDataFormat().getFormat("$#,##0.00"));
+            CellStyle hrS = wb.createCellStyle(); hrS.setDataFormat(cH.createDataFormat().getFormat("0.00"));
+            
+            // Create header row
+            Row hrR = sh.createRow(0);
+            for (int i = 0; i < columns.length; i++) {
+                Cell c = hrR.createCell(i);
+                c.setCellValue(columnMapping.getOrDefault(columns[i], columns[i]));
+                c.setCellStyle(hS);
+            }
+            
+            int rN = 1;
+            if (data != null && !data.isEmpty()) {
+                for (Map<String, Object> row : data) {
+                    Row r = sh.createRow(rN++);
+                    for (int i = 0; i < columns.length; i++) {
+                        Cell cell = r.createCell(i);
+                        Object value = row.get(columns[i]); // Use get() instead of getOrDefault() to see null values
+                        if (value == null && "TotalOvertimeHours".equals(columns[i])) {
+                            logger.warning("TotalOvertimeHours is null for row: " + row.keySet());
+                        }
+                        setCellValue(cell, value != null ? value : "", columns[i], cS, hrS);
+                    }
+                }
+            } else {
+                Row r = sh.createRow(rN++);
+                r.createCell(0).setCellValue("No payroll data found for this period.");
+            }
+            
+            // Auto-size columns with minimum widths
+            for (int i = 0; i < columns.length; i++) {
+                try { 
+                    sh.autoSizeColumn(i);
+                    int currentWidth = sh.getColumnWidth(i);
+                    int minWidth = getMinColumnWidth(columns[i]);
+                    if (currentWidth < minWidth) {
+                        sh.setColumnWidth(i, minWidth);
+                    }
+                } catch (Exception ign) { logger.finest("Could not autosize column " + i + " during export."); }
+            }
+            
             wb.write(o);
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error during Excel export T:" + tenantId, e);
-            if (!response.isCommitted()) { response.setContentType("text/html"); response.sendRedirect("payroll.jsp?error=" + encodeUrlParam("Error creating Excel file: " + e.getMessage())); }
+            if (!response.isCommitted()) {
+                response.sendRedirect("payroll.jsp?error=" + encodeUrlParam("Error creating Excel file: " + e.getMessage()));
+            }
+        }
+    }
+    
+    private String formatValueForCSV(Object value, String columnKey) {
+        if (value == null) return "";
+        if (columnKey.contains("Hours") && value instanceof Double) {
+            return String.format("%.2f", (Double) value);
+        }
+        if ((columnKey.equals("Wage") || columnKey.equals("TotalPay")) && value instanceof Double) {
+            return String.format("%.2f", (Double) value);
+        }
+        return String.valueOf(value);
+    }
+    
+    private void setCellValue(Cell cell, Object value, String columnKey, CellStyle currencyStyle, CellStyle hoursStyle) {
+        if (value == null) {
+            cell.setCellValue("");
+            return;
+        }
+        
+        if (value instanceof Double) {
+            double doubleValue = (Double) value;
+            cell.setCellValue(doubleValue);
+            if (columnKey.equals("Wage") || columnKey.equals("TotalPay")) {
+                cell.setCellStyle(currencyStyle);
+            } else if (columnKey.contains("Hours")) {
+                cell.setCellStyle(hoursStyle);
+            }
+        } else {
+            cell.setCellValue(String.valueOf(value));
+        }
+    }
+    
+    private int getMinColumnWidth(String columnKey) {
+        // Excel column width units: 1 unit = 1/256th of character width
+        switch (columnKey) {
+            case "EID": return 2560; // ~10 characters
+            case "FirstName": case "LastName": return 3840; // ~15 characters
+            case "WageType": return 2560; // ~10 characters
+            case "RegularHours": case "OvertimeHours": case "DoubleTimeHours":
+            case "HolidayOTHours": case "DaysOffOTHours": case "TotalOvertimeHours":
+            case "TotalPaidHours": return 3072; // ~12 characters
+            case "Wage": case "TotalPay": return 3584; // ~14 characters
+            default: return 2560; // ~10 characters default
         }
     }
 
@@ -380,8 +521,7 @@ public class PayrollServlet extends HttpServlet {
 
                 con.commit();
                 oS = true;
-                opMsg = String.format(Locale.US, "Period (%s to %s) closed. %d punches archived. %d accruals updated. Payroll Total: $%.2f. Next period: %s to %s.", csd, ced, arcC, accUC, fGT.doubleValue(), nsd, ned);
-            } catch (Exception e) {
+                opMsg = String.format(Locale.US, "Period (%s to %s) closed. %d punches archived. %d PTO balance(s) updated. Payroll Total: $%.2f. Next period: %s to %s.", csd, ced, arcC, accUC, fGT.doubleValue(), nsd, ned);            } catch (Exception e) {
                 oS = false; opMsg = "Error during close: " + e.getMessage();
                 rollback(con);
             } finally {

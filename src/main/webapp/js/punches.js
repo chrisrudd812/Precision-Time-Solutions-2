@@ -96,6 +96,13 @@ function reloadPageWithEid() {
     const currentEid = employeeSelect ? employeeSelect.value : (typeof window.SELECTED_EID_ON_LOAD !== 'undefined' ? window.SELECTED_EID_ON_LOAD : null);
     const params = new URLSearchParams();
     if (currentEid && currentEid !== "0") { params.append('eid', currentEid); }
+    
+    // Preserve hideNav parameter if it exists
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('hideNav')) {
+        params.append('hideNav', urlParams.get('hideNav'));
+    }
+    
     window.location.href = `punches.jsp?${params.toString()}`;
 }
 

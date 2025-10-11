@@ -174,7 +174,7 @@ public class AddAndDeleteAccrualPoliciesServlet extends HttpServlet {
                         }
                     }
                 } catch (SQLException e) {
-                    logger.log(Level.SEVERE, "Error adding accrual policy for T:" + tenantId + ": " + e.getMessage(), e);
+                    logger.log(Level.SEVERE, "Error adding PTO policy for T:" + tenantId + ": " + e.getMessage(), e);
                     errorMessage = "Database error occurred while adding policy.";
                 }
             } catch (NumberFormatException e) {
@@ -223,7 +223,7 @@ public class AddAndDeleteAccrualPoliciesServlet extends HttpServlet {
                         errorMessage = "Failed to update policy '" + originalPolicyName.trim() + "'. Record not found or no changes made.";
                     }
                 } catch (SQLException e) {
-                    logger.log(Level.SEVERE, "Error editing accrual policy '" + originalPolicyName + "' for T:" + tenantId + ": " + e.getMessage(), e);
+                    logger.log(Level.SEVERE, "Error editing PTO policy '" + originalPolicyName + "' for T:" + tenantId + ": " + e.getMessage(), e);
                     errorMessage = "Database error occurred during update.";
                 }
             } catch (NumberFormatException e) {

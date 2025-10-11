@@ -132,6 +132,8 @@
     double totalRegularHoursForDisplay = 0.0;
     double totalOvertimeHoursForDisplay = 0.0;
     double totalDoubleTimeHoursForDisplay = 0.0;
+    double totalHolidayOvertimeHoursForDisplay = 0.0;
+    double totalDaysOffOvertimeHoursForDisplay = 0.0;
     String payPeriodDisplay = "Pay Period Not Configured";
     LocalDate currentPayPeriodStartDate = null;
     LocalDate currentPayPeriodEndDate = null;
@@ -202,7 +204,9 @@
                     totalRegularHoursForDisplay = (Double) timecardData.getOrDefault("totalRegularHours", 0.0);
                     totalOvertimeHoursForDisplay = (Double) timecardData.getOrDefault("totalOvertimeHours", 0.0);
                     totalDoubleTimeHoursForDisplay = (Double) timecardData.getOrDefault("totalDoubleTimeHours", 0.0);
-                    periodTotalHoursForDisplay = Math.round((totalRegularHoursForDisplay + totalOvertimeHoursForDisplay + totalDoubleTimeHoursForDisplay) * 100.0) / 100.0;
+                    totalHolidayOvertimeHoursForDisplay = (Double) timecardData.getOrDefault("totalHolidayOvertimeHours", 0.0);
+                    totalDaysOffOvertimeHoursForDisplay = (Double) timecardData.getOrDefault("totalDaysOffOvertimeHours", 0.0);
+                    periodTotalHoursForDisplay = Math.round((totalRegularHoursForDisplay + totalOvertimeHoursForDisplay + totalDoubleTimeHoursForDisplay + totalHolidayOvertimeHoursForDisplay + totalDaysOffOvertimeHoursForDisplay) * 100.0) / 100.0;
                 }
             } else {
                 pageError = "Error retrieving timecard data.";
@@ -296,16 +300,22 @@
                             <td colspan="5" style="text-align: right; padding-right: 9px;">Period Total: &nbsp;&nbsp;&nbsp;<%= String.format(Locale.US, "%.2f", periodTotalHoursForDisplay) %>
                                 <% if(employeeInfo != null && "Hourly".equalsIgnoreCase((String)employeeInfo.getOrDefault("wageType",""))) { %></td>
                             <td>
-                                    
                                     <span class="hours-breakdown-span">
                                          (Reg: <%= String.format(Locale.US, "%.2f", totalRegularHoursForDisplay) %>,
                                          OT: <%= String.format(Locale.US, "%.2f", totalOvertimeHoursForDisplay) %>
+                                         <% if(totalHolidayOvertimeHoursForDisplay > 0.001) { %>
+                                         , Holiday OT: <%= String.format(Locale.US, "%.2f", totalHolidayOvertimeHoursForDisplay) %>
+                                         <% } %>
+                                         <% if(totalDaysOffOvertimeHoursForDisplay > 0.001) { %>
+                                         , Days Off OT: <%= String.format(Locale.US, "%.2f", totalDaysOffOvertimeHoursForDisplay) %>
+                                         <% } %>
                                          <% if(totalDoubleTimeHoursForDisplay > 0.001) { %>
                                          , DT: <%= String.format(Locale.US, "%.2f", totalDoubleTimeHoursForDisplay) %>
                                          <% } %>)
                                     </span>
-                                <% } %></td>
-                         
+                                <% } else { %></td>
+                            <td></td>
+                                <% } %>
                         </tr>
                     </tfoot>
                     <% } %>

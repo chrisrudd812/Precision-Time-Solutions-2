@@ -1,4 +1,8 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%
+    String publicParam = request.getParameter("public");
+    boolean isPublicView = "true".equalsIgnoreCase(publicParam);
+%>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -56,10 +60,12 @@
         }
     </style>
 </head>
-<body class="reports-page">
+<body class="reports-page<% if (isPublicView) { %> no-navbar<% } %>">
 
-    <%-- Include the standard navigation bar --%>
-    <%@ include file="/WEB-INF/includes/navbar.jspf" %>
+    <% if (!isPublicView) { %>
+        <%-- Include the standard navigation bar --%>
+        <%@ include file="/WEB-INF/includes/navbar.jspf" %>
+    <% } %>
 
     <%-- Include common JavaScript files for navbar functionality --%>
     <%@ include file="/WEB-INF/includes/common-scripts.jspf" %>

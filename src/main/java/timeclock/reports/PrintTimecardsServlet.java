@@ -242,9 +242,13 @@ public class PrintTimecardsServlet extends HttpServlet {
         double reg = (Double) punchData.getOrDefault("totalRegularHours", 0.0);
         double ot = (Double) punchData.getOrDefault("totalOvertimeHours", 0.0);
         double dt = (Double) punchData.getOrDefault("totalDoubleTimeHours", 0.0);
+        double hot = (Double) punchData.getOrDefault("totalHolidayOvertimeHours", 0.0);
+        double dot = (Double) punchData.getOrDefault("totalDaysOffOvertimeHours", 0.0);
         card.put("totalRegularHours", reg);
         card.put("totalOvertimeHours", ot);
         card.put("totalDoubleTimeHours", dt);
-        card.put("periodTotalHours", Math.round((reg + ot + dt) * 100.0) / 100.0);
+        card.put("totalHolidayOvertimeHours", hot);
+        card.put("totalDaysOffOvertimeHours", dot);
+        card.put("periodTotalHours", Math.round((reg + ot + dt + hot + dot) * 100.0) / 100.0);
     }
 }

@@ -64,8 +64,10 @@
             <li>Device Restrictions</li>
             <li>Location Restrictions</li></ol>
         </div>
-        <img src="Images/timecards_individual.webp" alt="Time Clock">
-        <br>
+        
+        <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
+            <img src="Images/timecards_individual.webp" alt="Time Clock" style="max-width: 100%; width: auto; height: auto;">
+        </div>
         
                 <div class="help-section">
             <h2>Mobile Access</h2>

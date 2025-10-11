@@ -26,6 +26,8 @@ import timeclock.Configuration;
 import timeclock.db.DatabaseConnection;
 import timeclock.punches.ShowPunches;
 import timeclock.util.Helpers;
+import timeclock.util.HolidayCalculator;
+import timeclock.util.ScheduleUtils;
 import timeclock.settings.StateOvertimeRules;
 import timeclock.settings.StateOvertimeRuleDetail;
 import timeclock.subscription.SubscriptionUtils;
@@ -160,6 +162,14 @@ public class ShowPayroll {
             boolean configDoubleTimeEnabled = "true".equalsIgnoreCase(Configuration.getProperty(tenantId, "OvertimeDoubleTimeEnabled", "false"));
             double configDoubleTimeThreshold = Double.parseDouble(Configuration.getProperty(tenantId, "OvertimeDoubleTimeThreshold", "12.0"));
             String configFirstDayOfWeekSetting = Configuration.getProperty(tenantId, "FirstDayOfWeek", "SUNDAY").toUpperCase(Locale.ENGLISH);
+            
+            // Holiday overtime settings
+            boolean holidayOTEnabled = "true".equalsIgnoreCase(Configuration.getProperty(tenantId, "OvertimeHolidayEnabled", "false"));
+            double holidayOTRate = Double.parseDouble(Configuration.getProperty(tenantId, "OvertimeHolidayRate", "1.5"));
+            
+            // Days off overtime settings
+            boolean daysOffOTEnabled = "true".equalsIgnoreCase(Configuration.getProperty(tenantId, "OvertimeDaysOffEnabled", "false"));
+            double daysOffOTRate = Double.parseDouble(Configuration.getProperty(tenantId, "OvertimeDaysOffRate", "1.5"));
 
             for (Map.Entry<Integer, Map<String, Object>> empMetaEntry : employeeMetaInfo.entrySet()) {
                 int globalEID = empMetaEntry.getKey();
@@ -212,6 +222,8 @@ public class ShowPayroll {
                 }
 
                 Map<LocalDate, Double> dailyAggregatedWorkHours = new LinkedHashMap<>();
+                Map<LocalDate, Double> dailyHolidayWorkHours = new LinkedHashMap<>();
+                Map<LocalDate, Double> dailyDaysOffWorkHours = new LinkedHashMap<>();
                 double periodTotalPaidNonWorkHours = 0.0;
 
                 for (Map<String, Object> punch : employeePunches) {
@@ -241,6 +253,15 @@ public class ShowPayroll {
                             // --- MODIFIED: Use the employee-specific zone to determine the date ---
                             LocalDate punchDate = ZonedDateTime.ofInstant(iI, employeeProcessingZone).toLocalDate();
                             dailyAggregatedWorkHours.put(punchDate, dailyAggregatedWorkHours.getOrDefault(punchDate, 0.0) + hoursForThisEntry);
+                            
+                            // Check if this is holiday work
+                            if (holidayOTEnabled && HolidayCalculator.isConfiguredHoliday(punchDate, tenantId)) {
+                                dailyHolidayWorkHours.put(punchDate, dailyHolidayWorkHours.getOrDefault(punchDate, 0.0) + hoursForThisEntry);
+                            }
+                            // Check if this is days off work (only if not already a holiday)
+                            else if (daysOffOTEnabled && ScheduleUtils.isScheduledDayOff(tenantId, globalEID, punchDate)) {
+                                dailyDaysOffWorkHours.put(punchDate, dailyDaysOffWorkHours.getOrDefault(punchDate, 0.0) + hoursForThisEntry);
+                            }
                         }
                     } else if (isHoursOnlyType(punchType)) {
                         periodTotalPaidNonWorkHours += hoursForThisEntry;
@@ -250,6 +271,8 @@ public class ShowPayroll {
                 double calculatedPeriodRegular = 0.0;
                 double calculatedPeriodOt = 0.0;
                 double calculatedPeriodDt = 0.0;
+                double calculatedPeriodHolidayOt = 0.0;
+                double calculatedPeriodDaysOffOt = 0.0;
 
                 if ("Hourly".equalsIgnoreCase(wageType)) {
                     Map<LocalDate, Double> dailyRegHours = new LinkedHashMap<>();
@@ -263,6 +286,18 @@ public class ShowPayroll {
                         double todaysReg = hoursWorkedToday;
                         double todaysOt = 0;
                         double todaysDt = 0;
+                        
+                        // Check if this is a holiday - if so, all hours are holiday overtime
+                        if (holidayOTEnabled && dailyHolidayWorkHours.containsKey(date)) {
+                            calculatedPeriodHolidayOt += hoursWorkedToday;
+                            continue; // Skip normal overtime calculations for holiday work
+                        }
+                        
+                        // Check if this is a scheduled day off - if so, all hours are days off overtime
+                        if (daysOffOTEnabled && dailyDaysOffWorkHours.containsKey(date)) {
+                            calculatedPeriodDaysOffOt += hoursWorkedToday;
+                            continue; // Skip normal overtime calculations for days off work
+                        }
 
                         if (effectiveDoubleTimeEnabled && todaysReg > effectiveDoubleTimeThreshold) {
                             todaysDt = todaysReg - effectiveDoubleTimeThreshold;
@@ -288,6 +323,14 @@ public class ShowPayroll {
                         for (int i = 0; i < 7; i++) {
                             LocalDate dayInFLSAWeek = weekStart.plusDays(i);
                             if (dayInFLSAWeek.isBefore(payPeriodStartDate) || dayInFLSAWeek.isAfter(payPeriodEndDate)) continue;
+                            
+                            // Skip holiday and days off from weekly overtime calculations since they're already handled
+                            if (holidayOTEnabled && dailyHolidayWorkHours.containsKey(dayInFLSAWeek)) {
+                                continue;
+                            }
+                            if (daysOffOTEnabled && dailyDaysOffWorkHours.containsKey(dayInFLSAWeek)) {
+                                continue;
+                            }
 
                             weeklyRegHoursPool += dailyRegHours.getOrDefault(dayInFLSAWeek, 0.0);
                             weeklyOtHoursPool += dailyOtHours.getOrDefault(dayInFLSAWeek, 0.0);
@@ -314,14 +357,18 @@ public class ShowPayroll {
                 calculatedPeriodRegular = Math.round(Math.max(0, calculatedPeriodRegular) * 100.0) / 100.0;
                 calculatedPeriodOt = Math.round(Math.max(0, calculatedPeriodOt) * 100.0) / 100.0;
                 calculatedPeriodDt = Math.round(Math.max(0, calculatedPeriodDt) * 100.0) / 100.0;
+                calculatedPeriodHolidayOt = Math.round(Math.max(0, calculatedPeriodHolidayOt) * 100.0) / 100.0;
+                calculatedPeriodDaysOffOt = Math.round(Math.max(0, calculatedPeriodDaysOffOt) * 100.0) / 100.0;
                 
-                double totalPaidHours = calculatedPeriodRegular + calculatedPeriodOt + calculatedPeriodDt;
+                double totalPaidHours = calculatedPeriodRegular + calculatedPeriodOt + calculatedPeriodDt + calculatedPeriodHolidayOt + calculatedPeriodDaysOffOt;
 
                 double totalPay = 0.0;
                 if ("Hourly".equalsIgnoreCase(wageType)) {
                     totalPay = (calculatedPeriodRegular * wage) +
                                (calculatedPeriodOt * wage * configStandardOtRateMultiplier) +
-                               (calculatedPeriodDt * wage * 2.0);
+                               (calculatedPeriodDt * wage * 2.0) +
+                               (calculatedPeriodHolidayOt * wage * holidayOTRate) +
+                               (calculatedPeriodDaysOffOt * wage * daysOffOTRate);
                 } else {
                     int payPeriodsPerYear = 52;
                     try {
@@ -341,6 +388,8 @@ public class ShowPayroll {
                 employeeResult.put("RegularHours", calculatedPeriodRegular);
                 employeeResult.put("OvertimeHours", calculatedPeriodOt);
                 employeeResult.put("DoubleTimeHours", calculatedPeriodDt);
+                employeeResult.put("HolidayOvertimeHours", calculatedPeriodHolidayOt);
+                employeeResult.put("DaysOffOvertimeHours", calculatedPeriodDaysOffOt);
                 employeeResult.put("TotalPaidHours", Math.round(totalPaidHours * 100.0)/100.0);
                 employeeResult.put("TotalPay", totalPay);
                 payrollResults.add(employeeResult);
@@ -384,6 +433,9 @@ public class ShowPayroll {
             double rh = (Double)rowData.getOrDefault("RegularHours", 0.0);
             double ot = (Double)rowData.getOrDefault("OvertimeHours", 0.0);
             double dt = (Double)rowData.getOrDefault("DoubleTimeHours", 0.0);
+            double hot = (Double)rowData.getOrDefault("HolidayOvertimeHours", 0.0);
+            double dot = (Double)rowData.getOrDefault("DaysOffOvertimeHours", 0.0);
+            double totalOT = ot + hot + dot; // Exclude double time
             double tph = (Double)rowData.getOrDefault("TotalPaidHours", 0.0);
             double tp = (Double)rowData.getOrDefault("TotalPay", 0.0);
 
@@ -400,6 +452,9 @@ public class ShowPayroll {
             tableRows.append("<td style='text-align:right;'>").append(hoursFormatter.format(rh)).append("</td>");
             tableRows.append("<td style='text-align:right;'>").append(hoursFormatter.format(ot)).append("</td>");
             tableRows.append("<td style='text-align:right;'>").append(hoursFormatter.format(dt)).append("</td>");
+            tableRows.append("<td style='text-align:right;'>").append(hoursFormatter.format(hot)).append("</td>");
+            tableRows.append("<td style='text-align:right;'>").append(hoursFormatter.format(dot)).append("</td>");
+            tableRows.append("<td style='text-align:right;'>").append(hoursFormatter.format(totalOT)).append("</td>");
             tableRows.append("<td style='text-align:right;'>").append(hoursFormatter.format(tph)).append("</td>");
             tableRows.append("<td style='text-align:right;'>").append(fw).append("</td>");
             tableRows.append("<td style='text-align:right;font-weight:bold;'>").append(ftp).append("</td>");
@@ -407,7 +462,7 @@ public class ShowPayroll {
         }
         
         if (tableRows.length() == 0) {
-            tableRows.append("<tr><td colspan='10' class='report-message-row'>No payroll data for active employees in this period.</td></tr>");
+            tableRows.append("<tr><td colspan='13' class='report-message-row'>No payroll data for active employees in this period.</td></tr>");
         }
 
         result.put("payrollHtml", tableRows.toString());
@@ -437,6 +492,12 @@ public class ShowPayroll {
                 exportRow.put("RegularHours", row.getOrDefault("RegularHours", 0.0));
                 exportRow.put("OvertimeHours", row.getOrDefault("OvertimeHours", 0.0));
                 exportRow.put("DoubleTimeHours", row.getOrDefault("DoubleTimeHours", 0.0));
+                exportRow.put("HolidayOTHours", row.getOrDefault("HolidayOvertimeHours", 0.0));
+                exportRow.put("DaysOffOTHours", row.getOrDefault("DaysOffOvertimeHours", 0.0));
+                double totalOvertimeForExport = ((Double)row.getOrDefault("OvertimeHours", 0.0)) + 
+                                               ((Double)row.getOrDefault("HolidayOvertimeHours", 0.0)) + 
+                                               ((Double)row.getOrDefault("DaysOffOvertimeHours", 0.0)); // Exclude double time
+                exportRow.put("TotalOvertimeHours", totalOvertimeForExport);
                 exportRow.put("TotalPaidHours", row.getOrDefault("TotalPaidHours",0.0));
                 exportRow.put("Wage", row.getOrDefault("Wage", 0.0));
                 exportRow.put("TotalPay", row.getOrDefault("TotalPay", 0.0));

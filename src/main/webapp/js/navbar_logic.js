@@ -70,3 +70,11 @@ document.addEventListener('DOMContentLoaded', function() {
     } 
 
 }); // End DOMContentLoaded
+
+// Global function to open time card modal from navbar
+function openTimeCardModal(url) {
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:10000;display:flex;align-items:center;justify-content:center;';
+    modal.innerHTML = `<div style="width:1200px;max-width:90%;height:800px;max-height:85vh;background:#fff;border-radius:8px;position:relative;display:flex;flex-direction:column;box-shadow:0 4px 20px rgba(0,0,0,0.3);"><button onclick="this.closest('div[style*=fixed]').remove();" style="position:absolute;top:10px;right:10px;z-index:1;background:#dc3545;color:#fff;border:none;border-radius:4px;padding:8px 16px;cursor:pointer;font-size:16px;font-weight:bold;">✕ Close</button><iframe src="${url}" style="width:100%;height:100%;border:none;border-radius:8px;"></iframe></div>`;
+    document.body.appendChild(modal);
+}
