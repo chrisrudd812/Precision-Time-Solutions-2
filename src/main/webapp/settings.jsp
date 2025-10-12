@@ -122,6 +122,9 @@
     String currentCustomHolidayDate = STD_DEFAULT_CUSTOM_HOLIDAY_DATE; String currentCustomHolidayName = STD_DEFAULT_CUSTOM_HOLIDAY_NAME;
     boolean currentOvertimeDaysOffEnabled = Boolean.parseBoolean(STD_DEFAULT_OVERTIME_DAYSOFF_ENABLED); String currentOvertimeDaysOffRate = STD_DEFAULT_OVERTIME_DAYSOFF_RATE;
     
+    String currentEmployeeIdStartNumber = "1";
+    String currentEmployeeIdPadding = "4";
+    
     boolean hasBusinessPlan = false;
     if (tenantId_settings != null && tenantId_settings > 0 && pageLevelError_settings == null) {
         hasProPlan = SubscriptionUtils.hasProPlan(tenantId_settings);
@@ -192,6 +195,11 @@
             currentCustomHolidayName = Configuration.getProperty(tenantId_settings, "CustomHolidayName", STD_DEFAULT_CUSTOM_HOLIDAY_NAME);
             currentOvertimeDaysOffEnabled = "true".equalsIgnoreCase(Configuration.getProperty(tenantId_settings, "OvertimeDaysOffEnabled", STD_DEFAULT_OVERTIME_DAYSOFF_ENABLED));
             currentOvertimeDaysOffRate = Configuration.getProperty(tenantId_settings, "OvertimeDaysOffRate", STD_DEFAULT_OVERTIME_DAYSOFF_RATE);
+            
+            if (inSetupWizardMode_JSP) {
+                currentEmployeeIdStartNumber = Configuration.getProperty(tenantId_settings, "EmployeeIdStartNumber", "1");
+                currentEmployeeIdPadding = Configuration.getProperty(tenantId_settings, "EmployeeIdPadding", "4");
+            }
         }
     }
 %>
@@ -279,6 +287,41 @@
                     </div>
                 </div>
             </div>
+            <% if (inSetupWizardMode_JSP) { %>
+            <div class="setting-item">
+                <h4 class="section-heading"><i class="fas fa-id-card"></i>Employee ID Numbering</h4>
+                <div class="form-body-container">
+                    <div class="form-row">
+                        <div class="setting-block">
+                            <label for="employeeIdStartNumber" class="setting-label-fixed">Starting Number:</label>
+                            <div class="setting-controls-wrapper">
+                                <input type="number" id="employeeIdStartNumber" name="EmployeeIdStartNumber" min="1" max="999999" value="1" class="short-input">
+                                <span id="EmployeeIdStartNumber-status" class="save-status"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="setting-block">
+                            <label for="employeeIdPadding" class="setting-label-fixed">Leading Zeros:</label>
+                            <div class="setting-controls-wrapper">
+                                <select id="employeeIdPadding" name="EmployeeIdPadding">
+                                    <option value="1">None (1, 2, 3...)</option>
+                                    <option value="2">2 digits (01, 02, 03...)</option>
+                                    <option value="3">3 digits (001, 002, 003...)</option>
+                                    <option value="4" selected>4 digits (0001, 0002, 0003...)</option>
+                                    <option value="5">5 digits (00001, 00002, 00003...)</option>
+                                    <option value="6">6 digits (000001, 000002, 000003...)</option>
+                                </select>
+                                <span id="EmployeeIdPadding-status" class="save-status"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="setting-info">
+                        <strong>Warning:</strong> Employee ID numbering can only be set during initial setup. Once employees are added, this cannot be changed.
+                    </div>
+                </div>
+            </div>
+            <% } %>
             <div class="setting-item">
                 <h4 class="section-heading"><i class="fas fa-user-clock"></i>Tardy / Early Out Rules</h4>
                 <div class="form-body-container">
@@ -637,7 +680,9 @@
             overtimeDaysOffRate: "<%= escapeForJavaScriptString(currentOvertimeDaysOffRate) %>",
             restrictByTimeDay: <%= currentRestrictByTimeDay %>,
             restrictByLocation: <%= currentRestrictByLocation %>,
-            restrictByDevice: <%= currentRestrictByDevice %>
+            restrictByDevice: <%= currentRestrictByDevice %>,
+            employeeIdStartNumber: "<%= escapeForJavaScriptString(currentEmployeeIdStartNumber) %>",
+            employeeIdPadding: "<%= escapeForJavaScriptString(currentEmployeeIdPadding) %>"
         };
         window.inWizardMode_Page = <%= inSetupWizardMode_JSP %>;
         window.currentWizardStep_Page = "<%= wizardStepForPage != null ? escapeForJavaScriptString(wizardStepForPage) : "" %>";

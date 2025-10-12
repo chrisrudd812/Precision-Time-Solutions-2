@@ -598,11 +598,38 @@ public class AddEditAndDeleteEmployeesServlet extends HttpServlet {
     }
 
     private int getNextTenantEmployeeNumber(Connection con, int tenantId) throws SQLException {
-       String sqlMax = "SELECT MAX(TenantEmployeeNumber) FROM employee_data WHERE TenantID = ?";
+        // Get configured starting number from settings
+        int startNumber = 1;
+        String settingSql = "SELECT setting_value FROM settings WHERE TenantID = ? AND setting_key = 'EmployeeIdStartNumber'";
+        try (PreparedStatement psSetting = con.prepareStatement(settingSql)) {
+            psSetting.setInt(1, tenantId);
+            try (ResultSet rs = psSetting.executeQuery()) {
+                if (rs.next()) {
+                    String settingValue = rs.getString("setting_value");
+                    try {
+                        startNumber = Integer.parseInt(settingValue);
+                    } catch (NumberFormatException e) {
+                        startNumber = 1;
+                    }
+                }
+            }
+        }
+        
+        // Get current max employee number
+        String sqlMax = "SELECT MAX(TenantEmployeeNumber) FROM employee_data WHERE TenantID = ?";
         try (PreparedStatement psMax = con.prepareStatement(sqlMax)) {
             psMax.setInt(1, tenantId);
             try (ResultSet rs = psMax.executeQuery()) {
-                return rs.next() ? rs.getInt(1) + 1 : 1; 
+                if (rs.next()) {
+                    int maxExisting = rs.getInt(1);
+                    if (rs.wasNull()) {
+                        return startNumber;
+                    } else {
+                        return Math.max(maxExisting + 1, startNumber);
+                    }
+                } else {
+                    return startNumber;
+                }
             }
         }
     }

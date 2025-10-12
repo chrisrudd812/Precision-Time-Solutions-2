@@ -10,6 +10,10 @@ import timeclock.Configuration;
 import timeclock.util.Helpers; // <-- IMPORT THE HELPERS CLASS
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -61,7 +65,7 @@ public class SettingsServlet extends HttpServlet {
         }
         settingKey = settingKey.trim();
 
-        if (settingKey.contains("Threshold") || settingKey.equals("GracePeriod") || settingKey.endsWith("Rate")) {
+        if (settingKey.contains("Threshold") || settingKey.equals("GracePeriod") || settingKey.endsWith("Rate") || settingKey.equals("EmployeeIdStartNumber") || settingKey.equals("EmployeeIdPadding")) {
             try {
                 Double.parseDouble(settingValue);
             } catch (NumberFormatException e) {
@@ -81,6 +85,25 @@ public class SettingsServlet extends HttpServlet {
                 boolean locationCheckIsRequired = Helpers.isLocationCheckRequired(tenantId);
                 // ...and update the session immediately.
                 session.setAttribute("locationCheckIsRequired", locationCheckIsRequired);
+            }
+            // Handle employee ID start number change
+            else if ("EmployeeIdStartNumber".equals(settingKey)) {
+                try (Connection con = timeclock.db.DatabaseConnection.getConnection()) {
+                    int startNumber = Integer.parseInt(settingValue);
+                    
+                    // Update existing employees to use the new numbering scheme
+                    String updateSql = "UPDATE employee_data SET TenantEmployeeNumber = ? WHERE TenantID = ? AND TenantEmployeeNumber = 1";
+                    try (PreparedStatement psUpdate = con.prepareStatement(updateSql)) {
+                        psUpdate.setInt(1, startNumber);
+                        psUpdate.setInt(2, tenantId);
+                        int updated = psUpdate.executeUpdate();
+                        if (updated > 0) {
+                            logger.info("Updated " + updated + " employee(s) to start with number " + startNumber);
+                        }
+                    }
+                } catch (SQLException sqlEx) {
+                    logger.log(Level.WARNING, "Failed to update employee numbering", sqlEx);
+                }
             }
             // --- END OF NEW LOGIC ---
 

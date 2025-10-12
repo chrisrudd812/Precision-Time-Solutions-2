@@ -82,7 +82,7 @@
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> calculatedData = ShowPayroll.calculatePayrollData(tenantId, periodStartDate, periodEndDate);
             if (calculatedData != null) { 
-                Map<String, Object> displayData = ShowPayroll.showPayroll(calculatedData);
+                Map<String, Object> displayData = ShowPayroll.showPayroll(calculatedData, tenantId);
                 payrollTableHtml = (String) displayData.getOrDefault("payrollHtml", "<tr><td colspan='13' class='report-error-row'>Error formatting data.</td></tr>");
                 double grandTotalValue = (Double) displayData.getOrDefault("grandTotal", 0.0);
                 formattedGrandTotal = currencyFormatter.format(grandTotalValue);

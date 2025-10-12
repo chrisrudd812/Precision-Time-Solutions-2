@@ -55,7 +55,7 @@ public class ShowEmployees {
                     found = true;
                     int globalEid = rs.getInt("EID");
                     Integer tenantEmployeeNumberObj = (Integer) rs.getObject("TenantEmployeeNumber");
-                    String displayEid = (tenantEmployeeNumberObj != null && tenantEmployeeNumberObj > 0) ? tenantEmployeeNumberObj.toString() : String.valueOf(globalEid);
+                    String displayEid = (tenantEmployeeNumberObj != null && tenantEmployeeNumberObj > 0) ? timeclock.util.Helpers.formatEmployeeId(tenantId, tenantEmployeeNumberObj) : String.valueOf(globalEid);
                     
                     String firstName = rs.getString("FIRST_NAME");
                     String lastName = rs.getString("LAST_NAME");

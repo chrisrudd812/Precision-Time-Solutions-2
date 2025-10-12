@@ -93,13 +93,19 @@ public class PrintTimecardsServlet extends HttpServlet {
                 session.setAttribute("payPeriodMessageForPrint", payPeriodMessageForPrint);
             }
 
-            List<Integer> employeeIdsToProcess = getEmployeeIdsForReport(tenantId, filterType, filterValue);
-
-
-
-            if (employeeIdsToProcess.isEmpty()) {
-                errorMessage = "No active employees found for the selected filter criteria.";
+            List<Integer> employeeIdsToProcess = new ArrayList<>();
+            
+            // For single employee reports without a filterValue, don't process any employees yet
+            // The dropdown will be shown for selection
+            if ("single".equalsIgnoreCase(filterType) && (filterValue == null || filterValue.trim().isEmpty())) {
+                // Leave employeeIdsToProcess empty - dropdown will be shown
             } else {
+                employeeIdsToProcess = getEmployeeIdsForReport(tenantId, filterType, filterValue);
+            }
+
+            if (employeeIdsToProcess.isEmpty() && !("single".equalsIgnoreCase(filterType) && (filterValue == null || filterValue.trim().isEmpty()))) {
+                errorMessage = "No active employees found for the selected filter criteria.";
+            } else if (!employeeIdsToProcess.isEmpty()) {
                 for (int eid : employeeIdsToProcess) {
                     Map<String, Object> employeeInfo = ShowPunches.getEmployeeTimecardInfo(tenantId, eid);
                     if (employeeInfo == null) {
@@ -108,7 +114,7 @@ public class PrintTimecardsServlet extends HttpServlet {
                     }
 
                     Map<String, Object> printableCard = new HashMap<>();
-                    populatePrintableCardHeader(printableCard, employeeInfo, eid);
+                    populatePrintableCardHeader(printableCard, employeeInfo, eid, tenantId);
                     
                     Map<String, Object> timecardPunchData = ShowPunches.getTimecardPunchData(tenantId, eid, periodStartDate, periodEndDate, employeeInfo, userTimeZoneId);
 
@@ -126,7 +132,12 @@ public class PrintTimecardsServlet extends HttpServlet {
 
         request.setAttribute("printableTimecards", printableTimecardsData);
         request.setAttribute("allEmployees", allEmployees);
-        request.setAttribute("selectedEmployeeId", filterValue);
+        // For single employee view, we need to find the TenantEmployeeNumber that matches the filterValue
+        String selectedTenantEmployeeNumber = null;
+        if ("single".equalsIgnoreCase(filterType) && filterValue != null) {
+            selectedTenantEmployeeNumber = filterValue;
+        }
+        request.setAttribute("selectedEmployeeId", selectedTenantEmployeeNumber);
         request.setAttribute("pageTitle", pageTitle);
         request.setAttribute("payPeriodMessageForPrint", payPeriodMessageForPrint);
         if (errorMessage != null) {
@@ -152,7 +163,7 @@ public class PrintTimecardsServlet extends HttpServlet {
             sql.append("AND SUPERVISOR = ? ");
             params.add(filterValue);
         } else if ("single".equalsIgnoreCase(filterType)) {
-            sql.append("AND EID = ? ");
+            sql.append("AND TenantEmployeeNumber = ? ");
             params.add(Integer.parseInt(filterValue));
         }
 
@@ -167,6 +178,7 @@ public class PrintTimecardsServlet extends HttpServlet {
                 while (rs.next()) {
                     eids.add(rs.getInt("EID"));
                 }
+
             }
         }
         return eids;
@@ -183,32 +195,32 @@ public class PrintTimecardsServlet extends HttpServlet {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Map<String, String> emp = new HashMap<>();
-                    emp.put("eid", String.valueOf(rs.getInt("EID")));
-                    
                     Integer tenantEmpNum = (Integer) rs.getObject("TenantEmployeeNumber");
-                    String displayId = (tenantEmpNum != null && tenantEmpNum > 0) ? 
-                        "#" + tenantEmpNum : "EID:" + rs.getInt("EID");
+                    int eid = rs.getInt("EID");
+                    String dropdownValue = String.valueOf(tenantEmpNum != null ? tenantEmpNum : eid);
+                    emp.put("eid", dropdownValue);
                     
                     String firstName = rs.getString("FIRST_NAME");
                     String lastName = rs.getString("LAST_NAME");
-                    String fullName = displayId + " - " + 
-                        (lastName != null ? lastName : "") + ", " + 
+                    String fullName = (lastName != null ? lastName : "") + ", " + 
                         (firstName != null ? firstName : "");
                     
                     emp.put("name", fullName);
                     employees.add(emp);
+
                 }
             }
         }
         return employees;
     }
 
-    private void populatePrintableCardHeader(Map<String, Object> card, Map<String, Object> empInfo, int eid) {
+    private void populatePrintableCardHeader(Map<String, Object> card, Map<String, Object> empInfo, int eid, int tenantId) {
         NumberFormat hoursFormatter = NumberFormat.getNumberInstance(Locale.US);
         hoursFormatter.setMinimumFractionDigits(2);
         hoursFormatter.setMaximumFractionDigits(2);
 
-        String displayId = "#" + empInfo.getOrDefault("tenantEmployeeNumber", "EID:" + eid);
+        Object tenantEmpNumObj = empInfo.get("tenantEmployeeNumber");
+        String displayId = "#" + (tenantEmpNumObj != null ? timeclock.util.Helpers.formatEmployeeId(tenantId, (Integer)tenantEmpNumObj) : "EID:" + eid);
         card.put("displayEmployeeId", displayId);
         card.put("employeeName", empInfo.getOrDefault("employeeName", "N/A"));
         card.put("department", empInfo.getOrDefault("department", "N/A"));

@@ -179,7 +179,7 @@ public class ShowPunches {
                     Map<String, Object> employee = new HashMap<>();
                     int globalEID = rs.getInt("EID");
                     Integer tenantEmpNo = rs.getObject("TenantEmployeeNumber") != null ? rs.getInt("TenantEmployeeNumber") : null;
-                    String displayName = rs.getString("LAST_NAME") + ", " + rs.getString("FIRST_NAME") + " (#" + (tenantEmpNo != null ? tenantEmpNo : globalEID) + ")";
+                    String displayName = rs.getString("LAST_NAME") + ", " + rs.getString("FIRST_NAME");
                     employee.put("eid", globalEID);
                     employee.put("displayName", displayName);
                     employeeList.add(employee);

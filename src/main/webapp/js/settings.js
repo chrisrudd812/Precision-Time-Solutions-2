@@ -433,6 +433,20 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (gracePeriodSelect) gracePeriodSelect.addEventListener('change', () => saveSetting(gracePeriodSelect));
     
+    // Employee ID settings (wizard mode only)
+    const employeeIdStartNumber = document.getElementById('employeeIdStartNumber');
+    const employeeIdPadding = document.getElementById('employeeIdPadding');
+    
+    if (employeeIdStartNumber) {
+        employeeIdStartNumber.value = window.settingsConfig.employeeIdStartNumber || '1';
+        employeeIdStartNumber.addEventListener('change', () => saveSetting(employeeIdStartNumber));
+    }
+    
+    if (employeeIdPadding) {
+        employeeIdPadding.value = window.settingsConfig.employeeIdPadding || '4';
+        employeeIdPadding.addEventListener('change', () => saveSetting(employeeIdPadding));
+    }
+    
     [otTypeManualRadio, otTypeCompanyStateRadio, otTypeEmployeeStateRadio].forEach(el => {
         if(el) el.addEventListener('change', () => { if(el.checked) { saveSetting(el); updateOvertimeModeUI(); }});
     });
@@ -560,26 +574,38 @@ document.addEventListener('DOMContentLoaded', function() {
         const nextButton = document.getElementById('wizardSettingsNextButton');
         if (nextButton) {
             nextButton.addEventListener('click', function() {
+                // Save any pending employee ID settings before navigating
+                if (employeeIdStartNumber && employeeIdStartNumber.value) {
+                    saveSetting(employeeIdStartNumber);
+                }
+                if (employeeIdPadding && employeeIdPadding.value) {
+                    saveSetting(employeeIdPadding);
+                }
+                
                 this.disabled = true;
                 this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Proceeding...';
-                fetch(`${window.appRootPath}/WizardStatusServlet`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                    body: new URLSearchParams({ 'action': 'setWizardStep', 'nextStep': 'departments_initial' })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success && data.nextStep) {
-                        window.location.href = `${window.appRootPath}/departments.jsp?setup_wizard=true&step=${data.nextStep}`;
-                    } else {
+                
+                // Small delay to allow settings to save
+                setTimeout(() => {
+                    fetch(`${window.appRootPath}/WizardStatusServlet`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                        body: new URLSearchParams({ 'action': 'setWizardStep', 'nextStep': 'departments_initial' })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.nextStep) {
+                            window.location.href = `${window.appRootPath}/departments.jsp?setup_wizard=true&step=${data.nextStep}`;
+                        } else {
+                            this.disabled = false;
+                            this.innerHTML = 'Next: Departments Setup <i class="fas fa-arrow-right"></i>';
+                        }
+                    })
+                    .catch(() => {
                         this.disabled = false;
                         this.innerHTML = 'Next: Departments Setup <i class="fas fa-arrow-right"></i>';
-                    }
-                })
-                .catch(() => {
-                    this.disabled = false;
-                    this.innerHTML = 'Next: Departments Setup <i class="fas fa-arrow-right"></i>';
-                });
+                    });
+                }, 200);
             });
         }
     }

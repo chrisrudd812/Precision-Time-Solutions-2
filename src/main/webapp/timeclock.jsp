@@ -316,7 +316,7 @@
              <% if (globalEidForDisplay > 0 && employeeInfo != null) { %>
                 <div class="timecard-info">
                     <div class="info-left">
-                        <div class="info-item"><strong>Employee ID:</strong> <span class="info-value"><%= tenantEmployeeNumberToDisplay != null ? tenantEmployeeNumberToDisplay : globalEidForDisplay %></span></div>
+                        <div class="info-item"><strong>Employee ID:</strong> <span class="info-value"><%= tenantEmployeeNumberToDisplay != null ? timeclock.util.Helpers.formatEmployeeId(tenantId_timeclock, tenantEmployeeNumberToDisplay) : globalEidForDisplay %></span></div>
                         <div class="info-item"><strong>Employee:</strong> <span class="info-value"><%= employeeName %></span></div>
                         <div class="info-item"><strong>Department:</strong> <span class="info-value"><%= department %></span></div>
                         <div class="info-item"><strong>Supervisor:</strong> <span class="info-value"><%= supervisor %></span></div>

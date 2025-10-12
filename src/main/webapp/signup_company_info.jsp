@@ -13,7 +13,7 @@
     JSONObject plan = new JSONObject();
 
     if (priceId == null || priceId.trim().isEmpty()) {
-        priceId = "price_1S2mCSBtvyYfb2KWetkP2Tcf"; 
+        priceId = "price_1S2mCSBtvyYfb2KWetkP2Tcf"; // Default to Starter live price
     }
 
     // Quick hardcoded plan data to avoid database query delay
@@ -143,7 +143,7 @@
                     
                     if (promoCode.toLowerCase() === 'altman55') {
                         // Upgrade to Pro plan
-                        document.querySelector('input[name="stripePriceId"]').value = 'price_1RttIyBtvyYfb2KW86IvsAvX';
+                        document.querySelector('input[name="stripePriceId"]').value = 'price_1S2mCbBtvyYfb2KWSQz9TkXt';
                         document.querySelector('input[name="appliedPromoCode"]').value = promoCode;
                         
                         // Update display to show FREE

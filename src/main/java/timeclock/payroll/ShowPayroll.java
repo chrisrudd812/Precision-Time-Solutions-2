@@ -402,7 +402,16 @@ public class ShowPayroll {
         return payrollResults;
     }
 
+    public static Map<String, Object> showPayroll(List<Map<String, Object>> calculatedData, int tenantId) {
+        return showPayrollInternal(calculatedData, tenantId);
+    }
+    
+    // Backward compatibility method
     public static Map<String, Object> showPayroll(List<Map<String, Object>> calculatedData) {
+        return showPayrollInternal(calculatedData, 0); // 0 means no formatting
+    }
+    
+    private static Map<String, Object> showPayrollInternal(List<Map<String, Object>> calculatedData, int tenantId) {
         Map<String, Object> result = new HashMap<>();
         StringBuilder tableRows = new StringBuilder();
         double grandTotalPay = 0.0;
@@ -421,7 +430,11 @@ public class ShowPayroll {
             Object globalEidObj = rowData.getOrDefault("EID", 0);
             String displayEid;
             if (tenEmpNoObj instanceof Number && ((Number)tenEmpNoObj).intValue() > 0) {
-                displayEid = String.valueOf(tenEmpNoObj);
+                if (tenantId > 0) {
+                    displayEid = timeclock.util.Helpers.formatEmployeeId(tenantId, ((Number)tenEmpNoObj).intValue());
+                } else {
+                    displayEid = String.valueOf(tenEmpNoObj);
+                }
             } else {
                 displayEid = String.valueOf(globalEidObj);
             }
@@ -542,7 +555,7 @@ public class ShowPayroll {
                     long pId = rs.getLong("PUNCH_ID");
                     int gEID = rs.getInt("EID");
                     Integer tENo = rs.getObject("TenantEmployeeNumber")!=null?rs.getInt("TenantEmployeeNumber"):null;
-                    String dEID = (tENo!=null&&tENo>0)?String.valueOf(tENo):String.valueOf(gEID);
+                    String dEID = (tENo!=null&&tENo>0)?timeclock.util.Helpers.formatEmployeeId(tenantId, tENo):String.valueOf(gEID);
                     String fN=rs.getString("FIRST_NAME");
                     String lN=rs.getString("LAST_NAME");
                     Timestamp iTsUtc=rs.getTimestamp("IN_UTC");

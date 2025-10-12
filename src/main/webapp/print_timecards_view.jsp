@@ -45,6 +45,8 @@
     } else if ("supervisor".equals(filterType) && filterValue != null) {
         viewingMessage = "Viewing: Supervisor - " + filterValue;
     }
+    
+    boolean showEmployeeSelector = isSingleTimecard || "single".equals(filterType);
 %>
 <!DOCTYPE html>
 <html>
@@ -75,7 +77,7 @@
 
 
 
-    <% if (isSingleTimecard) { %>
+    <% if (showEmployeeSelector) { %>
     <div class="employee-selector-section" style="position: fixed; top: 90px; left: 0; right: 0; z-index: 999; background: #f8f9fa; padding: 10px 20px; border-bottom: 1px solid #ddd;">
         <div class="selector-container">
             <label for="employeeSelect">Select Employee:</label>
@@ -87,14 +89,14 @@
                         String name = emp.get("name");
                         String selected = (selectedEmployeeId != null && selectedEmployeeId.equals(eid)) ? "selected" : "";
                 %>
-                    <option value="<%= eid %>" <%= selected %>><%= escapeNavbarHtml(name) %></option>
+                    <option value="<%= eid %>" <%= selected %>><%= escapeJspHtml(name) %></option>
                 <% }} %>
             </select>
         </div>
     </div>
     <% } %>
 
-    <div class="print-view-main-content" style="padding-top: <%= isSingleTimecard ? "130px" : "80px" %>;">
+    <div class="print-view-main-content" style="padding-top: <%= showEmployeeSelector ? "130px" : "80px" %>;">
         <%
             // [FIX] Moved the formatter declaration here to resolve the scope issue.
             NumberFormat hoursPrintFormatter = NumberFormat.getNumberInstance(Locale.US);
@@ -236,7 +238,13 @@
             const select = document.getElementById('employeeSelect');
             const selectedEid = select.value;
             if (selectedEid) {
-                window.location.href = window.appRootPath + '/PrintTimecardsServlet?filterType=single&filterValue=' + selectedEid;
+                const urlParams = new URLSearchParams(window.location.search);
+                const hideNav = urlParams.get('hideNav');
+                let url = window.appRootPath + '/PrintTimecardsServlet?filterType=single&filterValue=' + selectedEid;
+                if (hideNav) {
+                    url += '&hideNav=' + hideNav;
+                }
+                window.location.href = url;
             }
         }
     </script>

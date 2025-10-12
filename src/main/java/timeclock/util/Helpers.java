@@ -104,4 +104,21 @@ public class Helpers {
             response.sendRedirect(path);
         }
     }
+
+    /**
+     * Formats an employee ID number with leading zeros based on tenant settings.
+     * @param tenantId The tenant ID to get padding settings for.
+     * @param employeeNumber The raw employee number to format.
+     * @return The formatted employee ID string with appropriate padding.
+     */
+    public static String formatEmployeeId(int tenantId, int employeeNumber) {
+        String paddingStr = Configuration.getProperty(tenantId, "EmployeeIdPadding", "4");
+        int padding = 4; // default
+        try {
+            padding = Integer.parseInt(paddingStr);
+        } catch (NumberFormatException e) {
+            // Use default padding if invalid
+        }
+        return String.format("%0" + padding + "d", employeeNumber);
+    }
 }

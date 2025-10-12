@@ -323,7 +323,7 @@ document.addEventListener('DOMContentLoaded', function() {
             buttonText = "Close Early";
         } else {
             title = "Confirm Close Pay Period";
-            message = `This will finalize overtime, archive punches, and update PTO. This action cannot be easily undone.<br><br>Are you sure you want to close the period?`;
+            message = `This will finalize overtime, archive punches, and update PTO balances. This action cannot be easily undone.<br><br>Are you sure you want to close the period?`;
             buttonText = "Confirm Close";
         }
         confirmModalTitle.querySelector('span').textContent = title;
