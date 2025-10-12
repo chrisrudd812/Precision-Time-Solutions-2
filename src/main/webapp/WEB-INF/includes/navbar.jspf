@@ -15,8 +15,6 @@
 
 <link rel="stylesheet" href="<%= request.getContextPath() %>/css/navbar.css">
 
-<script src="<%= request.getContextPath() %>/js/navbar_logic.js" defer></script>
-
 <%!
     private static final Logger navbarLogger = Logger.getLogger("navbar.jspf");
     private String escapeNavbarHtml(String input) {
